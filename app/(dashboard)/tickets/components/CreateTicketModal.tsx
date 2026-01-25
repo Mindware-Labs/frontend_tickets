@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,19 +127,6 @@ export function CreateTicketModal({
   const [yardOpen, setYardOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
-
-  // --- AGREGAR ESTO: Estado local para lo que escribes en Clientes ---
-  const [customerInputValue, setCustomerInputValue] = useState("");
-
-  // --- AGREGAR ESTO: Efecto "Debounce" para activar la búsqueda en backend ---
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Esto actualiza la prop que hace la petición a la API en el padre
-      setCustomerSearchCreate(customerInputValue);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [customerInputValue, setCustomerSearchCreate]);
 
   const formatEnumLabel = (value: string) => {
     if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
@@ -384,14 +371,8 @@ export function CreateTicketModal({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
-                     {/* Reemplaza el <Command> viejo por este: */}
-                      <Command shouldFilter={false}> 
-                        <CommandInput 
-                          placeholder="Search customer..." 
-                          value={customerInputValue} 
-                          onValueChange={setCustomerInputValue} 
-                        />
-                        
+                      <Command>
+                        <CommandInput placeholder="Search customer..." />
                         <CommandList>
                           <CommandEmpty>No customer found.</CommandEmpty>
                           <CommandGroup>
