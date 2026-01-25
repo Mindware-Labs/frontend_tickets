@@ -547,7 +547,7 @@ export default function TicketsPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/users?page=1&limit=500");
+      const response = await fetch("/api/users?page=1&limit=5000");
       const result = await response.json();
       if (result?.success) {
         setCustomers(result.data || []);
