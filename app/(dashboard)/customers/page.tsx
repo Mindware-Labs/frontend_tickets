@@ -51,7 +51,7 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const data = await fetchFromBackend("/customers?page=1&limit=500");
+      const data = await fetchFromBackend("/customers?page=1&limit=5000");
       const items = Array.isArray(data) ? data : data?.data || [];
       setCustomers(items);
     } catch (error) {
