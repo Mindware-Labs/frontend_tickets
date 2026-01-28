@@ -1205,8 +1205,14 @@ export default function TicketsPage() {
       attachments: ticket.attachments || [],
     });
 
-    // Si el ticket tiene yarda, abre ViewTicketModal; si no, abre EditTicketModal
-    if (ticket.yardId) {
+    // Si el ticket tiene yarda o está cerrado, abre ViewTicketModal; si no, abre EditTicketModal
+    const ticketStatus = ticket.status
+      ?.toString()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+    const isClosed = ticketStatus === "CLOSED" || ticketStatus === "RESOLVED";
+
+    if (ticket.yardId || isClosed) {
       setShowViewModal(true);
     } else {
       setShowEditModal(true);
