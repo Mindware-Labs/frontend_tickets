@@ -45,6 +45,7 @@ type ReportData = {
     avgDurationSeconds: number;
     activeAgents: number;
     missedInboundCalls: number;
+    missedOutboundCalls: number;
   };
   callsByDay: { date: string; day: string; total: number; closed: number }[];
   dispositionBreakdown: { name: string; value: number }[];
@@ -74,7 +75,7 @@ export default function PerformancePage() {
     return d.toISOString().slice(0, 10);
   });
   const [endDate, setEndDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +93,7 @@ export default function PerformancePage() {
         end: endDate,
       });
       const response = await fetch(
-        `/api/reports/performance?${params.toString()}`
+        `/api/reports/performance?${params.toString()}`,
       );
       const result = await response.json();
       if (result?.success) {
@@ -157,9 +158,9 @@ export default function PerformancePage() {
       });
       const blob = await fetchBlobFromBackend(
         `/reports/performance/pdf?${params.toString()}&logoUrl=${encodeURIComponent(
-          getLogoUrl()
+          getLogoUrl(),
         )}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -195,7 +196,7 @@ export default function PerformancePage() {
       });
       const blob = await fetchBlobFromBackend(
         `/reports/performance/excel?${params.toString()}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -284,7 +285,7 @@ export default function PerformancePage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex justify-between items-start">
                   <div>
@@ -308,15 +309,33 @@ export default function PerformancePage() {
                     <p className="text-xs text-muted-foreground">
                       Missed Inbound
                     </p>
-                    {/* Agregué text-red-600 para resaltar */}
                     <h3 className="text-3xl font-bold mt-1">
                       {report.kpis.missedInboundCalls || 0}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Unanswered calls
+                      Unanswered incoming
                     </p>
                   </div>
                   <div className="p-2 rounded-full bg-red-100 text-red-700 dark:bg-red-500/10">
+                    <PhoneMissed className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Missed Outbound
+                    </p>
+                    <h3 className="text-3xl font-bold mt-1">
+                      {report.kpis.missedOutboundCalls || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Unanswered outgoing
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/10">
                     <PhoneMissed className="w-5 h-5" />
                   </div>
                 </div>
@@ -496,7 +515,7 @@ export default function PerformancePage() {
                           style={{
                             backgroundColor:
                               DISPOSITION_COLORS[
-                              index % DISPOSITION_COLORS.length
+                                index % DISPOSITION_COLORS.length
                               ],
                           }}
                         />
@@ -524,7 +543,9 @@ export default function PerformancePage() {
                       key={item.name}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="text-muted-foreground uppercase">{item.name.toUpperCase()}</span>
+                      <span className="text-muted-foreground uppercase">
+                        {item.name.toUpperCase()}
+                      </span>
                       <span className="font-medium text-foreground">
                         {item.value}
                       </span>
