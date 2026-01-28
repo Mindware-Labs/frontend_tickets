@@ -518,13 +518,13 @@ export default function PerformancePage() {
                 <h3 className="text-lg font-semibold text-foreground mb-4">
                   Campaign Mix
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-3 uppercase">
                   {report.campaignBreakdown.map((item) => (
                     <div
                       key={item.name}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="text-muted-foreground uppercase">{item.name}</span>
+                      <span className="text-muted-foreground uppercase">{item.name.toUpperCase()}</span>
                       <span className="font-medium text-foreground">
                         {item.value}
                       </span>
