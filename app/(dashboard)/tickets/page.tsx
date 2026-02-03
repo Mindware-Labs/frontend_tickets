@@ -1321,7 +1321,7 @@ export default function TicketsPage() {
         campaignId:
           editFormData.campaignId && editFormData.campaignId !== "none"
             ? Number(editFormData.campaignId)
-            : undefined,
+            : null,
         campaignOption: editFormData.campaignOption || null,
         agentId:
           editFormData.agentId && editFormData.agentId !== "none"
@@ -1334,6 +1334,9 @@ export default function TicketsPage() {
         issueDetail: editFormData.issueDetail || null,
         callDate: editFormData.callDate || null,
       };
+
+      // Log para debug
+      console.log("Update payload:", updatePayload);
 
       const response = await fetch(`/api/tickets/${selectedTicket.id}`, {
         method: "PATCH",
@@ -2689,16 +2692,6 @@ export default function TicketsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => mutate()}
-            title="Refresh tickets"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </Button>
           {isTabActive && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20">
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
