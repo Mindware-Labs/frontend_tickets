@@ -534,12 +534,9 @@ export default function TicketsPage() {
   const fetchYards = async () => {
     try {
       const data = await fetchFromBackend("/yards");
-      if (Array.isArray(data)) {
-        setYards(data.filter((yard: any) => yard.isActive));
-      } else {
-        console.error("Yards data is not an array:", data);
-        setYards([]);
-      }
+      // El backend puede devolver array directo o { data: [] }
+      const yardsArray = Array.isArray(data) ? data : data?.data || [];
+      setYards(yardsArray.filter((yard: any) => yard.isActive));
     } catch (err) {
       console.error("Failed to load yards", err);
       setYards([]);
