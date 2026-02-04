@@ -37,8 +37,6 @@ type YardDetailsModalProps = {
   tickets?: any[];
   onViewTickets?: () => void;
   onViewLandlord: () => void;
-  ticketSearch: string;
-  setTicketSearch: React.Dispatch<React.SetStateAction<string>>;
 };
 
 const getTypeLabel = (type: Yard["yardType"]) =>
