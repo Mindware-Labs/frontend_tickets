@@ -534,12 +534,9 @@ export default function TicketsPage() {
   const fetchYards = async () => {
     try {
       const data = await fetchFromBackend("/yards");
-      if (Array.isArray(data)) {
-        setYards(data.filter((yard: any) => yard.isActive));
-      } else {
-        console.error("Yards data is not an array:", data);
-        setYards([]);
-      }
+      // El backend puede devolver array directo o { data: [] }
+      const yardsArray = Array.isArray(data) ? data : data?.data || [];
+      setYards(yardsArray.filter((yard: any) => yard.isActive));
     } catch (err) {
       console.error("Failed to load yards", err);
       setYards([]);
@@ -548,7 +545,7 @@ export default function TicketsPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/users?page=1&limit=5000");
+      const response = await fetch("/api/users?page=1&limit=100");
       const result = await response.json();
       if (result?.success) {
         setCustomers(result.data || []);
@@ -1205,8 +1202,14 @@ export default function TicketsPage() {
       attachments: ticket.attachments || [],
     });
 
-    // Si el ticket tiene yarda, abre ViewTicketModal; si no, abre EditTicketModal
-    if (ticket.yardId) {
+    // Si el ticket tiene yarda o está cerrado, abre ViewTicketModal; si no, abre EditTicketModal
+    const ticketStatus = ticket.status
+      ?.toString()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+    const isClosed = ticketStatus === "CLOSED" || ticketStatus === "RESOLVED";
+
+    if (ticket.yardId || isClosed) {
       setShowViewModal(true);
     } else {
       setShowEditModal(true);
@@ -1315,7 +1318,7 @@ export default function TicketsPage() {
         campaignId:
           editFormData.campaignId && editFormData.campaignId !== "none"
             ? Number(editFormData.campaignId)
-            : undefined,
+            : null,
         campaignOption: editFormData.campaignOption || null,
         agentId:
           editFormData.agentId && editFormData.agentId !== "none"
@@ -1328,6 +1331,9 @@ export default function TicketsPage() {
         issueDetail: editFormData.issueDetail || null,
         callDate: editFormData.callDate || null,
       };
+
+      // Log para debug
+      console.log("Update payload:", updatePayload);
 
       const response = await fetch(`/api/tickets/${selectedTicket.id}`, {
         method: "PATCH",
@@ -2683,16 +2689,6 @@ export default function TicketsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => mutate()}
-            title="Refresh tickets"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </Button>
           {isTabActive && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20">
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />

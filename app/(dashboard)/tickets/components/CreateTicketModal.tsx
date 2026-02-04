@@ -141,7 +141,7 @@ export function CreateTicketModal({
   const selectedCampaign = useMemo(() => {
     if (!createFormData.campaignId) return null;
     return campaigns.find(
-      (campaign) => campaign.id.toString() === createFormData.campaignId
+      (campaign) => campaign.id.toString() === createFormData.campaignId,
     );
   }, [campaigns, createFormData.campaignId]);
 
@@ -152,8 +152,8 @@ export function CreateTicketModal({
   const campaignOptionValues = isOnboardingCampaign
     ? Object.values(OnboardingOption)
     : isArCampaign
-    ? Object.values(ArOption)
-    : [];
+      ? Object.values(ArOption)
+      : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,7 +195,7 @@ export function CreateTicketModal({
                         {createFormData.campaignId
                           ? campaigns.find(
                               (c) =>
-                                c.id.toString() === createFormData.campaignId
+                                c.id.toString() === createFormData.campaignId,
                             )?.nombre || createFormData.campaignId
                           : "Select campaign..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -207,6 +207,28 @@ export function CreateTicketModal({
                         <CommandList>
                           <CommandEmpty>No campaign found.</CommandEmpty>
                           <CommandGroup>
+                            <CommandItem
+                              value="no-campaign"
+                              onSelect={() => {
+                                setCreateFormData({
+                                  ...createFormData,
+                                  campaignId: "",
+                                  campaignOption: "",
+                                  yardId: "",
+                                });
+                                setCampaignOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !createFormData.campaignId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Campaign
+                            </CommandItem>
                             {campaigns.map((c) => (
                               <CommandItem
                                 key={c.id}
@@ -233,7 +255,7 @@ export function CreateTicketModal({
                                     createFormData.campaignId ===
                                       c.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {c.nombre}
@@ -262,7 +284,7 @@ export function CreateTicketModal({
                       >
                         {createFormData.yardId
                           ? yards.find(
-                              (y) => y.id.toString() === createFormData.yardId
+                              (y) => y.id.toString() === createFormData.yardId,
                             )?.name || createFormData.yardId
                           : "Select yard..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -274,6 +296,26 @@ export function CreateTicketModal({
                         <CommandList>
                           <CommandEmpty>No yard found.</CommandEmpty>
                           <CommandGroup>
+                            <CommandItem
+                              value="no-yard"
+                              onSelect={() => {
+                                setCreateFormData({
+                                  ...createFormData,
+                                  yardId: "",
+                                });
+                                setYardOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !createFormData.yardId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Yard
+                            </CommandItem>
                             {yards.map((y) => (
                               <CommandItem
                                 key={y.id}
@@ -291,7 +333,7 @@ export function CreateTicketModal({
                                     "mr-2 h-4 w-4",
                                     createFormData.yardId === y.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {y.name}
@@ -358,13 +400,13 @@ export function CreateTicketModal({
                         className={cn(
                           "w-full justify-between",
                           createValidationErrors.customerId &&
-                            "border-red-500 ring-red-500/20"
+                            "border-red-500 ring-red-500/20",
                         )}
                       >
                         {createFormData.customerId
                           ? customers.find(
                               (c) =>
-                                c.id.toString() === createFormData.customerId
+                                c.id.toString() === createFormData.customerId,
                             )?.name || createFormData.customerId
                           : "Select customer..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -399,7 +441,7 @@ export function CreateTicketModal({
                                     createFormData.customerId ===
                                       c.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {c.name}
@@ -448,7 +490,7 @@ export function CreateTicketModal({
                       >
                         {createFormData.agentId
                           ? agents.find(
-                              (a) => a.id.toString() === createFormData.agentId
+                              (a) => a.id.toString() === createFormData.agentId,
                             )?.name || createFormData.agentId
                           : "Unassigned"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -477,7 +519,7 @@ export function CreateTicketModal({
                                     "mr-2 h-4 w-4",
                                     createFormData.agentId === a.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {a.name}
@@ -521,7 +563,7 @@ export function CreateTicketModal({
                   >
                     <SelectTrigger
                       className={cn(
-                        createValidationErrors.direction && "border-red-500"
+                        createValidationErrors.direction && "border-red-500",
                       )}
                     >
                       <SelectValue placeholder="Select direction" />
@@ -717,7 +759,7 @@ export function CreateTicketModal({
                         className="h-6 w-6 text-muted-foreground hover:text-red-500"
                         onClick={() =>
                           setAttachmentFiles(
-                            attachmentFiles.filter((_, i) => i !== idx)
+                            attachmentFiles.filter((_, i) => i !== idx),
                           )
                         }
                       >

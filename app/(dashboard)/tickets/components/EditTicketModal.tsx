@@ -162,7 +162,7 @@ export function EditTicketModal({
   const selectedCampaign = useMemo(() => {
     if (!editFormData.campaignId) return null;
     return campaigns.find(
-      (campaign) => campaign.id.toString() === editFormData.campaignId
+      (campaign) => campaign.id.toString() === editFormData.campaignId,
     );
   }, [campaigns, editFormData.campaignId]);
 
@@ -173,8 +173,8 @@ export function EditTicketModal({
   const campaignOptionValues = isOnboardingCampaign
     ? Object.values(OnboardingOption)
     : isArCampaign
-    ? Object.values(ArOption)
-    : [];
+      ? Object.values(ArOption)
+      : [];
 
   if (!ticket) return null;
 
@@ -217,7 +217,8 @@ export function EditTicketModal({
                       >
                         {editFormData.campaignId
                           ? campaigns.find(
-                              (c) => c.id.toString() === editFormData.campaignId
+                              (c) =>
+                                c.id.toString() === editFormData.campaignId,
                             )?.nombre || editFormData.campaignId
                           : "Select campaign..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -229,6 +230,28 @@ export function EditTicketModal({
                         <CommandList>
                           <CommandEmpty>No campaign found.</CommandEmpty>
                           <CommandGroup>
+                            <CommandItem
+                              value="no-campaign"
+                              onSelect={() => {
+                                setEditFormData({
+                                  ...editFormData,
+                                  campaignId: "",
+                                  campaignOption: "",
+                                  yardId: "",
+                                });
+                                setCampaignOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !editFormData.campaignId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Campaign
+                            </CommandItem>
                             {campaigns.map((c) => (
                               <CommandItem
                                 key={c.id}
@@ -254,7 +277,7 @@ export function EditTicketModal({
                                     "mr-2 h-4 w-4",
                                     editFormData.campaignId === c.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {c.nombre}
@@ -283,7 +306,7 @@ export function EditTicketModal({
                       >
                         {editFormData.yardId
                           ? yards.find(
-                              (y) => y.id.toString() === editFormData.yardId
+                              (y) => y.id.toString() === editFormData.yardId,
                             )?.name || editFormData.yardId
                           : "Select yard..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -295,6 +318,26 @@ export function EditTicketModal({
                         <CommandList>
                           <CommandEmpty>No yard found.</CommandEmpty>
                           <CommandGroup>
+                            <CommandItem
+                              value="no-yard"
+                              onSelect={() => {
+                                setEditFormData({
+                                  ...editFormData,
+                                  yardId: "",
+                                });
+                                setYardOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !editFormData.yardId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Yard
+                            </CommandItem>
                             {yards.map((y) => (
                               <CommandItem
                                 key={y.id}
@@ -312,7 +355,7 @@ export function EditTicketModal({
                                     "mr-2 h-4 w-4",
                                     editFormData.yardId === y.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {y.name}
@@ -380,7 +423,8 @@ export function EditTicketModal({
                       >
                         {editFormData.customerId
                           ? customers.find(
-                              (c) => c.id.toString() === editFormData.customerId
+                              (c) =>
+                                c.id.toString() === editFormData.customerId,
                             )?.name || editFormData.customerId
                           : "Select customer..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -410,7 +454,7 @@ export function EditTicketModal({
                                     "mr-2 h-4 w-4",
                                     editFormData.customerId === c.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {c.name}
@@ -454,7 +498,7 @@ export function EditTicketModal({
                       >
                         {editFormData.agentId
                           ? agents.find(
-                              (a) => a.id.toString() === editFormData.agentId
+                              (a) => a.id.toString() === editFormData.agentId,
                             )?.name || editFormData.agentId
                           : "Unassigned"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -483,7 +527,7 @@ export function EditTicketModal({
                                     "mr-2 h-4 w-4",
                                     editFormData.agentId === a.id.toString()
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {a.name}
@@ -749,7 +793,7 @@ export function EditTicketModal({
                           className="h-6 w-6 text-muted-foreground hover:text-red-500"
                           onClick={() =>
                             setAttachmentFiles(
-                              attachmentFiles.filter((_, i) => i !== idx)
+                              attachmentFiles.filter((_, i) => i !== idx),
                             )
                           }
                         >

@@ -5,10 +5,13 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Excluir rutas estáticas y API para reducir invocaciones de funciones
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/images/") ||
+    pathname.startsWith("/static/") ||
+    pathname.startsWith("/public/") ||
     pathname.includes(".png") ||
     pathname.includes(".jpg") ||
     pathname.includes(".jpeg") ||
@@ -17,7 +20,12 @@ export function middleware(request: NextRequest) {
     pathname.includes(".ico") ||
     pathname.includes(".webp") ||
     pathname.includes(".css") ||
-    pathname.includes(".js")
+    pathname.includes(".js") ||
+    pathname.includes(".woff") ||
+    pathname.includes(".woff2") ||
+    pathname.includes(".ttf") ||
+    pathname.includes(".eot") ||
+    pathname.includes(".map")
   ) {
     return NextResponse.next();
   }

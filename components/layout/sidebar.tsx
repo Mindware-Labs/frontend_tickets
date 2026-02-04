@@ -222,16 +222,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filteredNavMain =
     normalizedRole === "agent"
       ? data.navMain
-        .filter((item) => item.title !== "Reports")
-        .map((item) => {
-          if (item.title === "Dashboard") {
-            return { ...item, url: "/agent-dashboard" };
-          }
-          if (item.title === "Landlords" || item.title === "Campaigns") {
-            return { ...item, items: [] };
-          }
-          return item;
-        })
+          .filter((item) => item.title !== "Reports")
+          .map((item) => {
+            if (item.title === "Dashboard") {
+              return { ...item, url: "/agent-dashboard" };
+            }
+            if (item.title === "Landlords" || item.title === "Campaigns") {
+              return { ...item, items: [] };
+            }
+            return item;
+          })
       : data.navMain;
 
   // Helper to check if a group is active
@@ -239,7 +239,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (pathname === item.url) return true;
     if (
       item.items?.some(
-        (sub: any) => pathname === sub.url || pathname.startsWith(sub.url)
+        (sub: any) => pathname === sub.url || pathname.startsWith(sub.url),
       )
     )
       return true;
@@ -249,44 +249,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Funciones para obtener colores dinámicos
   const getSidebarBg = () => {
     return isDarkMode
-      ? "bg-gray-900"  // Dark mode
-      : "bg-white";    // Light mode
+      ? "bg-gray-900" // Dark mode
+      : "bg-white"; // Light mode
   };
 
   const getTextColor = () => {
-    return isDarkMode
-      ? "text-gray-100"
-      : "text-gray-900";
+    return isDarkMode ? "text-gray-100" : "text-gray-900";
   };
 
   const getMutedTextColor = () => {
-    return isDarkMode
-      ? "text-gray-400"
-      : "text-gray-600";
+    return isDarkMode ? "text-gray-400" : "text-gray-600";
   };
 
   const getBorderColor = () => {
-    return isDarkMode
-      ? "border-gray-800"
-      : "border-gray-200";
+    return isDarkMode ? "border-gray-800" : "border-gray-200";
   };
 
   const getHoverColor = () => {
-    return isDarkMode
-      ? "hover:bg-gray-800"
-      : "hover:bg-gray-100";
+    return isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100";
   };
 
   const getIconColor = () => {
-    return isDarkMode
-      ? "text-gray-300"
-      : "text-gray-700";
+    return isDarkMode ? "text-gray-300" : "text-gray-700";
   };
 
   const getSeparatorColor = () => {
-    return isDarkMode
-      ? "bg-gray-800"
-      : "bg-gray-200";
+    return isDarkMode ? "bg-gray-800" : "bg-gray-200";
   };
 
   return (
@@ -304,10 +292,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 {/* Image logo */}
-                <div className={`flex aspect-square size-12 items-center justify-center rounded-lg border backdrop-blur-sm overflow-hidden ${isDarkMode
-                    ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/20"
-                    : "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10"
-                  }`}>
+                <div
+                  className={`flex aspect-square size-12 items-center justify-center rounded-lg border backdrop-blur-sm overflow-hidden ${
+                    isDarkMode
+                      ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/20"
+                      : "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10"
+                  }`}
+                >
                   <div className="relative w-full h-full">
                     <Image
                       src="/images/LOGO CQ-10.png"
@@ -336,10 +327,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <span className={`truncate font-bold ${getTextColor()}`}>
                         Center Quest
                       </span>
-                      <div className={`h-1.5 w-1.5 rounded-full ${isDarkMode ? "bg-green-400" : "bg-green-600"
-                        } animate-pulse`} />
+                      <div
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isDarkMode ? "bg-green-400" : "bg-green-600"
+                        } animate-pulse`}
+                      />
                     </div>
-                    <span className={`truncate text-xs ${getMutedTextColor()} mt-0.5`}>
+                    <span
+                      className={`truncate text-xs ${getMutedTextColor()} mt-0.5`}
+                    >
                       Tickets System
                     </span>
                   </div>
@@ -352,9 +348,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={getMutedTextColor()}>
-            Platform
-          </SidebarGroupLabel>
           <SidebarMenu>
             {filteredNavMain.map((item) => {
               if (!item.items?.length) {
@@ -448,7 +441,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <item.icon className={`${getIconColor()} stroke-2`} />
                         )}
                         <span className={getTextColor()}>{item.title}</span>
-                        <ChevronRight className={`ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 ${getIconColor()} stroke-2`} />
+                        <ChevronRight
+                          className={`ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 ${getIconColor()} stroke-2`}
+                        />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -461,7 +456,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               className={`data-[active=true]:text-primary ${getHoverColor()}`}
                             >
                               <a href={subItem.url}>
-                                <span className={getTextColor()}>{subItem.title}</span>
+                                <span className={getTextColor()}>
+                                  {subItem.title}
+                                </span>
                               </a>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -560,7 +557,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
                   {/* Copyright footer - only show when expanded */}
                   <div className="px-2 py-3">
-                    <footer className={`text-xs text-center space-y-1 ${getMutedTextColor()}`}>
+                    <footer
+                      className={`text-xs text-center space-y-1 ${getMutedTextColor()}`}
+                    >
                       <div>© {new Date().getFullYear()} Mindware Labs.</div>
                       <div>All Rights Reserved</div>
                     </footer>
