@@ -70,7 +70,7 @@ export default function YardsPage() {
   const fetchYards = async () => {
     try {
       setLoading(true);
-      const response = await fetchFromBackend("/yards");
+      const response = await fetchFromBackend("/yards?page=1&limit=10000");
       setYards(Array.isArray(response) ? response : response.data || []);
     } catch (error) {
       console.error("Error fetching yards:", error);
