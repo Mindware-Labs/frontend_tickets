@@ -198,7 +198,7 @@ export default function YardsPage() {
   const fetchTicketsForYard = async (yardId: number) => {
     try {
       setTicketsLoading(true);
-      const response = await fetchFromBackend("/tickets?page=1&limit=5000");
+      const response = await fetchFromBackend("/tickets?page=1&limit=500");
       const items: YardTicket[] = response?.data || response || [];
       const filtered = items.filter((ticket) => ticket.yardId === yardId);
       setYardTickets(filtered);
