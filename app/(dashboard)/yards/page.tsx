@@ -70,8 +70,8 @@ export default function YardsPage() {
   const fetchYards = async () => {
     try {
       setLoading(true);
-      const response = await fetchFromBackend("/yards?page=1&limit=10000");
-      setYards(Array.isArray(response) ? response : response.data || []);
+      const data = await fetchFromBackend("/yards?page=1&limit=10000");
+      setYards(data);
     } catch (error) {
       console.error("Error fetching yards:", error);
       toast({
@@ -79,7 +79,6 @@ export default function YardsPage() {
         description: "Failed to load yards",
         variant: "destructive",
       });
-      setYards([]);
     } finally {
       setLoading(false);
     }
@@ -388,7 +387,7 @@ export default function YardsPage() {
       let errorMsg = error.message || "Failed to delete yard.";
       if (
         errorMsg.includes(
-          "No se puede eliminar la yard porque tiene tickets asociados",
+          "No se puede eliminar la yard porque tiene tickets asociados"
         )
       ) {
         errorMsg = "Cannot delete yard because it has associated tickets.";
