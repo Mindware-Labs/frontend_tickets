@@ -501,7 +501,7 @@ export default function TicketsPage() {
     isLoading,
     mutate,
   } = useSWR("/api/tickets", ticketsFetcher, {
-    refreshInterval: isTabActive ? 1000 : 0, // 1s para actualizaciones casi instantáneas
+    refreshInterval: 0,
     revalidateOnFocus: true,
     refreshWhenHidden: false,
     dedupingInterval: 2000,
