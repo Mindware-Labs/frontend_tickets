@@ -545,13 +545,9 @@ export default function TicketsPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/users?page=1&limit=100");
-      const result = await response.json();
-      if (result?.success) {
-        setCustomers(result.data || []);
-      } else {
-        setCustomers([]);
-      }
+      const data = await fetchFromBackend("/customers?page=1&limit=100000");
+      const items = Array.isArray(data) ? data : data?.data || [];
+      setCustomers(items);
     } catch (err) {
       console.error("Failed to load customers", err);
       setCustomers([]);

@@ -439,7 +439,7 @@ export function EditTicketModal({
                             {customers.map((c) => (
                               <CommandItem
                                 key={c.id}
-                                value={c.name}
+                                value={`${c.id} ${c.name} ${c.phone || ""}`}
                                 onSelect={() => {
                                   setEditFormData({
                                     ...editFormData,
@@ -457,7 +457,14 @@ export function EditTicketModal({
                                       : "opacity-0",
                                   )}
                                 />
-                                {c.name}
+                                <div className="flex flex-col">
+                                  <span>{c.name}</span>
+                                  {c.phone && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {c.phone}
+                                    </span>
+                                  )}
+                                </div>
                               </CommandItem>
                             ))}
                           </CommandGroup>

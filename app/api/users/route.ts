@@ -6,11 +6,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get("page") || "1";
-    const limit = searchParams.get("limit") || "500";
+    const limit = searchParams.get("limit") || "100000";
+    const search = searchParams.get("search") || "";
 
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
     const data = await fetchFromBackendServer(
       request,
-      `/customers?page=${page}&limit=${limit}`,
+      `/customers?page=${page}&limit=${limit}${searchParam}`,
     );
 
     return NextResponse.json(
