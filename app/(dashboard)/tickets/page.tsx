@@ -95,6 +95,14 @@ import { CreateTicketModal } from "./components/CreateTicketModal";
 import { EditTicketModal } from "./components/EditTicketModal";
 import { ViewTicketModal } from "./components/ViewTicketModal";
 import { auth } from "@/lib/auth";
+import { format, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type { DateRange } from "react-day-picker";
 
 // Extend the Ticket type
 declare module "@/lib/mock-data" {
@@ -136,6 +144,7 @@ export default function TicketsPage() {
   const [yardFilterSearch, setYardFilterSearch] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [agentFilterSearch, setAgentFilterSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showDetails, setShowDetails] = useState(false);
@@ -967,6 +976,17 @@ export default function TicketsPage() {
       const matchesDisposition =
         dispositionFilter === "all" || ticket.disposition === dispositionFilter;
 
+      // Date range filter
+      let matchesDate = true;
+      if (dateRange?.from) {
+        const ticketDate = new Date(ticket.createdAt);
+        const from = startOfDay(dateRange.from);
+        const to = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from);
+        matchesDate = isWithinInterval(ticketDate, { start: from, end: to });
+      }
+
       const isMissed = isMissedCall(ticket);
 
       let matchesView = true;
@@ -1008,6 +1028,7 @@ export default function TicketsPage() {
         matchesCampaign &&
         matchesYard &&
         matchesAgent &&
+        matchesDate &&
         matchesView
       );
     });
@@ -1046,6 +1067,7 @@ export default function TicketsPage() {
     campaigns,
     urlTicketId,
     searchParams,
+    dateRange,
   ]);
 
   const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
@@ -2675,7 +2697,7 @@ export default function TicketsPage() {
       {/* Main area */}
       <div className="flex-1 flex flex-col gap-4">
         {/* ... Main content search/table unchanged ... */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -2685,12 +2707,55 @@ export default function TicketsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          {isTabActive && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span>Live updates</span>
-            </div>
-          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`justify-start text-left font-normal h-9 px-3 text-sm whitespace-nowrap ${
+                  !dateRange?.from ? "text-muted-foreground" : ""
+                }`}
+              >
+                <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <span className="truncate">
+                      {format(dateRange.from, "MMM d")} –{" "}
+                      {format(dateRange.to, "MMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span>{format(dateRange.from, "MMM d, yyyy")}</span>
+                  )
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 space-y-3">
+                <CalendarWidget
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={1}
+                  disabled={{ after: new Date() }}
+                  className="rounded-md"
+                />
+                {dateRange?.from && (
+                  <div className="flex justify-end px-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setDateRange(undefined)}
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Clear dates
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="rounded-lg border overflow-hidden">
