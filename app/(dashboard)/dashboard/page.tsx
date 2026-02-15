@@ -100,7 +100,7 @@ const RADIAL_PALETTE = [
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -171,7 +171,7 @@ export default function DashboardPage() {
             { day: "Sat", calls: 0 },
             { day: "Sun", calls: 0 },
           ],
-    [dashboardData]
+    [dashboardData],
   );
 
   const typeData = useMemo(
@@ -179,7 +179,7 @@ export default function DashboardPage() {
       dashboardData?.charts.ticketsByDisposition?.length
         ? dashboardData.charts.ticketsByDisposition
         : [{ name: "No data", count: 0 }],
-    [dashboardData]
+    [dashboardData],
   );
 
   const campaignChartData = useMemo(() => {
@@ -201,7 +201,7 @@ export default function DashboardPage() {
         color: "oklch(0.75 0.18 85)",
       },
     }),
-    []
+    [],
   );
 
   const campaignChartConfig = useMemo<ChartConfig>(
@@ -214,7 +214,7 @@ export default function DashboardPage() {
         color: "var(--background)",
       },
     }),
-    []
+    [],
   );
 
   const radialData = useMemo(
@@ -228,7 +228,7 @@ export default function DashboardPage() {
           fill: `var(--color-${segmentKey})`,
         };
       }),
-    [typeData]
+    [typeData],
   );
 
   const radialChartConfig = useMemo<ChartConfig>(() => {
@@ -243,7 +243,7 @@ export default function DashboardPage() {
 
   const totalCallsLast7Days = useMemo(
     () => callsData.reduce((sum, item) => sum + item.calls, 0),
-    [callsData]
+    [callsData],
   );
 
   // --- RENDERIZADO ---
@@ -335,7 +335,7 @@ export default function DashboardPage() {
       {/* --- KPIS --- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
-          title="Total Calls"
+          title="Total calls answered"
           value={kpis.totalCalls}
           secondaryValue={`Total tickets: ${kpis.totalTickets}`}
           icon={FiPhoneCall}
@@ -591,9 +591,7 @@ export default function DashboardPage() {
                   Agents Overview
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {agentsError
-                    ? agentsError
-                    : `Total agents: ${agents.length}`}
+                  {agentsError ? agentsError : `Total agents: ${agents.length}`}
                 </p>
               </div>
               <Button

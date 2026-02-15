@@ -685,13 +685,11 @@ export function EditTicketModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No disposition</SelectItem>
-                      {Object.values(TicketDisposition)
-                        .filter((v) => v !== "OTHER")
-                        .map((v) => (
-                          <SelectItem key={v} value={v}>
-                            {formatEnumLabel(v)}
-                          </SelectItem>
-                        ))}
+                      {Object.values(TicketDisposition).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {formatEnumLabel(v)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
