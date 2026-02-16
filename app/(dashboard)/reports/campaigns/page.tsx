@@ -1,8 +1,8 @@
 "use client";
 
-console.log("🚀🚀🚀 REPORTS CAMPAIGNS PAGE FILE LOADED 🚀🚀🚀");
+console.log("REPORTS CAMPAIGNS PAGE FILE LOADED");
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ type Campaign = {
   yarda?: { name?: string | null } | null;
   isActive?: boolean;
   tipo?: string;
+  createdAt?: string;
 };
 
 type Ticket = {
@@ -231,7 +232,7 @@ const MetricCard = ({ metric }: { metric: ReportMetric }) => (
     <div
       className={cn(
         "absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-5",
-        metric.color?.replace("text-", "bg-")
+        metric.color?.replace("text-", "bg-"),
       )}
     />
   </div>
@@ -288,7 +289,7 @@ const CustomerTable = ({
         const ticketsUrl = `/tickets?customerId=${
           row.customerId
         }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
-          startDate
+          startDate,
         )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
         console.log(
           "🟢 [Reports Campaigns] ✅ Navigating to tickets with customerId and campaignId:",
@@ -299,7 +300,7 @@ const CustomerTable = ({
             endDate,
             isMissed,
             url: ticketsUrl,
-          }
+          },
         );
         router.push(ticketsUrl);
         return;
@@ -308,7 +309,7 @@ const CustomerTable = ({
       // Si no tenemos customerId, buscar por nombre/teléfono
       try {
         console.log(
-          "🔍 [Reports Campaigns] Fetching customers to find match..."
+          "🔍 [Reports Campaigns] Fetching customers to find match...",
         );
         const customers = await fetchFromBackend("/customers?page=1&limit=500");
         const customerList = Array.isArray(customers)
@@ -324,7 +325,7 @@ const CustomerTable = ({
         const customer = customerList.find(
           (c: any) =>
             (c.name && c.name.toLowerCase() === row.name.toLowerCase()) ||
-            (c.phone && c.phone === row.phone)
+            (c.phone && c.phone === row.phone),
         );
 
         if (customer && customer.id && campaignId) {
@@ -337,7 +338,7 @@ const CustomerTable = ({
           const ticketsUrl = `/tickets?customerId=${
             customer.id
           }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
-            startDate
+            startDate,
           )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
           console.log(
             "🟢 [Reports Campaigns] ✅ Navigating to tickets (found by search):",
@@ -349,7 +350,7 @@ const CustomerTable = ({
               endDate,
               isMissed,
               url: ticketsUrl,
-            }
+            },
           );
           router.push(ticketsUrl);
         } else {
@@ -450,17 +451,22 @@ const CustomerTable = ({
                     </div>
                     <div className="col-span-2 px-6 py-3">
                       {(() => {
-                        const direction = (row.direction || "Unknown").toString().toLowerCase();
+                        const direction = (row.direction || "Unknown")
+                          .toString()
+                          .toLowerCase();
                         const isInbound = direction.includes("inbound");
                         const isOutbound = direction.includes("outbound");
                         const isMissed = direction.includes("missed");
-                        const isTextMessage = direction.includes("text") || direction.includes("message");
-                        
+                        const isTextMessage =
+                          direction.includes("text") ||
+                          direction.includes("message");
+
                         let bgColor = "bg-slate-100 dark:bg-slate-800";
                         let textColor = "text-slate-700 dark:text-slate-300";
-                        let borderColor = "border-slate-200 dark:border-slate-700";
+                        let borderColor =
+                          "border-slate-200 dark:border-slate-700";
                         let icon = null;
-                        
+
                         if (isInbound) {
                           bgColor = "bg-blue-50 dark:bg-blue-950/30";
                           textColor = "text-blue-700 dark:text-blue-400";
@@ -469,7 +475,8 @@ const CustomerTable = ({
                         } else if (isOutbound) {
                           bgColor = "bg-emerald-50 dark:bg-emerald-950/30";
                           textColor = "text-emerald-700 dark:text-emerald-400";
-                          borderColor = "border-emerald-200 dark:border-emerald-800";
+                          borderColor =
+                            "border-emerald-200 dark:border-emerald-800";
                           icon = <PhoneMissed className="h-3 w-3" />;
                         } else if (isMissed) {
                           bgColor = "bg-rose-50 dark:bg-rose-950/30";
@@ -479,44 +486,67 @@ const CustomerTable = ({
                         } else if (isTextMessage) {
                           bgColor = "bg-purple-50 dark:bg-purple-950/30";
                           textColor = "text-purple-700 dark:text-purple-400";
-                          borderColor = "border-purple-200 dark:border-purple-800";
+                          borderColor =
+                            "border-purple-200 dark:border-purple-800";
                           icon = <ReceiptText className="h-3 w-3" />;
                         }
-                        
+
                         return (
-                          <div className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
-                            bgColor,
-                            textColor,
-                            borderColor
-                          )}>
-                            {icon && <span className="flex-shrink-0">{icon}</span>}
-                            <span className="capitalize">{row.direction || "Unknown"}</span>
+                          <div
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
+                              bgColor,
+                              textColor,
+                              borderColor,
+                            )}
+                          >
+                            {icon && (
+                              <span className="flex-shrink-0">{icon}</span>
+                            )}
+                            <span className="capitalize">
+                              {row.direction || "Unknown"}
+                            </span>
                           </div>
                         );
                       })()}
                     </div>
                     <div className="col-span-2 px-6 py-3">
                       {(() => {
-                        const status = (row.status || "").toString().toUpperCase();
-                        const isPaid = status.includes("PAID") && !status.includes("NOT");
-                        const isNotPaid = status.includes("NOT_PAID") || (status.includes("NOT") && status.includes("PAID"));
-                        const isOfflinePayment = status.includes("OFFLINE_PAYMENT");
-                        const isNotPaidCheck = status.includes("NOT_PAID_CHECK") || status.includes("PAID_CHECK");
+                        const status = (row.status || "")
+                          .toString()
+                          .toUpperCase();
+                        const isPaid =
+                          status.includes("PAID") && !status.includes("NOT");
+                        const isNotPaid =
+                          status.includes("NOT_PAID") ||
+                          (status.includes("NOT") && status.includes("PAID"));
+                        const isOfflinePayment =
+                          status.includes("OFFLINE_PAYMENT");
+                        const isNotPaidCheck =
+                          status.includes("NOT_PAID_CHECK") ||
+                          status.includes("PAID_CHECK");
                         const isMovedOut = status.includes("MOVED_OUT");
-                        const isCanceled = status.includes("CANCELED") || status.includes("CANCELLED");
-                        const isBalance0 = status.includes("BALANCE_0") || status.includes("BALANCE 0");
-                        const isDoNotCall = status.includes("DO_NOT_CALL") || status.includes("DON'T_CALL");
-                        
+                        const isCanceled =
+                          status.includes("CANCELED") ||
+                          status.includes("CANCELLED");
+                        const isBalance0 =
+                          status.includes("BALANCE_0") ||
+                          status.includes("BALANCE 0");
+                        const isDoNotCall =
+                          status.includes("DO_NOT_CALL") ||
+                          status.includes("DON'T_CALL");
+
                         let bgColor = "bg-slate-100 dark:bg-slate-800";
                         let textColor = "text-slate-700 dark:text-slate-300";
-                        let borderColor = "border-slate-200 dark:border-slate-700";
+                        let borderColor =
+                          "border-slate-200 dark:border-slate-700";
                         let icon = null;
-                        
+
                         if (isPaid) {
                           bgColor = "bg-green-50 dark:bg-green-950/30";
                           textColor = "text-green-700 dark:text-green-400";
-                          borderColor = "border-green-200 dark:border-green-800";
+                          borderColor =
+                            "border-green-200 dark:border-green-800";
                           icon = <CheckCircle2 className="h-3 w-3" />;
                         } else if (isNotPaid) {
                           bgColor = "bg-red-50 dark:bg-red-950/30";
@@ -526,17 +556,20 @@ const CustomerTable = ({
                         } else if (isOfflinePayment) {
                           bgColor = "bg-amber-50 dark:bg-amber-950/30";
                           textColor = "text-amber-700 dark:text-amber-400";
-                          borderColor = "border-amber-200 dark:border-amber-800";
+                          borderColor =
+                            "border-amber-200 dark:border-amber-800";
                           icon = <ReceiptText className="h-3 w-3" />;
                         } else if (isNotPaidCheck) {
                           bgColor = "bg-amber-50 dark:bg-amber-950/30";
                           textColor = "text-amber-700 dark:text-amber-400";
-                          borderColor = "border-amber-200 dark:border-amber-800";
+                          borderColor =
+                            "border-amber-200 dark:border-amber-800";
                           icon = <FileText className="h-3 w-3" />;
                         } else if (isMovedOut) {
                           bgColor = "bg-orange-50 dark:bg-orange-950/30";
                           textColor = "text-orange-700 dark:text-orange-400";
-                          borderColor = "border-orange-200 dark:border-orange-800";
+                          borderColor =
+                            "border-orange-200 dark:border-orange-800";
                           icon = <MoveRight className="h-3 w-3" />;
                         } else if (isCanceled) {
                           bgColor = "bg-rose-50 dark:bg-rose-950/30";
@@ -554,16 +587,22 @@ const CustomerTable = ({
                           borderColor = "border-red-200 dark:border-red-800";
                           icon = <PhoneOff className="h-3 w-3" />;
                         }
-                        
+
                         return (
-                          <div className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
-                            bgColor,
-                            textColor,
-                            borderColor
-                          )}>
-                            {icon && <span className="flex-shrink-0">{icon}</span>}
-                            <span className="capitalize">{row.status || "Unknown"}</span>
+                          <div
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
+                              bgColor,
+                              textColor,
+                              borderColor,
+                            )}
+                          >
+                            {icon && (
+                              <span className="flex-shrink-0">{icon}</span>
+                            )}
+                            <span className="capitalize">
+                              {row.status || "Unknown"}
+                            </span>
                           </div>
                         );
                       })()}
@@ -632,6 +671,7 @@ export default function CampaignReportsPage() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoFormat, setLogoFormat] = useState<"PNG" | "JPEG">("JPEG");
   const [logoSize, setLogoSize] = useState<ImageSize | null>(null);
+  const urlParamsLoaded = useRef(false);
 
   const getLogoUrl = () =>
     typeof window !== "undefined"
@@ -675,8 +715,10 @@ export default function CampaignReportsPage() {
     if (campaignIdParam) setSelectedCampaignId(campaignIdParam);
   }, [campaignIdParam]);
 
-  // Load startDate and endDate from URL params
+  // Load startDate and endDate from URL params (only once on mount)
   useEffect(() => {
+    if (urlParamsLoaded.current) return;
+
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
 
@@ -686,7 +728,32 @@ export default function CampaignReportsPage() {
     if (endDateParam) {
       setEndDate(decodeURIComponent(endDateParam));
     }
+
+    urlParamsLoaded.current = true;
   }, [searchParams]);
+
+  // Auto-populate date range when campaign is selected
+  useEffect(() => {
+    if (selectedCampaignId && campaigns.length > 0) {
+      const campaign = campaigns.find(
+        (c) => c.id.toString() === selectedCampaignId,
+      );
+      if (campaign?.createdAt) {
+        // Set start date to campaign creation date
+        const createdDate = new Date(campaign.createdAt);
+        const formattedStartDate = createdDate.toISOString().split("T")[0];
+
+        // Set end date to today
+        const today = new Date();
+        const formattedEndDate = today.toISOString().split("T")[0];
+
+        // Update dates and clear previous report
+        setStartDate(formattedStartDate);
+        setEndDate(formattedEndDate);
+        setReport(null);
+      }
+    }
+  }, [selectedCampaignId, campaigns]);
 
   useEffect(() => {
     const loadLogo = async () => {
@@ -765,32 +832,32 @@ export default function CampaignReportsPage() {
       console.log("🔵 [Reports Campaigns] Fetching report data...");
       console.log(
         "🔵 [Reports Campaigns] URL:",
-        `/campaign/${selectedCampaignId}/report?${params.toString()}`
+        `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
       const response = await fetchFromBackend(
-        `/campaign/${selectedCampaignId}/report?${params.toString()}`
+        `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
       console.log("🟢 [Reports Campaigns] Report data received:", response);
       console.log(
         "🟢 [Reports Campaigns] Tables count:",
-        response?.tables?.length
+        response?.tables?.length,
       );
 
       if (response?.tables && response.tables.length > 0) {
         console.log(
           "🟢 [Reports Campaigns] First table sample:",
-          response.tables[0]
+          response.tables[0],
         );
         if (response.tables[0]?.rows && response.tables[0].rows.length > 0) {
           console.log(
             "🟢 [Reports Campaigns] First row sample:",
-            response.tables[0].rows[0]
+            response.tables[0].rows[0],
           );
           console.log(
             "🟢 [Reports Campaigns] First row has ticketId?",
-            !!response.tables[0].rows[0].ticketId
+            !!response.tables[0].rows[0].ticketId,
           );
         }
       }
@@ -835,7 +902,7 @@ export default function CampaignReportsPage() {
       });
       const blob = await fetchBlobFromBackend(
         `/campaign/${selectedCampaignId}/report/pdf?${params.toString()}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -873,7 +940,7 @@ export default function CampaignReportsPage() {
 
       const blob = await fetchBlobFromBackend(
         `/campaign/${selectedCampaignId}/report/excel?${params.toString()}`,
-        { method: "GET" }
+        { method: "GET" },
       );
 
       const url = window.URL.createObjectURL(blob);
@@ -972,7 +1039,7 @@ export default function CampaignReportsPage() {
                   >
                     {selectedCampaignId
                       ? campaigns.find(
-                          (c) => c.id.toString() === selectedCampaignId
+                          (c) => c.id.toString() === selectedCampaignId,
                         )?.nombre
                       : "Select a campaign..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -998,7 +1065,7 @@ export default function CampaignReportsPage() {
                                 "mr-2 h-4 w-4",
                                 selectedCampaignId === c.id.toString()
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {c.nombre}

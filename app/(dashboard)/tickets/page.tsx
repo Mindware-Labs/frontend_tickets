@@ -871,6 +871,166 @@ export default function TicketsPage() {
     );
   }, [agents, agentFilterSearch]);
 
+  // Función auxiliar para calcular tickets filtrados por vista
+  const getFilteredCountForView = useMemo(() => {
+    const currentCustomerIdParam = searchParams.get("customerId");
+
+    return (viewType: string) => {
+      return tickets.filter((ticket: Ticket) => {
+        // Filtro por cliente (si existe en URL)
+        if (currentCustomerIdParam) {
+          const matchesCustomer =
+            ticket.customerId &&
+            ticket.customerId.toString() === currentCustomerIdParam;
+          if (!matchesCustomer) return false;
+        }
+
+        const yardName =
+          typeof ticket.yard === "string"
+            ? ticket.yard
+            : (ticket.yard as any)?.name || "";
+        const clientName =
+          ticket.clientName || (ticket.customer as any)?.name || "";
+        const phone =
+          ticket.phone ||
+          (ticket.customer as any)?.phone ||
+          ticket.customerPhone ||
+          "";
+        const status = normalizeEnumValue(ticket.status as any);
+        const priority = (ticket.priority as any)?.toString().toUpperCase();
+        const isAssignedToMe = isTicketAssignedToCurrentUser(ticket);
+
+        const searchLower = search ? search.toLowerCase().trim() : "";
+        const searchTrimmed = search ? search.trim() : "";
+        const phoneDigitsOnly = phone.replace(/[^0-9]/g, "");
+        const searchDigitsOnly = searchTrimmed.replace(/[^0-9]/g, "");
+
+        const matchesSearch = searchLower
+          ? clientName.toLowerCase().includes(searchLower) ||
+            yardName.toLowerCase().includes(searchLower) ||
+            ticket.id.toString().includes(searchTrimmed) ||
+            phone.toLowerCase().includes(searchLower) ||
+            (phoneDigitsOnly &&
+              searchDigitsOnly &&
+              phoneDigitsOnly.includes(searchDigitsOnly))
+          : true;
+
+        const matchesStatus =
+          statusFilter === "all" || status === normalizeEnumValue(statusFilter);
+        const matchesPriority =
+          priorityFilter === "all" ||
+          ticket.priority === priorityFilter ||
+          priority === priorityFilter.toUpperCase();
+        const directionFilterValue = directionFilter.toLowerCase();
+        const ticketDirection = ticket.direction
+          ? ticket.direction.toString().toLowerCase()
+          : "";
+        const matchesDirection =
+          directionFilter === "all" ||
+          ticket.direction === directionFilter ||
+          ticketDirection === directionFilterValue;
+        const ticketCampaignId =
+          ticket.campaignId ??
+          (ticket.campaign && typeof ticket.campaign === "object"
+            ? (ticket.campaign as any).id
+            : null);
+        const matchesCampaign =
+          campaignFilter === "all" ||
+          (ticketCampaignId && ticketCampaignId.toString() === campaignFilter);
+
+        const ticketYardId =
+          ticket.yardId ??
+          (ticket.yard && typeof ticket.yard === "object"
+            ? (ticket.yard as any).id
+            : null);
+        const matchesYard =
+          yardFilter === "all" ||
+          (ticketYardId && ticketYardId.toString() === yardFilter);
+
+        const ticketAgentId =
+          ticket.agentId ??
+          (ticket.assignedTo && typeof ticket.assignedTo === "object"
+            ? (ticket.assignedTo as any).id
+            : null);
+
+        const matchesAgent =
+          agentFilter === "all" ||
+          (ticketAgentId && ticketAgentId.toString() === agentFilter);
+
+        const matchesDisposition =
+          dispositionFilter === "all" ||
+          ticket.disposition === dispositionFilter;
+
+        // Date range filter
+        let matchesDate = true;
+        if (dateRange?.from) {
+          const ticketDate = new Date(ticket.createdAt);
+          const from = startOfDay(dateRange.from);
+          const to = dateRange.to
+            ? endOfDay(dateRange.to)
+            : endOfDay(dateRange.from);
+          matchesDate = isWithinInterval(ticketDate, { start: from, end: to });
+        }
+
+        const isMissed = isMissedCall(ticket);
+
+        // Aplicar filtro de vista específico
+        let matchesView = true;
+        if (viewType === "missed") {
+          matchesView = isMissed;
+        } else if (viewType === "assigned_me") {
+          matchesView = isAssignedToMe && !isMissed;
+        } else if (viewType === "unassigned") {
+          matchesView = !ticket.assignedTo && !isMissed;
+        } else if (viewType === "assigned") {
+          matchesView = !!ticket.assignedTo && !isMissed;
+        } else if (viewType === "high_priority") {
+          matchesView = Boolean(
+            !isMissed &&
+            status !== "CLOSED" &&
+            status !== "RESOLVED" &&
+            (priority === "HIGH" ||
+              (ticket.priority &&
+                ticket.priority.toString().toUpperCase() === "HIGH") ||
+              priority === "EMERGENCY" ||
+              (ticket.priority &&
+                ticket.priority.toString().toUpperCase() === "EMERGENCY")),
+          );
+        } else if (viewType === "all") {
+          matchesView = !isMissed;
+        }
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesPriority &&
+          matchesDirection &&
+          matchesDisposition &&
+          matchesCampaign &&
+          matchesYard &&
+          matchesAgent &&
+          matchesDate &&
+          matchesView
+        );
+      }).length;
+    };
+  }, [
+    tickets,
+    search,
+    statusFilter,
+    priorityFilter,
+    directionFilter,
+    dispositionFilter,
+    campaignFilter,
+    yardFilter,
+    agentFilter,
+    dateRange,
+    searchParams,
+    currentAgent,
+    currentUser,
+    currentUserFullName,
+  ]);
+
   const filteredTickets = useMemo(() => {
     console.log("🔎 [Tickets Page] Filtering tickets with search:", {
       search,
@@ -996,12 +1156,6 @@ export default function TicketsPage() {
         matchesView = isAssignedToMe;
       } else if (activeView === "unassigned") {
         matchesView = !ticket.assignedTo;
-      } else if (activeView === "active") {
-        matchesView =
-          status === "OPEN" ||
-          status === "IN_PROGRESS" ||
-          ticket.status === "Open" ||
-          ticket.status === "In Progress";
       } else if (activeView === "assigned") {
         matchesView = !!ticket.assignedTo;
       } else if (activeView === "high_priority") {
@@ -1211,9 +1365,15 @@ export default function TicketsPage() {
       direction: (ticket.direction || CallDirection.INBOUND) as CallDirection,
       callDate:
         ticket.callDate || ticket.createdAt
-          ? new Date(ticket.callDate || ticket.createdAt)
-              .toISOString()
-              .split("T")[0]
+          ? (() => {
+              const date = new Date(ticket.callDate || ticket.createdAt);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, "0");
+              const day = String(date.getDate()).padStart(2, "0");
+              const hours = String(date.getHours()).padStart(2, "0");
+              const minutes = String(date.getMinutes()).padStart(2, "0");
+              return `${year}-${month}-${day}T${hours}:${minutes}`;
+            })()
           : "",
       disposition: ticket.disposition || "",
       issueDetail: ticket.issueDetail || "",
@@ -2420,31 +2580,7 @@ export default function TicketsPage() {
             />
             All Tickets
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t),
-                ).length
-              }
-            </span>
-          </Button>
-          <Button
-            variant={activeView === "active" ? "secondary" : "ghost"}
-            className="w-full justify-start"
-            onClick={() => handleViewChange("active")}
-          >
-            <AlertCircle className="mr-2 h-4 w-4" />
-            Open
-            <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter((t: Ticket) => {
-                  if (isMissedCall(t)) return false;
-                  const status = (t.status || "")
-                    .toString()
-                    .toUpperCase()
-                    .replace(/\s+/g, "_");
-                  return status === "OPEN" || status === "IN_PROGRESS";
-                }).length
-              }
+              {getFilteredCountForView("all")}
             </span>
           </Button>
           <Button
@@ -2455,11 +2591,7 @@ export default function TicketsPage() {
             <User className="mr-2 h-4 w-4" />
             Assigned
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t) && !!t.assignedTo,
-                ).length
-              }
+              {getFilteredCountForView("assigned")}
             </span>
           </Button>
           <Button
@@ -2470,12 +2602,7 @@ export default function TicketsPage() {
             <User className="mr-2 h-4 w-4" />
             My Tickets
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) =>
-                    !isMissedCall(t) && isTicketAssignedToCurrentUser(t),
-                ).length
-              }
+              {getFilteredCountForView("assigned_me")}
             </span>
           </Button>
           <Button
@@ -2486,11 +2613,7 @@ export default function TicketsPage() {
             <Hash className="mr-2 h-4 w-4" />
             Unassigned
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t) && !t.assignedTo,
-                ).length
-              }
+              {getFilteredCountForView("unassigned")}
             </span>
           </Button>
           <Button
@@ -2501,11 +2624,7 @@ export default function TicketsPage() {
             <AlertTriangle className="mr-2 h-4 w-4" />
             Missed Calls
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter((t: Ticket) =>
-                  isMissedCall(t),
-                ).length
-              }
+              {getFilteredCountForView("missed")}
             </span>
           </Button>
           <Button
@@ -2541,20 +2660,7 @@ export default function TicketsPage() {
               return null;
             })()}
             <span className="ml-auto text-xs">
-              {
-                tickets.filter((t: Ticket) => {
-                  if (isMissedCall(t)) return false;
-                  const priority = (t.priority || "").toString().toUpperCase();
-                  const status = (t.status || "")
-                    .toString()
-                    .toUpperCase()
-                    .replace(/\s+/g, "_");
-                  return (
-                    (priority === "HIGH" || priority === "EMERGENCY") &&
-                    (status === "OPEN" || status === "IN_PROGRESS")
-                  );
-                }).length
-              }
+              {getFilteredCountForView("high_priority")}
             </span>
           </Button>
         </div>

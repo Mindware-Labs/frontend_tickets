@@ -748,10 +748,10 @@ export function CreateTicketModal({
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                    Date
+                    Date & Time
                   </Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     className="block w-full"
                     value={createFormData.callDate}
                     onChange={(e) =>
