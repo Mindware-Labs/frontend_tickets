@@ -71,6 +71,7 @@ type Ticket = {
   onboardingOption?: string | null;
   issueDetail?: string | null;
   direction?: CallDirection | null;
+  originalDirection?: CallDirection | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -244,14 +245,24 @@ const CustomerTable = ({
   campaignId,
   startDate,
   endDate,
+  expectedCalls,
 }: {
   title: string;
   rows: CustomerRow[];
   campaignId: number | null;
   startDate: string;
   endDate: string;
+  expectedCalls?: number;
 }) => {
   const router = useRouter();
+  const totalCalls = rows.reduce(
+    (sum, row) => sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
+    0,
+  );
+  const callsToShow =
+    typeof expectedCalls === "number" && !Number.isNaN(expectedCalls)
+      ? expectedCalls
+      : totalCalls;
 
   console.log("🟡 [Reports Campaigns] Rendering CustomerTable:", {
     title,
@@ -384,7 +395,8 @@ const CustomerTable = ({
       <div className="flex flex-col border-b px-6 py-4">
         <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {rows.length} {rows.length === 1 ? "record" : "records"} found
+          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found ({rows.length}{" "}
+          {rows.length === 1 ? "customer" : "customers"})
         </p>
         <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
           💡 Click on any row to view customer details in Customer Management
@@ -814,6 +826,15 @@ export default function CampaignReportsPage() {
     );
   }, [campaigns, selectedCampaignId]);
 
+  const metricValueByTitle = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!report?.metrics) return map;
+    report.metrics.forEach((metric) => {
+      map.set(metric.title, Number(metric.value || 0));
+    });
+    return map;
+  }, [report]);
+
   const buildReport = async () => {
     if (!selectedCampaignId || !startDate || !endDate) {
       toast({
@@ -835,9 +856,13 @@ export default function CampaignReportsPage() {
         `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
-      const response = await fetchFromBackend(
-        `/campaign/${selectedCampaignId}/report?${params.toString()}`,
-      );
+      const [response, campaignStats, ticketsResponse] = await Promise.all([
+        fetchFromBackend(
+          `/campaign/${selectedCampaignId}/report?${params.toString()}`,
+        ),
+        fetchFromBackend(`/campaign/${selectedCampaignId}`),
+        fetchFromBackend("/tickets?page=1&limit=5000"),
+      ]);
 
       console.log("🟢 [Reports Campaigns] Report data received:", response);
       console.log(
@@ -863,10 +888,82 @@ export default function CampaignReportsPage() {
       }
 
       if (!response) throw new Error("No data from backend");
+      const allTickets: Ticket[] = Array.isArray(ticketsResponse)
+        ? ticketsResponse
+        : ticketsResponse?.data || [];
+      const campaignTickets = allTickets.filter((ticket) => {
+        const ticketCampaignId =
+          ticket.campaignId ??
+          (ticket.campaign && typeof ticket.campaign === "object"
+            ? ticket.campaign.id
+            : null);
+        return (
+          ticketCampaignId !== null &&
+          ticketCampaignId !== undefined &&
+          ticketCampaignId.toString() === selectedCampaignId
+        );
+      });
+      const totalTicketsFromCampaign = Number(
+        campaignStats?.ticketCount ?? campaignTickets.length ?? 0,
+      );
+      let inboundFromTickets = 0;
+      let outboundFromTickets = 0;
+      campaignTickets.forEach((ticket) => {
+        const direction = (ticket.direction || "").toString().toUpperCase();
+        const originalDirection = (ticket.originalDirection || "")
+          .toString()
+          .toUpperCase();
+        if (direction === "INBOUND") {
+          inboundFromTickets += 1;
+          return;
+        }
+        if (direction === "OUTBOUND") {
+          outboundFromTickets += 1;
+          return;
+        }
+        if (direction === "MISSED") {
+          if (originalDirection === "INBOUND") {
+            inboundFromTickets += 1;
+          } else {
+            outboundFromTickets += 1;
+          }
+        }
+      });
+      const remainder =
+        totalTicketsFromCampaign - (inboundFromTickets + outboundFromTickets);
+      if (remainder > 0) {
+        outboundFromTickets += remainder;
+      }
+
+      const mergedMetrics = (response.metrics || []).map((metric: ReportMetric) => {
+        if (metric.title === "Total Tickets") {
+          return { ...metric, value: Number(campaignStats?.ticketCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Inbound Calls") {
+          return { ...metric, value: inboundFromTickets };
+        }
+        if (metric.title === "Outbound Calls") {
+          return { ...metric, value: outboundFromTickets };
+        }
+        if (metric.title === "Registered") {
+          return { ...metric, value: Number(campaignStats?.registeredCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Not Registered") {
+          return { ...metric, value: Number(campaignStats?.notRegisteredCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Paid") {
+          return { ...metric, value: Number(campaignStats?.paidCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Not Paid") {
+          return { ...metric, value: Number(campaignStats?.notPaidCount ?? metric.value ?? 0) };
+        }
+        return metric;
+      });
+
       // El backend ya entrega los datos agregados y tablas
       setReport({
         campaign: response.campaign || null,
-        metrics: response.metrics || [],
+        metrics: mergedMetrics,
         totalCustomers: response.totals?.total || 0,
         reportLines: [],
         tables: response.tables || [],
@@ -1150,6 +1247,7 @@ export default function CampaignReportsPage() {
                   key={table.title}
                   title={table.title}
                   rows={table.rows}
+                  expectedCalls={metricValueByTitle.get(table.title)}
                   campaignId={
                     selectedCampaignId ? parseInt(selectedCampaignId) : null
                   }
