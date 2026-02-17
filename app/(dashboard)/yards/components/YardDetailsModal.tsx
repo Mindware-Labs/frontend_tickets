@@ -22,10 +22,15 @@ import {
   Check,
   Mail,
   Info,
-  StickyNote, // <--- 1. Importamos el icono para las notas
+  StickyNote,
+  FileText,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import type { Yard } from "../types";
 import { cn } from "@/lib/utils";
+import { fetchBlobFromBackend } from "@/lib/api-client";
+import { toast } from "@/hooks/use-toast";
 
 type YardDetailsModalProps = {
   open: boolean;
@@ -77,12 +82,71 @@ export function YardDetailsModal({
   onViewLandlord,
 }: YardDetailsModalProps) {
   const [copied, setCopied] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   const handleCopyId = () => {
     if (yard?.id) {
       navigator.clipboard.writeText(String(yard.id));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!yard) return;
+    try {
+      setDownloadingPdf(true);
+      const blob = await fetchBlobFromBackend(`/yards/${yard.id}/report/pdf`);
+      triggerDownload(blob, `yard-report-${yard.id}.pdf`);
+      toast({ title: "Success", description: "PDF report downloaded" });
+    } catch (error: any) {
+      console.error("Error downloading PDF:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download PDF report",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!yard) return;
+    try {
+      setDownloadingExcel(true);
+      const blob = await fetchBlobFromBackend(
+        `/yards/${yard.id}/report/excel`,
+        {
+          headers: {
+            Accept:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        },
+      );
+      triggerDownload(blob, `yard-report-${yard.id}.xlsx`);
+      toast({ title: "Success", description: "Excel report downloaded" });
+    } catch (error: any) {
+      console.error("Error downloading Excel:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download Excel report",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingExcel(false);
     }
   };
 
@@ -104,10 +168,14 @@ export function YardDetailsModal({
                   </DialogTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 min-w-0">
                     {yard.name !== yard.commonName && yard.name && (
-                      <span className="font-medium truncate">{yard.commonName}</span>
+                      <span className="font-medium truncate">
+                        {yard.commonName}
+                      </span>
                     )}
                     {yard.commonName && yard.id && (
-                      <span className="text-muted-foreground/50 shrink-0">•</span>
+                      <span className="text-muted-foreground/50 shrink-0">
+                        •
+                      </span>
                     )}
                     <div
                       className="flex items-center gap-1.5 cursor-pointer hover:text-foreground transition-colors group shrink-0"
@@ -130,7 +198,7 @@ export function YardDetailsModal({
                     "w-fit px-3 py-1 text-xs font-semibold uppercase shadow-none border-0",
                     yard.isActive
                       ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-400 dark:bg-emerald-500/10"
-                      : "bg-red-500/15 text-red-700 hover:bg-red-500/25 dark:text-red-400 dark:bg-red-500/10"
+                      : "bg-red-500/15 text-red-700 hover:bg-red-500/25 dark:text-red-400 dark:bg-red-500/10",
                   )}
                 >
                   {yard.isActive ? "Active" : "Inactive"}
@@ -218,7 +286,7 @@ export function YardDetailsModal({
                       "rounded-lg border bg-card transition-all duration-300 shadow-sm overflow-hidden flex flex-col",
                       showLandlordPanel
                         ? "border-primary/40"
-                        : "opacity-80 grayscale-[0.5]"
+                        : "opacity-80 grayscale-[0.5]",
                     )}
                   >
                     <div className="p-4 flex items-center gap-3 bg-muted/30 shrink-0">
@@ -266,9 +334,9 @@ export function YardDetailsModal({
                               yard.landlord.id !== null
                                 ? String(yard.landlord.id)
                                 : yard.landlordId !== undefined &&
-                                  yard.landlordId !== null
-                                ? String(yard.landlordId)
-                                : undefined
+                                    yard.landlordId !== null
+                                  ? String(yard.landlordId)
+                                  : undefined
                             }
                             className="text-xs"
                           />
@@ -304,9 +372,41 @@ export function YardDetailsModal({
         </div>
 
         <DialogFooter className="p-4 bg-muted/20 border-t border-border/50">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
+          <div className="flex w-full items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="gap-2"
+              >
+                {downloadingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 text-red-500" />
+                )}
+                Download PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadExcel}
+                disabled={downloadingExcel}
+                className="gap-2"
+              >
+                {downloadingExcel ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                )}
+                Download Excel
+              </Button>
+            </div>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

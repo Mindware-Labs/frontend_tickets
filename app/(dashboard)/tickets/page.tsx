@@ -542,7 +542,7 @@ export default function TicketsPage() {
 
   const fetchYards = async () => {
     try {
-      const data = await fetchFromBackend("/yards");
+      const data = await fetchFromBackend("/yards?page=1&limit=10000");
       // El backend puede devolver array directo o { data: [] }
       const yardsArray = Array.isArray(data) ? data : data?.data || [];
       setYards(yardsArray.filter((yard: any) => yard.isActive));
