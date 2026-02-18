@@ -35,11 +35,34 @@ function getAuthToken(): string | null {
   // Try to get token from cookies first
   const cookieToken = getCookie("auth-token");
   if (cookieToken) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[api-client] Token found in cookie, length:", cookieToken.length);
+    }
     return cookieToken;
   }
 
   // Fallback to localStorage
-  return localStorage.getItem("auth_token");
+  const localStorageToken = localStorage.getItem("auth_token");
+  if (localStorageToken) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[api-client] Token found in localStorage, length:", localStorageToken.length);
+      // Also try to set it as cookie if it's in localStorage but not in cookie
+      try {
+        document.cookie = `auth-token=${localStorageToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      } catch (e) {
+        // Ignore cookie setting errors
+      }
+    }
+    return localStorageToken;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[api-client] No token found in cookies or localStorage");
+    console.warn("[api-client] document.cookie:", document.cookie.substring(0, 200));
+    console.warn("[api-client] localStorage keys:", Object.keys(localStorage));
+  }
+
+  return null;
 }
 
 /**
@@ -122,20 +145,33 @@ export async function fetchFromBackend(
   // Handle 401 Unauthorized - token expired or invalid
   if (response.status === 401) {
     if (process.env.NODE_ENV === "development") {
+      const cookieToken = getCookie("auth-token");
+      const localStorageToken = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
       console.error(
         "[api-client] 401 Unauthorized for:",
         endpoint,
         "Token present:",
         !!token
       );
+      console.error(
+        "[api-client] Token sources - Cookie:",
+        cookieToken ? `Found (${cookieToken.length} chars)` : "Not found",
+        "LocalStorage:",
+        localStorageToken ? `Found (${localStorageToken.length} chars)` : "Not found"
+      );
     }
 
-    // Clear stale token and redirect to login in browser context
-    if (typeof window !== "undefined") {
+    // Only redirect if we actually had a token (it might be expired)
+    // If we never had a token, it's likely the user isn't logged in yet
+    if (typeof window !== "undefined" && token) {
       handleUnauthorized();
     }
 
-    const error = new Error("Session expired. Please login again.") as Error & {
+    const error = new Error(
+      token 
+        ? "Session expired. Please login again." 
+        : "Authentication required. Please login."
+    ) as Error & {
       status?: number;
     };
     error.status = 401;

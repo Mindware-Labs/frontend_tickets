@@ -296,9 +296,16 @@ export const auth = {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_data');
 
-            // Clear cookie
+            // Clear cookie - use multiple methods to ensure it's deleted
             document.cookie = 'auth-token=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+            document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+            
             window.dispatchEvent(new Event('user-role-updated'));
+            
+            // Redirect to login after clearing session
+            window.location.href = '/login';
         }
     },
 

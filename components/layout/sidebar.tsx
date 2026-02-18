@@ -102,7 +102,12 @@ const data = {
       title: "Yards",
       url: "/yards",
       icon: Building,
-      items: [],
+      items: [
+        {
+          title: "Reports",
+          url: "/reports/yards",
+        },
+      ],
     },
     {
       title: "Landlords",
@@ -374,29 +379,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 );
               }
               if (item.title === "Dashboard") {
-                const active = pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={active}
-                      className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
-                    >
-                      <a href={item.url}>
-                        {active && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                        )}
-                        {item.icon && (
-                          <item.icon className={`${getIconColor()} stroke-2`} />
-                        )}
-                        <span className={getTextColor()}>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }
-              if (item.title === "Yards") {
                 const active = pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>

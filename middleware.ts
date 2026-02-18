@@ -46,24 +46,43 @@ export function middleware(request: NextRequest) {
     ?.replace(/^Bearer\s+/i, "");
   const authToken = cookieToken || headerToken || null;
   let role: string | null = null;
+  let tokenValid = false;
 
   if (authToken) {
     try {
-      const payloadPart = authToken.split(".")[1];
-      if (payloadPart) {
-        const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-        const payloadString = atob(base64);
-        const payload = JSON.parse(payloadString);
-        role = payload?.role || null;
+      // Validate JWT format (should have 3 parts separated by dots)
+      const parts = authToken.split(".");
+      if (parts.length === 3) {
+        const payloadPart = parts[1];
+        if (payloadPart) {
+          // Decode base64 payload
+          const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+          const payloadString = atob(base64);
+          const payload = JSON.parse(payloadString);
+          role = payload?.role || null;
+          
+          // Check if token is expired (if exp exists)
+          if (payload.exp) {
+            const expirationTime = payload.exp * 1000; // Convert to milliseconds
+            const currentTime = Date.now();
+            tokenValid = expirationTime > currentTime;
+          } else {
+            // If no expiration, consider it valid (for now)
+            tokenValid = true;
+          }
+        }
       }
-    } catch {
+    } catch (error) {
+      // Token is malformed or invalid
+      tokenValid = false;
       role = null;
     }
   }
 
-  if (!authToken && !publicRoutes.includes(pathname)) {
+  // Redirect to login if no token or token is invalid
+  if ((!authToken || !tokenValid) && !publicRoutes.includes(pathname)) {
     const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/") {
+    if (pathname !== "/" && pathname !== "/login") {
       loginUrl.searchParams.set("redirect", pathname);
     }
     return NextResponse.redirect(loginUrl);
