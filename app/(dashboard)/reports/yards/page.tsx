@@ -75,7 +75,7 @@ type Ticket = {
   agent?: { name?: string | null; id?: number } | null;
   agentId?: number | null;
   campaignId?: number | null;
-  campaign?: { nombre?: string | null } | null;
+  campaign?: { id?: number | null; nombre?: string | null } | null;
 };
 
 type YardStats = {
@@ -302,7 +302,7 @@ export default function YardReportsPage() {
             { campaignId: number; campaignName: string; count: number }
           >();
           yardTickets.forEach((ticket) => {
-            const campaignId = ticket.campaignId || ticket.campaign?.id;
+            const campaignId = ticket.campaignId;
             if (campaignId) {
               const campaignName =
                 ticket.campaign?.nombre || `Campaign #${campaignId}`;
@@ -451,8 +451,8 @@ export default function YardReportsPage() {
               (a, b) => b.count - a.count,
             ),
             avgResolutionTime,
-            peakDay: peakDayEntry?.day || null,
-            peakDayCount: peakDayEntry?.total || null,
+            peakDay: peakDayEntry?.day || undefined,
+            peakDayCount: peakDayEntry?.total || undefined,
           });
         });
 
