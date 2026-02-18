@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchFromBackendServer } from "@/lib/api-server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Ticket = {
   id: number;
   status?: string;
@@ -41,6 +44,8 @@ const STATUS_LABELS: Record<string, string> = {
 const FALLBACK_CHART_ITEM = [{ name: "No data", count: 0 }];
 const DASHBOARD_TIMEZONE =
   process.env.DASHBOARD_TIMEZONE || "America/Santo_Domingo";
+const ISO_TZ_SUFFIX_REGEX = /([zZ]|[+\-]\d{2}:?\d{2})$/;
+const ISO_DATE_PREFIX_REGEX = /^(\d{4}-\d{2}-\d{2})T/;
 const DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: DASHBOARD_TIMEZONE,
   year: "numeric",
@@ -95,6 +100,22 @@ function getCampaignLabel(
 
 function formatDateKey(date: Date) {
   return DATE_KEY_FORMATTER.format(date);
+}
+
+function getTicketDateKey(createdAt: string) {
+  const value = createdAt.trim();
+  if (!value) return null;
+
+  // In production runtimes (UTC), naive timestamps like "2026-02-18T10:00:00"
+  // can shift by timezone; preserve literal date part when timezone is missing.
+  if (!ISO_TZ_SUFFIX_REGEX.test(value)) {
+    const dateMatch = value.match(ISO_DATE_PREFIX_REGEX);
+    if (dateMatch?.[1]) return dateMatch[1];
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return formatDateKey(parsed);
 }
 
 async function getUserIdFromRequest(
@@ -369,9 +390,8 @@ export async function GET(request: NextRequest) {
 
     tickets.forEach((ticket) => {
       if (!ticket.createdAt) return;
-      const date = new Date(ticket.createdAt);
-      if (Number.isNaN(date.getTime())) return;
-      const key = formatDateKey(date);
+      const key = getTicketDateKey(ticket.createdAt);
+      if (!key) return;
       const bucketIndex = bucketMap[key];
       if (bucketIndex === undefined) return;
       dayBuckets[bucketIndex].count += 1;
