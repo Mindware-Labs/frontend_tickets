@@ -108,7 +108,14 @@ export function YardDetailsModal({
     if (!yard) return;
     try {
       setDownloadingPdf(true);
-      const blob = await fetchBlobFromBackend(`/yards/${yard.id}/report/pdf`);
+      const logoUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/images/logo.jpeg`
+          : "/images/logo.jpeg";
+      const params = new URLSearchParams({ logoUrl });
+      const blob = await fetchBlobFromBackend(
+        `/yards/${yard.id}/report/pdf?${params.toString()}`,
+      );
       triggerDownload(blob, `yard-report-${yard.id}.pdf`);
       toast({ title: "Success", description: "PDF report downloaded" });
     } catch (error: any) {
