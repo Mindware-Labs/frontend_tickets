@@ -109,12 +109,13 @@ export default function Topbar() {
       setIsLoggingOut(true);
       // Import auth dynamically to avoid SSR issues
       const { auth } = await import("@/lib/auth");
-      await auth.logout();
-      window.location.href = "/login";
+      auth.logout(); // logout() already handles redirect
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoggingOut(false);
       setShowLogoutDialog(false);
+      // Force redirect even if logout fails
+      window.location.href = "/login";
     }
   };
 
