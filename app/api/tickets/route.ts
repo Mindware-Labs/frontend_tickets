@@ -7,28 +7,64 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const pageSize = 200;
     const maxPages = 50;
-    let page = 1;
-    const allTickets: any[] = [];
-    let total = 0;
+    const maxConcurrentRequests = 5; // Limitar peticiones concurrentes para no sobrecargar
 
     console.log(`[NextAPI] GET /api/tickets (todos)`);
 
-    while (page <= maxPages) {
-      const data = await fetchFromBackendServer(
-        request,
-        `/tickets?page=${page}&limit=${pageSize}`
-      );
+    // Primera petición para obtener el total
+    const firstPageData = await fetchFromBackendServer(
+      request,
+      `/tickets?page=1&limit=${pageSize}`
+    );
 
-      const pageTickets = data?.data || data || [];
-      if (page === 1 && typeof data?.total === "number") {
-        total = data.total;
+    const firstPageTickets = firstPageData?.data || firstPageData || [];
+    const total = firstPageData?.total || firstPageTickets.length;
+    
+    // Calcular cuántas páginas necesitamos
+    const totalPages = Math.min(
+      Math.ceil(total / pageSize),
+      maxPages
+    );
+
+    console.log(`[NextAPI] Total tickets: ${total}, Total pages: ${totalPages}`);
+
+    // Si solo hay una página, retornar inmediatamente
+    if (totalPages <= 1) {
+      return NextResponse.json({
+        success: true,
+        data: firstPageTickets,
+        count: total,
+      });
+    }
+
+    // Hacer las peticiones restantes en lotes paralelos
+    const allTickets: any[] = [...firstPageTickets];
+    const remainingPages = totalPages - 1;
+
+    // Procesar páginas en lotes para no sobrecargar
+    for (let startPage = 2; startPage <= totalPages; startPage += maxConcurrentRequests) {
+      const endPage = Math.min(startPage + maxConcurrentRequests - 1, totalPages);
+      const pagePromises = [];
+
+      for (let page = startPage; page <= endPage; page++) {
+        pagePromises.push(
+          fetchFromBackendServer(
+            request,
+            `/tickets?page=${page}&limit=${pageSize}`
+          )
+        );
       }
 
-      allTickets.push(...pageTickets);
+      // Esperar a que se completen todas las peticiones del lote
+      const pageResults = await Promise.all(pagePromises);
 
-      if (pageTickets.length < pageSize) break;
-      if (total && allTickets.length >= total) break;
-      page += 1;
+      // Agregar los tickets de todas las páginas del lote
+      for (const pageData of pageResults) {
+        const pageTickets = pageData?.data || pageData || [];
+        allTickets.push(...pageTickets);
+      }
+
+      console.log(`[NextAPI] Fetched pages ${startPage}-${endPage}/${totalPages}`);
     }
 
     const count = total || allTickets.length;

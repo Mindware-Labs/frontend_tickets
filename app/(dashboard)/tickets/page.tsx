@@ -31,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { fetchFromBackend } from "@/lib/api-client";
+import { getCookie } from "@/lib/cookie-utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Card,
@@ -542,13 +543,28 @@ export default function TicketsPage() {
 
   const fetchYards = async () => {
     try {
+      // Check if token is available before making request
+      const token = typeof window !== "undefined" 
+        ? (getCookie("auth-token") || localStorage.getItem("auth_token"))
+        : null;
+      
+      if (!token) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[tickets/page] fetchYards: No token available, skipping request");
+        }
+        return;
+      }
+
       const data = await fetchFromBackend("/yards");
       // El backend puede devolver array directo o { data: [] }
       const yardsArray = Array.isArray(data) ? data : data?.data || [];
       setYards(yardsArray.filter((yard: any) => yard.isActive));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load yards", err);
-      setYards([]);
+      // Don't clear yards on 401 - let the auth system handle it
+      if (err?.status !== 401) {
+        setYards([]);
+      }
     }
   };
 
@@ -627,10 +643,23 @@ export default function TicketsPage() {
   }, []);
 
   useEffect(() => {
-    fetchYards();
-    fetchCustomers();
-    fetchAgents();
-    fetchCampaigns();
+    // Wait for user to be authenticated before fetching data
+    const user = auth.getUser();
+    const token = typeof window !== "undefined" 
+      ? (getCookie("auth-token") || localStorage.getItem("auth_token"))
+      : null;
+    
+    if (user && token) {
+      fetchYards();
+      fetchCustomers();
+      fetchAgents();
+      fetchCampaigns();
+    } else if (process.env.NODE_ENV === "development") {
+      console.warn("[tickets/page] Skipping data fetch - user or token not available", {
+        hasUser: !!user,
+        hasToken: !!token,
+      });
+    }
   }, []);
 
   // Close all modals when route changes
