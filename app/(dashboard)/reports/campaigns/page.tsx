@@ -1,7 +1,5 @@
 "use client";
 
-console.log("REPORTS CAMPAIGNS PAGE FILE LOADED");
-
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -256,40 +254,16 @@ const CustomerTable = ({
 }) => {
   const router = useRouter();
   const totalCalls = rows.reduce(
-    (sum, row) => sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
+    (sum, row) =>
+      sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
     0,
   );
-  const callsToShow =
-    typeof expectedCalls === "number" && !Number.isNaN(expectedCalls)
-      ? expectedCalls
-      : totalCalls;
-
-  console.log("🟡 [Reports Campaigns] Rendering CustomerTable:", {
-    title,
-    rowsCount: rows.length,
-    firstRowSample: rows[0],
-  });
+  // Siempre mostrar el total de llamadas sumadas desde callCount
+  const callsToShow = totalCalls;
 
   const handleRowClick = async (row: CustomerRow, index: number) => {
-    console.log("🟣 [Reports Campaigns] Row clicked!", {
-      title,
-      index,
-      row,
-      customerId: row.customerId,
-      name: row.name,
-      phone: row.phone,
-      campaignId: campaignId,
-    });
-
     // Función helper para redirigir a tickets con filtros de campaña y cliente
     const navigateToTickets = async (row: CustomerRow) => {
-      console.log("🔍 [Reports Campaigns] navigateToTickets called:", {
-        customerId: row.customerId,
-        customerName: row.name,
-        customerPhone: row.phone,
-        campaignId: campaignId,
-      });
-
       // Si tenemos customerId directamente, usarlo
       if (row.customerId && campaignId) {
         // Verificar si es llamada perdida
@@ -302,35 +276,16 @@ const CustomerTable = ({
         }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
           startDate,
         )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
-        console.log(
-          "🟢 [Reports Campaigns] ✅ Navigating to tickets with customerId and campaignId:",
-          {
-            customerId: row.customerId,
-            campaignId: campaignId,
-            startDate,
-            endDate,
-            isMissed,
-            url: ticketsUrl,
-          },
-        );
         router.push(ticketsUrl);
         return;
       }
 
       // Si no tenemos customerId, buscar por nombre/teléfono
       try {
-        console.log(
-          "🔍 [Reports Campaigns] Fetching customers to find match...",
-        );
         const customers = await fetchFromBackend("/customers?page=1&limit=500");
         const customerList = Array.isArray(customers)
           ? customers
           : customers?.data || [];
-
-        console.log("🔍 [Reports Campaigns] Customer list fetched:", {
-          totalCustomers: customerList.length,
-          searchingFor: { name: row.name, phone: row.phone },
-        });
 
         // Buscar el cliente que coincida con el nombre o teléfono
         const customer = customerList.find(
@@ -351,25 +306,8 @@ const CustomerTable = ({
           }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
             startDate,
           )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
-          console.log(
-            "🟢 [Reports Campaigns] ✅ Navigating to tickets (found by search):",
-            {
-              customerId: customer.id,
-              customerName: customer.name,
-              campaignId: campaignId,
-              startDate,
-              endDate,
-              isMissed,
-              url: ticketsUrl,
-            },
-          );
           router.push(ticketsUrl);
         } else {
-          console.warn("⚠️ [Reports Campaigns] Customer not found:", {
-            rowName: row.name,
-            rowPhone: row.phone,
-            searchResult: customer,
-          });
           toast({
             title: "Cliente no encontrado",
             description: "No se pudo encontrar el cliente en la base de datos.",
@@ -377,7 +315,6 @@ const CustomerTable = ({
           });
         }
       } catch (error) {
-        console.error("🔴 [Reports Campaigns] Error buscando cliente:", error);
         toast({
           title: "Error",
           description: "No se pudo buscar el cliente.",
@@ -395,8 +332,8 @@ const CustomerTable = ({
       <div className="flex flex-col border-b px-6 py-4">
         <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found ({rows.length}{" "}
-          {rows.length === 1 ? "customer" : "customers"})
+          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found (
+          {rows.length} {rows.length === 1 ? "customer" : "customers"})
         </p>
         <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
           💡 Click on any row to view customer details in Customer Management
@@ -423,12 +360,6 @@ const CustomerTable = ({
               </div>
             ) : (
               rows.map((row, index) => {
-                console.log(`🟡 [Reports Campaigns] Rendering row ${index}:`, {
-                  ticketId: row.ticketId,
-                  name: row.name,
-                  hasTicketId: !!row.ticketId,
-                });
-
                 const callCount = row.callCount || 1;
                 const hasHistory =
                   row.callHistory && row.callHistory.length > 1;
@@ -438,13 +369,10 @@ const CustomerTable = ({
                     key={`${title}-${index}`}
                     className="grid grid-cols-13 text-sm hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={(e) => {
-                      console.log("=== ROW CLICK EVENT ===", index);
                       e.preventDefault();
                       e.stopPropagation();
                       handleRowClick(row, index);
                     }}
-                    onMouseDown={() => console.log("=== MOUSE DOWN ===", index)}
-                    onMouseUp={() => console.log("=== MOUSE UP ===", index)}
                     style={{ cursor: "pointer" }}
                   >
                     <div
@@ -661,17 +589,8 @@ const CustomerTable = ({
 };
 
 export default function CampaignReportsPage() {
-  console.log("═══════════════════════════════════════════════════");
-  console.log("🎯 CAMPAIGN REPORTS PAGE COMPONENT RENDERING");
-  console.log("═══════════════════════════════════════════════════");
-
   const searchParams = useSearchParams();
   const campaignIdParam = searchParams.get("campaignId");
-
-  console.log("📋 Component initialized:", {
-    campaignIdParam,
-    timestamp: new Date().toISOString(),
-  });
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
@@ -808,11 +727,6 @@ export default function CampaignReportsPage() {
         !loading &&
         campaigns.length > 0
       ) {
-        console.log("🔄 Auto-generating report from URL params:", {
-          selectedCampaignId,
-          startDate,
-          endDate,
-        });
         await buildReport();
       }
     };
@@ -850,120 +764,17 @@ export default function CampaignReportsPage() {
         startDate,
         endDate,
       });
-      console.log("🔵 [Reports Campaigns] Fetching report data...");
-      console.log(
-        "🔵 [Reports Campaigns] URL:",
+
+      const response = await fetchFromBackend(
         `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
-      const [response, campaignStats, ticketsResponse] = await Promise.all([
-        fetchFromBackend(
-          `/campaign/${selectedCampaignId}/report?${params.toString()}`,
-        ),
-        fetchFromBackend(`/campaign/${selectedCampaignId}`),
-        fetchFromBackend("/tickets?page=1&limit=5000"),
-      ]);
-
-      console.log("🟢 [Reports Campaigns] Report data received:", response);
-      console.log(
-        "🟢 [Reports Campaigns] Tables count:",
-        response?.tables?.length,
-      );
-
-      if (response?.tables && response.tables.length > 0) {
-        console.log(
-          "🟢 [Reports Campaigns] First table sample:",
-          response.tables[0],
-        );
-        if (response.tables[0]?.rows && response.tables[0].rows.length > 0) {
-          console.log(
-            "🟢 [Reports Campaigns] First row sample:",
-            response.tables[0].rows[0],
-          );
-          console.log(
-            "🟢 [Reports Campaigns] First row has ticketId?",
-            !!response.tables[0].rows[0].ticketId,
-          );
-        }
-      }
-
       if (!response) throw new Error("No data from backend");
-      const allTickets: Ticket[] = Array.isArray(ticketsResponse)
-        ? ticketsResponse
-        : ticketsResponse?.data || [];
-      const campaignTickets = allTickets.filter((ticket) => {
-        const ticketCampaignId =
-          ticket.campaignId ??
-          (ticket.campaign && typeof ticket.campaign === "object"
-            ? ticket.campaign.id
-            : null);
-        return (
-          ticketCampaignId !== null &&
-          ticketCampaignId !== undefined &&
-          ticketCampaignId.toString() === selectedCampaignId
-        );
-      });
-      const totalTicketsFromCampaign = Number(
-        campaignStats?.ticketCount ?? campaignTickets.length ?? 0,
-      );
-      let inboundFromTickets = 0;
-      let outboundFromTickets = 0;
-      campaignTickets.forEach((ticket) => {
-        const direction = (ticket.direction || "").toString().toUpperCase();
-        const originalDirection = (ticket.originalDirection || "")
-          .toString()
-          .toUpperCase();
-        if (direction === "INBOUND") {
-          inboundFromTickets += 1;
-          return;
-        }
-        if (direction === "OUTBOUND") {
-          outboundFromTickets += 1;
-          return;
-        }
-        if (direction === "MISSED") {
-          if (originalDirection === "INBOUND") {
-            inboundFromTickets += 1;
-          } else {
-            outboundFromTickets += 1;
-          }
-        }
-      });
-      const remainder =
-        totalTicketsFromCampaign - (inboundFromTickets + outboundFromTickets);
-      if (remainder > 0) {
-        outboundFromTickets += remainder;
-      }
 
-      const mergedMetrics = (response.metrics || []).map((metric: ReportMetric) => {
-        if (metric.title === "Total Tickets") {
-          return { ...metric, value: Number(campaignStats?.ticketCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Inbound Calls") {
-          return { ...metric, value: inboundFromTickets };
-        }
-        if (metric.title === "Outbound Calls") {
-          return { ...metric, value: outboundFromTickets };
-        }
-        if (metric.title === "Registered") {
-          return { ...metric, value: Number(campaignStats?.registeredCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Not Registered") {
-          return { ...metric, value: Number(campaignStats?.notRegisteredCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Paid") {
-          return { ...metric, value: Number(campaignStats?.paidCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Not Paid") {
-          return { ...metric, value: Number(campaignStats?.notPaidCount ?? metric.value ?? 0) };
-        }
-        return metric;
-      });
-
-      // El backend ya entrega los datos agregados y tablas
+      // El backend ya entrega los datos correctos: cuenta clientes únicos, no tickets individuales
       setReport({
         campaign: response.campaign || null,
-        metrics: mergedMetrics,
+        metrics: response.metrics || [],
         totalCustomers: response.totals?.total || 0,
         reportLines: [],
         tables: response.tables || [],
@@ -1247,7 +1058,6 @@ export default function CampaignReportsPage() {
                   key={table.title}
                   title={table.title}
                   rows={table.rows}
-                  expectedCalls={metricValueByTitle.get(table.title)}
                   campaignId={
                     selectedCampaignId ? parseInt(selectedCampaignId) : null
                   }
