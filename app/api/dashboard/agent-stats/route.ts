@@ -39,6 +39,18 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const FALLBACK_CHART_ITEM = [{ name: "No data", count: 0 }];
+const DASHBOARD_TIMEZONE =
+  process.env.DASHBOARD_TIMEZONE || "America/Santo_Domingo";
+const DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DASHBOARD_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: DASHBOARD_TIMEZONE,
+  weekday: "short",
+});
 
 function toTitleCase(value: string) {
   return value
@@ -82,10 +94,7 @@ function getCampaignLabel(
 }
 
 function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return DATE_KEY_FORMATTER.format(date);
 }
 
 async function getUserIdFromRequest(
@@ -343,10 +352,9 @@ export async function GET(request: NextRequest) {
     const dayBuckets = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date(now);
       date.setDate(now.getDate() - (6 - index));
-      date.setHours(0, 0, 0, 0);
       return {
         key: formatDateKey(date),
-        label: date.toLocaleDateString("en-US", { weekday: "short" }),
+        label: WEEKDAY_FORMATTER.format(date),
         count: 0,
       };
     });
