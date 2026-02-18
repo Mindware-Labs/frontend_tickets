@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchFromBackendServer } from "@/lib/api-server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Ticket = {
   id: number;
   status?: string;
@@ -9,6 +12,7 @@ type Ticket = {
   disposition?: string | null;
   createdAt?: string;
   priority?: string | null;
+  direction?: string | null;
   customer?: { name?: string | null };
 };
 
@@ -37,6 +41,20 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const FALLBACK_CHART_ITEM = [{ name: "No data", count: 0 }];
+const DASHBOARD_TIMEZONE =
+  process.env.DASHBOARD_TIMEZONE || "America/Santo_Domingo";
+const ISO_TZ_SUFFIX_REGEX = /([zZ]|[+\-]\d{2}:?\d{2})$/;
+const ISO_DATE_PREFIX_REGEX = /^(\d{4}-\d{2}-\d{2})T/;
+const DATE_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DASHBOARD_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: DASHBOARD_TIMEZONE,
+  weekday: "short",
+});
 
 function toTitleCase(value: string) {
   return value
@@ -65,7 +83,7 @@ function normalizeLabel(value: unknown, labels: Record<string, string>) {
 
 function getCampaignLabel(
   ticket: Ticket,
-  campaignsById: Record<number, string>
+  campaignsById: Record<number, string>,
 ) {
   if (ticket.campaign && typeof ticket.campaign === "object") {
     const maybeCampaign = ticket.campaign as { nombre?: string };
@@ -80,16 +98,29 @@ function getCampaignLabel(
 }
 
 function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return DATE_KEY_FORMATTER.format(date);
+}
+
+function getTicketDateKey(createdAt: string) {
+  const value = createdAt.trim();
+  if (!value) return null;
+
+  // In production runtimes (UTC), naive timestamps like "2026-02-18T10:00:00"
+  // can shift by timezone; preserve literal date part when timezone is missing.
+  if (!ISO_TZ_SUFFIX_REGEX.test(value)) {
+    const dateMatch = value.match(ISO_DATE_PREFIX_REGEX);
+    if (dateMatch?.[1]) return dateMatch[1];
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return formatDateKey(parsed);
 }
 
 async function fetchTicketsWithLimit(
   request: NextRequest,
   limit: number,
-  maxPages: number
+  maxPages: number,
 ) {
   const tickets: Ticket[] = [];
   let total = 0;
@@ -97,7 +128,7 @@ async function fetchTicketsWithLimit(
   for (let page = 1; page <= maxPages; page += 1) {
     const response = await fetchFromBackendServer(
       request,
-      `/tickets?page=${page}&limit=${limit}`
+      `/tickets?page=${page}&limit=${limit}`,
     );
     const pageTickets: Ticket[] = response?.data || response || [];
     if (page === 1 && typeof response?.total === "number") {
@@ -116,7 +147,7 @@ async function fetchTicketsWithLimit(
 async function fetchCampaigns(request: NextRequest, limit: number) {
   const response = await fetchFromBackendServer(
     request,
-    `/campaign?page=1&limit=${limit}`
+    `/campaign?page=1&limit=${limit}`,
   );
   const campaigns: Campaign[] = response?.data || response || [];
   return campaigns;
@@ -133,7 +164,12 @@ export async function GET(request: NextRequest) {
       campaigns = [];
     }
     const totalTickets = total;
-    const totalCalls = totalTickets;
+
+    // Filtrar tickets que NO son llamadas perdidas
+    const answeredTickets = tickets.filter(
+      (ticket) => ticket.direction !== "MISSED",
+    );
+    const totalCalls = answeredTickets.length;
 
     // --- CORRECCIÓN 1: Crear el mapa de IDs primero ---
     const campaignsById = campaigns.reduce<Record<number, string>>(
@@ -141,56 +177,56 @@ export async function GET(request: NextRequest) {
         acc[campaign.id] = campaign.nombre;
         return acc;
       },
-      {}
+      {},
     );
 
-    const openTickets = tickets.filter(
-      (ticket) => ticket.status === "OPEN"
+    const openTickets = answeredTickets.filter(
+      (ticket) => ticket.status === "OPEN",
     ).length;
-    const inProgressTickets = tickets.filter(
-      (ticket) => ticket.status === "IN_PROGRESS"
+    const inProgressTickets = answeredTickets.filter(
+      (ticket) => ticket.status === "IN_PROGRESS",
     ).length;
     const activeTickets = openTickets + inProgressTickets;
-    const closedTickets = tickets.filter((ticket) =>
-      STATUS_CLOSED.has(ticket.status || "")
+    const closedTickets = answeredTickets.filter((ticket) =>
+      STATUS_CLOSED.has(ticket.status || ""),
     ).length;
-    const pendingActions = tickets.filter(
+    const pendingActions = answeredTickets.filter(
       (ticket) =>
         PRIORITY_ALERT.has(ticket.priority || "") &&
-        !STATUS_CLOSED.has(ticket.status || "")
+        !STATUS_CLOSED.has(ticket.status || ""),
     ).length;
 
     const resolutionRate =
-      totalTickets > 0 ? Math.round((closedTickets / totalTickets) * 100) : 0;
+      totalCalls > 0 ? Math.round((closedTickets / totalCalls) * 100) : 0;
 
     // --- CORRECCIÓN 2: Usar getCampaignLabel para contar correctamente ---
     // Esto asegura que si el ticket tiene campaignId, use el nombre correcto
-    const campaignCounts = tickets.reduce<Record<string, number>>(
+    // Solo contar tickets que NO son llamadas perdidas
+    const campaignCounts = answeredTickets.reduce<Record<string, number>>(
       (acc, ticket) => {
         const label = getCampaignLabel(ticket, campaignsById);
         acc[label] = (acc[label] || 0) + 1;
         return acc;
       },
-      {}
+      {},
     );
 
-    const dispositionCounts = tickets.reduce<Record<string, number>>(
+    const dispositionCounts = answeredTickets.reduce<Record<string, number>>(
       (acc, ticket) => {
         const label = normalizeLabel(ticket.disposition || "Unspecified", {});
         acc[label] = (acc[label] || 0) + 1;
         return acc;
       },
-      {}
+      {},
     );
 
     const now = new Date();
     const dayBuckets = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date(now);
       date.setDate(now.getDate() - (6 - index));
-      date.setHours(0, 0, 0, 0);
       return {
         key: formatDateKey(date),
-        label: date.toLocaleDateString("en-US", { weekday: "short" }),
+        label: WEEKDAY_FORMATTER.format(date),
         count: 0,
       };
     });
@@ -200,14 +236,13 @@ export async function GET(request: NextRequest) {
         acc[bucket.key] = index;
         return acc;
       },
-      {}
+      {},
     );
 
-    tickets.forEach((ticket) => {
+    answeredTickets.forEach((ticket) => {
       if (!ticket.createdAt) return;
-      const date = new Date(ticket.createdAt);
-      if (Number.isNaN(date.getTime())) return;
-      const key = formatDateKey(date);
+      const key = getTicketDateKey(ticket.createdAt);
+      if (!key) return;
       const bucketIndex = bucketMap[key];
       if (bucketIndex === undefined) return;
       dayBuckets[bucketIndex].count += 1;
@@ -238,7 +273,7 @@ export async function GET(request: NextRequest) {
       ([name, count]) => ({
         name,
         count,
-      })
+      }),
     );
 
     const recentTickets = tickets.slice(0, 5).map((ticket) => ({
@@ -282,7 +317,7 @@ export async function GET(request: NextRequest) {
         success: false,
         message: error.message || "Failed to fetch dashboard stats",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

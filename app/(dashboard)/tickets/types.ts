@@ -6,7 +6,7 @@ export enum TicketDisposition {
   BILLING = "BILLING",
   TECHNICAL_ISSUE = "TECHNICAL_ISSUE",
   NEW_LEAD = "NEW_LEAD",
-  OTHER = "OTHER",
+  SPAM = "SPAM",
 }
 
 export enum TicketStatus {

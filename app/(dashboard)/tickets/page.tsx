@@ -95,6 +95,14 @@ import { CreateTicketModal } from "./components/CreateTicketModal";
 import { EditTicketModal } from "./components/EditTicketModal";
 import { ViewTicketModal } from "./components/ViewTicketModal";
 import { auth } from "@/lib/auth";
+import { format, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type { DateRange } from "react-day-picker";
 
 // Extend the Ticket type
 declare module "@/lib/mock-data" {
@@ -129,10 +137,14 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
+  const [dispositionFilter, setDispositionFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [yardFilter, setYardFilter] = useState("all");
   const [campaignFilterSearch, setCampaignFilterSearch] = useState("");
   const [yardFilterSearch, setYardFilterSearch] = useState("");
+  const [agentFilter, setAgentFilter] = useState("all");
+  const [agentFilterSearch, setAgentFilterSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showDetails, setShowDetails] = useState(false);
@@ -166,7 +178,7 @@ export default function TicketsPage() {
   >({});
   const [newAttachment, setNewAttachment] = useState("");
   const [createAttachmentFiles, setCreateAttachmentFiles] = useState<File[]>(
-    []
+    [],
   );
   const processedTicketIdRef = useRef<string | null>(null);
   const [customerSearchCreate, setCustomerSearchCreate] = useState("");
@@ -305,7 +317,7 @@ export default function TicketsPage() {
   const getDirectionText = (
     direction: string,
     originalDirection?: string,
-    agentId?: number | string
+    agentId?: number | string,
   ) => {
     const d = direction?.toString().toLowerCase();
     if (d === "missed") {
@@ -411,7 +423,7 @@ export default function TicketsPage() {
 
     if (ticket.yardId) {
       const yard = yards.find(
-        (y) => y.id.toString() === ticket.yardId?.toString()
+        (y) => y.id.toString() === ticket.yardId?.toString(),
       );
       if (yard) return yard.commonName || yard.name;
     }
@@ -424,7 +436,7 @@ export default function TicketsPage() {
     if (value.startsWith("http")) return value;
     if (value.startsWith("s3://")) {
       return `${apiBase}/tickets/attachments/download?fileUrl=${encodeURIComponent(
-        value
+        value,
       )}`;
     }
     const normalized = value.startsWith("/") ? value : `/${value}`;
@@ -450,14 +462,14 @@ export default function TicketsPage() {
   const currentAgent = useMemo(() => {
     if (!currentUser) return null;
     const byUser = (agents as any[]).find(
-      (agent) => (agent as any).userId === currentUser.id
+      (agent) => (agent as any).userId === currentUser.id,
     );
     if (byUser) return byUser;
 
     const email = currentUser.email?.toLowerCase();
     if (email) {
       const byEmail = agents.find(
-        (agent: any) => (agent.email || "").toLowerCase() === email
+        (agent: any) => (agent.email || "").toLowerCase() === email,
       );
       if (byEmail) return byEmail;
     }
@@ -498,7 +510,7 @@ export default function TicketsPage() {
     isLoading,
     mutate,
   } = useSWR("/api/tickets", ticketsFetcher, {
-    refreshInterval: isTabActive ? 1000 : 0, // 1s para actualizaciones casi instantáneas
+    refreshInterval: 0,
     revalidateOnFocus: true,
     refreshWhenHidden: false,
     dedupingInterval: 2000,
@@ -512,7 +524,7 @@ export default function TicketsPage() {
   const myTicketsCount = useMemo(
     () =>
       tickets.filter((t: Ticket) => isTicketAssignedToCurrentUser(t)).length,
-    [tickets, currentAgent, currentUser, currentUserFullName]
+    [tickets, currentAgent, currentUser, currentUserFullName],
   );
 
   const fetchTickets = async () => {
@@ -531,12 +543,9 @@ export default function TicketsPage() {
   const fetchYards = async () => {
     try {
       const data = await fetchFromBackend("/yards");
-      if (Array.isArray(data)) {
-        setYards(data.filter((yard: any) => yard.isActive));
-      } else {
-        console.error("Yards data is not an array:", data);
-        setYards([]);
-      }
+      // El backend puede devolver array directo o { data: [] }
+      const yardsArray = Array.isArray(data) ? data : data?.data || [];
+      setYards(yardsArray.filter((yard: any) => yard.isActive));
     } catch (err) {
       console.error("Failed to load yards", err);
       setYards([]);
@@ -545,13 +554,9 @@ export default function TicketsPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/users?page=1&limit=500");
-      const result = await response.json();
-      if (result?.success) {
-        setCustomers(result.data || []);
-      } else {
-        setCustomers([]);
-      }
+      const data = await fetchFromBackend("/customers?page=1&limit=100000");
+      const items = Array.isArray(data) ? data : data?.data || [];
+      setCustomers(items);
     } catch (err) {
       console.error("Failed to load customers", err);
       setCustomers([]);
@@ -654,7 +659,7 @@ export default function TicketsPage() {
       let reportUrl = "/reports/campaigns";
       if (campaignId && reportStartDate && reportEndDate) {
         reportUrl += `?campaignId=${campaignId}&startDate=${encodeURIComponent(
-          reportStartDate
+          reportStartDate,
         )}&endDate=${encodeURIComponent(reportEndDate)}`;
       }
 
@@ -769,7 +774,7 @@ export default function TicketsPage() {
       console.log("🔍 [Tickets Page] Looking for ticket:", ticketIdParam);
       // Filter and open specific ticket
       const ticket = tickets.find(
-        (t: Ticket) => t.id.toString() === ticketIdParam
+        (t: Ticket) => t.id.toString() === ticketIdParam,
       );
       if (ticket) {
         console.log("✅ [Tickets Page] Ticket found, opening modal:", {
@@ -798,7 +803,7 @@ export default function TicketsPage() {
       processedTicketIdRef.current = null;
       if (urlCustomerId) {
         console.log(
-          "🔄 [Tickets Page] Clearing customer filter - no customerId in URL"
+          "🔄 [Tickets Page] Clearing customer filter - no customerId in URL",
         );
         setUrlCustomerId(null);
       }
@@ -813,7 +818,7 @@ export default function TicketsPage() {
   const currentYard = useMemo(() => {
     if (!selectedTicket?.yardId) return null;
     return yards.find(
-      (y) => y.id.toString() === selectedTicket.yardId?.toString()
+      (y) => y.id.toString() === selectedTicket.yardId?.toString(),
     );
   }, [selectedTicket?.yardId, yards]);
 
@@ -834,7 +839,7 @@ export default function TicketsPage() {
   const filteredCampaignsEdit = useMemo(() => {
     const term = campaignSearchEdit.toLowerCase();
     return campaigns.filter((campaign) =>
-      campaign.nombre.toLowerCase().includes(term)
+      campaign.nombre.toLowerCase().includes(term),
     );
   }, [campaigns, campaignSearchEdit]);
 
@@ -843,7 +848,7 @@ export default function TicketsPage() {
     return agents.filter(
       (agent) =>
         agent.name.toLowerCase().includes(term) ||
-        (agent.email || "").toLowerCase().includes(term)
+        (agent.email || "").toLowerCase().includes(term),
     );
   }, [agents, agentSearchEdit]);
 
@@ -856,6 +861,175 @@ export default function TicketsPage() {
     const term = yardFilterSearch.toLowerCase();
     return yards.filter((y) => y.name.toLowerCase().includes(term));
   }, [yards, yardFilterSearch]);
+
+  const filteredAgentFilterOptions = useMemo(() => {
+    const term = agentFilterSearch.toLowerCase();
+    return agents.filter(
+      (a) =>
+        a.name.toLowerCase().includes(term) ||
+        (a.email || "").toLowerCase().includes(term),
+    );
+  }, [agents, agentFilterSearch]);
+
+  // Función auxiliar para calcular tickets filtrados por vista
+  const getFilteredCountForView = useMemo(() => {
+    const currentCustomerIdParam = searchParams.get("customerId");
+
+    return (viewType: string) => {
+      return tickets.filter((ticket: Ticket) => {
+        // Filtro por cliente (si existe en URL)
+        if (currentCustomerIdParam) {
+          const matchesCustomer =
+            ticket.customerId &&
+            ticket.customerId.toString() === currentCustomerIdParam;
+          if (!matchesCustomer) return false;
+        }
+
+        const yardName =
+          typeof ticket.yard === "string"
+            ? ticket.yard
+            : (ticket.yard as any)?.name || "";
+        const clientName =
+          ticket.clientName || (ticket.customer as any)?.name || "";
+        const phone =
+          ticket.phone ||
+          (ticket.customer as any)?.phone ||
+          ticket.customerPhone ||
+          "";
+        const status = normalizeEnumValue(ticket.status as any);
+        const priority = (ticket.priority as any)?.toString().toUpperCase();
+        const isAssignedToMe = isTicketAssignedToCurrentUser(ticket);
+
+        const searchLower = search ? search.toLowerCase().trim() : "";
+        const searchTrimmed = search ? search.trim() : "";
+        const phoneDigitsOnly = phone.replace(/[^0-9]/g, "");
+        const searchDigitsOnly = searchTrimmed.replace(/[^0-9]/g, "");
+
+        const matchesSearch = searchLower
+          ? clientName.toLowerCase().includes(searchLower) ||
+            yardName.toLowerCase().includes(searchLower) ||
+            ticket.id.toString().includes(searchTrimmed) ||
+            phone.toLowerCase().includes(searchLower) ||
+            (phoneDigitsOnly &&
+              searchDigitsOnly &&
+              phoneDigitsOnly.includes(searchDigitsOnly))
+          : true;
+
+        const matchesStatus =
+          statusFilter === "all" || status === normalizeEnumValue(statusFilter);
+        const matchesPriority =
+          priorityFilter === "all" ||
+          ticket.priority === priorityFilter ||
+          priority === priorityFilter.toUpperCase();
+        const directionFilterValue = directionFilter.toLowerCase();
+        const ticketDirection = ticket.direction
+          ? ticket.direction.toString().toLowerCase()
+          : "";
+        const matchesDirection =
+          directionFilter === "all" ||
+          ticket.direction === directionFilter ||
+          ticketDirection === directionFilterValue;
+        const ticketCampaignId =
+          ticket.campaignId ??
+          (ticket.campaign && typeof ticket.campaign === "object"
+            ? (ticket.campaign as any).id
+            : null);
+        const matchesCampaign =
+          campaignFilter === "all" ||
+          (ticketCampaignId && ticketCampaignId.toString() === campaignFilter);
+
+        const ticketYardId =
+          ticket.yardId ??
+          (ticket.yard && typeof ticket.yard === "object"
+            ? (ticket.yard as any).id
+            : null);
+        const matchesYard =
+          yardFilter === "all" ||
+          (ticketYardId && ticketYardId.toString() === yardFilter);
+
+        const ticketAgentId =
+          ticket.agentId ??
+          (ticket.assignedTo && typeof ticket.assignedTo === "object"
+            ? (ticket.assignedTo as any).id
+            : null);
+
+        const matchesAgent =
+          agentFilter === "all" ||
+          (ticketAgentId && ticketAgentId.toString() === agentFilter);
+
+        const matchesDisposition =
+          dispositionFilter === "all" ||
+          ticket.disposition === dispositionFilter;
+
+        // Date range filter
+        let matchesDate = true;
+        if (dateRange?.from) {
+          const ticketDate = new Date(ticket.createdAt);
+          const from = startOfDay(dateRange.from);
+          const to = dateRange.to
+            ? endOfDay(dateRange.to)
+            : endOfDay(dateRange.from);
+          matchesDate = isWithinInterval(ticketDate, { start: from, end: to });
+        }
+
+        const isMissed = isMissedCall(ticket);
+
+        // Aplicar filtro de vista específico
+        let matchesView = true;
+        if (viewType === "missed") {
+          matchesView = isMissed;
+        } else if (viewType === "assigned_me") {
+          matchesView = isAssignedToMe && !isMissed;
+        } else if (viewType === "unassigned") {
+          matchesView = !ticket.assignedTo && !isMissed;
+        } else if (viewType === "assigned") {
+          matchesView = !!ticket.assignedTo && !isMissed;
+        } else if (viewType === "high_priority") {
+          matchesView = Boolean(
+            !isMissed &&
+            status !== "CLOSED" &&
+            status !== "RESOLVED" &&
+            (priority === "HIGH" ||
+              (ticket.priority &&
+                ticket.priority.toString().toUpperCase() === "HIGH") ||
+              priority === "EMERGENCY" ||
+              (ticket.priority &&
+                ticket.priority.toString().toUpperCase() === "EMERGENCY")),
+          );
+        } else if (viewType === "all") {
+          matchesView = !isMissed;
+        }
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesPriority &&
+          matchesDirection &&
+          matchesDisposition &&
+          matchesCampaign &&
+          matchesYard &&
+          matchesAgent &&
+          matchesDate &&
+          matchesView
+        );
+      }).length;
+    };
+  }, [
+    tickets,
+    search,
+    statusFilter,
+    priorityFilter,
+    directionFilter,
+    dispositionFilter,
+    campaignFilter,
+    yardFilter,
+    agentFilter,
+    dateRange,
+    searchParams,
+    currentAgent,
+    currentUser,
+    currentUserFullName,
+  ]);
 
   const filteredTickets = useMemo(() => {
     console.log("🔎 [Tickets Page] Filtering tickets with search:", {
@@ -945,6 +1119,34 @@ export default function TicketsPage() {
       const matchesYard =
         yardFilter === "all" ||
         (ticketYardId && ticketYardId.toString() === yardFilter);
+
+      // --- AGREGAR ESTO ---
+      // Verificamos ticket.agentId o ticket.assignedTo.id
+      const ticketAgentId =
+        ticket.agentId ??
+        (ticket.assignedTo && typeof ticket.assignedTo === "object"
+          ? (ticket.assignedTo as any).id
+          : null);
+
+      const matchesAgent =
+        agentFilter === "all" ||
+        (ticketAgentId && ticketAgentId.toString() === agentFilter);
+      // --------------------
+
+      const matchesDisposition =
+        dispositionFilter === "all" || ticket.disposition === dispositionFilter;
+
+      // Date range filter
+      let matchesDate = true;
+      if (dateRange?.from) {
+        const ticketDate = new Date(ticket.createdAt);
+        const from = startOfDay(dateRange.from);
+        const to = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from);
+        matchesDate = isWithinInterval(ticketDate, { start: from, end: to });
+      }
+
       const isMissed = isMissedCall(ticket);
 
       let matchesView = true;
@@ -954,12 +1156,6 @@ export default function TicketsPage() {
         matchesView = isAssignedToMe;
       } else if (activeView === "unassigned") {
         matchesView = !ticket.assignedTo;
-      } else if (activeView === "active") {
-        matchesView =
-          status === "OPEN" ||
-          status === "IN_PROGRESS" ||
-          ticket.status === "Open" ||
-          ticket.status === "In Progress";
       } else if (activeView === "assigned") {
         matchesView = !!ticket.assignedTo;
       } else if (activeView === "high_priority") {
@@ -982,8 +1178,11 @@ export default function TicketsPage() {
         matchesStatus &&
         matchesPriority &&
         matchesDirection &&
+        matchesDisposition &&
         matchesCampaign &&
         matchesYard &&
+        matchesAgent &&
+        matchesDate &&
         matchesView
       );
     });
@@ -1011,15 +1210,18 @@ export default function TicketsPage() {
     statusFilter,
     priorityFilter,
     directionFilter,
+    dispositionFilter,
     activeView,
     campaignFilter,
     yardFilter,
+    agentFilter,
     currentAgent,
     currentUser,
     currentUserFullName,
     campaigns,
     urlTicketId,
     searchParams,
+    dateRange,
   ]);
 
   const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
@@ -1036,7 +1238,7 @@ export default function TicketsPage() {
     }
     return tickets.filter(
       (t: Ticket) =>
-        t.customerId && t.customerId.toString() === currentCustomerIdParam
+        t.customerId && t.customerId.toString() === currentCustomerIdParam,
     );
   }, [tickets, searchParams]);
 
@@ -1050,6 +1252,7 @@ export default function TicketsPage() {
     activeView,
     campaignFilter,
     yardFilter,
+    agentFilter,
   ]);
 
   // Función para manejar el cambio de vista y limpiar el filtro de cliente si no está en la URL
@@ -1059,7 +1262,7 @@ export default function TicketsPage() {
     if (!currentCustomerIdParam) {
       if (urlCustomerId) {
         console.log(
-          "🔄 [Tickets Page] Clearing customer filter on view change"
+          "🔄 [Tickets Page] Clearing customer filter on view change",
         );
         setUrlCustomerId(null);
       }
@@ -1109,10 +1312,10 @@ export default function TicketsPage() {
     const ticketCustomerId = ticket.customerId
       ? ticket.customerId.toString()
       : ticket.customer &&
-        typeof ticket.customer === "object" &&
-        "id" in ticket.customer
-      ? (ticket.customer as { id: string | number }).id.toString()
-      : "";
+          typeof ticket.customer === "object" &&
+          "id" in ticket.customer
+        ? (ticket.customer as { id: string | number }).id.toString()
+        : "";
 
     const ticketCustomerPhone =
       ticket.customerPhone ||
@@ -1125,10 +1328,10 @@ export default function TicketsPage() {
     const ticketCampaignId = ticket.campaignId
       ? ticket.campaignId.toString()
       : ticket.campaign &&
-        typeof ticket.campaign === "object" &&
-        "id" in ticket.campaign
-      ? (ticket.campaign as { id: string | number }).id.toString()
-      : "";
+          typeof ticket.campaign === "object" &&
+          "id" in ticket.campaign
+        ? (ticket.campaign as { id: string | number }).id.toString()
+        : "";
 
     setEditData({
       disposition: ticket.disposition || "",
@@ -1162,17 +1365,29 @@ export default function TicketsPage() {
       direction: (ticket.direction || CallDirection.INBOUND) as CallDirection,
       callDate:
         ticket.callDate || ticket.createdAt
-          ? new Date(ticket.callDate || ticket.createdAt)
-              .toISOString()
-              .split("T")[0]
+          ? (() => {
+              const date = new Date(ticket.callDate || ticket.createdAt);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, "0");
+              const day = String(date.getDate()).padStart(2, "0");
+              const hours = String(date.getHours()).padStart(2, "0");
+              const minutes = String(date.getMinutes()).padStart(2, "0");
+              return `${year}-${month}-${day}T${hours}:${minutes}`;
+            })()
           : "",
       disposition: ticket.disposition || "",
       issueDetail: ticket.issueDetail || "",
       attachments: ticket.attachments || [],
     });
 
-    // Si el ticket tiene yarda, abre ViewTicketModal; si no, abre EditTicketModal
-    if (ticket.yardId) {
+    // Si el ticket tiene yarda o está cerrado, abre ViewTicketModal; si no, abre EditTicketModal
+    const ticketStatus = ticket.status
+      ?.toString()
+      .toUpperCase()
+      .replace(/\s+/g, "_");
+    const isClosed = ticketStatus === "CLOSED" || ticketStatus === "RESOLVED";
+
+    if (ticket.yardId || isClosed) {
       setShowViewModal(true);
     } else {
       setShowEditModal(true);
@@ -1226,9 +1441,9 @@ export default function TicketsPage() {
         mutate(
           (currentTickets: Ticket[]) =>
             currentTickets.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t
+              t.id === updatedTicket.id ? updatedTicket : t,
             ),
-          false
+          false,
         );
 
         setSelectedTicket(updatedTicket);
@@ -1281,7 +1496,7 @@ export default function TicketsPage() {
         campaignId:
           editFormData.campaignId && editFormData.campaignId !== "none"
             ? Number(editFormData.campaignId)
-            : undefined,
+            : null,
         campaignOption: editFormData.campaignOption || null,
         agentId:
           editFormData.agentId && editFormData.agentId !== "none"
@@ -1294,6 +1509,9 @@ export default function TicketsPage() {
         issueDetail: editFormData.issueDetail || null,
         callDate: editFormData.callDate || null,
       };
+
+      // Log para debug
+      console.log("Update payload:", updatePayload);
 
       const response = await fetch(`/api/tickets/${selectedTicket.id}`, {
         method: "PATCH",
@@ -1317,7 +1535,7 @@ export default function TicketsPage() {
             {
               method: "POST",
               body: formData,
-            }
+            },
           );
           const uploadResult = await uploadResponse.json();
 
@@ -1329,9 +1547,9 @@ export default function TicketsPage() {
         mutate(
           (currentTickets: Ticket[]) =>
             currentTickets.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t
+              t.id === updatedTicket.id ? updatedTicket : t,
             ),
-          false
+          false,
         );
 
         setSelectedTicket(updatedTicket);
@@ -1381,7 +1599,7 @@ export default function TicketsPage() {
         {
           method: "POST",
           body: formData,
-        }
+        },
       );
       const result = await response.json();
 
@@ -1397,9 +1615,9 @@ export default function TicketsPage() {
         mutate(
           (currentTickets: Ticket[]) =>
             currentTickets.map((t) =>
-              t.id === targetTicket.id ? mergedTicket : t
+              t.id === targetTicket.id ? mergedTicket : t,
             ),
-          false
+          false,
         );
         setEditData((prev) => ({
           ...prev,
@@ -1449,9 +1667,9 @@ export default function TicketsPage() {
                     yard: updatedYard,
                     yardType: selectedYard.yardType,
                   }
-                : t
+                : t,
             ),
-          false
+          false,
         );
 
         setSelectedTicket((prev) =>
@@ -1462,7 +1680,7 @@ export default function TicketsPage() {
                 yard: updatedYard,
                 yardType: selectedYard.yardType,
               }
-            : null
+            : null,
         );
       }
     } catch (err) {
@@ -1555,14 +1773,14 @@ export default function TicketsPage() {
           try {
             const formData = new FormData();
             createAttachmentFiles.forEach((file) =>
-              formData.append("files", file)
+              formData.append("files", file),
             );
             const uploadResponse = await fetch(
               `/api/tickets/${createdTicket.id}/attachments`,
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             const uploadResult = await uploadResponse.json();
             if (uploadResult?.success) {
@@ -1621,7 +1839,7 @@ export default function TicketsPage() {
     hasIssueDetail && (wasIssueDetailFilled || !isIssueDetailEditing);
   const savedAttachments = selectedTicket?.attachments || [];
   const pendingAttachments = (editData.attachments || []).filter(
-    (att) => !savedAttachments.includes(att)
+    (att) => !savedAttachments.includes(att),
   );
   const hasSavedAttachments = savedAttachments.length > 0;
   const hasPendingAttachments = pendingAttachments.length > 0;
@@ -1629,12 +1847,12 @@ export default function TicketsPage() {
   const selectedCampaignForEdit = (() => {
     if (editData.campaignId) {
       return campaigns.find(
-        (campaign) => campaign.id.toString() === editData.campaignId
+        (campaign) => campaign.id.toString() === editData.campaignId,
       );
     }
     if (editData.campaignId) {
       return campaigns.find(
-        (campaign) => campaign.id.toString() === editData.campaignId
+        (campaign) => campaign.id.toString() === editData.campaignId,
       );
     }
     if (
@@ -1645,7 +1863,7 @@ export default function TicketsPage() {
     }
     if (selectedTicket?.campaignId) {
       return campaigns.find(
-        (campaign) => campaign.id === selectedTicket.campaignId
+        (campaign) => campaign.id === selectedTicket.campaignId,
       );
     }
     return null;
@@ -1659,8 +1877,8 @@ export default function TicketsPage() {
   const campaignOptionValuesForEdit = isOnboardingCampaignForEdit
     ? Object.values(OnboardingOption)
     : isArCampaignForEdit
-    ? Object.values(ArOption)
-    : [];
+      ? Object.values(ArOption)
+      : [];
 
   const metadataFields = [
     {
@@ -1728,7 +1946,7 @@ export default function TicketsPage() {
                 value === "none"
                   ? null
                   : campaigns.find(
-                      (campaign) => campaign.id.toString() === value
+                      (campaign) => campaign.id.toString() === value,
                     );
               const selectedType = selected?.tipo?.toString().toUpperCase();
               setEditData((prev) => ({
@@ -1854,7 +2072,7 @@ export default function TicketsPage() {
               {getDirectionText(
                 selectedTicket?.direction || "inbound",
                 (selectedTicket as any)?.originalDirection,
-                selectedTicket?.agentId
+                selectedTicket?.agentId,
               )}
             </span>
           </div>
@@ -1928,7 +2146,7 @@ export default function TicketsPage() {
     {
       key: "customerInfo",
       filled: Boolean(
-        selectedTicket?.customer || selectedTicket?.customerPhone
+        selectedTicket?.customer || selectedTicket?.customerPhone,
       ),
       node: (
         <div className="space-y-2">
@@ -2362,31 +2580,7 @@ export default function TicketsPage() {
             />
             All Tickets
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t)
-                ).length
-              }
-            </span>
-          </Button>
-          <Button
-            variant={activeView === "active" ? "secondary" : "ghost"}
-            className="w-full justify-start"
-            onClick={() => handleViewChange("active")}
-          >
-            <AlertCircle className="mr-2 h-4 w-4" />
-            Open
-            <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter((t: Ticket) => {
-                  if (isMissedCall(t)) return false;
-                  const status = (t.status || "")
-                    .toString()
-                    .toUpperCase()
-                    .replace(/\s+/g, "_");
-                  return status === "OPEN" || status === "IN_PROGRESS";
-                }).length
-              }
+              {getFilteredCountForView("all")}
             </span>
           </Button>
           <Button
@@ -2397,11 +2591,7 @@ export default function TicketsPage() {
             <User className="mr-2 h-4 w-4" />
             Assigned
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t) && !!t.assignedTo
-                ).length
-              }
+              {getFilteredCountForView("assigned")}
             </span>
           </Button>
           <Button
@@ -2412,12 +2602,7 @@ export default function TicketsPage() {
             <User className="mr-2 h-4 w-4" />
             My Tickets
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) =>
-                    !isMissedCall(t) && isTicketAssignedToCurrentUser(t)
-                ).length
-              }
+              {getFilteredCountForView("assigned_me")}
             </span>
           </Button>
           <Button
@@ -2428,11 +2613,7 @@ export default function TicketsPage() {
             <Hash className="mr-2 h-4 w-4" />
             Unassigned
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter(
-                  (t: Ticket) => !isMissedCall(t) && !t.assignedTo
-                ).length
-              }
+              {getFilteredCountForView("unassigned")}
             </span>
           </Button>
           <Button
@@ -2443,11 +2624,7 @@ export default function TicketsPage() {
             <AlertTriangle className="mr-2 h-4 w-4" />
             Missed Calls
             <span className="ml-auto text-xs">
-              {
-                getCustomerFilteredTickets.filter((t: Ticket) =>
-                  isMissedCall(t)
-                ).length
-              }
+              {getFilteredCountForView("missed")}
             </span>
           </Button>
           <Button
@@ -2483,20 +2660,7 @@ export default function TicketsPage() {
               return null;
             })()}
             <span className="ml-auto text-xs">
-              {
-                tickets.filter((t: Ticket) => {
-                  if (isMissedCall(t)) return false;
-                  const priority = (t.priority || "").toString().toUpperCase();
-                  const status = (t.status || "")
-                    .toString()
-                    .toUpperCase()
-                    .replace(/\s+/g, "_");
-                  return (
-                    (priority === "HIGH" || priority === "EMERGENCY") &&
-                    (status === "OPEN" || status === "IN_PROGRESS")
-                  );
-                }).length
-              }
+              {getFilteredCountForView("high_priority")}
             </span>
           </Button>
         </div>
@@ -2533,6 +2697,24 @@ export default function TicketsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label>Agent</Label>
+            <Select value={agentFilter} onValueChange={setAgentFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Agents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Agents</SelectItem>
+                {filteredAgentFilterOptions.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id.toString()}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label>Direction</Label>
             <Select value={directionFilter} onValueChange={setDirectionFilter}>
@@ -2545,6 +2727,25 @@ export default function TicketsPage() {
                 <SelectItem value="outbound">Outbound</SelectItem>
                 <SelectItem value="missed">Missed</SelectItem>
                 <SelectItem value="text_message">Text Message</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Disposition</Label>
+            <Select
+              value={dispositionFilter}
+              onValueChange={setDispositionFilter}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Dispositions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dispositions</SelectItem>
+                {Object.values(TicketDisposition).map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {formatEnumLabel(value)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -2602,7 +2803,7 @@ export default function TicketsPage() {
       {/* Main area */}
       <div className="flex-1 flex flex-col gap-4">
         {/* ... Main content search/table unchanged ... */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -2612,22 +2813,55 @@ export default function TicketsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => mutate()}
-            title="Refresh tickets"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </Button>
-          {isTabActive && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span>Live updates</span>
-            </div>
-          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`justify-start text-left font-normal h-9 px-3 text-sm whitespace-nowrap ${
+                  !dateRange?.from ? "text-muted-foreground" : ""
+                }`}
+              >
+                <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <span className="truncate">
+                      {format(dateRange.from, "MMM d")} –{" "}
+                      {format(dateRange.to, "MMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span>{format(dateRange.from, "MMM d, yyyy")}</span>
+                  )
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 space-y-3">
+                <CalendarWidget
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={1}
+                  disabled={{ after: new Date() }}
+                  className="rounded-md"
+                />
+                {dateRange?.from && (
+                  <div className="flex justify-end px-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setDateRange(undefined)}
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Clear dates
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="rounded-lg border overflow-hidden">
@@ -2673,7 +2907,7 @@ export default function TicketsPage() {
 
                     if (!yardType && ticket.yardId) {
                       const yardObj = yards.find(
-                        (y) => y.id.toString() === ticket.yardId?.toString()
+                        (y) => y.id.toString() === ticket.yardId?.toString(),
                       );
                       if (yardObj) yardType = yardObj.yardType;
                     }
@@ -2781,7 +3015,7 @@ export default function TicketsPage() {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            }
+                            },
                           )}
                         </TableCell>
                         <TableCell>
@@ -2791,7 +3025,7 @@ export default function TicketsPage() {
                               {getDirectionText(
                                 ticket.direction || "inbound",
                                 (ticket as any).originalDirection,
-                                ticket.agentId
+                                ticket.agentId,
                               )}
                             </span>
                           </div>

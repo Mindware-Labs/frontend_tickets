@@ -1,8 +1,8 @@
 "use client";
 
-console.log("🚀🚀🚀 REPORTS CAMPAIGNS PAGE FILE LOADED 🚀🚀🚀");
+console.log("REPORTS CAMPAIGNS PAGE FILE LOADED");
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ type Campaign = {
   yarda?: { name?: string | null } | null;
   isActive?: boolean;
   tipo?: string;
+  createdAt?: string;
 };
 
 type Ticket = {
@@ -71,6 +72,7 @@ type Ticket = {
   onboardingOption?: string | null;
   issueDetail?: string | null;
   direction?: CallDirection | null;
+  originalDirection?: CallDirection | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -232,7 +234,7 @@ const MetricCard = ({ metric }: { metric: ReportMetric }) => (
     <div
       className={cn(
         "absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-5",
-        metric.color?.replace("text-", "bg-")
+        metric.color?.replace("text-", "bg-"),
       )}
     />
   </div>
@@ -244,14 +246,24 @@ const CustomerTable = ({
   campaignId,
   startDate,
   endDate,
+  expectedCalls,
 }: {
   title: string;
   rows: CustomerRow[];
   campaignId: number | null;
   startDate: string;
   endDate: string;
+  expectedCalls?: number;
 }) => {
   const router = useRouter();
+  const totalCalls = rows.reduce(
+    (sum, row) => sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
+    0,
+  );
+  const callsToShow =
+    typeof expectedCalls === "number" && !Number.isNaN(expectedCalls)
+      ? expectedCalls
+      : totalCalls;
 
   console.log("🟡 [Reports Campaigns] Rendering CustomerTable:", {
     title,
@@ -289,7 +301,7 @@ const CustomerTable = ({
         const ticketsUrl = `/tickets?customerId=${
           row.customerId
         }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
-          startDate
+          startDate,
         )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
         console.log(
           "🟢 [Reports Campaigns] ✅ Navigating to tickets with customerId and campaignId:",
@@ -300,7 +312,7 @@ const CustomerTable = ({
             endDate,
             isMissed,
             url: ticketsUrl,
-          }
+          },
         );
         router.push(ticketsUrl);
         return;
@@ -309,7 +321,7 @@ const CustomerTable = ({
       // Si no tenemos customerId, buscar por nombre/teléfono
       try {
         console.log(
-          "🔍 [Reports Campaigns] Fetching customers to find match..."
+          "🔍 [Reports Campaigns] Fetching customers to find match...",
         );
         const customers = await fetchFromBackend("/customers?page=1&limit=500");
         const customerList = Array.isArray(customers)
@@ -325,7 +337,7 @@ const CustomerTable = ({
         const customer = customerList.find(
           (c: any) =>
             (c.name && c.name.toLowerCase() === row.name.toLowerCase()) ||
-            (c.phone && c.phone === row.phone)
+            (c.phone && c.phone === row.phone),
         );
 
         if (customer && customer.id && campaignId) {
@@ -338,7 +350,7 @@ const CustomerTable = ({
           const ticketsUrl = `/tickets?customerId=${
             customer.id
           }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
-            startDate
+            startDate,
           )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
           console.log(
             "🟢 [Reports Campaigns] ✅ Navigating to tickets (found by search):",
@@ -350,7 +362,7 @@ const CustomerTable = ({
               endDate,
               isMissed,
               url: ticketsUrl,
-            }
+            },
           );
           router.push(ticketsUrl);
         } else {
@@ -384,7 +396,8 @@ const CustomerTable = ({
       <div className="flex flex-col border-b px-6 py-4">
         <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {rows.length} {rows.length === 1 ? "record" : "records"} found
+          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found ({rows.length}{" "}
+          {rows.length === 1 ? "customer" : "customers"})
         </p>
         <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
           💡 Click on any row to view customer details in Customer Management
@@ -482,7 +495,8 @@ const CustomerTable = ({
                         
                         let bgColor = "bg-slate-100 dark:bg-slate-800";
                         let textColor = "text-slate-700 dark:text-slate-300";
-                        let borderColor = "border-slate-200 dark:border-slate-700";
+                        let borderColor =
+                          "border-slate-200 dark:border-slate-700";
                         let icon = null;
                         let displayText = row.direction || "Unknown";
                         
@@ -510,24 +524,30 @@ const CustomerTable = ({
                         } else if (direction.includes("outbound")) {
                           bgColor = "bg-emerald-50 dark:bg-emerald-950/30";
                           textColor = "text-emerald-700 dark:text-emerald-400";
-                          borderColor = "border-emerald-200 dark:border-emerald-800";
+                          borderColor =
+                            "border-emerald-200 dark:border-emerald-800";
                           icon = <PhoneMissed className="h-3 w-3" />;
                           displayText = "Outbound";
                         } else if (isTextMessage) {
                           bgColor = "bg-purple-50 dark:bg-purple-950/30";
                           textColor = "text-purple-700 dark:text-purple-400";
-                          borderColor = "border-purple-200 dark:border-purple-800";
+                          borderColor =
+                            "border-purple-200 dark:border-purple-800";
                           icon = <ReceiptText className="h-3 w-3" />;
                         }
-                        
+
                         return (
-                          <div className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
-                            bgColor,
-                            textColor,
-                            borderColor
-                          )}>
-                            {icon && <span className="flex-shrink-0">{icon}</span>}
+                          <div
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
+                              bgColor,
+                              textColor,
+                              borderColor,
+                            )}
+                          >
+                            {icon && (
+                              <span className="flex-shrink-0">{icon}</span>
+                            )}
                             <span>{displayText}</span>
                           </div>
                         );
@@ -535,25 +555,41 @@ const CustomerTable = ({
                     </div>
                     <div className="col-span-2 px-6 py-3">
                       {(() => {
-                        const status = (row.status || "").toString().toUpperCase();
-                        const isPaid = status.includes("PAID") && !status.includes("NOT");
-                        const isNotPaid = status.includes("NOT_PAID") || (status.includes("NOT") && status.includes("PAID"));
-                        const isOfflinePayment = status.includes("OFFLINE_PAYMENT");
-                        const isNotPaidCheck = status.includes("NOT_PAID_CHECK") || status.includes("PAID_CHECK");
+                        const status = (row.status || "")
+                          .toString()
+                          .toUpperCase();
+                        const isPaid =
+                          status.includes("PAID") && !status.includes("NOT");
+                        const isNotPaid =
+                          status.includes("NOT_PAID") ||
+                          (status.includes("NOT") && status.includes("PAID"));
+                        const isOfflinePayment =
+                          status.includes("OFFLINE_PAYMENT");
+                        const isNotPaidCheck =
+                          status.includes("NOT_PAID_CHECK") ||
+                          status.includes("PAID_CHECK");
                         const isMovedOut = status.includes("MOVED_OUT");
-                        const isCanceled = status.includes("CANCELED") || status.includes("CANCELLED");
-                        const isBalance0 = status.includes("BALANCE_0") || status.includes("BALANCE 0");
-                        const isDoNotCall = status.includes("DO_NOT_CALL") || status.includes("DON'T_CALL");
-                        
+                        const isCanceled =
+                          status.includes("CANCELED") ||
+                          status.includes("CANCELLED");
+                        const isBalance0 =
+                          status.includes("BALANCE_0") ||
+                          status.includes("BALANCE 0");
+                        const isDoNotCall =
+                          status.includes("DO_NOT_CALL") ||
+                          status.includes("DON'T_CALL");
+
                         let bgColor = "bg-slate-100 dark:bg-slate-800";
                         let textColor = "text-slate-700 dark:text-slate-300";
-                        let borderColor = "border-slate-200 dark:border-slate-700";
+                        let borderColor =
+                          "border-slate-200 dark:border-slate-700";
                         let icon = null;
-                        
+
                         if (isPaid) {
                           bgColor = "bg-green-50 dark:bg-green-950/30";
                           textColor = "text-green-700 dark:text-green-400";
-                          borderColor = "border-green-200 dark:border-green-800";
+                          borderColor =
+                            "border-green-200 dark:border-green-800";
                           icon = <CheckCircle2 className="h-3 w-3" />;
                         } else if (isNotPaid) {
                           bgColor = "bg-red-50 dark:bg-red-950/30";
@@ -563,17 +599,20 @@ const CustomerTable = ({
                         } else if (isOfflinePayment) {
                           bgColor = "bg-amber-50 dark:bg-amber-950/30";
                           textColor = "text-amber-700 dark:text-amber-400";
-                          borderColor = "border-amber-200 dark:border-amber-800";
+                          borderColor =
+                            "border-amber-200 dark:border-amber-800";
                           icon = <ReceiptText className="h-3 w-3" />;
                         } else if (isNotPaidCheck) {
                           bgColor = "bg-amber-50 dark:bg-amber-950/30";
                           textColor = "text-amber-700 dark:text-amber-400";
-                          borderColor = "border-amber-200 dark:border-amber-800";
+                          borderColor =
+                            "border-amber-200 dark:border-amber-800";
                           icon = <FileText className="h-3 w-3" />;
                         } else if (isMovedOut) {
                           bgColor = "bg-orange-50 dark:bg-orange-950/30";
                           textColor = "text-orange-700 dark:text-orange-400";
-                          borderColor = "border-orange-200 dark:border-orange-800";
+                          borderColor =
+                            "border-orange-200 dark:border-orange-800";
                           icon = <MoveRight className="h-3 w-3" />;
                         } else if (isCanceled) {
                           bgColor = "bg-rose-50 dark:bg-rose-950/30";
@@ -591,16 +630,22 @@ const CustomerTable = ({
                           borderColor = "border-red-200 dark:border-red-800";
                           icon = <PhoneOff className="h-3 w-3" />;
                         }
-                        
+
                         return (
-                          <div className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
-                            bgColor,
-                            textColor,
-                            borderColor
-                          )}>
-                            {icon && <span className="flex-shrink-0">{icon}</span>}
-                            <span className="capitalize">{row.status || "Unknown"}</span>
+                          <div
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all hover:shadow-sm",
+                              bgColor,
+                              textColor,
+                              borderColor,
+                            )}
+                          >
+                            {icon && (
+                              <span className="flex-shrink-0">{icon}</span>
+                            )}
+                            <span className="capitalize">
+                              {row.status || "Unknown"}
+                            </span>
                           </div>
                         );
                       })()}
@@ -656,7 +701,6 @@ const CustomerTable = ({
                     </div>
                   </div>
                 );
-                n;
               })
             )}
           </div>
@@ -689,6 +733,7 @@ export default function CampaignReportsPage() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoFormat, setLogoFormat] = useState<"PNG" | "JPEG">("JPEG");
   const [logoSize, setLogoSize] = useState<ImageSize | null>(null);
+  const urlParamsLoaded = useRef(false);
 
   const getLogoUrl = () =>
     typeof window !== "undefined"
@@ -732,8 +777,10 @@ export default function CampaignReportsPage() {
     if (campaignIdParam) setSelectedCampaignId(campaignIdParam);
   }, [campaignIdParam]);
 
-  // Load startDate and endDate from URL params
+  // Load startDate and endDate from URL params (only once on mount)
   useEffect(() => {
+    if (urlParamsLoaded.current) return;
+
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
 
@@ -743,7 +790,32 @@ export default function CampaignReportsPage() {
     if (endDateParam) {
       setEndDate(decodeURIComponent(endDateParam));
     }
+
+    urlParamsLoaded.current = true;
   }, [searchParams]);
+
+  // Auto-populate date range when campaign is selected
+  useEffect(() => {
+    if (selectedCampaignId && campaigns.length > 0) {
+      const campaign = campaigns.find(
+        (c) => c.id.toString() === selectedCampaignId,
+      );
+      if (campaign?.createdAt) {
+        // Set start date to campaign creation date
+        const createdDate = new Date(campaign.createdAt);
+        const formattedStartDate = createdDate.toISOString().split("T")[0];
+
+        // Set end date to today
+        const today = new Date();
+        const formattedEndDate = today.toISOString().split("T")[0];
+
+        // Update dates and clear previous report
+        setStartDate(formattedStartDate);
+        setEndDate(formattedEndDate);
+        setReport(null);
+      }
+    }
+  }, [selectedCampaignId, campaigns]);
 
   useEffect(() => {
     const loadLogo = async () => {
@@ -804,6 +876,15 @@ export default function CampaignReportsPage() {
     );
   }, [campaigns, selectedCampaignId]);
 
+  const metricValueByTitle = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!report?.metrics) return map;
+    report.metrics.forEach((metric) => {
+      map.set(metric.title, Number(metric.value || 0));
+    });
+    return map;
+  }, [report]);
+
   const buildReport = async () => {
     if (!selectedCampaignId || !startDate || !endDate) {
       toast({
@@ -822,41 +903,117 @@ export default function CampaignReportsPage() {
       console.log("🔵 [Reports Campaigns] Fetching report data...");
       console.log(
         "🔵 [Reports Campaigns] URL:",
-        `/campaign/${selectedCampaignId}/report?${params.toString()}`
+        `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
-      const response = await fetchFromBackend(
-        `/campaign/${selectedCampaignId}/report?${params.toString()}`
-      );
+      const [response, campaignStats, ticketsResponse] = await Promise.all([
+        fetchFromBackend(
+          `/campaign/${selectedCampaignId}/report?${params.toString()}`,
+        ),
+        fetchFromBackend(`/campaign/${selectedCampaignId}`),
+        fetchFromBackend("/tickets?page=1&limit=5000"),
+      ]);
 
       console.log("🟢 [Reports Campaigns] Report data received:", response);
       console.log(
         "🟢 [Reports Campaigns] Tables count:",
-        response?.tables?.length
+        response?.tables?.length,
       );
 
       if (response?.tables && response.tables.length > 0) {
         console.log(
           "🟢 [Reports Campaigns] First table sample:",
-          response.tables[0]
+          response.tables[0],
         );
         if (response.tables[0]?.rows && response.tables[0].rows.length > 0) {
           console.log(
             "🟢 [Reports Campaigns] First row sample:",
-            response.tables[0].rows[0]
+            response.tables[0].rows[0],
           );
           console.log(
             "🟢 [Reports Campaigns] First row has ticketId?",
-            !!response.tables[0].rows[0].ticketId
+            !!response.tables[0].rows[0].ticketId,
           );
         }
       }
 
       if (!response) throw new Error("No data from backend");
+      const allTickets: Ticket[] = Array.isArray(ticketsResponse)
+        ? ticketsResponse
+        : ticketsResponse?.data || [];
+      const campaignTickets = allTickets.filter((ticket) => {
+        const ticketCampaignId =
+          ticket.campaignId ??
+          (ticket.campaign && typeof ticket.campaign === "object"
+            ? ticket.campaign.id
+            : null);
+        return (
+          ticketCampaignId !== null &&
+          ticketCampaignId !== undefined &&
+          ticketCampaignId.toString() === selectedCampaignId
+        );
+      });
+      const totalTicketsFromCampaign = Number(
+        campaignStats?.ticketCount ?? campaignTickets.length ?? 0,
+      );
+      let inboundFromTickets = 0;
+      let outboundFromTickets = 0;
+      campaignTickets.forEach((ticket) => {
+        const direction = (ticket.direction || "").toString().toUpperCase();
+        const originalDirection = (ticket.originalDirection || "")
+          .toString()
+          .toUpperCase();
+        if (direction === "INBOUND") {
+          inboundFromTickets += 1;
+          return;
+        }
+        if (direction === "OUTBOUND") {
+          outboundFromTickets += 1;
+          return;
+        }
+        if (direction === "MISSED") {
+          if (originalDirection === "INBOUND") {
+            inboundFromTickets += 1;
+          } else {
+            outboundFromTickets += 1;
+          }
+        }
+      });
+      const remainder =
+        totalTicketsFromCampaign - (inboundFromTickets + outboundFromTickets);
+      if (remainder > 0) {
+        outboundFromTickets += remainder;
+      }
+
+      const mergedMetrics = (response.metrics || []).map((metric: ReportMetric) => {
+        if (metric.title === "Total Tickets") {
+          return { ...metric, value: Number(campaignStats?.ticketCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Inbound Calls") {
+          return { ...metric, value: inboundFromTickets };
+        }
+        if (metric.title === "Outbound Calls") {
+          return { ...metric, value: outboundFromTickets };
+        }
+        if (metric.title === "Registered") {
+          return { ...metric, value: Number(campaignStats?.registeredCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Not Registered") {
+          return { ...metric, value: Number(campaignStats?.notRegisteredCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Paid") {
+          return { ...metric, value: Number(campaignStats?.paidCount ?? metric.value ?? 0) };
+        }
+        if (metric.title === "Not Paid") {
+          return { ...metric, value: Number(campaignStats?.notPaidCount ?? metric.value ?? 0) };
+        }
+        return metric;
+      });
+
       // El backend ya entrega los datos agregados y tablas
       setReport({
         campaign: response.campaign || null,
-        metrics: response.metrics || [],
+        metrics: mergedMetrics,
         totalCustomers: response.totals?.total || 0,
         reportLines: [],
         tables: response.tables || [],
@@ -892,7 +1049,7 @@ export default function CampaignReportsPage() {
       });
       const blob = await fetchBlobFromBackend(
         `/campaign/${selectedCampaignId}/report/pdf?${params.toString()}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1391,7 +1548,7 @@ export default function CampaignReportsPage() {
                   >
                     {selectedCampaignId
                       ? campaigns.find(
-                          (c) => c.id.toString() === selectedCampaignId
+                          (c) => c.id.toString() === selectedCampaignId,
                         )?.nombre
                       : "Select a campaign..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1417,7 +1574,7 @@ export default function CampaignReportsPage() {
                                 "mr-2 h-4 w-4",
                                 selectedCampaignId === c.id.toString()
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {c.nombre}
@@ -1502,6 +1659,7 @@ export default function CampaignReportsPage() {
                   key={table.title}
                   title={table.title}
                   rows={table.rows}
+                  expectedCalls={metricValueByTitle.get(table.title)}
                   campaignId={
                     selectedCampaignId ? parseInt(selectedCampaignId) : null
                   }

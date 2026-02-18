@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -42,6 +55,8 @@ import {
   Pencil,
   ExternalLink,
   Download,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import {
   AgentOption,
@@ -128,6 +143,12 @@ export function EditTicketModal({
   getAttachmentLabel,
   getAttachmentUrl,
 }: EditTicketModalProps) {
+  // Estados para controlar la apertura de los Popovers
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [yardOpen, setYardOpen] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+
   const formatEnumLabel = (value: string) => {
     if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
     return value
@@ -138,42 +159,10 @@ export function EditTicketModal({
   };
 
   // --- LOGIC (MEMOS) ---
-  const filteredCustomersEdit = useMemo(() => {
-    const term = customerSearchEdit.toLowerCase();
-    return customers.filter((customer) =>
-      customer.name.toLowerCase().includes(term)
-    );
-  }, [customers, customerSearchEdit]);
-
-  const filteredYardsEdit = useMemo(() => {
-    const term = yardSearchEdit.toLowerCase();
-    return yards.filter(
-      (yard) =>
-        yard.name.toLowerCase().includes(term) ||
-        yard.propertyAddress.toLowerCase().includes(term)
-    );
-  }, [yards, yardSearchEdit]);
-
-  const filteredAgentsEdit = useMemo(() => {
-    const term = agentSearchEdit.toLowerCase();
-    return agents.filter(
-      (agent) =>
-        agent.name.toLowerCase().includes(term) ||
-        (agent.email || "").toLowerCase().includes(term)
-    );
-  }, [agents, agentSearchEdit]);
-
-  const filteredCampaignsEdit = useMemo(() => {
-    const term = campaignSearchEdit.toLowerCase();
-    return campaigns.filter((campaign) =>
-      campaign.nombre.toLowerCase().includes(term)
-    );
-  }, [campaigns, campaignSearchEdit]);
-
   const selectedCampaign = useMemo(() => {
     if (!editFormData.campaignId) return null;
     return campaigns.find(
-      (campaign) => campaign.id.toString() === editFormData.campaignId
+      (campaign) => campaign.id.toString() === editFormData.campaignId,
     );
   }, [campaigns, editFormData.campaignId]);
 
@@ -214,65 +203,91 @@ export function EditTicketModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Campaign */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Campaign</Label>
-                  <Select
-                    value={editFormData.campaignId}
-                    onValueChange={(value) => {
-                      const campaign = campaigns.find(
-                        (c) => c.id.toString() === value
-                      );
-                      setEditFormData({
-                        ...editFormData,
-                        campaignId: value === "none" ? "" : value,
-                        yardId: campaign?.yardaId
-                          ? campaign.yardaId.toString()
-                          : "",
-                        campaignOption:
-                          campaign?.tipo === ManagementType.ONBOARDING ||
-                            campaign?.tipo === ManagementType.AR
-                            ? editFormData.campaignOption
-                            : "",
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select campaign">
-                        {editFormData.campaignId ? (
-                          <span
-                            className="truncate block max-w-[200px]"
-                            title={campaigns.find(c => c.id.toString() === editFormData.campaignId)?.nombre || editFormData.campaignId}
-                          >
-                            {(() => {
-                              const selectedCampaign = campaigns.find(c => c.id.toString() === editFormData.campaignId);
-                              const displayName = selectedCampaign?.nombre || editFormData.campaignId;
-                              return displayName.length > 25 ? `${displayName.substring(0, 25)}...` : displayName;
-                            })()}
-                          </span>
-                        ) : (
-                          "Select campaign"
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {campaigns.map((campaign) => (
-                        <SelectItem
-                          key={campaign.id}
-                          value={campaign.id.toString()}
-                          title={campaign.nombre}
-                        >
-                          <span className="truncate block max-w-[250px]">
-                            {campaign.nombre.length > 30
-                              ? `${campaign.nombre.substring(0, 30)}...`
-                              : campaign.nombre}
-                          </span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            #{campaign.id}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <Megaphone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+                    Campaign
+                  </Label>
+                  <Popover open={campaignOpen} onOpenChange={setCampaignOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={campaignOpen}
+                        className="w-full justify-between"
+                      >
+                        {editFormData.campaignId
+                          ? campaigns.find(
+                              (c) =>
+                                c.id.toString() === editFormData.campaignId,
+                            )?.nombre || editFormData.campaignId
+                          : "Select campaign..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search campaign..." />
+                        <CommandList>
+                          <CommandEmpty>No campaign found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="no-campaign"
+                              onSelect={() => {
+                                setEditFormData({
+                                  ...editFormData,
+                                  campaignId: "",
+                                  campaignOption: "",
+                                  yardId: "",
+                                });
+                                setCampaignOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !editFormData.campaignId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Campaign
+                            </CommandItem>
+                            {campaigns.map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={c.nombre}
+                                onSelect={() => {
+                                  setEditFormData({
+                                    ...editFormData,
+                                    campaignId: c.id.toString(),
+                                    yardId: c.yardaId
+                                      ? c.yardaId.toString()
+                                      : "",
+                                    campaignOption:
+                                      c.tipo === ManagementType.ONBOARDING ||
+                                      c.tipo === ManagementType.AR
+                                        ? editFormData.campaignOption
+                                        : "",
+                                  });
+                                  setCampaignOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.campaignId === c.id.toString()
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                {c.nombre}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Yard Select */}
@@ -281,46 +296,76 @@ export function EditTicketModal({
                     <MapPin className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Yard
                   </Label>
-                  <Select
-                    value={editFormData.yardId}
-                    onValueChange={(value) =>
-                      setEditFormData({
-                        ...editFormData,
-                        yardId: value === "none" ? "" : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select yard" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                          <Input
-                            placeholder="Search yards..."
-                            className="pl-8 h-8 text-sm"
-                            value={yardSearchEdit}
-                            onChange={(e) => setYardSearchEdit(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <SelectItem
-                          value="none"
-                          className="text-muted-foreground font-medium"
-                        >
-                          No yard
-                        </SelectItem>
-                        {filteredYardsEdit.map((y) => (
-                          <SelectItem key={y.id} value={y.id.toString()}>
-                            {y.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={yardOpen} onOpenChange={setYardOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={yardOpen}
+                        className="w-full justify-between"
+                      >
+                        {editFormData.yardId
+                          ? yards.find(
+                              (y) => y.id.toString() === editFormData.yardId,
+                            )?.name || editFormData.yardId
+                          : "Select yard..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search yard..." />
+                        <CommandList>
+                          <CommandEmpty>No yard found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="no-yard"
+                              onSelect={() => {
+                                setEditFormData({
+                                  ...editFormData,
+                                  yardId: "",
+                                });
+                                setYardOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !editFormData.yardId
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              No Yard
+                            </CommandItem>
+                            {yards.map((y) => (
+                              <CommandItem
+                                key={y.id}
+                                value={y.name}
+                                onSelect={() => {
+                                  setEditFormData({
+                                    ...editFormData,
+                                    yardId: y.id.toString(),
+                                  });
+                                  setYardOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.yardId === y.id.toString()
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                {y.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Dynamic Campaign Option */}
@@ -368,52 +413,65 @@ export function EditTicketModal({
                   <Label className="text-xs font-semibold">
                     Customer Name <span className="text-red-500">*</span>
                   </Label>
-                  <Select
-                    value={editFormData.customerId}
-                    onValueChange={(value) => {
-                      const customer = customers.find(
-                        (c) => c.id.toString() === value
-                      );
-                      setEditFormData({
-                        ...editFormData,
-                        customerId: value,
-                        customerPhone: customer?.phone || "",
-                      });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                          <Input
-                            placeholder="Search..."
-                            className="pl-8 h-8 text-sm"
-                            value={customerSearchEdit}
-                            onChange={(e) =>
-                              setCustomerSearchEdit(e.target.value)
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        {filteredCustomersEdit.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground text-center">
-                            No results
-                          </div>
-                        ) : (
-                          filteredCustomersEdit.map((c) => (
-                            <SelectItem key={c.id} value={c.id.toString()}>
-                              {c.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerOpen}
+                        className="w-full justify-between"
+                      >
+                        {editFormData.customerId
+                          ? customers.find(
+                              (c) =>
+                                c.id.toString() === editFormData.customerId,
+                            )?.name || editFormData.customerId
+                          : "Select customer..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search customer..." />
+                        <CommandList>
+                          <CommandEmpty>No customer found.</CommandEmpty>
+                          <CommandGroup>
+                            {customers.map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={`${c.id} ${c.name} ${c.phone || ""}`}
+                                onSelect={() => {
+                                  setEditFormData({
+                                    ...editFormData,
+                                    customerId: c.id.toString(),
+                                    customerPhone: c.phone || "",
+                                  });
+                                  setCustomerOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.customerId === c.id.toString()
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{c.name}</span>
+                                  {c.phone && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {c.phone}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Phone Readonly */}
@@ -437,46 +495,56 @@ export function EditTicketModal({
                     <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Assign Agent
                   </Label>
-                  <Select
-                    value={editFormData.agentId}
-                    onValueChange={(value) =>
-                      setEditFormData({
-                        ...editFormData,
-                        agentId: value === "none" ? "" : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Unassigned" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                          <Input
-                            placeholder="Search agents..."
-                            className="pl-8 h-8 text-sm"
-                            value={agentSearchEdit}
-                            onChange={(e) => setAgentSearchEdit(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <SelectItem
-                          value="none"
-                          className="text-muted-foreground"
-                        >
-                          Unassigned
-                        </SelectItem>
-                        {filteredAgentsEdit.map((a) => (
-                          <SelectItem key={a.id} value={a.id.toString()}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={agentOpen} onOpenChange={setAgentOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={agentOpen}
+                        className="w-full justify-between"
+                      >
+                        {editFormData.agentId
+                          ? agents.find(
+                              (a) => a.id.toString() === editFormData.agentId,
+                            )?.name || editFormData.agentId
+                          : "Unassigned"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search agent..." />
+                        <CommandList>
+                          <CommandEmpty>No agent found.</CommandEmpty>
+                          <CommandGroup>
+                            {agents.map((a) => (
+                              <CommandItem
+                                key={a.id}
+                                value={a.name}
+                                onSelect={() => {
+                                  setEditFormData({
+                                    ...editFormData,
+                                    agentId: a.id.toString(),
+                                  });
+                                  setAgentOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.agentId === a.id.toString()
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                {a.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -549,10 +617,10 @@ export function EditTicketModal({
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                    Date
+                    Date & Time
                   </Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     className="block w-full"
                     value={editFormData.callDate}
                     onChange={(e) =>
@@ -617,13 +685,11 @@ export function EditTicketModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No disposition</SelectItem>
-                      {Object.values(TicketDisposition)
-                        .filter((v) => v !== "OTHER")
-                        .map((v) => (
-                          <SelectItem key={v} value={v}>
-                            {formatEnumLabel(v)}
-                          </SelectItem>
-                        ))}
+                      {Object.values(TicketDisposition).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {formatEnumLabel(v)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -732,7 +798,7 @@ export function EditTicketModal({
                           className="h-6 w-6 text-muted-foreground hover:text-red-500"
                           onClick={() =>
                             setAttachmentFiles(
-                              attachmentFiles.filter((_, i) => i !== idx)
+                              attachmentFiles.filter((_, i) => i !== idx),
                             )
                           }
                         >

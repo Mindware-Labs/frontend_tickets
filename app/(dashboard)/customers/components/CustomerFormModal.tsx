@@ -48,11 +48,34 @@ export function CustomerFormModal({
 }: CustomerFormModalProps) {
   const [campaignSearch, setCampaignSearch] = useState("");
 
+  const formatPhoneNumber = (value: string) => {
+    // Si ya tiene el formato correcto, dejarlo así
+    if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
+      return value;
+    }
+
+    // Eliminar todo excepto números
+    const numbers = value.replace(/\D/g, "");
+
+    // Si empieza con 1, quitarlo para evitar duplicados
+    const cleaned = numbers.startsWith("1") ? numbers.slice(1) : numbers;
+
+    // Formatear: +1 XXX-XXX-XXXX
+    if (cleaned.length === 0) return "";
+    if (cleaned.length <= 3) return `+1 ${cleaned}`;
+    if (cleaned.length <= 6)
+      return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+      6,
+      10
+    )}`;
+  };
+
   const filteredCampaigns = useMemo(() => {
     const term = campaignSearch.trim().toLowerCase();
     if (!term) return campaigns;
     return campaigns.filter((campaign) =>
-      campaign.nombre.toLowerCase().includes(term),
+      campaign.nombre.toLowerCase().includes(term)
     );
   }, [campaigns, campaignSearch]);
 
@@ -86,9 +109,11 @@ export function CustomerFormModal({
               <Label htmlFor={`${idPrefix}-phone`}>Phone *</Label>
               <Input
                 id={`${idPrefix}-phone`}
+                placeholder="+1 XXX-XXX-XXXX"
                 value={formData.phone}
                 onChange={(e) => {
-                  onFormChange({ ...formData, phone: e.target.value });
+                  const formatted = formatPhoneNumber(e.target.value);
+                  onFormChange({ ...formData, phone: formatted });
                   onValidationErrorChange({ ...validationErrors, phone: "" });
                 }}
                 className={validationErrors.phone ? "border-red-500" : ""}

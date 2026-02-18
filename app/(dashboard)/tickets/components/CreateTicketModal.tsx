@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,9 +20,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator"; // Asegúrate de tener este componente o usa un <div className="h-[1px] bg-border" />
+import { Separator } from "@/components/ui/separator";
 import {
   Search,
   X,
@@ -39,6 +52,8 @@ import {
   FileText,
   UploadCloud,
   Paperclip,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import {
   AgentOption,
@@ -107,6 +122,38 @@ export function CreateTicketModal({
   isCreating,
   onSubmit,
 }: CreateTicketModalProps) {
+  // Estados para controlar la apertura de los Popovers
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [yardOpen, setYardOpen] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+
+  const [localCustomerSearch, setLocalCustomerSearch] = useState("");
+  const [localYardSearch, setLocalYardSearch] = useState("");
+  const [localAgentSearch, setLocalAgentSearch] = useState("");
+  const [localCampaignSearch, setLocalCampaignSearch] = useState("");
+
+  // Limpiar búsquedas cuando se cierran los popovers
+  const handleCampaignOpenChange = (isOpen: boolean) => {
+    setCampaignOpen(isOpen);
+    if (!isOpen) setLocalCampaignSearch("");
+  };
+
+  const handleYardOpenChange = (isOpen: boolean) => {
+    setYardOpen(isOpen);
+    if (!isOpen) setLocalYardSearch("");
+  };
+
+  const handleCustomerOpenChange = (isOpen: boolean) => {
+    setCustomerOpen(isOpen);
+    if (!isOpen) setLocalCustomerSearch("");
+  };
+
+  const handleAgentOpenChange = (isOpen: boolean) => {
+    setAgentOpen(isOpen);
+    if (!isOpen) setLocalAgentSearch("");
+  };
+
   const formatEnumLabel = (value: string) => {
     if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
     return value
@@ -117,42 +164,64 @@ export function CreateTicketModal({
   };
 
   // --- LOGIC (MEMOS) ---
-  const filteredCustomersCreate = useMemo(() => {
-    const term = customerSearchCreate.toLowerCase();
-    return customers.filter((customer) =>
-      customer.name.toLowerCase().includes(term)
+  // Filtrado de customers
+  const filteredCustomers = useMemo(() => {
+    if (!localCustomerSearch.trim()) {
+      return customers; // Mostrar TODOS los customers
+    }
+    const searchLower = localCustomerSearch.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(searchLower) ||
+        c.phone?.toLowerCase().includes(searchLower) ||
+        c.id.toString().includes(searchLower),
     );
-  }, [customers, customerSearchCreate]);
+  }, [customers, localCustomerSearch]);
 
-  const filteredYardsCreate = useMemo(() => {
-    const term = yardSearchCreate.toLowerCase();
+  // Filtrado de yards
+  const filteredYards = useMemo(() => {
+    if (!localYardSearch.trim()) {
+      return yards;
+    }
+    const searchLower = localYardSearch.toLowerCase();
     return yards.filter(
-      (yard) =>
-        yard.name.toLowerCase().includes(term) ||
-        yard.propertyAddress.toLowerCase().includes(term)
+      (y) =>
+        y.name.toLowerCase().includes(searchLower) ||
+        y.id.toString().includes(searchLower),
     );
-  }, [yards, yardSearchCreate]);
+  }, [yards, localYardSearch]);
 
-  const filteredAgentsCreate = useMemo(() => {
-    const term = agentSearchCreate.toLowerCase();
+  // Filtrado de agents
+  const filteredAgents = useMemo(() => {
+    if (!localAgentSearch.trim()) {
+      return agents;
+    }
+    const searchLower = localAgentSearch.toLowerCase();
     return agents.filter(
-      (agent) =>
-        agent.name.toLowerCase().includes(term) ||
-        (agent.email || "").toLowerCase().includes(term)
+      (a) =>
+        a.name.toLowerCase().includes(searchLower) ||
+        a.email?.toLowerCase().includes(searchLower) ||
+        a.id.toString().includes(searchLower),
     );
-  }, [agents, agentSearchCreate]);
+  }, [agents, localAgentSearch]);
 
-  const filteredCampaignsCreate = useMemo(() => {
-    const term = campaignSearchCreate.toLowerCase();
-    return campaigns.filter((campaign) =>
-      campaign.nombre.toLowerCase().includes(term)
+  // Filtrado de campaigns
+  const filteredCampaigns = useMemo(() => {
+    if (!localCampaignSearch.trim()) {
+      return campaigns;
+    }
+    const searchLower = localCampaignSearch.toLowerCase();
+    return campaigns.filter(
+      (c) =>
+        c.nombre.toLowerCase().includes(searchLower) ||
+        c.id.toString().includes(searchLower),
     );
-  }, [campaigns, campaignSearchCreate]);
+  }, [campaigns, localCampaignSearch]);
 
   const selectedCampaign = useMemo(() => {
     if (!createFormData.campaignId) return null;
     return campaigns.find(
-      (campaign) => campaign.id.toString() === createFormData.campaignId
+      (campaign) => campaign.id.toString() === createFormData.campaignId,
     );
   }, [campaigns, createFormData.campaignId]);
 
@@ -163,8 +232,8 @@ export function CreateTicketModal({
   const campaignOptionValues = isOnboardingCampaign
     ? Object.values(OnboardingOption)
     : isArCampaign
-    ? Object.values(ArOption)
-    : [];
+      ? Object.values(ArOption)
+      : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -189,78 +258,106 @@ export function CreateTicketModal({
                 <Megaphone className="w-4 h-4" /> Campaign & Location
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-  {/* Campaign */}
-  <div className="space-y-2">
-    <Label className="text-xs font-semibold">Campaign</Label>
-    <Select
-      value={createFormData.campaignId}
-      onValueChange={(value) => {
-        const campaign = campaigns.find(
-          (c) => c.id.toString() === value
-        );
-        setCreateFormData({
-          ...createFormData,
-          campaignId: value === "none" ? "" : value,
-          yardId: campaign?.yardaId
-            ? campaign.yardaId.toString()
-            : "",
-          campaignOption:
-            campaign?.tipo === ManagementType.ONBOARDING ||
-            campaign?.tipo === ManagementType.AR
-              ? createFormData.campaignOption
-              : "",
-        });
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select campaign">
-          {createFormData.campaignId && createFormData.campaignId !== "none" && (
-            <span 
-              className="truncate block max-w-[180px]" 
-              title={campaigns.find(c => c.id.toString() === createFormData.campaignId)?.nombre || createFormData.campaignId}
-            >
-              {campaigns.find(c => c.id.toString() === createFormData.campaignId)?.nombre || createFormData.campaignId}
-            </span>
-          )}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search campaigns..."
-              className="pl-8 h-8 text-sm"
-              value={campaignSearchCreate}
-              onChange={(e) =>
-                setCampaignSearchCreate(e.target.value)
-              }
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-        <ScrollArea className="h-[200px]">
-          <SelectItem
-            value="none"
-            className="text-muted-foreground"
-          >
-            No campaign
-          </SelectItem>
-          {filteredCampaignsCreate.map((c) => (
-            <SelectItem 
-              key={c.id} 
-              value={c.id.toString()}
-              title={c.nombre}
-            >
-              <span className="truncate block max-w-[250px]">
-                {c.nombre}
-              </span>
-            </SelectItem>
-          ))}
-        </ScrollArea>
-      </SelectContent>
-    </Select>
-  </div>
+                {/* Campaign */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <Megaphone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+                    Campaign
+                  </Label>
+                  <Popover
+                    open={campaignOpen}
+                    onOpenChange={handleCampaignOpenChange}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={campaignOpen}
+                        className="w-full justify-between"
+                      >
+                        {createFormData.campaignId
+                          ? campaigns.find(
+                              (c) =>
+                                c.id.toString() === createFormData.campaignId,
+                            )?.nombre || createFormData.campaignId
+                          : "Select campaign..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search campaign..."
+                          value={localCampaignSearch}
+                          onValueChange={setLocalCampaignSearch}
+                        />
+                        <ScrollArea className="h-[300px]">
+                          <CommandList>
+                            <CommandEmpty>No campaign found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="no-campaign"
+                                onSelect={() => {
+                                  setCreateFormData({
+                                    ...createFormData,
+                                    campaignId: "",
+                                    campaignOption: "",
+                                    yardId: "",
+                                  });
+                                  setLocalCampaignSearch("");
+                                  setCampaignOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    !createFormData.campaignId
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                No Campaign
+                              </CommandItem>
+                              {filteredCampaigns.map((c) => (
+                                <CommandItem
+                                  key={c.id}
+                                  value={c.nombre}
+                                  onSelect={() => {
+                                    setCreateFormData({
+                                      ...createFormData,
+                                      campaignId: c.id.toString(),
+                                      yardId: c.yardaId
+                                        ? c.yardaId.toString()
+                                        : "",
+                                      campaignOption:
+                                        c.tipo === ManagementType.ONBOARDING ||
+                                        c.tipo === ManagementType.AR
+                                          ? createFormData.campaignOption
+                                          : "",
+                                    });
+                                    setLocalCampaignSearch("");
+                                    setCampaignOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      createFormData.campaignId ===
+                                        c.id.toString()
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {c.nombre}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </ScrollArea>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
                 {/* Yard Select */}
                 <div className="space-y-2">
@@ -268,48 +365,84 @@ export function CreateTicketModal({
                     <MapPin className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Yard
                   </Label>
-                  <Select
-                    value={createFormData.yardId}
-                    onValueChange={(value) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        yardId: value === "none" ? "" : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select yard" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                          <Input
-                            placeholder="Search yards..."
-                            className="pl-8 h-8 text-sm"
-                            value={yardSearchCreate}
-                            onChange={(e) =>
-                              setYardSearchCreate(e.target.value)
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <SelectItem
-                          value="none"
-                          className="text-muted-foreground font-medium"
-                        >
-                          No yard
-                        </SelectItem>
-                        {filteredYardsCreate.map((y) => (
-                          <SelectItem key={y.id} value={y.id.toString()}>
-                            {y.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={yardOpen} onOpenChange={handleYardOpenChange}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={yardOpen}
+                        className="w-full justify-between"
+                      >
+                        {createFormData.yardId
+                          ? yards.find(
+                              (y) => y.id.toString() === createFormData.yardId,
+                            )?.name || createFormData.yardId
+                          : "Select yard..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search yard..."
+                          value={localYardSearch}
+                          onValueChange={setLocalYardSearch}
+                        />
+                        <ScrollArea className="h-[300px]">
+                          <CommandList>
+                            <CommandEmpty>No yard found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="no-yard"
+                                onSelect={() => {
+                                  setCreateFormData({
+                                    ...createFormData,
+                                    yardId: "",
+                                  });
+                                  setLocalYardSearch("");
+                                  setYardOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    !createFormData.yardId
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                No Yard
+                              </CommandItem>
+                              {filteredYards.map((y) => (
+                                <CommandItem
+                                  key={y.id}
+                                  value={y.name}
+                                  onSelect={() => {
+                                    setCreateFormData({
+                                      ...createFormData,
+                                      yardId: y.id.toString(),
+                                    });
+                                    setLocalYardSearch("");
+                                    setYardOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      createFormData.yardId === y.id.toString()
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {y.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </ScrollArea>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Dynamic Campaign Option */}
@@ -357,61 +490,96 @@ export function CreateTicketModal({
                   <Label className="text-xs font-semibold">
                     Customer Name <span className="text-red-500">*</span>
                   </Label>
-                  <Select
-                    value={createFormData.customerId}
-                    onValueChange={(value) => {
-                      const customer = customers.find(
-                        (c) => c.id.toString() === value
-                      );
-                      setCreateFormData({
-                        ...createFormData,
-                        customerId: value,
-                        customerPhone: customer?.phone || "",
-                      });
-                      setCreateValidationErrors({
-                        ...createValidationErrors,
-                        customerId: "",
-                      });
-                    }}
+                  <Popover
+                    open={customerOpen}
+                    onOpenChange={handleCustomerOpenChange}
                   >
-                    <SelectTrigger
-                      className={cn(
-                        createValidationErrors.customerId &&
-                          "border-red-500 ring-red-500/20"
-                      )}
-                    >
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          createValidationErrors.customerId &&
+                            "border-red-500 ring-red-500/20",
+                        )}
+                      >
+                        {createFormData.customerId
+                          ? customers.find(
+                              (c) =>
+                                c.id.toString() === createFormData.customerId,
+                            )?.name || createFormData.customerId
+                          : "Select customer..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <div className="flex flex-col">
+                        <div className="px-3 py-2 border-b">
                           <Input
-                            placeholder="Search..."
-                            className="pl-8 h-8 text-sm"
-                            value={customerSearchCreate}
+                            placeholder="Search customer..."
+                            value={localCustomerSearch}
                             onChange={(e) =>
-                              setCustomerSearchCreate(e.target.value)
+                              setLocalCustomerSearch(e.target.value)
                             }
-                            onClick={(e) => e.stopPropagation()}
+                            className="h-9"
                           />
                         </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        {filteredCustomersCreate.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground text-center">
-                            No results
+                        <ScrollArea className="h-[300px]">
+                          <div className="p-1">
+                            {filteredCustomers.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                No customer found.
+                              </div>
+                            ) : (
+                              filteredCustomers.map((c) => (
+                                <div
+                                  key={c.id}
+                                  className={cn(
+                                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                                    createFormData.customerId ===
+                                      c.id.toString() && "bg-accent",
+                                  )}
+                                  onClick={() => {
+                                    setCreateFormData({
+                                      ...createFormData,
+                                      customerId: c.id.toString(),
+                                      customerPhone: c.phone || "",
+                                    });
+                                    setCreateValidationErrors({
+                                      ...createValidationErrors,
+                                      customerId: "",
+                                    });
+                                    setLocalCustomerSearch("");
+                                    setCustomerOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      createFormData.customerId ===
+                                        c.id.toString()
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <div className="flex flex-col flex-1">
+                                    <span>{c.name}</span>
+                                    {c.phone && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {c.phone}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
-                        ) : (
-                          filteredCustomersCreate.map((c) => (
-                            <SelectItem key={c.id} value={c.id.toString()}>
-                              {c.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   {createValidationErrors.customerId && (
                     <p className="text-[11px] font-medium text-red-500 animate-in slide-in-from-top-1">
                       {createValidationErrors.customerId}
@@ -440,48 +608,66 @@ export function CreateTicketModal({
                     <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Assign Agent
                   </Label>
-                  <Select
-                    value={createFormData.agentId}
-                    onValueChange={(value) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        agentId: value === "none" ? "" : value,
-                      })
-                    }
+                  <Popover
+                    open={agentOpen}
+                    onOpenChange={handleAgentOpenChange}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Unassigned" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-background z-10 pb-2 border-b mb-1">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                          <Input
-                            placeholder="Search agents..."
-                            className="pl-8 h-8 text-sm"
-                            value={agentSearchCreate}
-                            onChange={(e) =>
-                              setAgentSearchCreate(e.target.value)
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <SelectItem
-                          value="none"
-                          className="text-muted-foreground"
-                        >
-                          Unassigned
-                        </SelectItem>
-                        {filteredAgentsCreate.map((a) => (
-                          <SelectItem key={a.id} value={a.id.toString()}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={agentOpen}
+                        className="w-full justify-between"
+                      >
+                        {createFormData.agentId
+                          ? agents.find(
+                              (a) => a.id.toString() === createFormData.agentId,
+                            )?.name || createFormData.agentId
+                          : "Unassigned"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search agent..."
+                          value={localAgentSearch}
+                          onValueChange={setLocalAgentSearch}
+                        />
+                        <ScrollArea className="h-[300px]">
+                          <CommandList>
+                            <CommandEmpty>No agent found.</CommandEmpty>
+                            <CommandGroup>
+                              {filteredAgents.map((a) => (
+                                <CommandItem
+                                  key={a.id}
+                                  value={a.name}
+                                  onSelect={() => {
+                                    setCreateFormData({
+                                      ...createFormData,
+                                      agentId: a.id.toString(),
+                                    });
+                                    setLocalAgentSearch("");
+                                    setAgentOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      createFormData.agentId === a.id.toString()
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {a.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </ScrollArea>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -515,7 +701,7 @@ export function CreateTicketModal({
                   >
                     <SelectTrigger
                       className={cn(
-                        createValidationErrors.direction && "border-red-500"
+                        createValidationErrors.direction && "border-red-500",
                       )}
                     >
                       <SelectValue placeholder="Select direction" />
@@ -562,10 +748,10 @@ export function CreateTicketModal({
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                    Date
+                    Date & Time
                   </Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     className="block w-full"
                     value={createFormData.callDate}
                     onChange={(e) =>
@@ -630,13 +816,11 @@ export function CreateTicketModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No disposition</SelectItem>
-                      {Object.values(TicketDisposition)
-                        .filter((v) => v !== "OTHER")
-                        .map((v) => (
-                          <SelectItem key={v} value={v}>
-                            {formatEnumLabel(v)}
-                          </SelectItem>
-                        ))}
+                      {Object.values(TicketDisposition).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {formatEnumLabel(v)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -711,7 +895,7 @@ export function CreateTicketModal({
                         className="h-6 w-6 text-muted-foreground hover:text-red-500"
                         onClick={() =>
                           setAttachmentFiles(
-                            attachmentFiles.filter((_, i) => i !== idx)
+                            attachmentFiles.filter((_, i) => i !== idx),
                           )
                         }
                       >

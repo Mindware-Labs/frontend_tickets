@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { PhoneMissed } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   BarChart,
@@ -43,6 +44,8 @@ type ReportData = {
     resolutionRate: number;
     avgDurationSeconds: number;
     activeAgents: number;
+    missedInboundCalls: number;
+    missedOutboundCalls: number;
   };
   callsByDay: { date: string; day: string; total: number; closed: number }[];
   dispositionBreakdown: { name: string; value: number }[];
@@ -72,10 +75,14 @@ export default function PerformancePage() {
     return d.toISOString().slice(0, 10);
   });
   const [endDate, setEndDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [campaignPage, setCampaignPage] = useState(0);
+  const [agentPage, setAgentPage] = useState(0);
+  const campaignItemsPerPage = 10;
+  const agentItemsPerPage = 5;
 
   const getLogoUrl = () =>
     typeof window !== "undefined"
@@ -85,12 +92,14 @@ export default function PerformancePage() {
   const fetchReport = async () => {
     try {
       setLoading(true);
+      setCampaignPage(0);
+      setAgentPage(0);
       const params = new URLSearchParams({
         start: startDate,
         end: endDate,
       });
       const response = await fetch(
-        `/api/reports/performance?${params.toString()}`
+        `/api/reports/performance?${params.toString()}`,
       );
       const result = await response.json();
       if (result?.success) {
@@ -134,7 +143,24 @@ export default function PerformancePage() {
 
   const callsChartData = report?.callsByDay || [];
   const dispositionData = report?.dispositionBreakdown || [];
-  const topAgents = report?.agentPerformance.slice(0, 5) || [];
+
+  // Pagination for campaigns
+  const allCampaigns = report?.campaignBreakdown || [];
+  const totalCampaignPages = Math.ceil(
+    allCampaigns.length / campaignItemsPerPage,
+  );
+  const paginatedCampaigns = allCampaigns.slice(
+    campaignPage * campaignItemsPerPage,
+    (campaignPage + 1) * campaignItemsPerPage,
+  );
+
+  // Pagination for agents
+  const allAgents = report?.agentPerformance || [];
+  const totalAgentPages = Math.ceil(allAgents.length / agentItemsPerPage);
+  const paginatedAgents = allAgents.slice(
+    agentPage * agentItemsPerPage,
+    (agentPage + 1) * agentItemsPerPage,
+  );
 
   const totalClosed = report?.kpis.closedTickets || 0;
 
@@ -155,9 +181,9 @@ export default function PerformancePage() {
       });
       const blob = await fetchBlobFromBackend(
         `/reports/performance/pdf?${params.toString()}&logoUrl=${encodeURIComponent(
-          getLogoUrl()
+          getLogoUrl(),
         )}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -193,7 +219,7 @@ export default function PerformancePage() {
       });
       const blob = await fetchBlobFromBackend(
         `/reports/performance/excel?${params.toString()}`,
-        { method: "GET" }
+        { method: "GET" },
       );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -282,11 +308,13 @@ export default function PerformancePage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Calls</p>
+                    <p className="text-xs text-muted-foreground">
+                      Total Calls Answered
+                    </p>
                     <h3 className="text-3xl font-bold mt-1">
                       {report.kpis.totalCalls}
                     </h3>
@@ -296,6 +324,44 @@ export default function PerformancePage() {
                   </div>
                   <div className="p-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/10">
                     <Phone className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Missed Inbound
+                    </p>
+                    <h3 className="text-3xl font-bold mt-1">
+                      {report.kpis.missedInboundCalls || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Unanswered incoming
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-full bg-red-100 text-red-700 dark:bg-red-500/10">
+                    <PhoneMissed className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Missed Outbound
+                    </p>
+                    <h3 className="text-3xl font-bold mt-1">
+                      {report.kpis.missedOutboundCalls || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Unanswered outgoing
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/10">
+                    <PhoneMissed className="w-5 h-5" />
                   </div>
                 </div>
               </div>
@@ -348,7 +414,7 @@ export default function PerformancePage() {
                       {report.kpis.closedTickets}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Total calls {report.kpis.totalCalls}
+                      Total calls answered: {report.kpis.totalCalls}
                     </p>
                   </div>
                   <div className="p-2 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/10">
@@ -492,26 +558,74 @@ export default function PerformancePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                  Campaign Mix
-                </h3>
-                <div className="space-y-3">
-                  {report.campaignBreakdown.map((item) => (
-                    <div
-                      key={item.name}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="text-muted-foreground">{item.name}</span>
-                      <span className="font-medium text-foreground">
-                        {item.value}
-                      </span>
-                    </div>
-                  ))}
+              <div
+                className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg flex flex-col"
+                style={{ minHeight: "400px" }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Campaign Mix
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {allCampaigns.length} campaigns
+                  </div>
                 </div>
+                <div className="space-y-3 uppercase flex-1">
+                  {paginatedCampaigns.length > 0 ? (
+                    paginatedCampaigns.map((item) => (
+                      <div
+                        key={item.name}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground uppercase">
+                          {item.name.toUpperCase()}
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {item.value}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-sm text-muted-foreground">
+                      No campaigns in this period.
+                    </div>
+                  )}
+                </div>
+                {totalCampaignPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/40">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCampaignPage(Math.max(0, campaignPage - 1))
+                      }
+                      disabled={campaignPage === 0}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {campaignPage + 1} of {totalCampaignPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCampaignPage(
+                          Math.min(totalCampaignPages - 1, campaignPage + 1),
+                        )
+                      }
+                      disabled={campaignPage >= totalCampaignPages - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              <div className="lg:col-span-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+              <div
+                className="lg:col-span-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg flex flex-col"
+                style={{ minHeight: "400px" }}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground">
                     Top Agents
@@ -522,7 +636,7 @@ export default function PerformancePage() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto flex-1">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="text-xs text-muted-foreground uppercase">
@@ -533,8 +647,8 @@ export default function PerformancePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
-                      {topAgents.length ? (
-                        topAgents.map((agent) => (
+                      {paginatedAgents.length ? (
+                        paginatedAgents.map((agent) => (
                           <tr key={agent.id} className="text-sm">
                             <td className="py-3 text-foreground font-medium">
                               {agent.name}
@@ -563,6 +677,33 @@ export default function PerformancePage() {
                     </tbody>
                   </table>
                 </div>
+                {totalAgentPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/40">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAgentPage(Math.max(0, agentPage - 1))}
+                      disabled={agentPage === 0}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {agentPage + 1} of {totalAgentPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setAgentPage(
+                          Math.min(totalAgentPages - 1, agentPage + 1),
+                        )
+                      }
+                      disabled={agentPage >= totalAgentPages - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </>

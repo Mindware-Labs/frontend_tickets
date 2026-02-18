@@ -52,6 +52,29 @@ export function YardFormModal({
   idPrefix,
   showPlaceholders = false,
 }: YardFormModalProps) {
+  const formatPhoneNumber = (value: string) => {
+    // Si ya tiene el formato correcto, dejarlo así
+    if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
+      return value;
+    }
+
+    // Eliminar todo excepto números
+    const numbers = value.replace(/\D/g, "");
+
+    // Si empieza con 1, quitarlo para evitar duplicados
+    const cleaned = numbers.startsWith("1") ? numbers.slice(1) : numbers;
+
+    // Formatear: +1 XXX-XXX-XXXX
+    if (cleaned.length === 0) return "";
+    if (cleaned.length <= 3) return `+1 ${cleaned}`;
+    if (cleaned.length <= 6)
+      return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+      6,
+      10
+    )}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -124,7 +147,9 @@ export function YardFormModal({
                   ? "278 Ellis Rd N, Jacksonville, FL 32254"
                   : undefined
               }
-              className={validationErrors.propertyAddress ? "border-red-500" : ""}
+              className={
+                validationErrors.propertyAddress ? "border-red-500" : ""
+              }
             />
             {validationErrors.propertyAddress && (
               <p className="text-xs text-red-500">
@@ -139,13 +164,16 @@ export function YardFormModal({
               id={`${idPrefix}-contactInfo`}
               value={formData.contactInfo}
               onChange={(e) => {
-                onFormChange({ ...formData, contactInfo: e.target.value });
+                const formatted = formatPhoneNumber(e.target.value);
+                onFormChange({ ...formData, contactInfo: formatted });
                 onValidationErrorChange({
                   ...validationErrors,
                   contactInfo: "",
                 });
               }}
-              placeholder={showPlaceholders ? "904-265-9233" : undefined}
+              placeholder={
+                showPlaceholders ? "+1 XXX-XXX-XXXX" : "+1 XXX-XXX-XXXX"
+              }
               className={validationErrors.contactInfo ? "border-red-500" : ""}
             />
             {validationErrors.contactInfo && (
@@ -213,7 +241,9 @@ export function YardFormModal({
             <Textarea
               id={`${idPrefix}-notes`}
               value={formData.notes}
-              onChange={(e) => onFormChange({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                onFormChange({ ...formData, notes: e.target.value })
+              }
               placeholder={showPlaceholders ? "Additional notes..." : undefined}
               rows={4}
             />

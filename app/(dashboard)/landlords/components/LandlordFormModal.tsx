@@ -57,6 +57,29 @@ export function LandlordFormModal({
 }: LandlordFormModalProps) {
   const [yardSearch, setYardSearch] = useState("");
 
+  const formatPhoneNumber = (value: string) => {
+    // Si ya tiene el formato correcto, dejarlo así
+    if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
+      return value;
+    }
+
+    // Eliminar todo excepto números
+    const numbers = value.replace(/\D/g, "");
+
+    // Si empieza con 1, quitarlo para evitar duplicados
+    const cleaned = numbers.startsWith("1") ? numbers.slice(1) : numbers;
+
+    // Formatear: +1 XXX-XXX-XXXX
+    if (cleaned.length === 0) return "";
+    if (cleaned.length <= 3) return `+1 ${cleaned}`;
+    if (cleaned.length <= 6)
+      return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+      6,
+      10
+    )}`;
+  };
+
   const filteredYards = useMemo(() => {
     const term = yardSearch.trim().toLowerCase();
     if (!term) return yards;
@@ -136,10 +159,11 @@ export function LandlordFormModal({
                     <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       id={`${idPrefix}-phone`}
-                      placeholder="(555) 123-4567"
+                      placeholder="+1 XXX-XXX-XXXX"
                       value={formData.phone}
                       onChange={(e) => {
-                        onFormChange({ ...formData, phone: e.target.value });
+                        const formatted = formatPhoneNumber(e.target.value);
+                        onFormChange({ ...formData, phone: formatted });
                         onValidationErrorChange({
                           ...validationErrors,
                           phone: "",
