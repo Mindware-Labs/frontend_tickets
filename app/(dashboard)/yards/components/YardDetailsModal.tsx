@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,14 +24,10 @@ import {
   Mail,
   Info,
   StickyNote,
-  FileText,
-  FileSpreadsheet,
-  Loader2,
+  BarChart3,
 } from "lucide-react";
 import type { Yard } from "../types";
 import { cn } from "@/lib/utils";
-import { fetchBlobFromBackend } from "@/lib/api-client";
-import { toast } from "@/hooks/use-toast";
 
 type YardDetailsModalProps = {
   open: boolean;
@@ -40,6 +37,8 @@ type YardDetailsModalProps = {
   showLandlordPanel: boolean;
   ticketsLoading?: boolean;
   tickets?: any[];
+  ticketSearch?: string;
+  setTicketSearch?: (value: string) => void;
   onViewTickets?: () => void;
   onViewLandlord: () => void;
 };
@@ -82,78 +81,12 @@ export function YardDetailsModal({
   onViewLandlord,
 }: YardDetailsModalProps) {
   const [copied, setCopied] = useState(false);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   const handleCopyId = () => {
     if (yard?.id) {
       navigator.clipboard.writeText(String(yard.id));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const triggerDownload = (blob: Blob, filename: string) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!yard) return;
-    try {
-      setDownloadingPdf(true);
-      const logoUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/images/logo.jpeg`
-          : "/images/logo.jpeg";
-      const params = new URLSearchParams({ logoUrl });
-      const blob = await fetchBlobFromBackend(
-        `/yards/${yard.id}/report/pdf?${params.toString()}`,
-      );
-      triggerDownload(blob, `yard-report-${yard.id}.pdf`);
-      toast({ title: "Success", description: "PDF report downloaded" });
-    } catch (error: any) {
-      console.error("Error downloading PDF:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to download PDF report",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
-
-  const handleDownloadExcel = async () => {
-    if (!yard) return;
-    try {
-      setDownloadingExcel(true);
-      const blob = await fetchBlobFromBackend(
-        `/yards/${yard.id}/report/excel`,
-        {
-          headers: {
-            Accept:
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          },
-        },
-      );
-      triggerDownload(blob, `yard-report-${yard.id}.xlsx`);
-      toast({ title: "Success", description: "Excel report downloaded" });
-    } catch (error: any) {
-      console.error("Error downloading Excel:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to download Excel report",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloadingExcel(false);
     }
   };
 
@@ -379,38 +312,20 @@ export function YardDetailsModal({
         </div>
 
         <DialogFooter className="p-4 bg-muted/20 border-t border-border/50">
-          <div className="flex w-full items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPdf}
-                disabled={downloadingPdf}
-                className="gap-2"
-              >
-                {downloadingPdf ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 text-red-500" />
-                )}
-                Download PDF
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadExcel}
-                disabled={downloadingExcel}
-                className="gap-2"
-              >
-                {downloadingExcel ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                )}
-                Download Excel
+          <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
+              <Button asChild variant="default" size="sm" className="gap-2">
+                <Link href={`/reports/yards?yardId=${yard.id}`}>
+                  <BarChart3 className="h-4 w-4" />
+                  Open Reports
+                </Link>
               </Button>
             </div>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
               Close
             </Button>
           </div>

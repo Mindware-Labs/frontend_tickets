@@ -104,6 +104,10 @@ const data = {
       icon: Building,
       items: [
         {
+          title: "All Yards",
+          url: "/yards",
+        },
+        {
           title: "Reports",
           url: "/reports/yards",
         },

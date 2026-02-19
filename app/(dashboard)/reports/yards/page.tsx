@@ -5,6 +5,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -34,6 +42,7 @@ import {
   Users,
   TrendingUp,
   Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { fetchFromBackend, fetchBlobFromBackend } from "@/lib/api-client";
@@ -89,9 +98,20 @@ type YardStats = {
   ticketsByDirection: { direction: string; count: number }[];
   ticketsByDisposition: { disposition: string; count: number }[];
   ticketsByPriority: { priority: string; count: number }[];
-  ticketsByDay: { date: string; day: string; fullDate: string; total: number; open: number; closed: number }[];
+  ticketsByDay: {
+    date: string;
+    day: string;
+    fullDate: string;
+    total: number;
+    open: number;
+    closed: number;
+  }[];
   ticketsByAgent: { agentId: number; agentName: string; count: number }[];
-  ticketsByCampaign: { campaignId: number; campaignName: string; count: number }[];
+  ticketsByCampaign: {
+    campaignId: number;
+    campaignName: string;
+    count: number;
+  }[];
   avgResolutionTime?: number; // in hours
   peakDay?: string;
   peakDayCount?: number;
@@ -138,6 +158,7 @@ export default function YardReportsPage() {
   const [yards, setYards] = useState<Yard[]>([]);
   const [selectedYardId, setSelectedYardId] = useState<string>("");
   const [yardOpen, setYardOpen] = useState(false);
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [yardsStats, setYardsStats] = useState<YardStats[]>([]);
   const [selectedYardStats, setSelectedYardStats] = useState<YardStats | null>(
@@ -165,17 +186,22 @@ export default function YardReportsPage() {
         setYards(items.filter((yard: Yard) => yard.isActive !== false));
       } catch (error: any) {
         console.error("Error fetching yards:", error);
-        
+
         // Determine error message
         let errorMessage = "Failed to load yards";
-        if (error?.isNetworkError || error?.message?.includes("fetch failed") || error?.message?.includes("Failed to fetch")) {
-          errorMessage = "Cannot connect to backend server. Please check if the backend is running.";
+        if (
+          error?.isNetworkError ||
+          error?.message?.includes("fetch failed") ||
+          error?.message?.includes("Failed to fetch")
+        ) {
+          errorMessage =
+            "Cannot connect to backend server. Please check if the backend is running.";
         } else if (error?.status === 401) {
           errorMessage = "Session expired. Please login again.";
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         toast({
           title: "Error",
           description: errorMessage,
@@ -281,8 +307,7 @@ export default function YardReportsPage() {
           yardTickets.forEach((ticket) => {
             const agentId = ticket.agentId || ticket.agent?.id;
             if (agentId) {
-              const agentName =
-                ticket.agent?.name || `Agent #${agentId}`;
+              const agentName = ticket.agent?.name || `Agent #${agentId}`;
               const existing = ticketsByAgentMap.get(agentId);
               if (existing) {
                 existing.count += 1;
@@ -331,7 +356,7 @@ export default function YardReportsPage() {
             string,
             { total: number; open: number; closed: number }
           >();
-          
+
           // Initialize all days in the date range with 0 tickets
           const rangeStart = new Date(startDate);
           const rangeEnd = new Date(endDate);
@@ -346,7 +371,7 @@ export default function YardReportsPage() {
             });
             currentDate.setDate(currentDate.getDate() + 1);
           }
-          
+
           // Add actual ticket data
           yardTickets.forEach((ticket) => {
             const date = new Date(ticket.createdAt || ticket.updatedAt || "");
@@ -362,15 +387,19 @@ export default function YardReportsPage() {
             }
           });
 
-          const daysDiff = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24));
-          
+          const daysDiff = Math.ceil(
+            (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
           const ticketsByDay = Array.from(ticketsByDayMap.entries())
             .map(([date, data]) => {
               const d = new Date(date);
               const dayOfMonth = d.getDate();
-              const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+              const weekday = d.toLocaleDateString("en-US", {
+                weekday: "short",
+              });
               const month = d.toLocaleDateString("en-US", { month: "short" });
-              
+
               // Format date label - Always include day number
               let dayLabel: string;
               if (daysDiff <= 14) {
@@ -386,7 +415,11 @@ export default function YardReportsPage() {
               return {
                 date,
                 day: dayLabel,
-                fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                fullDate: d.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }),
                 dayOfMonth, // Add for easier access
                 ...data,
               };
@@ -396,7 +429,7 @@ export default function YardReportsPage() {
           // Find peak day
           const peakDayEntry = ticketsByDay.reduce(
             (max, day) => (day.total > (max?.total || 0) ? day : max),
-            null as typeof ticketsByDay[0] | null,
+            null as (typeof ticketsByDay)[0] | null,
           );
 
           // Calculate average resolution time (for closed tickets)
@@ -408,7 +441,8 @@ export default function YardReportsPage() {
             const totalHours = closedTicketsWithDates.reduce((sum, ticket) => {
               const created = new Date(ticket.createdAt!);
               const updated = new Date(ticket.updatedAt!);
-              const hours = (updated.getTime() - created.getTime()) / (1000 * 60 * 60);
+              const hours =
+                (updated.getTime() - created.getTime()) / (1000 * 60 * 60);
               return sum + hours;
             }, 0);
             avgResolutionTime = totalHours / closedTicketsWithDates.length;
@@ -459,17 +493,22 @@ export default function YardReportsPage() {
         setYardsStats(Array.from(statsMap.values()));
       } catch (error: any) {
         console.error("Error fetching yard stats:", error);
-        
+
         // Determine error message
         let errorMessage = "Failed to load yard statistics";
-        if (error?.isNetworkError || error?.message?.includes("fetch failed") || error?.message?.includes("Failed to fetch")) {
-          errorMessage = "Cannot connect to backend server. Please check if the backend is running.";
+        if (
+          error?.isNetworkError ||
+          error?.message?.includes("fetch failed") ||
+          error?.message?.includes("Failed to fetch")
+        ) {
+          errorMessage =
+            "Cannot connect to backend server. Please check if the backend is running.";
         } else if (error?.status === 401) {
           errorMessage = "Session expired. Please login again.";
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         toast({
           title: "Error",
           description: errorMessage,
@@ -503,9 +542,8 @@ export default function YardReportsPage() {
     }
   }, [yardIdParam]);
 
-  const selectedYard = yards.find(
-    (y) => y.id.toString() === selectedYardId,
-  ) || null;
+  const selectedYard =
+    yards.find((y) => y.id.toString() === selectedYardId) || null;
 
   const handleYardSelect = (yardId: string) => {
     setSelectedYardId(yardId);
@@ -525,6 +563,11 @@ export default function YardReportsPage() {
     router.push(`/reports/yards?${params.toString()}`);
   };
 
+  const applyFilters = () => {
+    handleDateChange();
+    setFiltersModalOpen(false);
+  };
+
   const getLogoUrl = () =>
     typeof window !== "undefined"
       ? `${window.location.origin}/images/logo.jpeg`
@@ -542,9 +585,8 @@ export default function YardReportsPage() {
     }
     try {
       const params = new URLSearchParams({
-        yardId: selectedYardId,
-        startDate,
-        endDate,
+        start: startDate,
+        end: endDate,
         logoUrl: getLogoUrl(),
       });
       const blob = await fetchBlobFromBackend(
@@ -599,7 +641,11 @@ export default function YardReportsPage() {
       const headerCell = worksheet.mergeCells(1, 1, 1, 4);
       const headerCellValue = worksheet.getCell(1, 1);
       headerCellValue.value = `YARD REPORT - ${selectedYardStats.yard.name}`;
-      headerCellValue.font = { size: 18, bold: true, color: { argb: "FFFFFFFF" } };
+      headerCellValue.font = {
+        size: 18,
+        bold: true,
+        color: { argb: "FFFFFFFF" },
+      };
       headerCellValue.fill = {
         type: "pattern",
         pattern: "solid",
@@ -613,7 +659,11 @@ export default function YardReportsPage() {
       const dateCell = worksheet.mergeCells(2, 1, 2, 4);
       const dateCellValue = worksheet.getCell(2, 1);
       dateCellValue.value = `Period: ${startDate} - ${endDate}`;
-      dateCellValue.font = { size: 12, bold: true, color: { argb: "FF1E40AF" } };
+      dateCellValue.font = {
+        size: 12,
+        bold: true,
+        color: { argb: "FF1E40AF" },
+      };
       dateCellValue.fill = {
         type: "pattern",
         pattern: "solid",
@@ -638,7 +688,10 @@ export default function YardReportsPage() {
       worksheet.addRow([]);
 
       // Additional Stats
-      worksheet.addRow(["In Progress Tickets", selectedYardStats.inProgressTickets]);
+      worksheet.addRow([
+        "In Progress Tickets",
+        selectedYardStats.inProgressTickets,
+      ]);
       worksheet.addRow([
         "Average Resolution Time",
         selectedYardStats.avgResolutionTime
@@ -741,131 +794,208 @@ export default function YardReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 md:p-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-2 md:p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">
+      <div className="mx-auto max-w-[1600px] space-y-4">
         {/* Header Section */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground drop-shadow-sm">
               Yard Reports
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Analyze performance and generate reports for yards.
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
+              {selectedYard
+                ? `${selectedYard.name} - ${startDate} to ${endDate}`
+                : "Select a yard to view analytics"}
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card/80 backdrop-blur-sm px-4 py-3 shadow-md">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium leading-none">Start</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  handleDateChange();
-                }}
-                className="w-36"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium leading-none">End</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  handleDateChange();
-                }}
-                className="w-36"
-              />
-            </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => setFiltersModalOpen(true)}
+              className="gap-2"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Configure Report
+            </Button>
             {selectedYardStats && (
               <>
                 <Button
                   variant="outline"
                   onClick={handleExportPDF}
-                  disabled={!selectedYardStats}
                   className="gap-2"
                 >
-                  <Download className="w-4 h-4" /> PDF
+                  <Download className="w-4 h-4" />
+                  Export PDF
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleExportExcel}
-                  disabled={!selectedYardStats}
                   className="gap-2"
                 >
-                  <FileSpreadsheet className="w-4 h-4" /> Excel
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Export Excel
                 </Button>
               </>
             )}
           </div>
         </div>
 
-        {/* Yard Selection Section */}
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-4 shadow-lg shadow-slate-200/60 dark:shadow-slate-950/40 md:p-6">
-          <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
-            <Building className="w-4 h-4" /> Yard Selection
-          </div>
-          <div className="grid gap-4 md:grid-cols-1">
-            <div className="space-y-2">
-              <label className="text-xs font-medium leading-none">
-                Select Yard
-              </label>
-              <Popover open={yardOpen} onOpenChange={setYardOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={yardOpen}
-                    className="w-full justify-between"
-                    disabled={loading}
+        {/* Filters Sheet */}
+        <Sheet open={filtersModalOpen} onOpenChange={setFiltersModalOpen}>
+          <SheetContent
+            side="right"
+            className="w-full sm:max-w-lg overflow-y-auto p-6 sm:p-8"
+          >
+            <SheetHeader className="space-y-1.5">
+              <SheetTitle className="text-xl">Configure Yard Report</SheetTitle>
+              <SheetDescription className="text-sm">
+                Select the yard, date range and export options.
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="space-y-6 mt-1">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold leading-none flex items-center gap-2">
+                  <Building className="h-4 w-4 text-primary" />
+                  Select Yard
+                </label>
+                <Popover open={yardOpen} onOpenChange={setYardOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={yardOpen}
+                      className="w-full justify-between"
+                      disabled={loading}
+                    >
+                      {selectedYardId
+                        ? yards.find((y) => y.id.toString() === selectedYardId)
+                            ?.name || "Select a yard..."
+                        : "Select a yard..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0"
+                    align="start"
                   >
-                    {selectedYardId
-                      ? yards.find((y) => y.id.toString() === selectedYardId)
-                          ?.name || "Select a yard..."
-                      : "Select a yard..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search yard..." />
-                    <CommandList>
-                      <CommandEmpty>
-                        {loading ? "Loading yards..." : "No yard found."}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {yards.map((yard) => (
-                          <CommandItem
-                            key={yard.id}
-                            value={yard.name}
-                            onSelect={() => handleYardSelect(yard.id.toString())}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedYardId === yard.id.toString()
-                                  ? "opacity-100"
-                                  : "opacity-0"
+                    <Command>
+                      <CommandInput placeholder="Search yard..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          {loading ? "Loading yards..." : "No yard found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {yards.map((yard) => (
+                            <CommandItem
+                              key={yard.id}
+                              value={yard.name}
+                              onSelect={() =>
+                                handleYardSelect(yard.id.toString())
+                              }
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedYardId === yard.id.toString()
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              {yard.name}
+                              {yard.commonName && (
+                                <span className="text-muted-foreground ml-2">
+                                  ({yard.commonName})
+                                </span>
                               )}
-                            />
-                            {yard.name}
-                            {yard.commonName && (
-                              <span className="text-muted-foreground ml-2">
-                                ({yard.commonName})
-                              </span>
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-semibold leading-none flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Date Range
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Start Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      End Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {selectedYardStats && (
+                <div className="space-y-3">
+                  <div className="border-t pt-4">
+                    <label className="text-sm font-semibold leading-none flex items-center gap-2 mb-3">
+                      <Download className="h-4 w-4 text-primary" />
+                      Export Options
+                    </label>
+                    <div className="grid gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleExportPDF}
+                        disabled={!selectedYardStats}
+                        className="gap-2 w-full h-10"
+                      >
+                        <Download className="w-4 h-4" />
+                        Export PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleExportExcel}
+                        disabled={!selectedYardStats}
+                        className="gap-2 w-full h-10"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Export Excel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+
+            <SheetFooter className="flex-col sm:flex-row gap-3 mt-8 pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setFiltersModalOpen(false)}
+                className="w-full sm:w-auto sm:flex-1 h-10"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={applyFilters}
+                className="gap-2 w-full sm:w-auto sm:flex-1 h-10"
+              >
+                <Calendar className="h-4 w-4" />
+                Apply Filters
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
         {/* Yards Overview - Show all yards when none selected */}
         {!selectedYardId || !selectedYard ? (
@@ -878,17 +1008,26 @@ export default function YardReportsPage() {
                 </span>
               </div>
             ) : yardsStats.length === 0 ? (
-              <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center animate-in zoom-in-95 duration-300">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-                  <Building className="h-8 w-8 text-muted-foreground" />
+              <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-gradient-to-br from-muted/30 to-muted/10 p-8 text-center animate-in zoom-in-95 duration-300">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-6 ring-8 ring-primary/5">
+                  <Building className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">
+                <h3 className="text-xl font-bold">
                   Seleccione una yarda para ver Dashboard
                 </h3>
-                <p className="mb-4 mt-2 text-sm text-muted-foreground max-w-sm">
-                  Por favor, seleccione una yarda del dropdown arriba para ver
-                  el dashboard y reportes.
+                <p className="mb-6 mt-3 text-sm text-muted-foreground max-w-md">
+                  Use el botón "Configure Report" en la parte superior para
+                  elegir una yarda y visualizar análisis detallados con gráficas
+                  y estadísticas.
                 </p>
+                <Button
+                  onClick={() => setFiltersModalOpen(true)}
+                  className="gap-2"
+                  size="lg"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Configurar Reporte
+                </Button>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -896,40 +1035,55 @@ export default function YardReportsPage() {
                   <div
                     key={stats.yard.id}
                     onClick={() => handleYardSelect(stats.yard.id.toString())}
-                    className="relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md cursor-pointer hover:border-primary/50"
+                    className="group relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg cursor-pointer hover:border-primary hover:scale-[1.02]"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Building className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">
-                          {stats.yard.name}
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          Total Tickets
-                        </p>
-                        <p className="text-2xl font-bold">{stats.totalTickets}</p>
-                      </div>
-                      <div className="flex gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Open: </span>
-                          <span className="font-medium">{stats.openTickets}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Closed: </span>
-                          <span className="font-medium">{stats.closedTickets}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                            <Building className="h-5 w-5" />
+                          </div>
+                          <h3 className="font-semibold text-lg truncate">
+                            {stats.yard.name}
+                          </h3>
                         </div>
                       </div>
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground">
-                          Last Activity
-                        </p>
-                        <p className="text-sm font-medium">
-                          {formatDate(stats.lastActivity)}
-                        </p>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Total Tickets
+                          </p>
+                          <p className="text-2xl font-bold">
+                            {stats.totalTickets}
+                          </p>
+                        </div>
+                        <div className="flex gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-orange-500" />
+                            <span className="text-muted-foreground">Open:</span>
+                            <span className="font-medium">
+                              {stats.openTickets}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="text-muted-foreground">
+                              Closed:
+                            </span>
+                            <span className="font-medium">
+                              {stats.closedTickets}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            Last Activity
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatDate(stats.lastActivity)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -945,9 +1099,9 @@ export default function YardReportsPage() {
             </span>
           </div>
         ) : (
-          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
             {/* KPI Cards - Expanded */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex justify-between items-start">
                   <div>
@@ -958,7 +1112,8 @@ export default function YardReportsPage() {
                       {selectedYardStats.totalTickets}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {selectedYardStats.openTickets} open, {selectedYardStats.closedTickets} closed
+                      {selectedYardStats.openTickets} open,{" "}
+                      {selectedYardStats.closedTickets} closed
                     </p>
                   </div>
                   <div className="p-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/10">
@@ -997,8 +1152,13 @@ export default function YardReportsPage() {
                     </h3>
                     <p className="text-xs text-muted-foreground mt-2">
                       {selectedYardStats.totalTickets > 0
-                        ? Math.round((selectedYardStats.closedTickets / selectedYardStats.totalTickets) * 100)
-                        : 0}% resolution rate
+                        ? Math.round(
+                            (selectedYardStats.closedTickets /
+                              selectedYardStats.totalTickets) *
+                              100,
+                          )
+                        : 0}
+                      % resolution rate
                     </p>
                   </div>
                   <div className="p-2 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10">
@@ -1031,46 +1191,31 @@ export default function YardReportsPage() {
               </div>
             </div>
 
-            {/* Additional KPI Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      In Progress
-                    </p>
-                    <h3 className="text-3xl font-bold mt-1">
-                      {selectedYardStats.inProgressTickets}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Being worked on
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                </div>
-              </div>
-
+            {/* Secondary Stats Row */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-xs text-muted-foreground">
                       Last Activity
                     </p>
-                    <h3 className="text-lg font-bold mt-1">
+                    <h3 className="text-base font-semibold mt-1">
                       {selectedYardStats.lastActivity
-                        ? new Date(selectedYardStats.lastActivity).toLocaleDateString()
+                        ? new Date(
+                            selectedYardStats.lastActivity,
+                          ).toLocaleDateString()
                         : "N/A"}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {selectedYardStats.lastActivity
-                        ? new Date(selectedYardStats.lastActivity).toLocaleTimeString()
+                        ? new Date(
+                            selectedYardStats.lastActivity,
+                          ).toLocaleTimeString()
                         : "No activity"}
                     </p>
                   </div>
                   <div className="p-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10">
-                    <Calendar className="w-5 h-5" />
+                    <Activity className="w-5 h-5" />
                   </div>
                 </div>
               </div>
@@ -1079,12 +1224,13 @@ export default function YardReportsPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Top Agents
+                      Active Agents
                     </p>
                     <h3 className="text-2xl font-bold mt-1">
                       {selectedYardStats.ticketsByAgent.length}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground mt-2 truncate">
+                      Top:{" "}
                       {selectedYardStats.ticketsByAgent[0]?.agentName || "N/A"}
                     </p>
                   </div>
@@ -1094,11 +1240,12 @@ export default function YardReportsPage() {
                 </div>
               </div>
 
-              <div 
-                className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm cursor-pointer hover:shadow-md transition-all hover:border-primary/50"
+              <div
+                className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm cursor-pointer hover:shadow-lg transition-all hover:border-primary hover:scale-[1.02]"
                 onClick={() => router.push("/campaigns")}
               >
-                <div className="flex justify-between items-start">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex justify-between items-start">
                   <div>
                     <p className="text-xs text-muted-foreground">
                       Active Campaigns
@@ -1106,22 +1253,23 @@ export default function YardReportsPage() {
                     <h3 className="text-2xl font-bold mt-1">
                       {selectedYardStats.ticketsByCampaign.length}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {selectedYardStats.ticketsByCampaign[0]?.campaignName || "N/A"}
+                    <p className="text-xs text-muted-foreground mt-2 truncate">
+                      {selectedYardStats.ticketsByCampaign[0]?.campaignName ||
+                        "N/A"}
                     </p>
-                    <p className="text-xs text-primary mt-1 font-medium">
-                      Click to view campaigns →
+                    <p className="text-xs text-primary mt-1 font-medium group-hover:underline">
+                      View campaigns →
                     </p>
                   </div>
-                  <div className="p-2 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/10">
-                    <BarChart3 className="w-5 h-5" />
+                  <div className="p-2 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/10 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Charts Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-semibold text-foreground">
@@ -1195,10 +1343,10 @@ export default function YardReportsPage() {
                 <h3 className="text-lg font-semibold text-foreground mb-1">
                   Status Breakdown
                 </h3>
-                <p className="text-xs text-muted-foreground mb-6">
+                <p className="text-xs text-muted-foreground mb-4">
                   Tickets by status
                 </p>
-                <div className="h-48 mb-4">
+                <div className="h-56 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1255,16 +1403,16 @@ export default function YardReportsPage() {
             </div>
 
             {/* Charts Row 2 - Dispositions, Directions, Priorities */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Disposition Breakdown - ALL Dispositions */}
               <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-foreground mb-1">
                   Disposition Breakdown
                 </h3>
-                <p className="text-xs text-muted-foreground mb-6">
+                <p className="text-xs text-muted-foreground mb-4">
                   All ticket dispositions
                 </p>
-                <div className="h-48 mb-4">
+                <div className="h-52 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1276,43 +1424,51 @@ export default function YardReportsPage() {
                         dataKey="count"
                         paddingAngle={5}
                       >
-                        {selectedYardStats.ticketsByDisposition.map((entry, i) => (
-                          <Cell
-                            key={entry.disposition}
-                            fill={DISPOSITION_COLORS[i % DISPOSITION_COLORS.length]}
-                          />
-                        ))}
+                        {selectedYardStats.ticketsByDisposition.map(
+                          (entry, i) => (
+                            <Cell
+                              key={entry.disposition}
+                              fill={
+                                DISPOSITION_COLORS[
+                                  i % DISPOSITION_COLORS.length
+                                ]
+                              }
+                            />
+                          ),
+                        )}
                       </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-44 overflow-y-auto pr-2 scrollbar-thin">
                   {selectedYardStats.ticketsByDisposition.length > 0 ? (
-                    selectedYardStats.ticketsByDisposition.map((item, index) => (
-                      <div
-                        key={item.disposition}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                DISPOSITION_COLORS[
-                                  index % DISPOSITION_COLORS.length
-                                ],
-                            }}
-                          />
-                          <span className="text-muted-foreground capitalize">
-                            {item.disposition.replace("_", " ").toLowerCase()}
+                    selectedYardStats.ticketsByDisposition.map(
+                      (item, index) => (
+                        <div
+                          key={item.disposition}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  DISPOSITION_COLORS[
+                                    index % DISPOSITION_COLORS.length
+                                  ],
+                              }}
+                            />
+                            <span className="text-muted-foreground capitalize">
+                              {item.disposition.replace("_", " ").toLowerCase()}
+                            </span>
+                          </div>
+                          <span className="font-medium text-foreground">
+                            {item.count}
                           </span>
                         </div>
-                        <span className="font-medium text-foreground">
-                          {item.count}
-                        </span>
-                      </div>
-                    ))
+                      ),
+                    )
                   ) : (
                     <div className="text-sm text-muted-foreground text-center py-4">
                       No dispositions recorded
@@ -1326,10 +1482,10 @@ export default function YardReportsPage() {
                 <h3 className="text-lg font-semibold text-foreground mb-1">
                   Direction Breakdown
                 </h3>
-                <p className="text-xs text-muted-foreground mb-6">
+                <p className="text-xs text-muted-foreground mb-4">
                   Call directions
                 </p>
-                <div className="h-48 mb-4">
+                <div className="h-52 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1341,15 +1497,19 @@ export default function YardReportsPage() {
                         dataKey="count"
                         paddingAngle={5}
                       >
-                        {selectedYardStats.ticketsByDirection.map((entry, i) => (
-                          <Cell
-                            key={entry.direction}
-                            fill={
-                              DIRECTION_COLORS[entry.direction] ||
-                              DISPOSITION_COLORS[i % DISPOSITION_COLORS.length]
-                            }
-                          />
-                        ))}
+                        {selectedYardStats.ticketsByDirection.map(
+                          (entry, i) => (
+                            <Cell
+                              key={entry.direction}
+                              fill={
+                                DIRECTION_COLORS[entry.direction] ||
+                                DISPOSITION_COLORS[
+                                  i % DISPOSITION_COLORS.length
+                                ]
+                              }
+                            />
+                          ),
+                        )}
                       </Pie>
                       <Tooltip />
                     </PieChart>
@@ -1389,10 +1549,10 @@ export default function YardReportsPage() {
                 <h3 className="text-lg font-semibold text-foreground mb-1">
                   Priority Breakdown
                 </h3>
-                <p className="text-xs text-muted-foreground mb-6">
+                <p className="text-xs text-muted-foreground mb-4">
                   Ticket priorities
                 </p>
-                <div className="h-48 mb-4">
+                <div className="h-52 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1449,7 +1609,7 @@ export default function YardReportsPage() {
             </div>
 
             {/* Top Agents and Campaigns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Top Agents */}
               <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
