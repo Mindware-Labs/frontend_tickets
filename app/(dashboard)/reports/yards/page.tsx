@@ -59,6 +59,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  AreaChart,
+  Area,
 } from "recharts";
 import ExcelJS from "exceljs";
 
@@ -93,6 +95,7 @@ type YardStats = {
   openTickets: number;
   inProgressTickets: number;
   closedTickets: number;
+  todayTickets: number;
   lastActivity?: string | null;
   ticketsByStatus: { status: string; count: number }[];
   ticketsByDirection: { direction: string; count: number }[];
@@ -464,6 +467,7 @@ export default function YardReportsPage() {
             openTickets,
             inProgressTickets,
             closedTickets,
+            todayTickets: ticketsByDay.find(d => d.date === new Date().toLocaleDateString('en-CA'))?.total || 0,
             lastActivity: lastActivity || null,
             ticketsByStatus: Object.entries(ticketsByStatus).map(
               ([status, count]) => ({ status, count }),
@@ -572,6 +576,13 @@ export default function YardReportsPage() {
     typeof window !== "undefined"
       ? `${window.location.origin}/images/logo.jpeg`
       : "/images/logo.jpeg";
+
+      const activeChartData = useMemo(() => {
+    if (!selectedYardStats?.ticketsByDay) return [];
+    
+    // Filtramos para que SOLO se dibujen los días que tienen al menos 1 ticket (ya sea open o closed)
+    return selectedYardStats.ticketsByDay.filter(day => day.total > 0);
+  }, [selectedYardStats]);
 
   const handleExportPDF = async () => {
     if (!selectedYardStats) return;
@@ -870,7 +881,7 @@ export default function YardReportsPage() {
                     >
                       {selectedYardId
                         ? yards.find((y) => y.id.toString() === selectedYardId)
-                            ?.name || "Select a yard..."
+                          ?.name || "Select a yard..."
                         : "Select a yard..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -1153,10 +1164,10 @@ export default function YardReportsPage() {
                     <p className="text-xs text-muted-foreground mt-2">
                       {selectedYardStats.totalTickets > 0
                         ? Math.round(
-                            (selectedYardStats.closedTickets /
-                              selectedYardStats.totalTickets) *
-                              100,
-                          )
+                          (selectedYardStats.closedTickets /
+                            selectedYardStats.totalTickets) *
+                          100,
+                        )
                         : 0}
                       % resolution rate
                     </p>
@@ -1169,21 +1180,19 @@ export default function YardReportsPage() {
 
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Avg Resolution
-                    </p>
-                    <h3 className="text-2xl font-bold mt-1">
-                      {selectedYardStats.avgResolutionTime
-                        ? `${Math.round(selectedYardStats.avgResolutionTime)}h`
-                        : "N/A"}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {selectedYardStats.peakDay
-                        ? `Peak: ${selectedYardStats.peakDay} (${selectedYardStats.peakDayCount})`
-                        : "No peak day"}
-                    </p>
-                  </div>
+                 <div>
+  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+    Resolution Rate
+  </p>
+  <h3 className="text-2xl font-bold mt-1">
+    {selectedYardStats.totalTickets > 0
+      ? `${Math.round((selectedYardStats.closedTickets / selectedYardStats.totalTickets) * 100)}%`
+      : "0%"}
+  </h3>
+  <p className="text-xs text-muted-foreground mt-2">
+    {selectedYardStats.closedTickets} of {selectedYardStats.totalTickets} resolved
+  </p>
+</div>
                   <div className="p-2 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/10">
                     <BarChart3 className="w-5 h-5" />
                   </div>
@@ -1194,81 +1203,75 @@ export default function YardReportsPage() {
             {/* Secondary Stats Row */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Last Activity
-                    </p>
-                    <h3 className="text-base font-semibold mt-1">
-                      {selectedYardStats.lastActivity
-                        ? new Date(
-                            selectedYardStats.lastActivity,
-                          ).toLocaleDateString()
-                        : "N/A"}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedYardStats.lastActivity
-                        ? new Date(
-                            selectedYardStats.lastActivity,
-                          ).toLocaleTimeString()
-                        : "No activity"}
-                    </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                        Today's Volume
+                      </p>
+                      <h3 className="text-2xl font-bold mt-1">
+                        {selectedYardStats?.todayTickets || 0}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedYardStats?.todayTickets === 1
+                          ? "1 ticket created today"
+                          : "Tickets created today"}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10">
+                      <Activity className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="p-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10">
-                    <Activity className="w-5 h-5" />
+                </div>
+
+                <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Active Agents
+                      </p>
+                      <h3 className="text-2xl font-bold mt-1">
+                        {selectedYardStats.ticketsByAgent.length}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-2 truncate">
+                        Top:{" "}
+                        {selectedYardStats.ticketsByAgent[0]?.agentName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10">
+                      <Users className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm cursor-pointer hover:shadow-lg transition-all hover:border-primary hover:scale-[1.02]"
+                  onClick={() => router.push("/campaigns")}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Active Campaigns
+                      </p>
+                      <h3 className="text-2xl font-bold mt-1">
+                        {selectedYardStats.ticketsByCampaign.length}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-2 truncate">
+                        {selectedYardStats.ticketsByCampaign[0]?.campaignName ||
+                          "N/A"}
+                      </p>
+                      <p className="text-xs text-primary mt-1 font-medium group-hover:underline">
+                        View campaigns →
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/10 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Active Agents
-                    </p>
-                    <h3 className="text-2xl font-bold mt-1">
-                      {selectedYardStats.ticketsByAgent.length}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 truncate">
-                      Top:{" "}
-                      {selectedYardStats.ticketsByAgent[0]?.agentName || "N/A"}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10">
-                    <Users className="w-5 h-5" />
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm cursor-pointer hover:shadow-lg transition-all hover:border-primary hover:scale-[1.02]"
-                onClick={() => router.push("/campaigns")}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Active Campaigns
-                    </p>
-                    <h3 className="text-2xl font-bold mt-1">
-                      {selectedYardStats.ticketsByCampaign.length}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 truncate">
-                      {selectedYardStats.ticketsByCampaign[0]?.campaignName ||
-                        "N/A"}
-                    </p>
-                    <p className="text-xs text-primary mt-1 font-medium group-hover:underline">
-                      View campaigns →
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/10 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Charts Row 1 */}
+       {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
                 <div className="flex justify-between items-center mb-6">
@@ -1276,16 +1279,18 @@ export default function YardReportsPage() {
                     Ticket Activity Over Time
                   </h3>
                   <span className="text-xs text-muted-foreground">
-                    Total: {selectedYardStats.totalTickets}
+                    Total: {selectedYardStats?.totalTickets || 0}
                   </span>
                 </div>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={selectedYardStats.ticketsByDay}>
+                    {/* USAMOS LA DATA FILTRADA AQUÍ */}
+                    <BarChart data={activeChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
                         stroke="hsl(var(--border))"
+                        opacity={0.5}
                       />
                       <XAxis
                         dataKey="day"
@@ -1293,12 +1298,12 @@ export default function YardReportsPage() {
                         tickLine={false}
                         angle={-45}
                         textAnchor="end"
-                        height={80}
+                        height={60}
+                        minTickGap={15} // Reducido un poco para que muestre más fechas de la data activa
                         tick={{
                           fill: "hsl(var(--muted-foreground))",
                           fontSize: 11,
                         }}
-                        interval={0}
                       />
                       <YAxis
                         axisLine={false}
@@ -1309,10 +1314,12 @@ export default function YardReportsPage() {
                         }}
                       />
                       <Tooltip
+                        cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
                         contentStyle={{
                           background: "hsl(var(--background))",
                           borderRadius: "8px",
                           border: "1px solid hsl(var(--border))",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                         }}
                         labelFormatter={(value, payload) => {
                           if (payload && payload[0]) {
@@ -1321,392 +1328,405 @@ export default function YardReportsPage() {
                           return value;
                         }}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       <Bar
                         dataKey="open"
                         name="Open"
                         fill="oklch(0.65 0.22 25)"
                         radius={[4, 4, 0, 0]}
+                        maxBarSize={45} // Evita que las barras se hagan gigantes si hay pocos datos
                       />
                       <Bar
                         dataKey="closed"
                         name="Closed"
                         fill="oklch(0.65 0.18 160)"
                         radius={[4, 4, 0, 0]}
+                        maxBarSize={45} // Evita que las barras se hagan gigantes si hay pocos datos
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  Status Breakdown
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Tickets by status
-                </p>
-                <div className="h-56 mb-4">
+             
+
+              {/* Columna Derecha (1/3): Status Breakdown (Mantenemos el diseño limpio anterior) */}
+              <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+                <div className="p-6 pb-2 border-b">
+                  <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    Status Distribution
+                  </h3>
+                </div>
+                
+                <div className="flex-1 min-h-[200px] relative bg-gradient-to-b from-background to-muted/10">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={selectedYardStats.ticketsByStatus}
+                        data={selectedYardStats?.ticketsByStatus || []}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={2}
                         dataKey="count"
-                        paddingAngle={5}
+                        cornerRadius={4}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
                       >
-                        {selectedYardStats.ticketsByStatus.map((entry, i) => (
+                        {selectedYardStats?.ticketsByStatus.map((entry, index) => (
                           <Cell
-                            key={entry.status}
+                            key={`cell-${index}`}
                             fill={
                               STATUS_COLORS[entry.status] ||
-                              DISPOSITION_COLORS[i % DISPOSITION_COLORS.length]
+                              DISPOSITION_COLORS[index % DISPOSITION_COLORS.length]
                             }
                           />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                        itemStyle={{ fontWeight: 'bold' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                    <span className="text-3xl font-bold tracking-tighter">
+                      {selectedYardStats?.totalTickets || 0}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total</span>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {selectedYardStats.ticketsByStatus.map((item, index) => (
-                    <div
-                      key={item.status}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div className="flex items-center gap-2">
+
+                <div className="p-4 bg-muted/20 border-t">
+                  <div className="grid grid-cols-2 gap-2">
+                  {selectedYardStats?.ticketsByStatus.map((item, index) => (
+                    <div key={item.status} className="flex items-center gap-2 text-xs bg-background p-2 rounded-md border shadow-sm">
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="h-2 w-2 rounded-full shrink-0"
                           style={{
                             backgroundColor:
                               STATUS_COLORS[item.status] ||
-                              DISPOSITION_COLORS[
-                                index % DISPOSITION_COLORS.length
-                              ],
+                              DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
                           }}
                         />
-                        <span className="text-muted-foreground capitalize">
+                        <span className="text-muted-foreground capitalize truncate flex-1">
                           {item.status.replace("_", " ").toLowerCase()}
                         </span>
-                      </div>
-                      <span className="font-medium text-foreground">
-                        {item.count}
-                      </span>
+                        <span className="font-mono font-bold">
+                          {item.count}
+                        </span>
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Charts Row 2 - Dispositions, Directions, Priorities */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Disposition Breakdown - ALL Dispositions */}
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  Disposition Breakdown
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  All ticket dispositions
-                </p>
-                <div className="h-52 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={selectedYardStats.ticketsByDisposition}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        dataKey="count"
-                        paddingAngle={5}
-                      >
-                        {selectedYardStats.ticketsByDisposition.map(
-                          (entry, i) => (
-                            <Cell
-                              key={entry.disposition}
-                              fill={
-                                DISPOSITION_COLORS[
-                                  i % DISPOSITION_COLORS.length
-                                ]
-                              }
-                            />
-                          ),
-                        )}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2 max-h-44 overflow-y-auto pr-2 scrollbar-thin">
-                  {selectedYardStats.ticketsByDisposition.length > 0 ? (
-                    selectedYardStats.ticketsByDisposition.map(
-                      (item, index) => (
-                        <div
-                          key={item.disposition}
-                          className="flex items-center justify-between text-sm"
+              {/* Charts Row 2 - Dispositions, Directions, Priorities */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Disposition Breakdown - ALL Dispositions */}
+                <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Disposition Breakdown
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    All ticket dispositions
+                  </p>
+                  <div className="h-52 mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={selectedYardStats.ticketsByDisposition}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          dataKey="count"
+                          paddingAngle={5}
                         >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{
-                                backgroundColor:
+                          {selectedYardStats.ticketsByDisposition.map(
+                            (entry, i) => (
+                              <Cell
+                                key={entry.disposition}
+                                fill={
                                   DISPOSITION_COLORS[
+                                  i % DISPOSITION_COLORS.length
+                                  ]
+                                }
+                              />
+                            ),
+                          )}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-2 max-h-44 overflow-y-auto pr-2 scrollbar-thin">
+                    {selectedYardStats.ticketsByDisposition.length > 0 ? (
+                      selectedYardStats.ticketsByDisposition.map(
+                        (item, index) => (
+                          <div
+                            key={item.disposition}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    DISPOSITION_COLORS[
                                     index % DISPOSITION_COLORS.length
-                                  ],
-                              }}
-                            />
-                            <span className="text-muted-foreground capitalize">
-                              {item.disposition.replace("_", " ").toLowerCase()}
+                                    ],
+                                }}
+                              />
+                              <span className="text-muted-foreground capitalize">
+                                {item.disposition.replace("_", " ").toLowerCase()}
+                              </span>
+                            </div>
+                            <span className="font-medium text-foreground">
+                              {item.count}
                             </span>
                           </div>
-                          <span className="font-medium text-foreground">
-                            {item.count}
+                        ),
+                      )
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-4">
+                        No dispositions recorded
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Direction Breakdown */}
+                <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Direction Breakdown
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Call directions
+                  </p>
+                  <div className="h-52 mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={selectedYardStats.ticketsByDirection}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          dataKey="count"
+                          paddingAngle={5}
+                        >
+                          {selectedYardStats.ticketsByDirection.map(
+                            (entry, i) => (
+                              <Cell
+                                key={entry.direction}
+                                fill={
+                                  DIRECTION_COLORS[entry.direction] ||
+                                  DISPOSITION_COLORS[
+                                  i % DISPOSITION_COLORS.length
+                                  ]
+                                }
+                              />
+                            ),
+                          )}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedYardStats.ticketsByDirection.map((item, index) => (
+                      <div
+                        key={item.direction}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                DIRECTION_COLORS[item.direction] ||
+                                DISPOSITION_COLORS[
+                                index % DISPOSITION_COLORS.length
+                                ],
+                            }}
+                          />
+                          <span className="text-muted-foreground capitalize">
+                            {item.direction.replace("_", " ").toLowerCase()}
                           </span>
                         </div>
-                      ),
-                    )
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">
-                      No dispositions recorded
-                    </div>
-                  )}
+                        <span className="font-medium text-foreground">
+                          {item.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Direction Breakdown */}
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  Direction Breakdown
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Call directions
-                </p>
-                <div className="h-52 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={selectedYardStats.ticketsByDirection}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        dataKey="count"
-                        paddingAngle={5}
-                      >
-                        {selectedYardStats.ticketsByDirection.map(
-                          (entry, i) => (
+                {/* Priority Breakdown */}
+                <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Priority Breakdown
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Ticket priorities
+                  </p>
+                  <div className="h-52 mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={selectedYardStats.ticketsByPriority}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          dataKey="count"
+                          paddingAngle={5}
+                        >
+                          {selectedYardStats.ticketsByPriority.map((entry, i) => (
                             <Cell
-                              key={entry.direction}
+                              key={entry.priority}
                               fill={
-                                DIRECTION_COLORS[entry.direction] ||
-                                DISPOSITION_COLORS[
-                                  i % DISPOSITION_COLORS.length
-                                ]
+                                PRIORITY_COLORS[entry.priority] ||
+                                DISPOSITION_COLORS[i % DISPOSITION_COLORS.length]
                               }
                             />
-                          ),
-                        )}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {selectedYardStats.ticketsByDirection.map((item, index) => (
-                    <div
-                      key={item.direction}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              DIRECTION_COLORS[item.direction] ||
-                              DISPOSITION_COLORS[
-                                index % DISPOSITION_COLORS.length
-                              ],
-                          }}
-                        />
-                        <span className="text-muted-foreground capitalize">
-                          {item.direction.replace("_", " ").toLowerCase()}
-                        </span>
-                      </div>
-                      <span className="font-medium text-foreground">
-                        {item.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Priority Breakdown */}
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  Priority Breakdown
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Ticket priorities
-                </p>
-                <div className="h-52 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={selectedYardStats.ticketsByPriority}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        dataKey="count"
-                        paddingAngle={5}
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedYardStats.ticketsByPriority.map((item, index) => (
+                      <div
+                        key={item.priority}
+                        className="flex items-center justify-between text-sm"
                       >
-                        {selectedYardStats.ticketsByPriority.map((entry, i) => (
-                          <Cell
-                            key={entry.priority}
-                            fill={
-                              PRIORITY_COLORS[entry.priority] ||
-                              DISPOSITION_COLORS[i % DISPOSITION_COLORS.length]
-                            }
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {selectedYardStats.ticketsByPriority.map((item, index) => (
-                    <div
-                      key={item.priority}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              PRIORITY_COLORS[item.priority] ||
-                              DISPOSITION_COLORS[
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                PRIORITY_COLORS[item.priority] ||
+                                DISPOSITION_COLORS[
                                 index % DISPOSITION_COLORS.length
-                              ],
-                          }}
-                        />
-                        <span className="text-muted-foreground capitalize">
-                          {item.priority.replace("_", " ").toLowerCase()}
+                                ],
+                            }}
+                          />
+                          <span className="text-muted-foreground capitalize">
+                            {item.priority.replace("_", " ").toLowerCase()}
+                          </span>
+                        </div>
+                        <span className="font-medium text-foreground">
+                          {item.count}
                         </span>
                       </div>
-                      <span className="font-medium text-foreground">
-                        {item.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Top Agents and Campaigns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Top Agents */}
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Top Agents
-                  </h3>
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="space-y-3">
-                  {selectedYardStats.ticketsByAgent.length > 0 ? (
-                    selectedYardStats.ticketsByAgent
-                      .slice(0, 10)
-                      .map((agent, index) => (
-                        <div
-                          key={agent.agentId}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">
-                                {agent.agentName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Agent #{agent.agentId}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg">{agent.count}</p>
-                            <p className="text-xs text-muted-foreground">
-                              tickets
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-8 text-sm text-muted-foreground">
-                      No agent data available
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Top Campaigns */}
-              <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Top Campaigns
-                  </h3>
-                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="space-y-3">
-                  {selectedYardStats.ticketsByCampaign.length > 0 ? (
-                    selectedYardStats.ticketsByCampaign
-                      .slice(0, 10)
-                      .map((campaign, index) => (
-                        <div
-                          key={campaign.campaignId}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                              {index + 1}
+              {/* Top Agents and Campaigns */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Top Agents */}
+                <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Top Agents
+                    </h3>
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-3">
+                    {selectedYardStats.ticketsByAgent.length > 0 ? (
+                      selectedYardStats.ticketsByAgent
+                        .slice(0, 10)
+                        .map((agent, index) => (
+                          <div
+                            key={agent.agentId}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {agent.agentName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Agent #{agent.agentId}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-sm">
-                                {campaign.campaignName}
+                            <div className="text-right">
+                              <p className="font-bold text-lg">{agent.count}</p>
+                              <p className="text-xs text-muted-foreground">
+                                tickets
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="text-center py-8 text-sm text-muted-foreground">
+                        No agent data available
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Campaigns */}
+                <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Top Campaigns
+                    </h3>
+                    <BarChart3 className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-3">
+                    {selectedYardStats.ticketsByCampaign.length > 0 ? (
+                      selectedYardStats.ticketsByCampaign
+                        .slice(0, 10)
+                        .map((campaign, index) => (
+                          <div
+                            key={campaign.campaignId}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {campaign.campaignName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Campaign #{campaign.campaignId}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-lg">
+                                {campaign.count}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Campaign #{campaign.campaignId}
+                                tickets
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg">
-                              {campaign.count}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              tickets
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-8 text-sm text-muted-foreground">
-                      No campaign data available
-                    </div>
-                  )}
+                        ))
+                    ) : (
+                      <div className="text-center py-8 text-sm text-muted-foreground">
+                        No campaign data available
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
         )}
-      </div>
+          </div>
     </div>
-  );
+      );
 }
