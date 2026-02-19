@@ -102,12 +102,7 @@ const data = {
       title: "Yards",
       url: "/yards",
       icon: Building,
-      items: [
-        {
-          title: "Reports",
-          url: "/reports/yards",
-        },
-      ],
+      items: [],
     },
     {
       title: "Landlords",
