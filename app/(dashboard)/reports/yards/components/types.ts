@@ -10,14 +10,24 @@ export type Yard = {
 export type Ticket = {
   id: number;
   yardId?: number | string | null;
+  yard?: { id?: number | string | null; name?: string | null } | null;
   status?: string | null;
   priority?: string | null;
   disposition?: string | null;
   direction?: string | null;
+  issueDetail?: string | null;
   createdAt?: string;
   updatedAt?: string;
-  customer?: { name?: string | null };
+  customer?: { id?: number | string | null; name?: string | null; phone?: string | null };
+  customerId?: number | string | null;
+  customerPhone?: string | null;
+  phone?: string | null;
   agent?: { name?: string | null; id?: number } | null;
+  assignedTo?: {
+    id?: number | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
   agentId?: number | null;
   campaignId?: number | string | null;
   campaign?: { id?: number | string | null; nombre?: string | null } | null;
@@ -51,6 +61,17 @@ export type YardStats = {
     campaignId: number | string;
     campaignName: string;
     count: number;
+  }[];
+  ticketsByNewLead: {
+    customerId: number | null;
+    customerName: string;
+    count: number;
+    phone?: string | null;
+    issueDetails: {
+      ticketId: number;
+      issueDetail: string;
+      createdAt?: string | null;
+    }[];
   }[];
   avgResolutionTime?: number;
   peakDay?: string;

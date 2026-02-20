@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,6 +21,7 @@ import {
   XCircle,
   Tag,
   Clock,
+  ExternalLink,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +52,7 @@ interface Campaign {
 interface ActiveCampaignsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  side?: "left" | "right";
   yardId: number;
   yardName: string;
   campaignsByTickets: {
@@ -65,7 +68,6 @@ const campaignTypeLabels: Record<string, string> = {
   OTHER: "Other",
 };
 
-// Colores más modernos y consistentes para los tipos de campaña
 const getCampaignTypeColor = (tipo: string) => {
   switch (tipo) {
     case "ONBOARDING":
@@ -78,7 +80,6 @@ const getCampaignTypeColor = (tipo: string) => {
   }
 };
 
-// Añadimos colores de fondo y bordes para las métricas secundarias
 const getSecondaryMetrics = (campaign: Campaign) => {
   if (campaign.tipo === "ONBOARDING") {
     return [
@@ -141,7 +142,7 @@ const resolveCampaignYardId = (campaign: Campaign): string | null => {
 const isCampaignFromCurrentYard = (
   campaign: Campaign | undefined,
   yardIdKey: string,
-) : campaign is Campaign => {
+): campaign is Campaign => {
   if (!campaign) return false;
   const campaignYardId = resolveCampaignYardId(campaign);
   return campaignYardId === yardIdKey;
@@ -150,6 +151,7 @@ const isCampaignFromCurrentYard = (
 export function ActiveCampaignsModal({
   open,
   onOpenChange,
+  side = "right",
   yardId,
   yardName,
   campaignsByTickets,
@@ -191,7 +193,8 @@ export function ActiveCampaignsModal({
 
           accumulator.push({
             id: campaign.id,
-            nombre: campaign.nombre || item.campaignName || `Campaign #${idKey}`,
+            nombre:
+              campaign.nombre || item.campaignName || `Campaign #${idKey}`,
             tipo: campaign.tipo || "OTHER",
             isActive: campaign.isActive ?? true,
             yardaId: campaign.yardaId ?? null,
@@ -213,10 +216,11 @@ export function ActiveCampaignsModal({
         .filter((campaign) => resolveCampaignYardId(campaign) === yardIdKey)
         .filter((campaign) => campaign.isActive);
 
-      const yardCampaigns = (fromTopCampaigns.length > 0
-        ? fromTopCampaigns
-        : fallbackByYard
-      ).sort((left, right) => (right.ticketCount ?? 0) - (left.ticketCount ?? 0));
+      const yardCampaigns = (
+        fromTopCampaigns.length > 0 ? fromTopCampaigns : fallbackByYard
+      ).sort(
+        (left, right) => (right.ticketCount ?? 0) - (left.ticketCount ?? 0),
+      );
 
       setCampaigns(yardCampaigns);
     } catch (error: any) {
@@ -231,35 +235,29 @@ export function ActiveCampaignsModal({
     }
   };
 
-  // Lógica dinámica para el layout del Grid basado en la cantidad de tarjetas
-  const getGridLayoutClass = (count: number) => {
-    if (count === 1) return "grid-cols-1 w-full max-w-4xl mx-auto";
-    if (count === 2) return "grid-cols-1 md:grid-cols-2 w-full max-w-5xl mx-auto";
-    return "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 w-full";
-  };
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl">
-        {/* Header del Modal */}
-        <DialogHeader className="border-b bg-card/50 px-6 py-5 backdrop-blur-sm">
-          <DialogTitle className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side={side}
+        className="flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl sm:max-w-[min(92vw,1200px)]"
+      >
+        <SheetHeader className="border-b bg-card/50 px-6 py-5 backdrop-blur-sm">
+          <SheetTitle className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <TrendingUp className="h-6 w-6" />
             </div>
             Active Campaigns
-          </DialogTitle>
-          <DialogDescription className="text-base mt-1.5 ml-12">
+          </SheetTitle>
+          <SheetDescription className="text-base mt-1.5 ml-12">
             Showing all active campaigns for{" "}
             <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">
               {yardName}
             </span>
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        {/* Área de Scroll principal */}
         <ScrollArea className="min-h-0 flex-1 bg-muted/10">
-          <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
+          <div className="p-4 sm:p-6 flex justify-center">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 w-full">
                 <Loader2 className="h-10 w-10 animate-spin text-primary/60" />
@@ -281,111 +279,123 @@ export function ActiveCampaignsModal({
                 </p>
               </div>
             ) : (
-              /* Grid dinámico que cambia según el número de elementos */
-              <div
-                className={`grid gap-5 sm:gap-6 ${getGridLayoutClass(
-                  campaigns.length,
-                )}`}
-              >
+              <div className="flex flex-col gap-6 w-full max-w-sm mx-auto">
                 {campaigns.map((campaign) => {
                   const secondaryMetrics = getSecondaryMetrics(campaign);
 
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/40 hover:-translate-y-1"
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/40"
                     >
-                      <div className="flex flex-col flex-1 p-5 sm:p-6 space-y-5">
-                        {/* Cabecera de la Tarjeta */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-3 flex-1 min-w-0">
-                            <h3
-                              className="text-lg font-bold leading-tight tracking-tight text-foreground truncate"
-                              title={campaign.nombre}
+                      <div className="flex flex-col p-5 space-y-5">
+                        <div className="flex flex-col gap-3 min-h-[80px]">
+                          <h3
+                            className="text-lg font-bold leading-tight tracking-tight text-foreground line-clamp-2"
+                            title={campaign.nombre}
+                          >
+                            {campaign.nombre}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-auto">
+                            <Badge
+                              variant="outline"
+                              className={`flex items-center gap-1.5 px-2.5 py-0.5 transition-colors ${getCampaignTypeColor(
+                                campaign.tipo,
+                              )}`}
                             >
-                              {campaign.nombre}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className={`flex items-center gap-1.5 px-2.5 py-0.5 transition-colors ${getCampaignTypeColor(
-                                  campaign.tipo,
-                                )}`}
-                              >
-                                <Tag className="h-3.5 w-3.5" />
-                                <span className="text-xs font-semibold uppercase tracking-wider">
-                                  {campaignTypeLabels[campaign.tipo] ||
-                                    campaign.tipo}
-                                </span>
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                <span className="text-xs font-medium">
-                                  Active
-                                </span>
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Indicador de Duración */}
-                        {campaign.duracion && (
-                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/40 rounded-lg p-2.5 border border-muted">
-                            <Clock className="h-4 w-4 text-primary/70" />
-                            <span>{campaign.duracion}</span>
-                          </div>
-                        )}
-
-                        <div className="flex-1" />
-
-                        {/* Sección de Estadísticas */}
-                        <div className="space-y-3 pt-4 border-t">
-                          {/* Métrica Principal */}
-                          <div className="flex items-center justify-between rounded-xl bg-primary/5 p-4 border border-primary/10">
-                            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                              <div className="p-1.5 rounded-md bg-background shadow-sm border">
-                                <Users className="h-4 w-4 text-primary" />
-                              </div>
-                              Total Tickets
-                            </div>
-                            <p className="text-2xl font-bold text-primary">
-                              {campaign.ticketCount ?? 0}
-                            </p>
-                          </div>
-
-                          {/* Métricas Secundarias */}
-                          {secondaryMetrics.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-3">
-                              {secondaryMetrics.map((metric) => (
-                                <div
-                                  key={`${campaign.id}-${metric.label}`}
-                                  className={`rounded-xl border p-3.5 flex flex-col justify-between ${metric.bgClass}`}
-                                >
-                                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                    {metric.label}
-                                  </p>
-                                  <p
-                                    className={`text-xl font-bold ${metric.textClass}`}
-                                  >
-                                    {metric.value}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="rounded-xl border bg-muted/20 p-3.5 flex items-center justify-between">
-                              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                Campaign Type
-                              </p>
-                              <span className="text-sm font-medium">
+                              <Tag className="h-3.5 w-3.5" />
+                              <span className="text-xs font-semibold uppercase tracking-wider">
                                 {campaignTypeLabels[campaign.tipo] ||
                                   campaign.tipo}
                               </span>
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">
+                                Active
+                              </span>
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/40 rounded-lg p-2.5 border border-muted min-h-[42px]">
+                            {campaign.duracion ? (
+                              <>
+                                <Clock className="h-4 w-4 text-primary/70 shrink-0" />
+                                <span className="truncate">
+                                  {campaign.duracion}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/50 italic text-xs">
+                                No duration set
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-3 pt-4 border-t">
+                            <div className="flex items-center justify-between rounded-xl bg-primary/5 p-4 border border-primary/10">
+                              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                <div className="p-1.5 rounded-md bg-background shadow-sm border">
+                                  <Users className="h-4 w-4 text-primary" />
+                                </div>
+                                Total Tickets
+                              </div>
+                              <p className="text-2xl font-bold text-primary">
+                                {campaign.ticketCount ?? 0}
+                              </p>
                             </div>
-                          )}
+
+                            {secondaryMetrics.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-3">
+                                {secondaryMetrics.map((metric) => (
+                                  <div
+                                    key={`${campaign.id}-${metric.label}`}
+                                    className={`rounded-xl border p-3.5 flex flex-col justify-between h-full min-h-[85px] ${metric.bgClass}`}
+                                  >
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 line-clamp-2">
+                                      {metric.label}
+                                    </p>
+                                    <p
+                                      className={`text-xl font-bold mt-auto ${metric.textClass}`}
+                                    >
+                                      {metric.value}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="rounded-xl border bg-muted/20 p-3.5 flex items-center justify-between min-h-[85px]">
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  Campaign Type
+                                </p>
+                                <span className="text-sm font-medium">
+                                  {campaignTypeLabels[campaign.tipo] ||
+                                    campaign.tipo}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <Button
+                            asChild
+                            variant="secondary"
+                            className="w-full"
+                          >
+                            <Link
+                              href={`/reports/campaigns?campaignId=${campaign.id}`}
+                              onClick={() => onOpenChange(false)}
+                            >
+                              Open Reports
+                              <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -396,8 +406,7 @@ export function ActiveCampaignsModal({
           </div>
         </ScrollArea>
 
-        {/* Footer del Modal */}
-        <DialogFooter className="border-t bg-card/50 px-6 py-4 backdrop-blur-sm">
+        <SheetFooter className="border-t bg-card/50 px-6 py-4 backdrop-blur-sm">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium text-muted-foreground">
               {campaigns.length}{" "}
@@ -411,8 +420,8 @@ export function ActiveCampaignsModal({
               Done
             </Button>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

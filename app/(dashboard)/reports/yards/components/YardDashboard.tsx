@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import {
-  Activity,
   BarChart3,
   CheckCircle,
   Clock,
   Ticket,
   TrendingUp,
   Users,
+  ChevronRight,
+  Target,
+  UserPlus,
 } from "lucide-react";
 import {
   BarChart,
@@ -31,161 +33,234 @@ import {
 } from "./chart-colors";
 import type { YardStats, YardStatsDay } from "./types";
 import { ActiveCampaignsModal } from "./ActiveCampaignsModal";
+import { ActiveAgentsModal } from "./ActiveAgentsModal";
+import { NewLeadsModal } from "./NewLeadsModal";
 
 type YardDashboardProps = {
   stats: YardStats;
   activeChartData: YardStatsDay[];
+  reportStartDate: string;
+  reportEndDate: string;
 };
 
-export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
+export function YardDashboard({
+  stats,
+  activeChartData,
+  reportStartDate,
+  reportEndDate,
+}: YardDashboardProps) {
+  const [showNewLeadsModal, setShowNewLeadsModal] = useState(false);
+  const [showAgentsModal, setShowAgentsModal] = useState(false);
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
 
   const resolutionRate =
     stats.totalTickets > 0
       ? Math.round((stats.closedTickets / stats.totalTickets) * 100)
       : 0;
+  const topAgent = stats.ticketsByAgent[0];
+  const topAgentName =
+    topAgent?.agentName?.trim() ||
+    (topAgent?.agentId ? `Agent #${topAgent.agentId}` : "No data");
+  const topNewLead = stats.ticketsByNewLead[0];
+  const topNewLeadName = topNewLead?.customerName?.trim() || "No data";
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+      {/* --- ROW 1: KPIs Principales --- */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Tickets */}
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground">Total Tickets</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.totalTickets}</h3>
-              <p className="text-xs text-muted-foreground mt-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground tracking-tight">
+                Total Tickets
+              </p>
+              <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                {stats.totalTickets}
+              </h3>
+              <p className="text-xs font-medium text-muted-foreground bg-muted/50 inline-flex px-2 py-1 rounded-md">
                 {stats.openTickets} open, {stats.closedTickets} closed
               </p>
             </div>
-            <div className="p-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/10">
+            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
               <Ticket className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+        {/* Open Tickets */}
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground">Open Tickets</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.openTickets}</h3>
-              <p className="text-xs text-muted-foreground mt-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground tracking-tight">
+                Open Tickets
+              </p>
+              <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                {stats.openTickets}
+              </h3>
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 inline-flex px-2 py-1 rounded-md">
                 {stats.inProgressTickets} in progress
               </p>
             </div>
-            <div className="p-2 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/10">
+            <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
               <Clock className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+        {/* Closed Tickets */}
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground">Closed Tickets</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.closedTickets}</h3>
-              <p className="text-xs text-muted-foreground mt-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground tracking-tight">
+                Closed Tickets
+              </p>
+              <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                {stats.closedTickets}
+              </h3>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 inline-flex px-2 py-1 rounded-md">
                 {resolutionRate}% resolution rate
               </p>
             </div>
-            <div className="p-2 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
               <CheckCircle className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+        {/* Resolution Rate */}
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground tracking-tight">
                 Resolution Rate
               </p>
-              <h3 className="text-2xl font-bold mt-1">{resolutionRate}%</h3>
-              <p className="text-xs text-muted-foreground mt-2">
+              <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                {resolutionRate}%
+              </h3>
+              <p className="text-xs font-medium text-muted-foreground bg-muted/50 inline-flex px-2 py-1 rounded-md">
                 {stats.closedTickets} of {stats.totalTickets} resolved
               </p>
             </div>
-            <div className="p-2 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/10">
-              <BarChart3 className="w-5 h-5" />
+            <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+              <Target className="w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                Today's Volume
-              </p>
-              <h3 className="text-2xl font-bold mt-1">
-                {stats.todayTickets || 0}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats.todayTickets === 1
-                  ? "1 ticket created today"
-                  : "Tickets created today"}
-              </p>
-            </div>
-            <div className="p-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10">
-              <Activity className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground">Active Agents</p>
-              <h3 className="text-2xl font-bold mt-1">
-                {stats.ticketsByAgent.length}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-2 truncate">
-                Top: {stats.ticketsByAgent[0]?.agentName || "N/A"}
-              </p>
-            </div>
-            <div className="p-2 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10">
-              <Users className="w-5 h-5" />
+      {/* --- ROW 2: KPIs Secundarios --- */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* New Leads */}
+        <button
+          onClick={() => setShowNewLeadsModal(true)}
+          className="group relative overflow-hidden rounded-2xl border border-emerald-200/50 dark:border-emerald-900/30 bg-gradient-to-br from-card to-emerald-50/30 dark:to-emerald-950/20 p-5 text-left shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-800 transition-all duration-300 w-full"
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="p-2.5 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-all duration-300">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-emerald-600/80 dark:text-emerald-400/80 uppercase tracking-wider">
+                  New Lead Customers
+                </p>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {stats.ticketsByNewLead.length}
+                  </h3>
+                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 group-hover:underline flex items-center">
+                    View list <ChevronRight className="w-3 h-3 ml-0.5" />
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-xs font-medium text-foreground/80">
+                  Top:{" "}
+                  <span className="font-semibold text-foreground">
+                    {topNewLeadName}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </button>
 
+        {/* Active Agents */}
+        <button
+          onClick={() => setShowAgentsModal(true)}
+          className="group relative overflow-hidden rounded-2xl border border-cyan-200/50 dark:border-cyan-900/30 bg-gradient-to-br from-card to-cyan-50/30 dark:to-cyan-950/20 p-5 text-left shadow-sm hover:shadow-md hover:border-cyan-300 dark:hover:border-cyan-800 transition-all duration-300 w-full"
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="p-2.5 rounded-full bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/50 transition-all duration-300">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-cyan-600/80 dark:text-cyan-400/80 uppercase tracking-wider">
+                  Active Agents
+                </p>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {stats.ticketsByAgent.length}
+                  </h3>
+                  <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400 group-hover:underline flex items-center">
+                    View list <ChevronRight className="w-3 h-3 ml-0.5" />
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-xs font-medium text-foreground/80">
+                  Top: <span className="font-semibold text-foreground">{topAgentName}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Active Campaigns Button */}
         <button
           onClick={() => setShowCampaignsModal(true)}
-          className="group relative overflow-hidden rounded-xl border bg-card p-5 text-left shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-300 cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl border border-pink-200/50 dark:border-pink-900/30 bg-gradient-to-br from-card to-pink-50/30 dark:to-pink-950/20 p-5 text-left shadow-sm hover:shadow-md hover:border-pink-300 dark:hover:border-pink-800 transition-all duration-300 w-full"
         >
-          <div className="relative flex justify-between items-start">
-            <div>
-              <p className="text-xs text-muted-foreground">Active Campaigns</p>
-              <h3 className="text-2xl font-bold mt-1">
-                {stats.ticketsByCampaign.length}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-2 truncate">
-                {stats.ticketsByCampaign[0]?.campaignName || "N/A"}
-              </p>
-              <p className="text-xs text-primary mt-1 font-medium group-hover:underline">
-                View campaign cards -&gt;
-              </p>
-            </div>
-            <div className="p-2 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-500/10 group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-5 h-5" />
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="p-2.5 rounded-full bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400 group-hover:scale-110 group-hover:bg-pink-200 dark:group-hover:bg-pink-800/50 transition-all duration-300">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-pink-600/80 dark:text-pink-400/80 uppercase tracking-wider">
+                  Active Campaigns
+                </p>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {stats.ticketsByCampaign.length}
+                  </h3>
+                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400 group-hover:underline flex items-center">
+                    View list <ChevronRight className="w-3 h-3 ml-0.5" />
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-foreground">
-              Ticket Activity Over Time
-            </h3>
-            <span className="text-xs text-muted-foreground">
+      {/* --- ROW 3: Gráficos Principales --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Ticket Activity Line/Bar */}
+        <div className="lg:col-span-2 rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                Ticket Activity Over Time
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Volume of open vs closed tickets
+              </p>
+            </div>
+            <div className="px-3 py-1 rounded-full bg-muted/50 border text-sm font-medium">
               Total: {stats.totalTickets}
-            </span>
+            </div>
           </div>
 
-          <div className="h-80">
+          <div className="h-[300px] w-full mt-auto">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={activeChartData}
@@ -195,7 +270,7 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
                   strokeDasharray="3 3"
                   vertical={false}
                   stroke="hsl(var(--border))"
-                  opacity={0.5}
+                  opacity={0.6}
                 />
                 <XAxis
                   dataKey="day"
@@ -205,26 +280,22 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
                   textAnchor="end"
                   height={60}
                   minTickGap={15}
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 11,
-                  }}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 12,
-                  }}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                 />
                 <Tooltip
-                  cursor={{ fill: "hsl(var(--muted)/0.3)" }}
+                  cursor={{ fill: "hsl(var(--muted)/0.4)" }}
                   contentStyle={{
                     background: "hsl(var(--background))",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     border: "1px solid hsl(var(--border))",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                    padding: "12px",
                   }}
                   labelFormatter={(value, payload) => {
                     if (payload && payload[0]) {
@@ -233,17 +304,20 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
                     return value;
                   }}
                 />
-                <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                <Legend
+                  wrapperStyle={{ paddingTop: "10px" }}
+                  iconType="circle"
+                />
                 <Bar
                   dataKey="open"
-                  name="Open"
+                  name="Open Tickets"
                   fill="oklch(0.65 0.22 25)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={45}
                 />
                 <Bar
                   dataKey="closed"
-                  name="Closed"
+                  name="Closed Tickets"
                   fill="oklch(0.65 0.18 160)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={45}
@@ -253,28 +327,30 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
-          <div className="p-6 pb-2 border-b">
-            <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
+        {/* Status Distribution */}
+        <div className="flex flex-col rounded-2xl border bg-card shadow-sm overflow-hidden">
+          <div className="p-6 pb-2">
+            <h3 className="text-lg font-bold text-foreground">
               Status Distribution
             </h3>
+            <p className="text-sm text-muted-foreground">
+              Current state of tickets
+            </p>
           </div>
 
-          <div className="flex-1 min-h-[200px] relative bg-gradient-to-b from-background to-muted/10">
+          <div className="flex-1 min-h-[220px] relative mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stats.ticketsByStatus}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
+                  innerRadius={70}
+                  outerRadius={95}
+                  paddingAngle={3}
                   dataKey="count"
-                  cornerRadius={4}
                   stroke="hsl(var(--background))"
-                  strokeWidth={2}
+                  strokeWidth={3}
                 >
                   {stats.ticketsByStatus.map((entry, index) => (
                     <Cell
@@ -288,29 +364,34 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     border: "1px solid hsl(var(--border))",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                   }}
-                  itemStyle={{ fontWeight: "bold" }}
+                  itemStyle={{
+                    fontWeight: "600",
+                    color: "hsl(var(--foreground))",
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
-              <span className="text-3xl font-bold tracking-tighter">
+            {/* Texto Centralizado Seguro */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-2">
+              <span className="text-3xl font-bold text-foreground leading-none">
                 {stats.totalTickets}
               </span>
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-1">
                 Total
               </span>
             </div>
           </div>
 
-          <div className="p-4 bg-muted/20 border-t">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="p-4 bg-muted/10 border-t mt-auto">
+            <div className="flex flex-wrap gap-2 justify-center">
               {stats.ticketsByStatus.map((item, index) => (
                 <div
                   key={item.status}
-                  className="flex items-center gap-2 text-xs bg-background p-2 rounded-md border shadow-sm"
+                  className="flex items-center gap-2 text-xs bg-background px-3 py-1.5 rounded-full border shadow-sm"
                 >
                   <div
                     className="h-2 w-2 rounded-full shrink-0"
@@ -320,10 +401,12 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
                         DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
                     }}
                   />
-                  <span className="text-muted-foreground capitalize truncate flex-1">
+                  <span className="text-muted-foreground font-medium capitalize">
                     {item.status.replace("_", " ").toLowerCase()}
                   </span>
-                  <span className="font-mono font-bold">{item.count}</span>
+                  <span className="font-bold text-foreground ml-1">
+                    {item.count}
+                  </span>
                 </div>
               ))}
             </div>
@@ -331,265 +414,240 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            Disposition Breakdown
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            All ticket dispositions
-          </p>
-          <div className="h-52 mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats.ticketsByDisposition}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={60}
-                  dataKey="count"
-                  paddingAngle={5}
-                >
-                  {stats.ticketsByDisposition.map((entry, index) => (
-                    <Cell
-                      key={entry.disposition}
-                      fill={
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length]
-                      }
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2 max-h-44 overflow-y-auto pr-2 scrollbar-thin">
-            {stats.ticketsByDisposition.length > 0 ? (
-              stats.ticketsByDisposition.map((item, index) => (
-                <div
-                  key={item.disposition}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor:
-                          DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
-                      }}
-                    />
-                    <span className="text-muted-foreground capitalize">
-                      {item.disposition.replace("_", " ").toLowerCase()}
+      {/* --- ROW 4: Breakdown Charts (Disposition, Direction, Priority) --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Helper function to render breakdown cards */}
+        {[
+          {
+            title: "Disposition",
+            desc: "Ticket outcomes",
+            data: stats.ticketsByDisposition,
+            key: "disposition",
+            colors: DISPOSITION_COLORS,
+          },
+          {
+            title: "Direction",
+            desc: "Communication type",
+            data: stats.ticketsByDirection,
+            key: "direction",
+            colors: DIRECTION_COLORS,
+          },
+          {
+            title: "Priority",
+            desc: "Urgency levels",
+            data: stats.ticketsByPriority,
+            key: "priority",
+            colors: PRIORITY_COLORS,
+          },
+        ].map((block) => (
+          <div
+            key={block.title}
+            className="flex flex-col rounded-2xl border bg-card shadow-sm p-6"
+          >
+            <div>
+              <h3 className="text-base font-bold text-foreground">
+                {block.title}
+              </h3>
+              <p className="text-xs text-muted-foreground">{block.desc}</p>
+            </div>
+
+            <div className="h-48 my-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={block.data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    dataKey="count"
+                    paddingAngle={2}
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                  >
+                    {block.data.map((entry, index) => (
+                      <Cell
+                        key={(entry as any)[block.key]}
+                        fill={
+                          (block.colors as any)[(entry as any)[block.key]] ||
+                          DISPOSITION_COLORS[index % DISPOSITION_COLORS.length]
+                        }
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "8px",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                    itemStyle={{
+                      color: "hsl(var(--foreground))",
+                      fontWeight: "500",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="mt-auto pt-4 border-t space-y-2.5 max-h-40 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted">
+              {block.data.length > 0 ? (
+                block.data.map((item: any, index: number) => (
+                  <div
+                    key={item[block.key]}
+                    className="flex items-center justify-between text-sm group"
+                  >
+                    <div className="flex items-center gap-2.5 truncate pr-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor:
+                            (block.colors as any)[item[block.key]] ||
+                            DISPOSITION_COLORS[
+                              index % DISPOSITION_COLORS.length
+                            ],
+                        }}
+                      />
+                      <span className="text-muted-foreground group-hover:text-foreground transition-colors capitalize truncate">
+                        {item[block.key].replace("_", " ").toLowerCase()}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                      {item.count}
                     </span>
                   </div>
-                  <span className="font-medium text-foreground">
-                    {item.count}
-                  </span>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground text-center py-2">
+                  No data recorded
                 </div>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground text-center py-4">
-                No dispositions recorded
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            Direction Breakdown
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">Call directions</p>
-          <div className="h-52 mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats.ticketsByDirection}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={60}
-                  dataKey="count"
-                  paddingAngle={5}
-                >
-                  {stats.ticketsByDirection.map((entry, index) => (
-                    <Cell
-                      key={entry.direction}
-                      fill={
-                        DIRECTION_COLORS[entry.direction] ||
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length]
-                      }
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2">
-            {stats.ticketsByDirection.map((item, index) => (
-              <div
-                key={item.direction}
-                className="flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{
-                      backgroundColor:
-                        DIRECTION_COLORS[item.direction] ||
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
-                    }}
-                  />
-                  <span className="text-muted-foreground capitalize">
-                    {item.direction.replace("_", " ").toLowerCase()}
-                  </span>
-                </div>
-                <span className="font-medium text-foreground">
-                  {item.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            Priority Breakdown
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            Ticket priorities
-          </p>
-          <div className="h-52 mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats.ticketsByPriority}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={60}
-                  dataKey="count"
-                  paddingAngle={5}
-                >
-                  {stats.ticketsByPriority.map((entry, index) => (
-                    <Cell
-                      key={entry.priority}
-                      fill={
-                        PRIORITY_COLORS[entry.priority] ||
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length]
-                      }
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2">
-            {stats.ticketsByPriority.map((item, index) => (
-              <div
-                key={item.priority}
-                className="flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{
-                      backgroundColor:
-                        PRIORITY_COLORS[item.priority] ||
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
-                    }}
-                  />
-                  <span className="text-muted-foreground capitalize">
-                    {item.priority.replace("_", " ").toLowerCase()}
-                  </span>
-                </div>
-                <span className="font-medium text-foreground">
-                  {item.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">
-              Top Agents
-            </h3>
-            <Users className="h-5 w-5 text-muted-foreground" />
+      {/* --- ROW 5: Rankings (Agents & Campaigns) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Agents */}
+        <div className="rounded-2xl border bg-card shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Top Agents</h3>
+              <p className="text-sm text-muted-foreground">
+                Most active resolvers
+              </p>
+            </div>
+            <div className="p-2 bg-muted rounded-lg">
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </div>
           </div>
+
           <div className="space-y-3">
             {stats.ticketsByAgent.length > 0 ? (
-              stats.ticketsByAgent.slice(0, 10).map((agent, index) => (
+              stats.ticketsByAgent.slice(0, 5).map((agent, index) => (
                 <div
                   key={agent.agentId}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                        index === 0
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20"
+                          : index === 1
+                            ? "bg-slate-200 text-slate-700 dark:bg-slate-600/30"
+                            : index === 2
+                              ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30"
+                              : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{agent.agentName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Agent #{agent.agentId}
+                      <p className="font-semibold text-foreground">
+                        {agent.agentName}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        ID: {agent.agentId}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-lg">{agent.count}</p>
-                    <p className="text-xs text-muted-foreground">tickets</p>
+                    <p className="font-bold text-lg text-foreground">
+                      {agent.count}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      tickets
+                    </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
+              <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-xl">
                 No agent data available
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">
-              Top Campaigns
-            </h3>
-            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+        {/* Top Campaigns */}
+        <div className="rounded-2xl border bg-card shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                Top Campaigns
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Highest volume drivers
+              </p>
+            </div>
+            <div className="p-2 bg-muted rounded-lg">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" />
+            </div>
           </div>
+
           <div className="space-y-3">
             {stats.ticketsByCampaign.length > 0 ? (
-              stats.ticketsByCampaign.slice(0, 10).map((campaign, index) => (
+              stats.ticketsByCampaign.slice(0, 5).map((campaign, index) => (
                 <div
                   key={campaign.campaignId}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                        index === 0
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20"
+                          : index === 1
+                            ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20"
+                            : index === 2
+                              ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30"
+                              : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">
+                      <p className="font-semibold text-foreground line-clamp-1">
                         {campaign.campaignName}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Campaign #{campaign.campaignId}
+                      <p className="text-xs text-muted-foreground font-mono">
+                        ID: {campaign.campaignId}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-lg">{campaign.count}</p>
-                    <p className="text-xs text-muted-foreground">tickets</p>
+                    <p className="font-bold text-lg text-foreground">
+                      {campaign.count}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      tickets
+                    </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
+              <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-xl">
                 No campaign data available
               </div>
             )}
@@ -598,9 +656,32 @@ export function YardDashboard({ stats, activeChartData }: YardDashboardProps) {
       </div>
 
       {/* Modal de Campañas Activas */}
+      <NewLeadsModal
+        open={showNewLeadsModal}
+        onOpenChange={setShowNewLeadsModal}
+        side="right"
+        yardId={stats.yard.id}
+        yardName={stats.yard.name}
+        reportStartDate={reportStartDate}
+        reportEndDate={reportEndDate}
+        customersByNewLead={stats.ticketsByNewLead}
+      />
+
+      <ActiveAgentsModal
+        open={showAgentsModal}
+        onOpenChange={setShowAgentsModal}
+        side="right"
+        yardId={stats.yard.id}
+        yardName={stats.yard.name}
+        reportStartDate={reportStartDate}
+        reportEndDate={reportEndDate}
+        agentsByTickets={stats.ticketsByAgent}
+      />
+
       <ActiveCampaignsModal
         open={showCampaignsModal}
         onOpenChange={setShowCampaignsModal}
+        side="right"
         yardId={stats.yard.id}
         yardName={stats.yard.name}
         campaignsByTickets={stats.ticketsByCampaign}

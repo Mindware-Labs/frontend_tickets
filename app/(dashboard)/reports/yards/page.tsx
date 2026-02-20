@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ExcelJS from "exceljs";
 import {
   Loader2,
   Building,
@@ -15,6 +14,7 @@ import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
 import { YardDashboard } from "./components/YardDashboard";
+import { YardTicketsModal } from "./components/YardTicketsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
 import type { Ticket, Yard, YardStats } from "./components/types";
@@ -27,6 +27,12 @@ type CampaignSummary = {
   yardId?: number | string | null;
   yarda?: { id?: number | string | null } | null;
   yard?: { id?: number | string | null } | null;
+};
+
+type AgentSummary = {
+  id: number | string;
+  name?: string | null;
+  isActive?: boolean | null;
 };
 
 const parseLocalDateStart = (value: string) => {
@@ -84,6 +90,8 @@ export default function YardReportsPage() {
     null,
   );
   const [loadingStats, setLoadingStats] = useState(false);
+  const [ticketsInRange, setTicketsInRange] = useState<Ticket[]>([]);
+  const [showYardTicketsModal, setShowYardTicketsModal] = useState(false);
   const [startDate, setStartDate] = useState<string>(startDateParam || "");
   const [endDate, setEndDate] = useState<string>(endDateParam || "");
 
@@ -140,9 +148,16 @@ export default function YardReportsPage() {
 
       try {
         setLoadingStats(true);
-        const [ticketsData, campaignsData] = await Promise.all([
+        const [ticketsData, campaignsData, agentsData] = await Promise.all([
           fetchFromBackend("/tickets?page=1&limit=10000"),
           fetchFromBackend("/campaign?page=1&limit=1000"),
+          fetchFromBackend("/agents?page=1&limit=10000").catch((error) => {
+            console.warn(
+              "Failed to load agents directory for yards report:",
+              error,
+            );
+            return [];
+          }),
         ]);
         const allTickets: Ticket[] = Array.isArray(ticketsData)
           ? ticketsData
@@ -150,6 +165,25 @@ export default function YardReportsPage() {
         const allCampaigns: CampaignSummary[] = Array.isArray(campaignsData)
           ? campaignsData
           : campaignsData?.data || [];
+        const allAgents: AgentSummary[] = Array.isArray(agentsData)
+          ? agentsData
+          : agentsData?.data || [];
+        const agentNamesById = allAgents.reduce<Map<string, string>>(
+          (accumulator, agent) => {
+            const id = agent?.id;
+            const name = agent?.name?.trim();
+            if (
+              id !== null &&
+              id !== undefined &&
+              name &&
+              !name.startsWith("Agent #")
+            ) {
+              accumulator.set(id.toString(), name);
+            }
+            return accumulator;
+          },
+          new Map(),
+        );
         const campaignsById = allCampaigns.reduce<
           Map<string, { yardIdKey: string | null; isActive: boolean; name: string }>
         >((accumulator, campaign) => {
@@ -170,12 +204,13 @@ export default function YardReportsPage() {
           if (Number.isNaN(date.getTime())) return false;
           return date >= rangeStart && date <= rangeEnd;
         });
+        setTicketsInRange(filteredTickets);
 
         const statsMap = new Map<number, YardStats>();
 
         yards.forEach((yard) => {
           const yardTickets = filteredTickets.filter((ticket) => {
-            const ticketYardId = ticket.yardId;
+            const ticketYardId = ticket.yardId ?? ticket.yard?.id;
             if (ticketYardId === null || ticketYardId === undefined) return false;
             return ticketYardId.toString() === yard.id.toString();
           });
@@ -233,19 +268,34 @@ export default function YardReportsPage() {
             { agentId: number; agentName: string; count: number }
           >();
           yardTickets.forEach((ticket) => {
-            const agentId = ticket.agentId || ticket.agent?.id;
-            if (agentId) {
-              const agentName = ticket.agent?.name || `Agent #${agentId}`;
-              const existing = ticketsByAgentMap.get(agentId);
-              if (existing) {
-                existing.count += 1;
-              } else {
-                ticketsByAgentMap.set(agentId, {
-                  agentId,
-                  agentName,
-                  count: 1,
-                });
+            const rawAgentId =
+              ticket.agentId ?? ticket.assignedTo?.id ?? ticket.agent?.id;
+            if (rawAgentId === null || rawAgentId === undefined) return;
+
+            const agentId = Number(rawAgentId);
+            if (!Number.isFinite(agentId)) return;
+
+            const agentName =
+              ticket.assignedTo?.name?.trim() ||
+              ticket.agent?.name?.trim() ||
+              agentNamesById.get(agentId.toString()) ||
+              `Agent #${agentId}`;
+
+            const existing = ticketsByAgentMap.get(agentId);
+            if (existing) {
+              existing.count += 1;
+              if (
+                existing.agentName.startsWith("Agent #") &&
+                !agentName.startsWith("Agent #")
+              ) {
+                existing.agentName = agentName;
               }
+            } else {
+              ticketsByAgentMap.set(agentId, {
+                agentId,
+                agentName,
+                count: 1,
+              });
             }
           });
 
@@ -280,6 +330,83 @@ export default function YardReportsPage() {
                 campaignId: normalizedCampaignId,
                 campaignName: campaignName || `Campaign #${campaignIdKey}`,
                 count: 1,
+              });
+            }
+          });
+
+          const ticketsByNewLeadMap = new Map<
+            string,
+            {
+              customerId: number | null;
+              customerName: string;
+              count: number;
+              phone?: string | null;
+              issueDetails: {
+                ticketId: number;
+                issueDetail: string;
+                createdAt?: string | null;
+              }[];
+            }
+          >();
+          yardTickets.forEach((ticket) => {
+            if ((ticket.disposition || "").toUpperCase() !== "NEW_LEAD") return;
+
+            const rawCustomerId = ticket.customer?.id ?? ticket.customerId;
+            const parsedCustomerId =
+              rawCustomerId !== null && rawCustomerId !== undefined
+                ? Number(rawCustomerId)
+                : null;
+            const customerId = Number.isFinite(parsedCustomerId)
+              ? parsedCustomerId
+              : null;
+            const customerName =
+              ticket.customer?.name?.trim() ||
+              (customerId !== null ? `Customer #${customerId}` : "Unknown Lead");
+            const phone =
+              ticket.customer?.phone?.trim() ||
+              ticket.customerPhone?.trim() ||
+              ticket.phone?.trim() ||
+              null;
+            const issueDetail = ticket.issueDetail?.trim();
+            const leadKey =
+              customerId !== null
+                ? `id:${customerId}`
+                : `name:${customerName.toLowerCase()}|phone:${(phone || "").toLowerCase()}`;
+
+            const existing = ticketsByNewLeadMap.get(leadKey);
+            if (existing) {
+              existing.count += 1;
+              if (
+                existing.customerName.startsWith("Customer #") &&
+                !customerName.startsWith("Customer #")
+              ) {
+                existing.customerName = customerName;
+              }
+              if (!existing.phone && phone) {
+                existing.phone = phone;
+              }
+              if (issueDetail) {
+                existing.issueDetails.push({
+                  ticketId: ticket.id,
+                  issueDetail,
+                  createdAt: ticket.createdAt || ticket.updatedAt || null,
+                });
+              }
+            } else {
+              ticketsByNewLeadMap.set(leadKey, {
+                customerId,
+                customerName,
+                count: 1,
+                phone,
+                issueDetails: issueDetail
+                  ? [
+                      {
+                        ticketId: ticket.id,
+                        issueDetail,
+                        createdAt: ticket.createdAt || ticket.updatedAt || null,
+                      },
+                    ]
+                  : [],
               });
             }
           });
@@ -432,6 +559,12 @@ export default function YardReportsPage() {
             ticketsByCampaign: Array.from(ticketsByCampaignMap.values()).sort(
               (left, right) => right.count - left.count,
             ),
+            ticketsByNewLead: Array.from(ticketsByNewLeadMap.values()).sort(
+              (left, right) => {
+                if (right.count !== left.count) return right.count - left.count;
+                return left.customerName.localeCompare(right.customerName);
+              },
+            ),
             avgResolutionTime,
             peakDay: peakDayEntry?.day || undefined,
             peakDayCount: peakDayEntry?.total || undefined,
@@ -441,6 +574,7 @@ export default function YardReportsPage() {
         setYardsStats(Array.from(statsMap.values()));
       } catch (error: any) {
         console.error("Error fetching yard stats:", error);
+        setTicketsInRange([]);
 
         let errorMessage = "Failed to load yard statistics";
         if (
@@ -490,6 +624,15 @@ export default function YardReportsPage() {
 
   const selectedYard =
     yards.find((yard) => yard.id.toString() === selectedYardId) || null;
+  const selectedYardTickets = useMemo(() => {
+    if (!selectedYardId) return [];
+
+    return ticketsInRange.filter((ticket) => {
+      const ticketYardId = ticket.yardId ?? ticket.yard?.id;
+      if (ticketYardId === null || ticketYardId === undefined) return false;
+      return ticketYardId.toString() === selectedYardId;
+    });
+  }, [ticketsInRange, selectedYardId]);
   const hasDateRange = Boolean(startDate && endDate);
 
   const handleYardSelect = (yardId: string) => {
@@ -533,6 +676,29 @@ export default function YardReportsPage() {
 
     handleDateChange();
     setFiltersModalOpen(false);
+  };
+
+  const handleViewAllTickets = () => {
+    if (!selectedYard || !selectedYardId || !startDate || !endDate) {
+      toast({
+        title: "Report not ready",
+        description:
+          "Select a yard and a valid date range before opening tickets.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isDateRangeValid) {
+      toast({
+        title: "Invalid date range",
+        description: "Start date cannot be later than end date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowYardTicketsModal(true);
   };
 
   const getLogoUrl = () =>
@@ -615,123 +781,21 @@ export default function YardReportsPage() {
     }
 
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = "Tickets Hut System";
-      workbook.created = new Date();
-      workbook.modified = new Date();
-
-      const worksheet = workbook.addWorksheet("Yard Report");
-      worksheet.columns = [
-        { width: 30 },
-        { width: 20 },
-        { width: 15 },
-        { width: 20 },
-      ];
-
-      worksheet.addRow([]);
-      worksheet.getRow(1).height = 30;
-      worksheet.mergeCells(1, 1, 1, 4);
-      const headerCell = worksheet.getCell(1, 1);
-      headerCell.value = `YARD REPORT - ${selectedYardStats.yard.name}`;
-      headerCell.font = {
-        size: 18,
-        bold: true,
-        color: { argb: "FFFFFFFF" },
-      };
-      headerCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1E40AF" },
-      };
-      headerCell.alignment = { vertical: "middle", horizontal: "center" };
-
-      worksheet.addRow([]);
-      worksheet.getRow(2).height = 25;
-      worksheet.mergeCells(2, 1, 2, 4);
-      const dateCell = worksheet.getCell(2, 1);
-      dateCell.value = `Period: ${startDate} - ${endDate}`;
-      dateCell.font = {
-        size: 12,
-        bold: true,
-        color: { argb: "FF1E40AF" },
-      };
-      dateCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFE0E7FF" },
-      };
-      dateCell.alignment = { vertical: "middle", horizontal: "center" };
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Metric", "Value"]);
-      worksheet.addRow(["Total Tickets", selectedYardStats.totalTickets]);
-      worksheet.addRow(["Open Tickets", selectedYardStats.openTickets]);
-      worksheet.addRow(["Closed Tickets", selectedYardStats.closedTickets]);
-      worksheet.addRow([
-        "Last Activity",
-        selectedYardStats.lastActivity
-          ? new Date(selectedYardStats.lastActivity).toLocaleString()
-          : "N/A",
-      ]);
-
-      worksheet.addRow([]);
-      worksheet.addRow([
-        "In Progress Tickets",
-        selectedYardStats.inProgressTickets,
-      ]);
-      worksheet.addRow([
-        "Average Resolution Time",
-        selectedYardStats.avgResolutionTime
-          ? `${Math.round(selectedYardStats.avgResolutionTime)} hours`
-          : "N/A",
-      ]);
-      worksheet.addRow([
-        "Peak Day",
-        selectedYardStats.peakDay
-          ? `${selectedYardStats.peakDay} (${selectedYardStats.peakDayCount} tickets)`
-          : "N/A",
-      ]);
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Status", "Count"]);
-      selectedYardStats.ticketsByStatus.forEach((item) => {
-        worksheet.addRow([item.status, item.count]);
+      const params = new URLSearchParams({
+        start: startDate,
+        end: endDate,
       });
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Disposition", "Count"]);
-      selectedYardStats.ticketsByDisposition.forEach((item) => {
-        worksheet.addRow([item.disposition, item.count]);
-      });
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Direction", "Count"]);
-      selectedYardStats.ticketsByDirection.forEach((item) => {
-        worksheet.addRow([item.direction, item.count]);
-      });
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Priority", "Count"]);
-      selectedYardStats.ticketsByPriority.forEach((item) => {
-        worksheet.addRow([item.priority, item.count]);
-      });
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Top Agents", "Tickets"]);
-      selectedYardStats.ticketsByAgent.slice(0, 10).forEach((agent) => {
-        worksheet.addRow([agent.agentName, agent.count]);
-      });
-
-      worksheet.addRow([]);
-      worksheet.addRow(["Top Campaigns", "Tickets"]);
-      selectedYardStats.ticketsByCampaign.slice(0, 10).forEach((campaign) => {
-        worksheet.addRow([campaign.campaignName, campaign.count]);
-      });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      const yardIdToExport = selectedYardStats.yard.id.toString();
+      const blob = await fetchBlobFromBackend(
+        `/yards/${yardIdToExport}/report/excel?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            Accept:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        },
+      );
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -744,13 +808,13 @@ export default function YardReportsPage() {
 
       toast({
         title: "Success",
-        description: "Excel file generated successfully",
+        description: "Excel file downloaded successfully",
       });
     } catch (error: any) {
       console.error("Excel export error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate Excel file",
+        description: error.message || "Failed to download Excel",
         variant: "destructive",
       });
     }
@@ -776,7 +840,11 @@ export default function YardReportsPage() {
           startDate={startDate}
           endDate={endDate}
           canExport={Boolean(selectedYardStats) && isDateRangeValid}
+          canViewTickets={Boolean(
+            selectedYard && startDate && endDate && isDateRangeValid,
+          )}
           onOpenFilters={() => setFiltersModalOpen(true)}
+          onViewAllTickets={handleViewAllTickets}
           onExportPDF={handleExportPDF}
           onExportExcel={handleExportExcel}
         />
@@ -893,9 +961,20 @@ export default function YardReportsPage() {
           <YardDashboard
             stats={selectedYardStats}
             activeChartData={activeChartData}
+            reportStartDate={startDate}
+            reportEndDate={endDate}
           />
         )}
       </div>
+
+      <YardTicketsModal
+        open={showYardTicketsModal}
+        onOpenChange={setShowYardTicketsModal}
+        yardName={selectedYard?.name || "Selected Yard"}
+        reportStartDate={startDate}
+        reportEndDate={endDate}
+        tickets={selectedYardTickets}
+      />
     </div>
   );
 }

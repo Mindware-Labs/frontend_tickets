@@ -555,10 +555,33 @@ export default function TicketsPage() {
         return;
       }
 
-      const data = await fetchFromBackend("/yards");
-      // El backend puede devolver array directo o { data: [] }
-      const yardsArray = Array.isArray(data) ? data : data?.data || [];
-      setYards(yardsArray.filter((yard: any) => yard.isActive));
+      const pageSize = 1000;
+      let currentPage = 1;
+      let totalPages = 1;
+      const allYards: any[] = [];
+
+      do {
+        const data = await fetchFromBackend(
+          `/yards?page=${currentPage}&limit=${pageSize}`,
+        );
+        // El backend puede devolver array directo o { data, totalPages }
+        const yardsPage = Array.isArray(data) ? data : data?.data || [];
+        allYards.push(...yardsPage);
+
+        const backendTotalPages = Number(
+          Array.isArray(data) ? 1 : data?.totalPages,
+        );
+        totalPages =
+          Number.isFinite(backendTotalPages) && backendTotalPages > 0
+            ? backendTotalPages
+            : yardsPage.length < pageSize
+              ? currentPage
+              : currentPage + 1;
+
+        currentPage += 1;
+      } while (currentPage <= totalPages);
+
+      setYards(allYards.filter((yard: any) => yard.isActive));
     } catch (err: any) {
       console.error("Failed to load yards", err);
       // Don't clear yards on 401 - let the auth system handle it
