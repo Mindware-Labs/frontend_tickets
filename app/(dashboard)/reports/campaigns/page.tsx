@@ -47,7 +47,6 @@ import {
   FileSpreadsheet, // <--- 1. Importación agregada
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ExcelJS from "exceljs";
 
 type Campaign = {
   id: number;
@@ -879,7 +878,6 @@ export default function CampaignReportsPage() {
     }
   };
 
-  // --- 2. Función Export Excel mejorada con formato estético ---
   const exportExcelBackend = async () => {
     if (!report) return;
     if (!startDate || !endDate) {
@@ -890,379 +888,16 @@ export default function CampaignReportsPage() {
       });
       return;
     }
+
     try {
-      // Crear un nuevo workbook
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = "Tickets Hut System";
-      workbook.created = new Date();
-      workbook.modified = new Date();
-
-      // Crear hoja principal
-      const worksheet = workbook.addWorksheet("Reporte de Campaña");
-
-      // Configurar anchos de columna
-      worksheet.columns = [
-        { width: 25 }, // Customer
-        { width: 18 }, // Phone
-        { width: 10 }, // Calls
-        { width: 20 }, // Direction
-        { width: 20 }, // Status
-        { width: 40 }, // Notes
-        { width: 25 }, // Contact Date
-      ];
-
-      // ========== ENCABEZADO ==========
-      const headerRow1 = worksheet.addRow([]);
-      headerRow1.height = 30;
-      const headerCell1 = worksheet.mergeCells(1, 1, 1, 7);
-      const headerCell = worksheet.getCell(1, 1);
-      headerCell.value = `REPORTE DE CAMPAÑA - ${report.campaign?.nombre || "N/A"}`;
-      headerCell.font = { size: 18, bold: true, color: { argb: "FFFFFFFF" } };
-      headerCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1E40AF" }, // Azul oscuro
-      };
-      headerCell.alignment = { vertical: "middle", horizontal: "center" };
-      headerCell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-
-      // Información de fechas
-      const dateRow = worksheet.addRow([]);
-      dateRow.height = 25;
-      const dateCell = worksheet.mergeCells(2, 1, 2, 7);
-      const dateCellValue = worksheet.getCell(2, 1);
-      dateCellValue.value = `Período: ${startDate} - ${endDate}`;
-      dateCellValue.font = { size: 12, bold: true, color: { argb: "FF1E40AF" } };
-      dateCellValue.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFE0E7FF" }, // Azul muy claro
-      };
-      dateCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      dateCellValue.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-
-      // Información adicional de la campaña
-      if (report.campaign) {
-        const campaignInfoRow = worksheet.addRow([]);
-        campaignInfoRow.height = 20;
-        const campaignInfoCell = worksheet.mergeCells(3, 1, 3, 7);
-        const campaignInfoCellValue = worksheet.getCell(3, 1);
-        let campaignInfo = `Campaña: ${report.campaign.nombre}`;
-        if (report.campaign.yarda?.name) {
-          campaignInfo += ` | Yarda: ${report.campaign.yarda.name}`;
-        }
-        if (report.campaign.tipo) {
-          campaignInfo += ` | Tipo: ${report.campaign.tipo}`;
-        }
-        campaignInfoCellValue.value = campaignInfo;
-        campaignInfoCellValue.font = { size: 11, italic: true };
-        campaignInfoCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      }
-
-      // Espacio
-      worksheet.addRow([]);
-
-      // ========== MÉTRICAS ==========
-      if (report.metrics && report.metrics.length > 0) {
-        const metricsTitleRow = worksheet.addRow(["MÉTRICAS DEL REPORTE"]);
-        metricsTitleRow.height = 25;
-        const metricsTitleCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-        const metricsTitleCellValue = worksheet.getCell(worksheet.rowCount, 1);
-        metricsTitleCellValue.value = "MÉTRICAS DEL REPORTE";
-        metricsTitleCellValue.font = { size: 14, bold: true, color: { argb: "FFFFFFFF" } };
-        metricsTitleCellValue.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF475569" }, // Gris oscuro
-        };
-        metricsTitleCellValue.alignment = { vertical: "middle", horizontal: "center" };
-        metricsTitleCellValue.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
-
-        // Crear filas de métricas (3 métricas por fila)
-        const metricsPerRow = 3;
-        const totalRows = Math.ceil(report.metrics.length / metricsPerRow);
-        
-        for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
-          const metricsRow = worksheet.addRow([]);
-          metricsRow.height = 30;
-          
-          const startIndex = rowIndex * metricsPerRow;
-          const endIndex = Math.min(startIndex + metricsPerRow, report.metrics.length);
-          
-          for (let i = startIndex; i < endIndex; i++) {
-            const metric = report.metrics[i];
-            const colIndex = (i % metricsPerRow) * 2 + 1;
-            
-            // Merge cells para cada métrica (2 columnas por métrica)
-            worksheet.mergeCells(worksheet.rowCount, colIndex, worksheet.rowCount, colIndex + 1);
-            
-            const metricCell = worksheet.getCell(worksheet.rowCount, colIndex);
-            metricCell.value = `${metric.title}: ${metric.value}`;
-            metricCell.font = { size: 11, bold: true };
-            metricCell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FFF1F5F9" }, // Gris muy claro
-            };
-            metricCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            metricCell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-          }
-        }
-
-        // Espacio
-        worksheet.addRow([]);
-        worksheet.addRow([]);
-      }
-
-      // ========== TABLAS DE CLIENTES ==========
-      if (report.tables && report.tables.length > 0) {
-        report.tables.forEach((table, tableIndex) => {
-          // Título de la tabla
-          const tableTitleRow = worksheet.addRow([]);
-          tableTitleRow.height = 28;
-          const tableTitleCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-          const tableTitleCellValue = worksheet.getCell(worksheet.rowCount, 1);
-          tableTitleCellValue.value = table.title.toUpperCase();
-          tableTitleCellValue.font = { size: 13, bold: true, color: { argb: "FFFFFFFF" } };
-          tableTitleCellValue.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FF0F766E" }, // Verde oscuro
-          };
-          tableTitleCellValue.alignment = { vertical: "middle", horizontal: "center" };
-          tableTitleCellValue.border = {
-            top: { style: "medium" },
-            left: { style: "medium" },
-            bottom: { style: "medium" },
-            right: { style: "medium" },
-          };
-
-          // Encabezados de columnas
-          const headerRow = worksheet.addRow([
-            "Cliente",
-            "Teléfono",
-            "Llamadas",
-            "Dirección",
-            "Estado",
-            "Notas",
-            "Fecha de Contacto",
-          ]);
-          headerRow.height = 25;
-          headerRow.eachCell((cell, colNumber) => {
-            cell.font = { size: 11, bold: true, color: { argb: "FFFFFFFF" } };
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FF334155" }, // Gris azulado oscuro
-            };
-            cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-          });
-
-          // Filas de datos
-          table.rows.forEach((row, rowIndex) => {
-            // Formatear dirección
-            let directionText = row.direction || "N/A";
-            const directionLower = directionText.toLowerCase();
-            if (directionLower.includes("missed")) {
-              if (directionLower.includes("inbound")) {
-                directionText = "Inbound (Missed)";
-              } else if (directionLower.includes("outbound")) {
-                directionText = "Outbound (Missed)";
-              } else {
-                directionText = "Missed";
-              }
-            } else if (directionLower.includes("inbound")) {
-              directionText = "Inbound";
-            } else if (directionLower.includes("outbound")) {
-              directionText = "Outbound";
-            } else if (directionLower.includes("text") || directionLower.includes("message")) {
-              directionText = "Text Message";
-            }
-
-            // Formatear fecha de contacto
-            let contactDateText = "—";
-            if (row.callHistory && row.callHistory.length > 0) {
-              const dates = row.callHistory.map((call) => {
-                const date = new Date(call.createdAt);
-                const formattedDate = date.toLocaleDateString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                });
-                const formattedTime = date.toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                return `${formattedDate} ${formattedTime}`;
-              });
-              contactDateText = dates.join("\n");
-            }
-
-            const dataRow = worksheet.addRow([
-              row.name || "—",
-              row.phone || "—",
-              row.callCount || 1,
-              directionText,
-              row.status || "—",
-              row.note || "—",
-              contactDateText,
-            ]);
-            dataRow.height = row.callHistory && row.callHistory.length > 1 ? 20 * row.callHistory.length : 20;
-
-            // Aplicar formato a cada celda
-            dataRow.eachCell((cell, colNumber) => {
-              // Sombreado alternado
-              if (rowIndex % 2 === 0) {
-                cell.fill = {
-                  type: "pattern",
-                  pattern: "solid",
-                  fgColor: { argb: "FFFFFFFF" }, // Blanco
-                };
-              } else {
-                cell.fill = {
-                  type: "pattern",
-                  pattern: "solid",
-                  fgColor: { argb: "FFF8FAFC" }, // Gris muy muy claro
-                };
-              }
-
-              // Colores según el tipo de columna
-              if (colNumber === 4) {
-                // Columna de Dirección
-                const directionLower = (row.direction || "").toLowerCase();
-                if (directionLower.includes("missed")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFDC2626" } }; // Rojo
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFEBEE" }, // Rojo muy claro
-                  };
-                } else if (directionLower.includes("inbound")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF1E40AF" } }; // Azul
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFE0E7FF" }, // Azul muy claro
-                  };
-                } else if (directionLower.includes("outbound")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF059669" } }; // Verde
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFD1FAE5" }, // Verde muy claro
-                  };
-                } else if (directionLower.includes("text") || directionLower.includes("message")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF7C3AED" } }; // Púrpura
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFF3E8FF" }, // Púrpura muy claro
-                  };
-                }
-              } else if (colNumber === 5) {
-                // Columna de Estado
-                const statusUpper = (row.status || "").toString().toUpperCase();
-                if (statusUpper.includes("PAID") && !statusUpper.includes("NOT")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF059669" } }; // Verde
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFD1FAE5" }, // Verde muy claro
-                  };
-                } else if (statusUpper.includes("NOT_PAID") || (statusUpper.includes("NOT") && statusUpper.includes("PAID"))) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFDC2626" } }; // Rojo
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFEBEE" }, // Rojo muy claro
-                  };
-                } else if (statusUpper.includes("OFFLINE_PAYMENT")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFF59E0B" } }; // Ámbar
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFF7ED" }, // Ámbar muy claro
-                  };
-                } else if (statusUpper.includes("CANCELED") || statusUpper.includes("CANCELLED")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFE11D48" } }; // Rosa
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFF1F2" }, // Rosa muy claro
-                  };
-                }
-              }
-
-              cell.font = cell.font || { size: 10 };
-              cell.alignment = { vertical: "middle", horizontal: colNumber === 6 || colNumber === 7 ? "left" : "center", wrapText: true };
-              cell.border = {
-                top: { style: "thin", color: { argb: "FFE2E8F0" } },
-                left: { style: "thin", color: { argb: "FFE2E8F0" } },
-                bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-                right: { style: "thin", color: { argb: "FFE2E8F0" } },
-              };
-            });
-          });
-
-          // Espacio entre tablas
-          worksheet.addRow([]);
-          worksheet.addRow([]);
-        });
-      }
-
-      // Resumen final
-      const summaryRow = worksheet.addRow([]);
-      summaryRow.height = 25;
-      const summaryCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-      const summaryCellValue = worksheet.getCell(worksheet.rowCount, 1);
-      summaryCellValue.value = `Total de Clientes: ${report.totalCustomers || 0}`;
-      summaryCellValue.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
-      summaryCellValue.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1E40AF" }, // Azul oscuro
-      };
-      summaryCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      summaryCellValue.border = {
-        top: { style: "medium" },
-        left: { style: "medium" },
-        bottom: { style: "medium" },
-        right: { style: "medium" },
-      };
-
-      // Generar el archivo
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
       });
-
+      const blob = await fetchBlobFromBackend(
+        `/campaign/${selectedCampaignId}/report/excel?${params.toString()}`,
+        { method: "GET" },
+      );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -1273,18 +908,19 @@ export default function CampaignReportsPage() {
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Éxito",
-        description: "Archivo Excel generado exitosamente con formato mejorado",
+        title: "Success",
+        description: "Excel file downloaded successfully.",
       });
     } catch (error: any) {
       console.error("Excel export error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate Excel file",
+        description: error.message || "Failed to download Excel file",
         variant: "destructive",
       });
     }
   };
+
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100 p-4 md:p-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">
