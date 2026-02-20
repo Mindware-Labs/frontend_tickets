@@ -46,43 +46,24 @@ export function middleware(request: NextRequest) {
     ?.replace(/^Bearer\s+/i, "");
   const authToken = cookieToken || headerToken || null;
   let role: string | null = null;
-  let tokenValid = false;
 
   if (authToken) {
     try {
-      // Validate JWT format (should have 3 parts separated by dots)
-      const parts = authToken.split(".");
-      if (parts.length === 3) {
-        const payloadPart = parts[1];
-        if (payloadPart) {
-          // Decode base64 payload
-          const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-          const payloadString = atob(base64);
-          const payload = JSON.parse(payloadString);
-          role = payload?.role || null;
-          
-          // Check if token is expired (if exp exists)
-          if (payload.exp) {
-            const expirationTime = payload.exp * 1000; // Convert to milliseconds
-            const currentTime = Date.now();
-            tokenValid = expirationTime > currentTime;
-          } else {
-            // If no expiration, consider it valid (for now)
-            tokenValid = true;
-          }
-        }
+      const payloadPart = authToken.split(".")[1];
+      if (payloadPart) {
+        const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+        const payloadString = atob(base64);
+        const payload = JSON.parse(payloadString);
+        role = payload?.role || null;
       }
-    } catch (error) {
-      // Token is malformed or invalid
-      tokenValid = false;
+    } catch {
       role = null;
     }
   }
 
-  // Redirect to login if no token or token is invalid
-  if ((!authToken || !tokenValid) && !publicRoutes.includes(pathname)) {
+  if (!authToken && !publicRoutes.includes(pathname)) {
     const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/" && pathname !== "/login") {
+    if (pathname !== "/") {
       loginUrl.searchParams.set("redirect", pathname);
     }
     return NextResponse.redirect(loginUrl);
