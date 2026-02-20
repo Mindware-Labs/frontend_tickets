@@ -34,6 +34,8 @@ export function ReportHeader({
 }: ReportHeaderProps) {
   const hasCompleteData = selectedYard && startDate && endDate;
 
+  
+
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pb-5 border-b mb-6">
       <div className="space-y-1.5">
@@ -44,8 +46,20 @@ export function ReportHeader({
           {hasCompleteData
             ? `${selectedYard.name} • ${startDate} to ${endDate}`
             : "Select a yard and date range to view analytics"}
+            
         </p>
+         {canViewTickets && (
+          <Button
+            variant="default"
+            onClick={onViewAllTickets}
+            className="gap-2 w-full sm:w-auto shadow-sm"
+          >
+            <Ticket className="w-4 h-4" />
+            Yard Tickets
+          </Button>
+        )}
       </div>
+      
 
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
         {/* Botón Principal: Destaca por ser la acción requerida para filtrar */}
@@ -58,16 +72,7 @@ export function ReportHeader({
           Configure Report
         </Button>
 
-        {canViewTickets && (
-          <Button
-            variant="outline"
-            onClick={onViewAllTickets}
-            className="gap-2 w-full sm:w-auto hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:hover:bg-blue-950/30 dark:hover:text-blue-400 transition-colors"
-          >
-            <Ticket className="w-4 h-4" />
-            View Yard Tickets
-          </Button>
-        )}
+       
 
         {canExport && (
           <div className="flex items-center gap-2 w-full sm:w-auto">

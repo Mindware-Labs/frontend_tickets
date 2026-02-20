@@ -362,17 +362,7 @@ export function YardDashboard({
                     />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "1px solid hsl(var(--border))",
-                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                  }}
-                  itemStyle={{
-                    fontWeight: "600",
-                    color: "hsl(var(--foreground))",
-                  }}
-                />
+                
               </PieChart>
             </ResponsiveContainer>
             {/* Texto Centralizado Seguro */}
@@ -475,16 +465,7 @@ export function YardDashboard({
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid hsl(var(--border))",
-                    }}
-                    itemStyle={{
-                      color: "hsl(var(--foreground))",
-                      fontWeight: "500",
-                    }}
-                  />
+                 
                 </PieChart>
               </ResponsiveContainer>
             </div>
