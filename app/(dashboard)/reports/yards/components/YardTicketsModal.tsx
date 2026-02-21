@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { 
-  ListFilter, 
+import { Fragment, useEffect, useMemo, useState } from "react";
+import {
+  ListFilter,
   Ticket as TicketIcon,
   FolderOpen,
   Phone,
@@ -12,8 +12,8 @@ import {
   Inbox,
   Search,
   X,
-  Filter,
-  ChevronDown
+  ChevronDown,
+  FileText,
 } from "lucide-react";
 import {
   Dialog,
@@ -36,12 +36,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { Ticket } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +46,15 @@ type YardTicketsModalProps = {
   reportStartDate?: string;
   reportEndDate?: string;
   tickets: Ticket[];
+};
+
+type CustomerTicketGroup = {
+  key: string;
+  customerLabel: string;
+  phoneLabel: string;
+  tickets: Ticket[];
+  latestTicket: Ticket;
+  latestDateMs: number;
 };
 
 const normalizeDisposition = (value?: string | null) =>
@@ -90,6 +93,30 @@ const getPhoneLabel = (ticket: Ticket) =>
 const getAgentLabel = (ticket: Ticket) =>
   ticket.assignedTo?.name || ticket.agent?.name || "Unassigned";
 
+const getTicketDateMs = (ticket: Ticket) =>
+  new Date(ticket.createdAt || ticket.updatedAt || 0).getTime();
+
+const getCustomerGroupKey = (ticket: Ticket) => {
+  const rawCustomerId = ticket.customer?.id ?? ticket.customerId;
+  if (rawCustomerId !== null && rawCustomerId !== undefined) {
+    return `id:${rawCustomerId}`;
+  }
+
+  const normalizedPhone = (getPhoneLabel(ticket) || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  if (normalizedPhone && normalizedPhone !== "-") {
+    return `phone:${normalizedPhone}`;
+  }
+
+  const normalizedName = (getCustomerLabel(ticket) || "").toLowerCase().trim();
+  if (normalizedName && normalizedName !== "unknown") {
+    return `name:${normalizedName}`;
+  }
+
+  return `ticket:${ticket.id}`;
+};
+
 // Utilidades para colores semánticos en la tabla
 const getStatusColor = (status?: string | null) => {
   const s = (status || "").toUpperCase();
@@ -124,6 +151,13 @@ export function YardTicketsModal({
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [expandedCustomerGroups, setExpandedCustomerGroups] = useState<
+    Record<string, boolean>
+  >({});
+  const [selectedIssueTicket, setSelectedIssueTicket] = useState<Ticket | null>(
+    null,
+  );
+  const [showIssueDetailDialog, setShowIssueDetailDialog] = useState(false);
 
   const sortedTickets = useMemo(() => {
     return [...tickets].sort((left, right) => {
@@ -167,21 +201,36 @@ export function YardTicketsModal({
     [dispositionGroups],
   );
 
+  const tabCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    counts.set("ALL", sortedTickets.length);
+
+    dispositionGroups.forEach(([key, groupTickets]) => {
+      counts.set(
+        key,
+        new Set(groupTickets.map((ticket) => getCustomerGroupKey(ticket))).size,
+      );
+    });
+
+    return counts;
+  }, [dispositionGroups, sortedTickets]);
+
   // Filtrar tickets por búsqueda
   const filterTicketsBySearch = (ticketsToFilter: Ticket[]) => {
     if (!searchQuery.trim()) return ticketsToFilter;
-    
+
     const query = searchQuery.toLowerCase();
-    return ticketsToFilter.filter(ticket => 
-      ticket.id.toString().includes(query) ||
-      getCustomerLabel(ticket).toLowerCase().includes(query) ||
-      getPhoneLabel(ticket).toLowerCase().includes(query) ||
-      formatLabel(ticket.status).toLowerCase().includes(query) ||
-      formatLabel(ticket.priority).toLowerCase().includes(query) ||
-      formatLabel(ticket.direction).toLowerCase().includes(query) ||
-      formatLabel(ticket.disposition).toLowerCase().includes(query) ||
-      getAgentLabel(ticket).toLowerCase().includes(query) ||
-      (ticket.issueDetail?.toLowerCase() || "").includes(query)
+    return ticketsToFilter.filter(
+      (ticket) =>
+        ticket.id.toString().includes(query) ||
+        getCustomerLabel(ticket).toLowerCase().includes(query) ||
+        getPhoneLabel(ticket).toLowerCase().includes(query) ||
+        formatLabel(ticket.status).toLowerCase().includes(query) ||
+        formatLabel(ticket.priority).toLowerCase().includes(query) ||
+        formatLabel(ticket.direction).toLowerCase().includes(query) ||
+        formatLabel(ticket.disposition).toLowerCase().includes(query) ||
+        getAgentLabel(ticket).toLowerCase().includes(query) ||
+        (ticket.issueDetail?.toLowerCase() || "").includes(query),
     );
   };
 
@@ -192,12 +241,68 @@ export function YardTicketsModal({
     return filterTicketsBySearch(dispositionMap.get(activeTab) || []);
   }, [activeTab, sortedTickets, dispositionMap, searchQuery]);
 
+  const groupedCustomerTickets = useMemo(() => {
+    const groups = new Map<string, CustomerTicketGroup>();
+
+    filteredTicketsByTab.forEach((ticket) => {
+      const key = getCustomerGroupKey(ticket);
+      const ticketDateMs = getTicketDateMs(ticket);
+      const existingGroup = groups.get(key);
+
+      if (existingGroup) {
+        existingGroup.tickets.push(ticket);
+        if (ticketDateMs > existingGroup.latestDateMs) {
+          existingGroup.latestTicket = ticket;
+          existingGroup.latestDateMs = ticketDateMs;
+        }
+      } else {
+        groups.set(key, {
+          key,
+          customerLabel: getCustomerLabel(ticket),
+          phoneLabel: getPhoneLabel(ticket),
+          tickets: [ticket],
+          latestTicket: ticket,
+          latestDateMs: ticketDateMs,
+        });
+      }
+    });
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        tickets: [...group.tickets].sort(
+          (left, right) => getTicketDateMs(right) - getTicketDateMs(left),
+        ),
+      }))
+      .sort((left, right) => {
+        if (right.latestDateMs !== left.latestDateMs) {
+          return right.latestDateMs - left.latestDateMs;
+        }
+        if (right.tickets.length !== left.tickets.length) {
+          return right.tickets.length - left.tickets.length;
+        }
+        return left.customerLabel.localeCompare(right.customerLabel);
+      });
+  }, [filteredTicketsByTab]);
+
   useEffect(() => {
     if (open) {
       setActiveTab("ALL");
       setSearchQuery("");
+      setExpandedCustomerGroups({});
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setShowIssueDetailDialog(false);
+      setSelectedIssueTicket(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    setExpandedCustomerGroups({});
+  }, [activeTab, searchQuery]);
 
   const periodLabel =
     reportStartDate && reportEndDate
@@ -205,10 +310,16 @@ export function YardTicketsModal({
       : "All available dates";
 
   const clearSearch = () => setSearchQuery("");
+  const openIssueDetail = (ticket: Ticket) => {
+    if (!ticket.issueDetail?.trim()) return;
+    setSelectedIssueTicket(ticket);
+    setShowIssueDetailDialog(true);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-[min(96vw,1400px)]">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-[min(96vw,1400px)]">
         {/* Header Premium con gradiente sutil */}
         <DialogHeader className="border-b bg-gradient-to-r from-card via-card to-muted/20 px-6 py-6 backdrop-blur-sm z-20">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -251,10 +362,12 @@ export function YardTicketsModal({
 
           {/* Barra de búsqueda */}
           <div className="mt-4 ml-14 sm:ml-0">
-            <div className={cn(
-              "relative transition-all duration-200",
-              isSearchFocused ? "sm:w-96" : "sm:w-80"
-            )}>
+            <div
+              className={cn(
+                "relative transition-all duration-200",
+                isSearchFocused ? "sm:w-96" : "sm:w-80",
+              )}
+            >
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search tickets by ID, Customer..."
@@ -287,13 +400,14 @@ export function YardTicketsModal({
               <div className="relative flex-1 min-w-0">
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-card to-transparent pointer-events-none z-10" />
                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none z-10" />
-                <ScrollArea className="w-full" type="scroll" scrollHideDelay={0}>
+                <ScrollArea
+                  className="w-full"
+                  type="scroll"
+                  scrollHideDelay={0}
+                >
                   <TabsList className="inline-flex h-12 w-max min-w-full bg-transparent p-1 gap-1.5">
                     {tabs.map((tabKey) => {
-                      const tabCount =
-                        tabKey === "ALL"
-                          ? sortedTickets.length
-                          : (dispositionMap.get(tabKey) || []).length;
+                      const tabCount = tabCounts.get(tabKey) ?? 0;
 
                       return (
                         <TabsTrigger
@@ -306,13 +420,15 @@ export function YardTicketsModal({
                           )}
                         >
                           <span className="relative">
-                            {tabKey === "ALL" ? "All Tickets" : formatLabel(tabKey)}
+                            {tabKey === "ALL"
+                              ? "All Tickets"
+                              : formatLabel(tabKey)}
                           </span>
                           <span
                             className={cn(
                               "flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-bold transition-all duration-200",
                               "bg-background/80 text-foreground shadow-sm ring-1 ring-border",
-                              "data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground data-[state=active]:shadow-inner"
+                              "data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground data-[state=active]:shadow-inner",
                             )}
                           >
                             {tabCount}
@@ -323,16 +439,17 @@ export function YardTicketsModal({
                   </TabsList>
                 </ScrollArea>
               </div>
-              
-      
             </div>
           </div>
 
           {/* Contenido de tabs */}
-          <TabsContent value={activeTab} className="min-h-0 flex-1 px-4 py-4 m-0">
+          <TabsContent
+            value={activeTab}
+            className="min-h-0 flex-1 px-4 py-4 m-0"
+          >
             <div className="h-full overflow-hidden rounded-xl border bg-card shadow-lg transition-all duration-200 hover:shadow-xl">
               <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
-                {filteredTicketsByTab.length === 0 ? (
+                {groupedCustomerTickets.length === 0 ? (
                   <div className="flex h-[400px] flex-col items-center justify-center text-center p-8">
                     <div className="rounded-full bg-muted/50 p-6 mb-4 ring-8 ring-muted/20">
                       {searchQuery ? (
@@ -345,7 +462,7 @@ export function YardTicketsModal({
                       {searchQuery ? "No matching tickets" : "No tickets found"}
                     </p>
                     <p className="text-sm text-muted-foreground max-w-[300px] mt-1">
-                      {searchQuery 
+                      {searchQuery
                         ? "Try adjusting your search query or clear filters"
                         : "There are no tickets in this disposition category."}
                     </p>
@@ -379,106 +496,255 @@ export function YardTicketsModal({
                           <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 py-4">
                             Agent
                           </TableHead>
+                          <TableHead className="w-[120px] text-xs font-bold uppercase tracking-wider text-muted-foreground/80 py-4">
+                            Tickets
+                          </TableHead>
                           <TableHead className="w-[140px] text-xs font-bold uppercase tracking-wider text-muted-foreground/80 py-4">
                             Date
                           </TableHead>
-                          <TableHead className="min-w-[300px] text-xs font-bold uppercase tracking-wider text-muted-foreground/80 py-4">
-                            Issue Details
+                          <TableHead className="w-[120px] text-xs font-bold uppercase tracking-wider text-muted-foreground/80 py-4">
+                            Issue
                           </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="[&_tr:last-child]:border-0">
-                        {filteredTicketsByTab.map((ticket, index) => (
-                          <TableRow
-                            key={`${activeTab}-${ticket.id}`}
-                            className={cn(
-                              "group transition-all duration-150 hover:bg-muted/30",
-                              index % 2 === 0 ? "bg-background" : "bg-muted/5",
-                            )}
-                          >
-                            <TableCell className="font-mono text-xs font-medium">
-                              <span className="inline-flex items-center rounded-md bg-muted/50 px-2 py-1 text-muted-foreground ring-1 ring-border">
-                                #{ticket.id}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[180px] font-semibold text-foreground truncate">
-                              {getCustomerLabel(ticket)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              <span className="inline-flex items-center gap-1">
-                                <Phone className="h-3 w-3 opacity-50" />
-                                {getPhoneLabel(ticket)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
+                        {groupedCustomerTickets.map((group, groupIndex) => {
+                          const latestTicket = group.tickets[0];
+                          const olderTickets = group.tickets.slice(1);
+                          const isExpanded = Boolean(
+                            expandedCustomerGroups[group.key],
+                          );
+                          const totalGroupTickets = group.tickets.length;
+                          const hasMoreTickets = totalGroupTickets > 1;
+
+                          return (
+                            <Fragment key={`${activeTab}-${group.key}`}>
+                              <TableRow
                                 className={cn(
-                                  "font-semibold shadow-sm px-3 py-1 border-2",
-                                  getStatusColor(ticket.status),
+                                  "group transition-all duration-150 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/25",
+                                  groupIndex % 2 === 0
+                                    ? "bg-emerald-50/30 dark:bg-emerald-950/10"
+                                    : "bg-emerald-50/40 dark:bg-emerald-950/15",
                                 )}
                               >
-                                <span className="relative flex h-1.5 w-1.5 mr-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span>
-                                </span>
-                                {formatLabel(ticket.status)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "font-semibold shadow-sm px-3 py-1",
-                                  getPriorityColor(ticket.priority),
-                                )}
-                              >
-                                {formatLabel(ticket.priority)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm font-medium">
-                              <span className="inline-flex items-center gap-1.5">
-                                <ArrowRight className={cn(
-                                  "h-3.5 w-3.5",
-                                  ticket.direction === "INBOUND" ? "text-emerald-500" : "text-amber-500"
-                                )} />
-                                {formatLabel(ticket.direction)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              <span className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs font-medium ring-1 ring-border">
-                                {formatLabel(ticket.disposition)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[160px] truncate text-sm">
-                              <span className="inline-flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors">
-                                <User className="h-3.5 w-3.5" />
-                                {getAgentLabel(ticket)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                {formatDate(ticket.createdAt)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="whitespace-normal text-xs leading-relaxed">
-                              <div className="max-w-[350px] group/issue">
-                                <p className={cn(
-                                  "text-muted-foreground transition-all duration-200",
-                                  "group-hover/issue:text-foreground",
-                                  "line-clamp-2 group-hover/issue:line-clamp-none"
-                                )}>
-                                  {ticket.issueDetail || (
-                                    <span className="italic text-muted-foreground/50">
-                                      No details provided
+                                <TableCell className="font-mono text-xs font-medium">
+                                  <span className="inline-flex items-center rounded-md bg-muted/50 px-2 py-1 text-muted-foreground ring-1 ring-border">
+                                    #{latestTicket.id}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="max-w-[220px] font-semibold text-foreground truncate">
+                                  {group.customerLabel}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Phone className="h-3 w-3 opacity-50" />
+                                    {group.phoneLabel}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "font-semibold shadow-sm px-3 py-1 border-2",
+                                      getStatusColor(latestTicket.status),
+                                    )}
+                                  >
+                                    <span className="relative flex h-1.5 w-1.5 mr-1.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span>
+                                    </span>
+                                    {formatLabel(latestTicket.status)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "font-semibold shadow-sm px-3 py-1",
+                                      getPriorityColor(latestTicket.priority),
+                                    )}
+                                  >
+                                    {formatLabel(latestTicket.priority)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm font-medium">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <ArrowRight
+                                      className={cn(
+                                        "h-3.5 w-3.5",
+                                        latestTicket.direction === "INBOUND"
+                                          ? "text-emerald-500"
+                                          : "text-amber-500",
+                                      )}
+                                    />
+                                    {formatLabel(latestTicket.direction)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <span className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs font-medium ring-1 ring-border">
+                                    {formatLabel(latestTicket.disposition)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="max-w-[160px] truncate text-sm">
+                                  <span className="inline-flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors">
+                                    <User className="h-3.5 w-3.5" />
+                                    {getAgentLabel(latestTicket)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {hasMoreTickets ? (
+                                    <button
+                                      type="button"
+                                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-border transition-colors hover:bg-muted/60 hover:text-foreground"
+                                      onClick={() =>
+                                        setExpandedCustomerGroups(
+                                          (current) => ({
+                                            ...current,
+                                            [group.key]: !isExpanded,
+                                          }),
+                                        )
+                                      }
+                                    >
+                                      <span>{totalGroupTickets} total</span>
+                                      <ChevronDown
+                                        className={cn(
+                                          "h-3 w-3 transition-transform",
+                                          isExpanded && "rotate-180",
+                                        )}
+                                      />
+                                    </button>
+                                  ) : (
+                                    <span className="inline-flex items-center rounded-md bg-muted/40 px-2 py-1 text-xs font-semibold text-muted-foreground ring-1 ring-border">
+                                      1 ticket
                                     </span>
                                   )}
-                                </p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {formatDate(latestTicket.createdAt)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {latestTicket.issueDetail?.trim() ? (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+                                      onClick={() => openIssueDetail(latestTicket)}
+                                    >
+                                      <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                      View
+                                    </Button>
+                                  ) : (
+                                    <span className="text-xs italic text-muted-foreground/50">
+                                      No detail
+                                    </span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+
+                              {isExpanded &&
+                                olderTickets.map((ticket, olderIndex) => (
+                                  <TableRow
+                                    key={`${group.key}-${ticket.id}-${olderIndex}`}
+                                    className="bg-slate-100/75 hover:bg-slate-100 dark:bg-slate-900/30 dark:hover:bg-slate-900/45"
+                                  >
+                                    <TableCell className="font-mono text-xs">
+                                      <span className="inline-flex items-center rounded-md bg-background/80 px-2 py-1 text-muted-foreground ring-1 ring-border">
+                                        #{ticket.id}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="max-w-[220px] text-sm text-muted-foreground truncate">
+                                      {group.customerLabel}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">
+                                      <span className="inline-flex items-center gap-1">
+                                        <Phone className="h-3 w-3 opacity-50" />
+                                        {group.phoneLabel}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "font-semibold shadow-sm px-3 py-1 border-2",
+                                          getStatusColor(ticket.status),
+                                        )}
+                                      >
+                                        {formatLabel(ticket.status)}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "font-semibold shadow-sm px-3 py-1",
+                                          getPriorityColor(ticket.priority),
+                                        )}
+                                      >
+                                        {formatLabel(ticket.priority)}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-sm font-medium">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <ArrowRight
+                                          className={cn(
+                                            "h-3.5 w-3.5",
+                                            ticket.direction === "INBOUND"
+                                              ? "text-emerald-500"
+                                              : "text-amber-500",
+                                          )}
+                                        />
+                                        {formatLabel(ticket.direction)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      <span className="inline-flex items-center rounded-full bg-muted/50 px-3 py-1 text-xs font-medium ring-1 ring-border">
+                                        {formatLabel(ticket.disposition)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="max-w-[160px] truncate text-sm">
+                                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                                        <User className="h-3.5 w-3.5" />
+                                        {getAgentLabel(ticket)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                      <span className="inline-flex items-center rounded-md bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
+                                        {olderIndex + 2} of {totalGroupTickets}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        {formatDate(ticket.createdAt)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-xs">
+                                      {ticket.issueDetail?.trim() ? (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+                                          onClick={() => openIssueDetail(ticket)}
+                                        >
+                                          <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                          View
+                                        </Button>
+                                      ) : (
+                                        <span className="text-xs italic text-muted-foreground/50">
+                                          No detail
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </Fragment>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -489,36 +755,98 @@ export function YardTicketsModal({
         </Tabs>
 
         {/* Footer mejorado */}
-      <DialogFooter className="border-t bg-gradient-to-r from-card via-card to-muted/20 px-6 py-4 backdrop-blur-sm">
-  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <div className="flex items-center gap-2 text-sm">
-      <p className="text-muted-foreground">
-        Showing{" "}
-        <span className="text-foreground font-bold">
-          {filteredTicketsByTab.length}
-        </span>{" "}
-        ticket{filteredTicketsByTab.length === 1 ? "" : "s"} 
-        {searchQuery && " matching search"}
-        {activeTab !== "ALL" && (
-          <span> in <span className="relative font-semibold text-foreground">
-            {formatLabel(activeTab)}
-          </span></span>
-        )}
-      </p>
-    </div>
-    <div className="flex items-center gap-3">
-     
+        <DialogFooter className="border-t bg-gradient-to-r from-card via-card to-muted/20 px-6 py-4 backdrop-blur-sm">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <p className="text-muted-foreground">
+                Showing{" "}
+                <span className="text-foreground font-bold">
+                  {groupedCustomerTickets.length}
+                </span>{" "}
+                customer{groupedCustomerTickets.length === 1 ? "" : "s"}
+                <span className="mx-1 text-muted-foreground/60">|</span>
+                <span className="text-foreground font-bold">
+                  {filteredTicketsByTab.length}
+                </span>{" "}
+                ticket{filteredTicketsByTab.length === 1 ? "" : "s"}
+                {searchQuery && " matching search"}
+                {activeTab !== "ALL" && (
+                  <span>
+                    {" "}
+                    in{" "}
+                    <span className="relative font-semibold text-foreground">
+                      {formatLabel(activeTab)}
+                    </span>
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => onOpenChange(false)}
+                className="min-w-[120px] shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
+              >
+                <span>Done</span>
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Button
-        onClick={() => onOpenChange(false)}
-        className="min-w-[120px] shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
-      >
-        <span>Done</span>
-      </Button>
-    </div>
-  </div>
-</DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <Dialog open={showIssueDetailDialog} onOpenChange={setShowIssueDetailDialog}>
+        <DialogContent className="w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:max-w-[min(92vw,560px)]">
+          <DialogHeader className="border-b bg-card/60 px-5 py-4">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <FileText className="h-5 w-5 text-primary" />
+              Issue Detail
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {selectedIssueTicket
+                ? `Ticket #${selectedIssueTicket.id}`
+                : "Selected ticket"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh] bg-muted/10">
+            <div className="space-y-3 p-4">
+              {selectedIssueTicket?.issueDetail?.trim() ? (
+                <div className="rounded-xl border bg-card p-3.5 shadow-sm">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      Ticket #{selectedIssueTicket.id}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(
+                        selectedIssueTicket.createdAt ||
+                          selectedIssueTicket.updatedAt,
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">
+                    {selectedIssueTicket.issueDetail.trim()}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed bg-card/60 p-6 text-center text-sm text-muted-foreground">
+                  No Issue Detail available for this ticket.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="border-t bg-card/60 px-5 py-3">
+            <Button
+              type="button"
+              variant="default"
+              className="w-full sm:w-auto"
+              onClick={() => setShowIssueDetailDialog(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
   Dialog,
@@ -67,6 +67,32 @@ const getRankBadgeClass = (index: number) => {
   }
 };
 
+const getSheetMaxWidthClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "sm:max-w-[min(92vw,480px)]";
+  }
+  if (cardCount === 2) {
+    return "sm:max-w-[min(92vw,840px)]";
+  }
+  return "sm:max-w-[min(92vw,1200px)]";
+};
+
+const getSheetMaxWidthExpression = (cardCount: number) => {
+  if (cardCount <= 1) return "min(92vw,480px)";
+  if (cardCount === 2) return "min(92vw,840px)";
+  return "min(92vw,1200px)";
+};
+
+const getCardsGridClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "grid-cols-1";
+  }
+  if (cardCount === 2) {
+    return "grid-cols-1 sm:grid-cols-2";
+  }
+  return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+};
+
 export function NewLeadsModal({
   open,
   onOpenChange,
@@ -93,11 +119,25 @@ export function NewLeadsModal({
   const [selectedLeadForIssues, setSelectedLeadForIssues] =
     useState<NewLeadCustomer | null>(null);
   const [showIssueDetailsModal, setShowIssueDetailsModal] = useState(false);
+  const sheetWidthClass = getSheetMaxWidthClass(leads.length);
+  const cardsGridClass = getCardsGridClass(leads.length);
+  const issueDialogSheetMaxWidth = getSheetMaxWidthExpression(leads.length);
+
+  useEffect(() => {
+    if (!open) {
+      setShowIssueDetailsModal(false);
+      setSelectedLeadForIssues(null);
+    }
+  }, [open]);
 
   const issueDetailsDialogPositionClass =
     side === "right"
-      ? "2xl:left-[max(1rem,calc((100vw-min(92vw,1200px)-520px)/2))] 2xl:right-auto 2xl:translate-x-0"
-      : "2xl:right-[max(1rem,calc((100vw-min(92vw,1200px)-520px)/2))] 2xl:left-auto 2xl:translate-x-0";
+      ? "2xl:left-[max(1rem,calc((100vw-var(--sheet-max-width)-var(--issue-dialog-width))/2))] 2xl:right-auto 2xl:translate-x-0"
+      : "2xl:right-[max(1rem,calc((100vw-var(--sheet-max-width)-var(--issue-dialog-width))/2))] 2xl:left-auto 2xl:translate-x-0";
+  const issueDetailsDialogStyle = {
+    "--sheet-max-width": issueDialogSheetMaxWidth,
+    "--issue-dialog-width": "520px",
+  } as CSSProperties;
 
   const openIssueDetails = (lead: NewLeadCustomer) => {
     setSelectedLeadForIssues(lead);
@@ -122,7 +162,7 @@ export function NewLeadsModal({
       <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className="flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl sm:max-w-[min(92vw,1200px)]"
+        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl ${sheetWidthClass}`}
       >
         {/* Header */}
         <SheetHeader className="border-b bg-card/50 px-6 py-6 backdrop-blur-sm z-10">
@@ -178,7 +218,7 @@ export function NewLeadsModal({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className={`grid gap-5 ${cardsGridClass}`}>
                 {leads.map((lead, index) => {
                   const isTop3 = index < 3;
                   const rankClass = getRankBadgeClass(index);
@@ -323,6 +363,7 @@ export function NewLeadsModal({
       >
         <DialogContent
           className={`flex flex-col gap-0 w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:size-[min(520px,calc(100vh-2rem))] sm:max-w-none sm:max-h-none ${issueDetailsDialogPositionClass}`}
+          style={issueDetailsDialogStyle}
         >
           <DialogHeader className="border-b bg-card/60 px-5 py-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">

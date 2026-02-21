@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
+import { useDialogCleanup } from "@/hooks/use-dialog-cleanup";
 import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
@@ -74,6 +75,7 @@ const getCampaignYardKey = (campaign: CampaignSummary): string | null => {
 };
 
 export default function YardReportsPage() {
+  useDialogCleanup();
   const searchParams = useSearchParams();
   const router = useRouter();
   const yardIdParam = searchParams.get("yardId");
@@ -960,6 +962,7 @@ export default function YardReportsPage() {
         ) : (
           <YardDashboard
             stats={selectedYardStats}
+            yardTickets={selectedYardTickets}
             activeChartData={activeChartData}
             reportStartDate={startDate}
             reportEndDate={endDate}

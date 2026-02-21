@@ -61,6 +61,26 @@ const getRankStyles = (index: number) => {
   }
 };
 
+const getSheetMaxWidthClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "sm:max-w-[min(92vw,480px)]";
+  }
+  if (cardCount === 2) {
+    return "sm:max-w-[min(92vw,840px)]";
+  }
+  return "sm:max-w-[min(92vw,1200px)]";
+};
+
+const getCardsGridClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "grid-cols-1";
+  }
+  if (cardCount === 2) {
+    return "grid-cols-1 sm:grid-cols-2";
+  }
+  return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+};
+
 export function ActiveAgentsModal({
   open,
   onOpenChange,
@@ -80,12 +100,14 @@ export function ActiveAgentsModal({
     () => agents.reduce((sum, agent) => sum + agent.count, 0),
     [agents],
   );
+  const sheetWidthClass = getSheetMaxWidthClass(agents.length);
+  const cardsGridClass = getCardsGridClass(agents.length);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className="flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl sm:max-w-[min(92vw,1200px)]"
+        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl ${sheetWidthClass}`}
       >
         {/* Header de la Modal */}
         <SheetHeader className="border-b bg-card/50 px-6 py-6 backdrop-blur-sm z-10">
@@ -140,7 +162,7 @@ export function ActiveAgentsModal({
               </div>
             ) : (
               /* CAMBIO: Grid actualizado para soportar hasta 3 columnas en pantallas grandes */
-              <div className="mx-auto grid w-full grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className={`mx-auto grid w-full gap-5 ${cardsGridClass}`}>
                 {agents.map((agent, index) => {
                   const share =
                     totalTickets > 0 ? (agent.count / totalTickets) * 100 : 0;

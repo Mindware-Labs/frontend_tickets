@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BarChart3,
   CheckCircle,
   Clock,
@@ -31,13 +32,14 @@ import {
   PRIORITY_COLORS,
   STATUS_COLORS,
 } from "./chart-colors";
-import type { YardStats, YardStatsDay } from "./types";
+import type { Ticket as YardTicket, YardStats, YardStatsDay } from "./types";
 import { ActiveCampaignsModal } from "./ActiveCampaignsModal";
-import { ActiveAgentsModal } from "./ActiveAgentsModal";
+import { HighPriorityPendingModal } from "./HighPriorityPendingModal";
 import { NewLeadsModal } from "./NewLeadsModal";
 
 type YardDashboardProps = {
   stats: YardStats;
+  yardTickets: YardTicket[];
   activeChartData: YardStatsDay[];
   reportStartDate: string;
   reportEndDate: string;
@@ -45,24 +47,42 @@ type YardDashboardProps = {
 
 export function YardDashboard({
   stats,
+  yardTickets,
   activeChartData,
   reportStartDate,
   reportEndDate,
 }: YardDashboardProps) {
   const [showNewLeadsModal, setShowNewLeadsModal] = useState(false);
-  const [showAgentsModal, setShowAgentsModal] = useState(false);
+  const [showHighPriorityPendingModal, setShowHighPriorityPendingModal] =
+    useState(false);
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
 
   const resolutionRate =
     stats.totalTickets > 0
       ? Math.round((stats.closedTickets / stats.totalTickets) * 100)
       : 0;
-  const topAgent = stats.ticketsByAgent[0];
-  const topAgentName =
-    topAgent?.agentName?.trim() ||
-    (topAgent?.agentId ? `Agent #${topAgent.agentId}` : "No data");
   const topNewLead = stats.ticketsByNewLead[0];
   const topNewLeadName = topNewLead?.customerName?.trim() || "No data";
+  const highPriorityPendingTickets = useMemo(
+    () =>
+      yardTickets.filter((ticket) => {
+        const priority = (ticket.priority || "").toUpperCase();
+        const status = (ticket.status || "").toUpperCase();
+        const isCriticalPriority =
+          priority === "HIGH" || priority === "EMERGENCY";
+        const isClosed = status === "CLOSED" || status === "RESOLVED";
+        return isCriticalPriority && !isClosed;
+      }),
+    [yardTickets],
+  );
+  const highPriorityPendingCount = highPriorityPendingTickets.length;
+  const emergencyPendingCount = highPriorityPendingTickets.filter(
+    (ticket) => (ticket.priority || "").toUpperCase() === "EMERGENCY",
+  ).length;
+  const highPriorityPendingRate =
+    stats.totalTickets > 0
+      ? Math.round((highPriorityPendingCount / stats.totalTickets) * 100)
+      : 0;
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -184,30 +204,33 @@ export function YardDashboard({
           </div>
         </button>
 
-        {/* Active Agents */}
+        {/* High Priority Pending */}
         <button
-          onClick={() => setShowAgentsModal(true)}
-          className="group relative overflow-hidden rounded-2xl border border-cyan-200/50 dark:border-cyan-900/30 bg-gradient-to-br from-card to-cyan-50/30 dark:to-cyan-950/20 p-5 text-left shadow-sm hover:shadow-md hover:border-cyan-300 dark:hover:border-cyan-800 transition-all duration-300 w-full"
+          onClick={() => setShowHighPriorityPendingModal(true)}
+          className="group relative overflow-hidden rounded-2xl border border-rose-200/50 dark:border-rose-900/30 bg-gradient-to-br from-card to-rose-50/30 dark:to-rose-950/20 p-5 text-left shadow-sm hover:shadow-md hover:border-rose-300 dark:hover:border-rose-800 transition-all duration-300 w-full"
         >
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="p-2.5 rounded-full bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/50 transition-all duration-300">
-                <Users className="w-5 h-5" />
+              <div className="p-2.5 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 group-hover:scale-110 group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50 transition-all duration-300">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-cyan-600/80 dark:text-cyan-400/80 uppercase tracking-wider">
-                  Active Agents
+                <p className="text-xs font-semibold text-rose-600/80 dark:text-rose-400/80 uppercase tracking-wider">
+                  High Priority Pending
                 </p>
                 <div className="flex items-baseline gap-2 mt-0.5">
                   <h3 className="text-2xl font-bold text-foreground">
-                    {stats.ticketsByAgent.length}
+                    {highPriorityPendingCount}
                   </h3>
-                  <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400 group-hover:underline flex items-center">
+                  <span className="text-sm font-medium text-rose-600 dark:text-rose-400 group-hover:underline flex items-center">
                     View list <ChevronRight className="w-3 h-3 ml-0.5" />
                   </span>
                 </div>
                 <p className="mt-1 truncate text-xs font-medium text-foreground/80">
-                  Top: <span className="font-semibold text-foreground">{topAgentName}</span>
+                  <span className="font-semibold text-foreground">
+                    {emergencyPendingCount}
+                  </span>{" "}
+                  emergency, {highPriorityPendingRate}% of total
                 </p>
               </div>
             </div>
@@ -648,15 +671,14 @@ export function YardDashboard({
         customersByNewLead={stats.ticketsByNewLead}
       />
 
-      <ActiveAgentsModal
-        open={showAgentsModal}
-        onOpenChange={setShowAgentsModal}
+      <HighPriorityPendingModal
+        open={showHighPriorityPendingModal}
+        onOpenChange={setShowHighPriorityPendingModal}
         side="right"
-        yardId={stats.yard.id}
         yardName={stats.yard.name}
         reportStartDate={reportStartDate}
         reportEndDate={reportEndDate}
-        agentsByTickets={stats.ticketsByAgent}
+        tickets={yardTickets}
       />
 
       <ActiveCampaignsModal
@@ -665,6 +687,8 @@ export function YardDashboard({
         side="right"
         yardId={stats.yard.id}
         yardName={stats.yard.name}
+        reportStartDate={reportStartDate}
+        reportEndDate={reportEndDate}
         campaignsByTickets={stats.ticketsByCampaign}
       />
     </div>

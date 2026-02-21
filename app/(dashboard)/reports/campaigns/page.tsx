@@ -716,7 +716,14 @@ export default function CampaignReportsPage() {
   console.log("═══════════════════════════════════════════════════");
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const campaignIdParam = searchParams.get("campaignId");
+  const sourceReportParam = searchParams.get("fromReport");
+  const sourceYardIdParam = searchParams.get("yardId");
+  const sourceYardStartDateParam =
+    searchParams.get("yardStartDate") || searchParams.get("startDate");
+  const sourceYardEndDateParam =
+    searchParams.get("yardEndDate") || searchParams.get("endDate");
 
   console.log("📋 Component initialized:", {
     campaignIdParam,
@@ -734,6 +741,7 @@ export default function CampaignReportsPage() {
   const [logoFormat, setLogoFormat] = useState<"PNG" | "JPEG">("JPEG");
   const [logoSize, setLogoSize] = useState<ImageSize | null>(null);
   const urlParamsLoaded = useRef(false);
+  const yardSourceToastShown = useRef(false);
 
   const getLogoUrl = () =>
     typeof window !== "undefined"
@@ -884,6 +892,59 @@ export default function CampaignReportsPage() {
     });
     return map;
   }, [report]);
+
+  const backToYardHref = useMemo(() => {
+    if (sourceReportParam !== "yard" || !sourceYardIdParam) return null;
+
+    const params = new URLSearchParams({
+      yardId: sourceYardIdParam,
+    });
+
+    if (sourceYardStartDateParam) {
+      params.set("startDate", sourceYardStartDateParam);
+    }
+
+    if (sourceYardEndDateParam) {
+      params.set("endDate", sourceYardEndDateParam);
+    }
+
+    return `/reports/yards?${params.toString()}`;
+  }, [
+    sourceReportParam,
+    sourceYardIdParam,
+    sourceYardStartDateParam,
+    sourceYardEndDateParam,
+  ]);
+
+  useEffect(() => {
+    if (sourceReportParam !== "yard" || !backToYardHref) return;
+    if (yardSourceToastShown.current) return;
+
+    yardSourceToastShown.current = true;
+
+    const { dismiss } = toast({
+      title: "Viewing campaign report from yard",
+      description: (
+        <div className="flex flex-col gap-2">
+          <p>
+            You are viewing a campaign report opened from the yard report.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              dismiss();
+              router.push(backToYardHref);
+            }}
+            className="w-fit"
+          >
+            Back to Report
+          </Button>
+        </div>
+      ),
+      duration: Infinity,
+    });
+  }, [sourceReportParam, backToYardHref, router]);
 
   const buildReport = async () => {
     if (!selectedCampaignId || !startDate || !endDate) {

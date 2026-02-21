@@ -696,11 +696,11 @@ export default function TicketsPage() {
   // Handle "fromReport" parameter to show persistent toast with back button
   useEffect(() => {
     const fromReport = searchParams.get("fromReport");
+    const reportStartDate = searchParams.get("reportStartDate");
+    const reportEndDate = searchParams.get("reportEndDate");
 
     if (fromReport === "campaign") {
       const campaignId = searchParams.get("campaignId");
-      const reportStartDate = searchParams.get("reportStartDate");
-      const reportEndDate = searchParams.get("reportEndDate");
 
       // Apply campaign filter when coming from report
       if (campaignId) {
@@ -734,6 +734,49 @@ export default function TicketsPage() {
           </div>
         ),
         duration: Infinity, // Toast without time limit
+      });
+      return;
+    }
+
+    if (fromReport === "newLead") {
+      const yardId = searchParams.get("yardId");
+      const reportYardName = searchParams.get("reportYardName");
+      const reportLeadName = searchParams.get("reportLeadName");
+
+      const params = new URLSearchParams();
+      if (yardId) params.set("yardId", yardId);
+      if (reportStartDate) params.set("startDate", reportStartDate);
+      if (reportEndDate) params.set("endDate", reportEndDate);
+      const reportUrl = params.toString()
+        ? `/reports/yards?${params.toString()}`
+        : "/reports/yards";
+
+      const contextLabel = reportYardName
+        ? `${reportYardName}${reportLeadName ? ` - ${reportLeadName}` : ""}`
+        : reportLeadName || "the yard report";
+
+      const { dismiss } = toast({
+        title: "Viewing filtered tickets",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>
+              You are viewing tickets filtered from New Lead Customers in{" "}
+              {contextLabel}.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                dismiss();
+                router.push(reportUrl);
+              }}
+              className="w-fit"
+            >
+              Back to Report
+            </Button>
+          </div>
+        ),
+        duration: Infinity,
       });
     }
   }, [searchParams, router]);

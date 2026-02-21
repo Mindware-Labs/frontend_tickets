@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Filter,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type WheelEvent } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +127,19 @@ export function FiltersSheet({
     onYardOpenChange(false); // Auto-close UX
   };
 
+  const handleYardListWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const list = event.currentTarget;
+
+    if (list.scrollHeight <= list.clientHeight) {
+      return;
+    }
+
+    // Keep wheel scrolling inside the yard dropdown when rendered in a Sheet.
+    event.preventDefault();
+    event.stopPropagation();
+    list.scrollTop += event.deltaY;
+  };
+
   // Validations
   const hasDateRange = Boolean(startDate && endDate);
   const isDateRangeValid = hasDateRange
@@ -138,7 +151,7 @@ export function FiltersSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-lg h-full p-0 overflow-hidden"
+        className="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-lg"
       >
         <SheetHeader className="px-6 py-5 border-b bg-card/50 backdrop-blur-sm z-10">
           <SheetTitle className="flex items-center gap-2.5 text-xl font-bold">
@@ -186,7 +199,10 @@ export function FiltersSheet({
               >
                 <Command>
                   <CommandInput placeholder="Search yard..." className="h-10" />
-                  <CommandList className="max-h-[220px]">
+                  <CommandList
+                    className="max-h-[220px]"
+                    onWheel={handleYardListWheel}
+                  >
                     <CommandEmpty className="py-6 text-center text-sm">
                       {loadingYards ? (
                         <span className="animate-pulse text-muted-foreground">

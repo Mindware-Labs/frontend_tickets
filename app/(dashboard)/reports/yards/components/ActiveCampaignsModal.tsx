@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,6 @@ import {
   Clock,
   ExternalLink,
 } from "lucide-react";
-import { fetchFromBackend } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Campaign {
@@ -53,8 +52,10 @@ interface ActiveCampaignsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   side?: "left" | "right";
-  yardId: number;
+  yardId: number | string;
   yardName: string;
+  reportStartDate?: string;
+  reportEndDate?: string;
   campaignsByTickets: {
     campaignId: number | string;
     campaignName: string;
@@ -122,6 +123,28 @@ const getSecondaryMetrics = (campaign: Campaign) => {
   return [];
 };
 
+const getSheetMaxWidthClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "sm:max-w-[min(92vw,480px)]";
+  }
+  if (cardCount === 2) {
+    return "sm:max-w-[min(92vw,840px)]";
+  }
+  return "sm:max-w-[min(92vw,1200px)]";
+};
+
+const getCardsGridClass = (cardCount: number) => {
+  if (cardCount <= 1) {
+    return "grid-cols-1";
+  }
+  if (cardCount === 2) {
+    return "grid-cols-1 sm:grid-cols-2";
+  }
+  return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+};
+
+const FETCH_TIMEOUT_MS = 15000;
+
 const resolveCampaignYardId = (campaign: Campaign): string | null => {
   const possibleIds = [
     campaign.yarda?.id,
@@ -139,13 +162,9 @@ const resolveCampaignYardId = (campaign: Campaign): string | null => {
   return null;
 };
 
-const isCampaignFromCurrentYard = (
-  campaign: Campaign | undefined,
-  yardIdKey: string,
-): campaign is Campaign => {
-  if (!campaign) return false;
-  const campaignYardId = resolveCampaignYardId(campaign);
-  return campaignYardId === yardIdKey;
+const normalizeCampaignId = (value: number | string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : value.toString();
 };
 
 export function ActiveCampaignsModal({
@@ -154,92 +173,219 @@ export function ActiveCampaignsModal({
   side = "right",
   yardId,
   yardName,
+  reportStartDate,
+  reportEndDate,
   campaignsByTickets,
 }: ActiveCampaignsModalProps) {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const requestIdRef = useRef(0);
+
+  const fallbackCampaigns = useMemo<Campaign[]>(
+    () =>
+      [...campaignsByTickets]
+        .filter(
+          (campaign) =>
+            campaign.campaignId !== null && campaign.campaignId !== undefined,
+        )
+        .map((campaign) => {
+          const idKey = campaign.campaignId.toString();
+          return {
+            id: normalizeCampaignId(campaign.campaignId),
+            nombre: campaign.campaignName || `Campaign #${idKey}`,
+            tipo: "OTHER",
+            isActive: true,
+            duracion: null,
+            ticketCount: campaign.count ?? 0,
+            registeredCount: 0,
+            notRegisteredCount: 0,
+            paidCount: 0,
+            notPaidCount: 0,
+            yarda: null,
+            yard: null,
+          };
+        })
+        .sort(
+          (left, right) => (right.ticketCount ?? 0) - (left.ticketCount ?? 0),
+        ),
+    [campaignsByTickets],
+  );
+
+  // Keep sheet width stable while async data loads to avoid half-open glitches.
+  const layoutCardCount =
+    fallbackCampaigns.length > 0 ? fallbackCampaigns.length : 3;
+  const sheetWidthClass = getSheetMaxWidthClass(layoutCardCount);
+  const cardsGridClass = getCardsGridClass(campaigns.length);
+  const showLoadingState = loading && campaigns.length === 0;
 
   useEffect(() => {
-    if (open && yardId) {
-      fetchCampaigns();
+    if (!open || !yardId) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, yardId, campaignsByTickets]);
 
-  const fetchCampaigns = async () => {
-    try {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => abortController.abort(),
+      FETCH_TIMEOUT_MS,
+    );
+
+    const fetchCampaigns = async () => {
       setLoading(true);
-      const response = await fetchFromBackend("/campaign?page=1&limit=1000");
-      const allCampaigns: Campaign[] = Array.isArray(response)
-        ? response
-        : response?.data || [];
-      const campaignsById = new Map(
-        allCampaigns.map((campaign) => [campaign.id.toString(), campaign]),
-      );
-      const yardIdKey = yardId.toString();
+      if (fallbackCampaigns.length > 0) {
+        setCampaigns(fallbackCampaigns);
+      } else {
+        setCampaigns([]);
+      }
 
-      const fromTopCampaigns = campaignsByTickets
-        .filter(
-          (item) => item.campaignId !== null && item.campaignId !== undefined,
-        )
-        .reduce<Campaign[]>((accumulator, item) => {
-          const idKey = item.campaignId.toString();
-          const campaign = campaignsById.get(idKey);
+      try {
+        const response = await fetch("/api/campaigns?active=true", {
+          signal: abortController.signal,
+          cache: "no-store",
+        });
 
-          if (!isCampaignFromCurrentYard(campaign, yardIdKey)) {
-            return accumulator;
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.message || "Failed to load campaigns");
+        }
+
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        const yardIdKey = yardId.toString();
+        const ticketCountByCampaignId = campaignsByTickets.reduce<
+          Map<string, number>
+        >((accumulator, campaign) => {
+          if (
+            campaign.campaignId !== null &&
+            campaign.campaignId !== undefined
+          ) {
+            accumulator.set(
+              campaign.campaignId.toString(),
+              campaign.count ?? 0,
+            );
           }
+          return accumulator;
+        }, new Map());
 
-          accumulator.push({
-            id: campaign.id,
-            nombre:
-              campaign.nombre || item.campaignName || `Campaign #${idKey}`,
-            tipo: campaign.tipo || "OTHER",
-            isActive: campaign.isActive ?? true,
-            yardaId: campaign.yardaId ?? null,
-            yardId: campaign.yardId ?? null,
-            duracion: campaign.duracion ?? null,
-            ticketCount: item.count,
-            registeredCount: campaign.registeredCount ?? 0,
-            notRegisteredCount: campaign.notRegisteredCount ?? 0,
-            paidCount: campaign.paidCount ?? 0,
-            notPaidCount: campaign.notPaidCount ?? 0,
-            yarda: campaign.yarda ?? null,
-            yard: campaign.yard ?? null,
+        const allCampaigns: Campaign[] = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+        const yardCampaigns = allCampaigns
+          .filter((campaign) => resolveCampaignYardId(campaign) === yardIdKey)
+          .filter((campaign) => campaign.isActive !== false)
+          .map((campaign) => {
+            const idKey = campaign.id.toString();
+            return {
+              ...campaign,
+              nombre: campaign.nombre || `Campaign #${idKey}`,
+              tipo: campaign.tipo || "OTHER",
+              isActive: campaign.isActive !== false,
+              yardaId: campaign.yardaId ?? null,
+              yardId: campaign.yardId ?? null,
+              duracion: campaign.duracion ?? null,
+              ticketCount:
+                ticketCountByCampaignId.get(idKey) ?? campaign.ticketCount ?? 0,
+              registeredCount: campaign.registeredCount ?? 0,
+              notRegisteredCount: campaign.notRegisteredCount ?? 0,
+              paidCount: campaign.paidCount ?? 0,
+              notPaidCount: campaign.notPaidCount ?? 0,
+              yarda: campaign.yarda ?? null,
+              yard: campaign.yard ?? null,
+            } satisfies Campaign;
+          })
+          .sort((left, right) => {
+            const byCount = (right.ticketCount ?? 0) - (left.ticketCount ?? 0);
+            if (byCount !== 0) return byCount;
+            return left.nombre.localeCompare(right.nombre);
           });
 
-          return accumulator;
-        }, []);
+        setCampaigns(
+          yardCampaigns.length > 0 ? yardCampaigns : fallbackCampaigns,
+        );
+      } catch (error: any) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
 
-      const fallbackByYard = allCampaigns
-        .filter((campaign) => resolveCampaignYardId(campaign) === yardIdKey)
-        .filter((campaign) => campaign.isActive);
+        const isAbortError =
+          error?.name === "AbortError" ||
+          error?.message?.toLowerCase?.().includes("aborted");
 
-      const yardCampaigns = (
-        fromTopCampaigns.length > 0 ? fromTopCampaigns : fallbackByYard
-      ).sort(
-        (left, right) => (right.ticketCount ?? 0) - (left.ticketCount ?? 0),
-      );
+        if (!isAbortError) {
+          console.error("Error fetching campaigns:", error);
+          toast({
+            title: "Error",
+            description: error?.message || "Failed to load campaigns",
+            variant: "destructive",
+          });
+        }
 
-      setCampaigns(yardCampaigns);
-    } catch (error: any) {
-      console.error("Error fetching campaigns:", error);
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to load campaigns",
-        variant: "destructive",
-      });
-    } finally {
+        setCampaigns((current) =>
+          current.length > 0 ? current : fallbackCampaigns,
+        );
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (requestIdRef.current === requestId) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCampaigns();
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      abortController.abort();
+    };
+  }, [open, yardId, campaignsByTickets, fallbackCampaigns, toast]);
+
+  useEffect(() => {
+    if (!open) {
+      requestIdRef.current += 1;
       setLoading(false);
+      setCampaigns([]);
     }
+  }, [open]);
+
+  const buildCampaignReportHref = (campaignId: number | string) => {
+    const params = new URLSearchParams({
+      campaignId: campaignId.toString(),
+      fromReport: "yard",
+      yardId: yardId.toString(),
+      reportYardName: yardName,
+    });
+
+    if (reportStartDate) {
+      params.set("startDate", reportStartDate);
+      params.set("yardStartDate", reportStartDate);
+    }
+
+    if (reportEndDate) {
+      params.set("endDate", reportEndDate);
+      params.set("yardEndDate", reportEndDate);
+    }
+
+    return `/reports/campaigns?${params.toString()}`;
+  };
+
+  const handleOpenCampaignReport = (campaign: Campaign) => {
+    const href = buildCampaignReportHref(campaign.id);
+    onOpenChange(false);
+    router.push(href);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className="flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl sm:max-w-[min(92vw,1200px)]"
+        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl ${sheetWidthClass}`}
       >
         <SheetHeader className="border-b bg-card/50 px-6 py-5 backdrop-blur-sm">
           <SheetTitle className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
@@ -258,7 +404,7 @@ export function ActiveCampaignsModal({
 
         <ScrollArea className="min-h-0 flex-1 bg-muted/10">
           <div className="p-4 sm:p-6 flex justify-center">
-            {loading ? (
+            {showLoadingState ? (
               <div className="flex flex-col items-center justify-center py-20 w-full">
                 <Loader2 className="h-10 w-10 animate-spin text-primary/60" />
                 <span className="mt-4 text-base font-medium text-muted-foreground animate-pulse">
@@ -279,7 +425,7 @@ export function ActiveCampaignsModal({
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-6 w-full max-w-sm mx-auto">
+              <div className={`mx-auto grid w-full gap-5 ${cardsGridClass}`}>
                 {campaigns.map((campaign) => {
                   const secondaryMetrics = getSecondaryMetrics(campaign);
 
@@ -384,17 +530,13 @@ export function ActiveCampaignsModal({
 
                         <div className="pt-2">
                           <Button
-                            asChild
+                            type="button"
                             variant="secondary"
                             className="w-full"
+                            onClick={() => handleOpenCampaignReport(campaign)}
                           >
-                            <Link
-                              href={`/reports/campaigns?campaignId=${campaign.id}`}
-                              onClick={() => onOpenChange(false)}
-                            >
-                              Open Reports
-                              <ExternalLink className="ml-2 h-3.5 w-3.5" />
-                            </Link>
+                            Open Reports
+                            <ExternalLink className="ml-2 h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
