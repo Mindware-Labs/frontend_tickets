@@ -35,6 +35,10 @@ export function TicketSocketProvider() {
 
     socketRef.current = socket;
 
+    const revalidateTicketCaches = () => {
+      mutate((key) => typeof key === "string" && key.startsWith("/api/tickets"));
+    };
+
     socket.on(
       "ticketAssigned",
       (data: { title: string; message: string; ticketId: number }) => {
@@ -65,7 +69,7 @@ export function TicketSocketProvider() {
         });
 
         // Recargar datos
-        mutate("/api/tickets");
+        revalidateTicketCaches();
       },
     );
 
@@ -74,7 +78,7 @@ export function TicketSocketProvider() {
       "ticketsUpdated",
       (data: { action: string; ticketId: number; timestamp: string }) => {
         // Revalidar la lista de tickets cuando hay cambios
-        mutate("/api/tickets");
+        revalidateTicketCaches();
       },
     );
 

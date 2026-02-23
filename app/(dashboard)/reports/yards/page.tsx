@@ -150,8 +150,18 @@ export default function YardReportsPage() {
 
       try {
         setLoadingStats(true);
+        const rangeStart = parseLocalDateStart(startDate);
+        const rangeEnd = parseLocalDateEnd(endDate);
+        const ticketQueryParams = new URLSearchParams({
+          page: "1",
+          limit: "10000",
+          includeTotal: "false",
+          startDate: rangeStart.toISOString(),
+          endDate: rangeEnd.toISOString(),
+        });
+
         const [ticketsData, campaignsData, agentsData] = await Promise.all([
-          fetchFromBackend("/tickets?page=1&limit=10000"),
+          fetchFromBackend(`/tickets?${ticketQueryParams.toString()}`),
           fetchFromBackend("/campaign?page=1&limit=1000"),
           fetchFromBackend("/agents?page=1&limit=10000").catch((error) => {
             console.warn(
@@ -196,8 +206,6 @@ export default function YardReportsPage() {
           });
           return accumulator;
         }, new Map());
-        const rangeStart = parseLocalDateStart(startDate);
-        const rangeEnd = parseLocalDateEnd(endDate);
 
         const filteredTickets = allTickets.filter((ticket) => {
           const ticketDate = ticket.createdAt || ticket.updatedAt;
@@ -208,14 +216,27 @@ export default function YardReportsPage() {
         });
         setTicketsInRange(filteredTickets);
 
+        const ticketsByYardId = new Map<string, Ticket[]>();
+        filteredTickets.forEach((ticket) => {
+          const ticketYardId = ticket.yardId ?? ticket.yard?.id;
+          if (ticketYardId === null || ticketYardId === undefined) return;
+          const yardKey = ticketYardId.toString();
+          const existing = ticketsByYardId.get(yardKey);
+          if (existing) {
+            existing.push(ticket);
+          } else {
+            ticketsByYardId.set(yardKey, [ticket]);
+          }
+        });
+
         const statsMap = new Map<number, YardStats>();
+        const todayDateKey = toLocalDateKey(new Date());
+        const daysDiff = Math.ceil(
+          (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24),
+        );
 
         yards.forEach((yard) => {
-          const yardTickets = filteredTickets.filter((ticket) => {
-            const ticketYardId = ticket.yardId ?? ticket.yard?.id;
-            if (ticketYardId === null || ticketYardId === undefined) return false;
-            return ticketYardId.toString() === yard.id.toString();
-          });
+          const yardTickets = ticketsByYardId.get(yard.id.toString()) || [];
 
           const ticketsByStatus = yardTickets.reduce(
             (accumulator, ticket) => {
@@ -234,6 +255,14 @@ export default function YardReportsPage() {
             },
             {} as Record<string, number>,
           );
+          const dispositionCounts = yardTickets.reduce(
+            (accumulator, ticket) => {
+              const disposition = ticket.disposition || "UNKNOWN";
+              accumulator[disposition] = (accumulator[disposition] || 0) + 1;
+              return accumulator;
+            },
+            {} as Record<string, number>,
+          );
 
           const allDispositions = [
             "BOOKING",
@@ -247,9 +276,7 @@ export default function YardReportsPage() {
           ];
           const ticketsByDisposition = allDispositions.reduce(
             (accumulator, disposition) => {
-              const count = yardTickets.filter(
-                (ticket) => ticket.disposition === disposition,
-              ).length;
+              const count = dispositionCounts[disposition] || 0;
               accumulator[disposition] = count;
               return accumulator;
             },
@@ -413,11 +440,19 @@ export default function YardReportsPage() {
             }
           });
 
-          const lastActivity = yardTickets
-            .map((ticket) => ticket.updatedAt || ticket.createdAt)
-            .filter(Boolean)
-            .sort()
-            .reverse()[0];
+          let lastActivity: string | null = null;
+          let lastActivityTimestamp = 0;
+          yardTickets.forEach((ticket) => {
+            const candidate = ticket.updatedAt || ticket.createdAt;
+            if (!candidate) return;
+            const candidateDate = new Date(candidate);
+            const candidateTimestamp = candidateDate.getTime();
+            if (Number.isNaN(candidateTimestamp)) return;
+            if (candidateTimestamp > lastActivityTimestamp) {
+              lastActivityTimestamp = candidateTimestamp;
+              lastActivity = candidate;
+            }
+          });
 
           const ticketsByDayMap = new Map<
             string,
@@ -451,10 +486,6 @@ export default function YardReportsPage() {
               }
             }
           });
-
-          const daysDiff = Math.ceil(
-            (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24),
-          );
 
           const ticketsByDay = Array.from(ticketsByDayMap.entries())
             .map(([date, data]) => {
@@ -512,15 +543,9 @@ export default function YardReportsPage() {
             avgResolutionTime = totalHours / closedTicketsWithDates.length;
           }
 
-          const openTickets = yardTickets.filter(
-            (ticket) => ticket.status === "OPEN",
-          ).length;
-          const inProgressTickets = yardTickets.filter(
-            (ticket) => ticket.status === "IN_PROGRESS",
-          ).length;
-          const closedTickets = yardTickets.filter(
-            (ticket) => ticket.status === "CLOSED",
-          ).length;
+          const openTickets = ticketsByStatus.OPEN || 0;
+          const inProgressTickets = ticketsByStatus.IN_PROGRESS || 0;
+          const closedTickets = ticketsByStatus.CLOSED || 0;
 
           statsMap.set(yard.id, {
             yard,
@@ -529,9 +554,7 @@ export default function YardReportsPage() {
             inProgressTickets,
             closedTickets,
             todayTickets:
-              ticketsByDay.find(
-                (day) => day.date === toLocalDateKey(new Date()),
-              )?.total || 0,
+              ticketsByDay.find((day) => day.date === todayDateKey)?.total || 0,
             lastActivity: lastActivity || null,
             ticketsByStatus: Object.entries(ticketsByStatus).map(
               ([status, count]) => ({

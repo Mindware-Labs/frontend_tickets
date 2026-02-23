@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, JSX, useRef } from "react";
+import { useState, useMemo, useEffect, JSX, useRef, useDeferredValue } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
@@ -131,6 +131,7 @@ export default function TicketsPage() {
   const [isTabActive, setIsTabActive] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previousTicketCount, setPreviousTicketCount] = useState(0);
+  const previousTicketQueryKeyRef = useRef<string | null>(null);
   const [search, setSearch] = useState("");
   const [urlTicketId, setUrlTicketId] = useState<string | null>(null);
   const [urlCustomerId, setUrlCustomerId] = useState<string | null>(null);
@@ -505,22 +506,92 @@ export default function TicketsPage() {
     return result.data;
   };
 
+  const deferredSearch = useDeferredValue(search);
+
+  const ticketsApiUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    const currentCustomerIdParam = searchParams.get("customerId");
+    const normalizedSearch = deferredSearch.trim();
+    const directionValue = directionFilter?.trim();
+    const dateFrom = dateRange?.from ? startOfDay(dateRange.from) : null;
+    const dateTo = dateRange?.from
+      ? endOfDay(dateRange.to ?? dateRange.from)
+      : null;
+
+    params.set("mode", "page");
+    params.set("page", currentPage.toString());
+    params.set("limit", itemsPerPage.toString());
+    params.set("includeTotal", "true");
+    params.set("includeViewCounts", "true");
+    params.set("view", activeView);
+
+    if (normalizedSearch) params.set("search", normalizedSearch);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (priorityFilter !== "all") params.set("priority", priorityFilter);
+    if (directionValue && directionValue !== "all") {
+      params.set("direction", directionValue);
+    }
+    if (dispositionFilter !== "all") params.set("disposition", dispositionFilter);
+    if (campaignFilter !== "all") params.set("campaignId", campaignFilter);
+    if (yardFilter !== "all") params.set("yardId", yardFilter);
+    if (agentFilter !== "all") params.set("agentId", agentFilter);
+    if (currentCustomerIdParam) params.set("customerId", currentCustomerIdParam);
+    if (currentAgent?.id) {
+      params.set("assignedMeAgentId", currentAgent.id.toString());
+    }
+    if (dateFrom && dateTo) {
+      params.set("startDate", dateFrom.toISOString());
+      params.set("endDate", dateTo.toISOString());
+    }
+
+    return `/api/tickets?${params.toString()}`;
+  }, [
+    searchParams,
+    deferredSearch,
+    currentPage,
+    itemsPerPage,
+    activeView,
+    statusFilter,
+    priorityFilter,
+    directionFilter,
+    dispositionFilter,
+    campaignFilter,
+    yardFilter,
+    agentFilter,
+    currentAgent?.id,
+    dateRange?.from?.getTime(),
+    dateRange?.to?.getTime(),
+  ]);
+
   const {
-    data: tickets = [],
+    data: ticketsPageData,
     error: swrError,
     isLoading,
     mutate,
-  } = useSWR("/api/tickets", ticketsFetcher, {
+  } = useSWR(ticketsApiUrl, ticketsFetcher, {
     refreshInterval: 0,
     revalidateOnFocus: true,
     refreshWhenHidden: false,
     dedupingInterval: 2000,
     revalidateOnReconnect: true,
     shouldRetryOnError: false,
-    compare: (a, b) => {
-      return JSON.stringify(a) === JSON.stringify(b);
-    },
   });
+
+  const tickets = Array.isArray(ticketsPageData)
+    ? ticketsPageData
+    : ticketsPageData?.data || [];
+  const totalMatchingTickets =
+    typeof ticketsPageData?.total === "number"
+      ? ticketsPageData.total
+      : tickets.length;
+  const serverViewCounts = ticketsPageData?.viewCounts || null;
+  const hasServerTotalPages =
+    typeof ticketsPageData?.totalPages === "number" &&
+    Number.isFinite(ticketsPageData.totalPages);
+  const serverTotalPages = Math.max(
+    1,
+    Number(ticketsPageData?.totalPages) || 1,
+  );
 
   const myTicketsCount = useMemo(
     () =>
@@ -643,9 +714,20 @@ export default function TicketsPage() {
 
   // Detectar nuevos tickets y mostrar notificación
   useEffect(() => {
-    if (tickets.length > 0) {
-      if (previousTicketCount > 0 && tickets.length > previousTicketCount) {
-        const newCount = tickets.length - previousTicketCount;
+    if (previousTicketQueryKeyRef.current !== ticketsApiUrl) {
+      previousTicketQueryKeyRef.current = ticketsApiUrl;
+      if (totalMatchingTickets > 0) {
+        setPreviousTicketCount(totalMatchingTickets);
+      }
+      return;
+    }
+
+    if (totalMatchingTickets > 0) {
+      if (
+        previousTicketCount > 0 &&
+        totalMatchingTickets > previousTicketCount
+      ) {
+        const newCount = totalMatchingTickets - previousTicketCount;
         toast({
           title: "New Ticket" + (newCount > 1 ? "s" : ""),
           description: `${newCount} new ticket${
@@ -654,9 +736,9 @@ export default function TicketsPage() {
           duration: 3000,
         });
       }
-      setPreviousTicketCount(tickets.length);
+      setPreviousTicketCount(totalMatchingTickets);
     }
-  }, [tickets.length, previousTicketCount]);
+  }, [ticketsApiUrl, totalMatchingTickets, previousTicketCount]);
 
   useEffect(() => {
     const user = auth.getUser();
@@ -854,7 +936,7 @@ export default function TicketsPage() {
       setActiveView(viewParam);
     }
 
-    if (!ticketsLength) {
+    if (!ticketsLength && !ticketIdParam) {
       console.log("⏳ [Tickets Page] Waiting for tickets to load...");
       return;
     }
@@ -887,7 +969,37 @@ export default function TicketsPage() {
           setShowEditModal(true);
         }
       } else {
-        console.log("❌ [Tickets Page] Ticket not found:", ticketIdParam);
+        console.log(
+          "[Tickets Page] Ticket not in current page, fetching by id:",
+          ticketIdParam,
+        );
+
+        fetch(`/api/tickets/${ticketIdParam}`)
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch ticket ${ticketIdParam}`);
+            }
+            return response.json();
+          })
+          .then((ticketData) => {
+            if (!ticketData) return;
+            processedTicketIdRef.current = ticketIdParam;
+            setUrlTicketId(ticketIdParam);
+            setSelectedTicket(ticketData);
+            setShowDetails(true);
+            if (ticketData.yardId) {
+              setShowViewModal(true);
+            } else {
+              setShowEditModal(true);
+            }
+          })
+          .catch((error) => {
+            console.log(
+              "[Tickets Page] Ticket fetch by id failed:",
+              ticketIdParam,
+              error,
+            );
+          });
       }
     } else if (customerIdParam) {
       // Filter by customer ID
@@ -971,6 +1083,18 @@ export default function TicketsPage() {
     const currentCustomerIdParam = searchParams.get("customerId");
 
     return (viewType: string) => {
+      if (
+        serverViewCounts &&
+        typeof serverViewCounts === "object" &&
+        typeof (serverViewCounts as any)[viewType] === "number"
+      ) {
+        return (serverViewCounts as any)[viewType];
+      }
+
+      if (viewType === activeView) {
+        return totalMatchingTickets;
+      }
+
       return tickets.filter((ticket: Ticket) => {
         // Filtro por cliente (si existe en URL)
         if (currentCustomerIdParam) {
@@ -1121,209 +1245,18 @@ export default function TicketsPage() {
     agentFilter,
     dateRange,
     searchParams,
-    currentAgent,
-    currentUser,
-    currentUserFullName,
-  ]);
-
-  const filteredTickets = useMemo(() => {
-    console.log("🔎 [Tickets Page] Filtering tickets with search:", {
-      search,
-      ticketsCount: tickets.length,
-      searchLength: search.length,
-    });
-
-    // Verificar si customerId está en la URL actual
-    const currentCustomerIdParam = searchParams.get("customerId");
-
-    const filtered = tickets.filter((ticket: Ticket) => {
-      // ⚠️ ELIMINADO EL FILTRO ESTRICTO POR ID AQUÍ
-      // if (urlTicketId) { ... } -> Borrado para que se vea la lista completa
-
-      // Primero verificar si el ticket pertenece al cliente (si hay customerId en la URL)
-      // Pero NO hacer return temprano, continuar con los demás filtros
-      if (currentCustomerIdParam) {
-        const matchesCustomer =
-          ticket.customerId &&
-          ticket.customerId.toString() === currentCustomerIdParam;
-        if (!matchesCustomer) {
-          return false; // Si no coincide con el cliente, excluir el ticket
-        }
-        // Si coincide, continuar con los demás filtros
-      }
-
-      const yardName =
-        typeof ticket.yard === "string"
-          ? ticket.yard
-          : (ticket.yard as any)?.name || "";
-      const clientName =
-        ticket.clientName || (ticket.customer as any)?.name || "";
-      const phone =
-        ticket.phone ||
-        (ticket.customer as any)?.phone ||
-        ticket.customerPhone ||
-        "";
-      const status = normalizeEnumValue(ticket.status as any);
-      const priority = (ticket.priority as any)?.toString().toUpperCase();
-      const assigneeName = getAssigneeName(ticket.assignedTo);
-      const isAssignedToMe = isTicketAssignedToCurrentUser(ticket);
-
-      const searchLower = search ? search.toLowerCase().trim() : "";
-      const searchTrimmed = search ? search.trim() : "";
-      const phoneDigitsOnly = phone.replace(/[^0-9]/g, "");
-      const searchDigitsOnly = searchTrimmed.replace(/[^0-9]/g, "");
-
-      const matchesSearch = searchLower
-        ? clientName.toLowerCase().includes(searchLower) ||
-          yardName.toLowerCase().includes(searchLower) ||
-          ticket.id.toString().includes(searchTrimmed) ||
-          phone.toLowerCase().includes(searchLower) ||
-          (phoneDigitsOnly &&
-            searchDigitsOnly &&
-            phoneDigitsOnly.includes(searchDigitsOnly))
-        : true; // Si no hay search, mostrar todos
-
-      const matchesStatus =
-        statusFilter === "all" || status === normalizeEnumValue(statusFilter);
-      const matchesPriority =
-        priorityFilter === "all" ||
-        ticket.priority === priorityFilter ||
-        priority === priorityFilter.toUpperCase();
-      const directionFilterValue = directionFilter.toLowerCase();
-      const ticketDirection = ticket.direction
-        ? ticket.direction.toString().toLowerCase()
-        : "";
-      const matchesDirection =
-        directionFilter === "all" ||
-        ticket.direction === directionFilter ||
-        ticketDirection === directionFilterValue;
-      const ticketCampaignId =
-        ticket.campaignId ??
-        (ticket.campaign && typeof ticket.campaign === "object"
-          ? (ticket.campaign as any).id
-          : null);
-      const matchesCampaign =
-        campaignFilter === "all" ||
-        (ticketCampaignId && ticketCampaignId.toString() === campaignFilter);
-
-      const ticketYardId =
-        ticket.yardId ??
-        (ticket.yard && typeof ticket.yard === "object"
-          ? (ticket.yard as any).id
-          : null);
-      const matchesYard =
-        yardFilter === "all" ||
-        (ticketYardId && ticketYardId.toString() === yardFilter);
-
-      // --- AGREGAR ESTO ---
-      // Verificamos ticket.agentId o ticket.assignedTo.id
-      const ticketAgentId =
-        ticket.agentId ??
-        (ticket.assignedTo && typeof ticket.assignedTo === "object"
-          ? (ticket.assignedTo as any).id
-          : null);
-
-      const matchesAgent =
-        agentFilter === "all" ||
-        (ticketAgentId && ticketAgentId.toString() === agentFilter);
-      // --------------------
-
-      const matchesDisposition =
-        dispositionFilter === "all" || ticket.disposition === dispositionFilter;
-
-      // Date range filter
-      let matchesDate = true;
-      if (dateRange?.from) {
-        const ticketDate = new Date(ticket.createdAt);
-        const from = startOfDay(dateRange.from);
-        const to = dateRange.to
-          ? endOfDay(dateRange.to)
-          : endOfDay(dateRange.from);
-        matchesDate = isWithinInterval(ticketDate, { start: from, end: to });
-      }
-
-      const isMissed = isMissedCall(ticket);
-
-      let matchesView = true;
-      if (activeView === "missed" || directionFilterValue === "missed") {
-        matchesView = isMissed;
-      } else if (activeView === "assigned_me") {
-        matchesView = isAssignedToMe;
-      } else if (activeView === "unassigned") {
-        matchesView = !ticket.assignedTo;
-      } else if (activeView === "assigned") {
-        matchesView = !!ticket.assignedTo;
-      } else if (activeView === "high_priority") {
-        matchesView =
-          priority === "HIGH" ||
-          (ticket.priority &&
-            ticket.priority.toString().toUpperCase() === "HIGH") ||
-          priority === "EMERGENCY" ||
-          (ticket.priority &&
-            ticket.priority.toString().toUpperCase() === "EMERGENCY") ||
-          false;
-      }
-
-      if (activeView !== "missed" && directionFilterValue !== "missed") {
-        matchesView = matchesView && !isMissed;
-      }
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesPriority &&
-        matchesDirection &&
-        matchesDisposition &&
-        matchesCampaign &&
-        matchesYard &&
-        matchesAgent &&
-        matchesDate &&
-        matchesView
-      );
-    });
-
-    console.log("✅ [Tickets Page] Filtered tickets result:", {
-      originalCount: tickets.length,
-      filteredCount: filtered.length,
-      search,
-      hasSearch: !!search,
-    });
-
-    if (activeView === "high_priority") {
-      return filtered.sort((a: Ticket, b: Ticket) => {
-        const statusA = normalizeEnumValue(a.status);
-        const statusB = normalizeEnumValue(b.status);
-        if (statusA === "CLOSED" && statusB !== "CLOSED") return 1;
-        if (statusA !== "CLOSED" && statusB === "CLOSED") return -1;
-        return 0;
-      });
-    }
-    return filtered;
-  }, [
-    tickets,
-    search,
-    statusFilter,
-    priorityFilter,
-    directionFilter,
-    dispositionFilter,
     activeView,
-    campaignFilter,
-    yardFilter,
-    agentFilter,
+    serverViewCounts,
+    totalMatchingTickets,
     currentAgent,
     currentUser,
     currentUserFullName,
-    campaigns,
-    urlTicketId,
-    searchParams,
-    dateRange,
   ]);
 
-  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
-  const paginatedTickets = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredTickets.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredTickets, currentPage, itemsPerPage]);
+  const filteredTickets = useMemo(() => tickets, [tickets]);
+
+  const totalPages = serverTotalPages;
+  const paginatedTickets = useMemo(() => tickets, [tickets]);
 
   // Helper para obtener tickets filtrados por cliente (si hay customerId en la URL)
   const getCustomerFilteredTickets = useMemo(() => {
@@ -1344,11 +1277,25 @@ export default function TicketsPage() {
     statusFilter,
     priorityFilter,
     directionFilter,
+    dispositionFilter,
     activeView,
     campaignFilter,
     yardFilter,
     agentFilter,
+    customerIdParam,
+    dateRange?.from?.getTime(),
+    dateRange?.to?.getTime(),
+    itemsPerPage,
   ]);
+
+  useEffect(() => {
+    if (!hasServerTotalPages) {
+      return;
+    }
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // Función para manejar el cambio de vista y limpiar el filtro de cliente si no está en la URL
   const handleViewChange = (view: string) => {
@@ -2361,6 +2308,7 @@ export default function TicketsPage() {
                         value={yardSearch}
                         onChange={(e) => setYardSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
                       />
                     </div>
                   </div>
@@ -2856,6 +2804,8 @@ export default function TicketsPage() {
                     placeholder="Search campaign..."
                     value={campaignFilterSearch}
                     onChange={(e) => setCampaignFilterSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                     className="h-8"
                   />
                 </div>
@@ -2880,6 +2830,8 @@ export default function TicketsPage() {
                     placeholder="Search yard..."
                     value={yardFilterSearch}
                     onChange={(e) => setYardFilterSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                     className="h-8"
                   />
                 </div>
@@ -3135,13 +3087,19 @@ export default function TicketsPage() {
         </div>
 
         {/* Pagination */}
-        {filteredTickets.length > 0 && (
+        {totalMatchingTickets > 0 && (
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <p className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(currentPage * itemsPerPage, filteredTickets.length)}{" "}
-                of {filteredTickets.length} tickets
+                Showing{" "}
+                {filteredTickets.length
+                  ? (currentPage - 1) * itemsPerPage + 1
+                  : 0}{" "}
+                to{" "}
+                {filteredTickets.length
+                  ? (currentPage - 1) * itemsPerPage + filteredTickets.length
+                  : 0}{" "}
+                of {totalMatchingTickets} tickets
               </p>
             </div>
             <div className="flex items-center gap-2">

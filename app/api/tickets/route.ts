@@ -5,8 +5,58 @@ import { fetchFromBackendServer } from "@/lib/api-server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const pageSize = 200;
-    const maxPages = 50;
+    const mode = searchParams.get("mode");
+
+    if (mode === "page") {
+      const backendParams = new URLSearchParams();
+      const passthroughKeys = [
+        "page",
+        "limit",
+        "includeTotal",
+        "includeViewCounts",
+        "search",
+        "status",
+        "priority",
+        "direction",
+        "disposition",
+        "campaignId",
+        "yardId",
+        "agentId",
+        "customerId",
+        "view",
+        "assignedMeAgentId",
+        "startDate",
+        "endDate",
+      ];
+
+      for (const key of passthroughKeys) {
+        const value = searchParams.get(key);
+        if (value !== null && value !== "") {
+          backendParams.set(key, value);
+        }
+      }
+
+      const queryString = backendParams.toString();
+      const backendPath = queryString ? `/tickets?${queryString}` : "/tickets";
+
+      console.log(`[NextAPI] GET /api/tickets (page mode) -> ${backendPath}`);
+
+      const data = await fetchFromBackendServer(request, backendPath);
+
+      return NextResponse.json({
+        success: true,
+        data,
+      });
+    }
+
+    const pageSize = Math.min(
+      Math.max(Number(searchParams.get("pageSize")) || 1000, 100),
+      5000,
+    );
+    const maxPages = Math.min(
+      Math.max(Number(searchParams.get("maxPages")) || 50, 1),
+      200,
+    );
     const maxConcurrentRequests = 5; // Limitar peticiones concurrentes para no sobrecargar
 
     console.log(`[NextAPI] GET /api/tickets (todos)`);
@@ -50,7 +100,7 @@ export async function GET(request: NextRequest) {
         pagePromises.push(
           fetchFromBackendServer(
             request,
-            `/tickets?page=${page}&limit=${pageSize}`
+            `/tickets?page=${page}&limit=${pageSize}&includeTotal=false`
           )
         );
       }
