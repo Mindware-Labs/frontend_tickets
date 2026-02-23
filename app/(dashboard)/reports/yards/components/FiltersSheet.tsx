@@ -102,6 +102,13 @@ export function FiltersSheet({
     setLocalEndDate(endDate ? new Date(endDate + "T12:00:00") : undefined);
   }, [endDate]);
 
+  useEffect(() => {
+    if (open) return;
+    onYardOpenChange(false);
+    setStartPopoverOpen(false);
+    setEndPopoverOpen(false);
+  }, [open, onYardOpenChange]);
+
   const handleStartSelect = (date: Date | undefined) => {
     setLocalStartDate(date);
     if (!date) {
@@ -146,9 +153,21 @@ export function FiltersSheet({
     ? new Date(startDate) <= new Date(endDate)
     : true;
   const showMissingDateAlert = Boolean(selectedYardId) && !hasDateRange;
+  const isYardPopoverOpen = open && yardOpen;
+  const isStartDatePopoverOpen = open && startPopoverOpen;
+  const isEndDatePopoverOpen = open && endPopoverOpen;
+
+  const handleSheetOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      onYardOpenChange(false);
+      setStartPopoverOpen(false);
+      setEndPopoverOpen(false);
+    }
+    onOpenChange(nextOpen);
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         side="right"
         className="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-lg"
@@ -174,7 +193,11 @@ export function FiltersSheet({
               Location Settings
             </label>
 
-            <Popover open={yardOpen} onOpenChange={onYardOpenChange}>
+            <Popover
+              modal
+              open={isYardPopoverOpen}
+              onOpenChange={(nextOpen) => onYardOpenChange(open ? nextOpen : false)}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -194,7 +217,7 @@ export function FiltersSheet({
               </PopoverTrigger>
 
               <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl"
+                className="z-[60] w-[var(--radix-popover-trigger-width)] p-0 rounded-xl"
                 align="start"
               >
                 <Command>
@@ -256,8 +279,11 @@ export function FiltersSheet({
                   Start Date
                 </label>
                 <Popover
-                  open={startPopoverOpen}
-                  onOpenChange={setStartPopoverOpen}
+                  modal
+                  open={isStartDatePopoverOpen}
+                  onOpenChange={(nextOpen) =>
+                    setStartPopoverOpen(open ? nextOpen : false)
+                  }
                 >
                   <PopoverTrigger asChild>
                     <Button
@@ -312,7 +338,13 @@ export function FiltersSheet({
                 <label className="text-[13px] font-medium text-muted-foreground ml-1">
                   End Date
                 </label>
-                <Popover open={endPopoverOpen} onOpenChange={setEndPopoverOpen}>
+                <Popover
+                  modal
+                  open={isEndDatePopoverOpen}
+                  onOpenChange={(nextOpen) =>
+                    setEndPopoverOpen(open ? nextOpen : false)
+                  }
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"

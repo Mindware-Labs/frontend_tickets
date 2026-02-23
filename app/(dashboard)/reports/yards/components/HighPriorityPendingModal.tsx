@@ -166,6 +166,7 @@ export function HighPriorityPendingModal({
     (ticket) => (ticket.priority || "").toUpperCase() === "EMERGENCY",
   ).length;
   const highCount = pendingCriticalTickets.length - emergencyCount;
+  const hasNoPendingCriticalTickets = pendingCriticalTickets.length === 0;
   const sheetWidthClass = getSheetMaxWidthClass(pendingCriticalTickets.length);
   const cardsGridClass = getCardsGridClass(pendingCriticalTickets.length);
   const issueDialogSheetMaxWidth = getSheetMaxWidthExpression(
@@ -213,14 +214,21 @@ export function HighPriorityPendingModal({
                   High Priority Pending
                 </SheetTitle>
                 <SheetDescription className="ml-14 mt-1.5 text-base">
-                  Critical tickets not closed for{" "}
-                  <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">
-                    {yardName}
-                  </span>
-                  <span className="ml-2 text-muted-foreground">
-                    ({periodLabel})
-                  </span>
+                  {hasNoPendingCriticalTickets
+                    ? "No critical tickets pending."
+                    : "Critical tickets not closed in the selected range."}
                 </SheetDescription>
+                <div className="ml-14 mt-2 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex max-w-[min(100%,26rem)] items-center rounded-full border bg-background/70 px-3 py-1 text-xs font-medium text-foreground shadow-sm">
+                    <span className="mr-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Yard
+                    </span>
+                    <span className="truncate">{yardName}</span>
+                  </span>
+                  <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+                    {periodLabel}
+                  </span>
+                </div>
               </div>
 
               <div className="ml-14 flex flex-wrap items-center gap-2 sm:ml-0">

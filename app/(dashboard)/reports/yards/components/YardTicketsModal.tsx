@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { fetchFromBackend } from "@/lib/api-client";
 import {
   ListFilter,
   Ticket as TicketIcon,
@@ -12,8 +13,10 @@ import {
   Inbox,
   Search,
   X,
+  XCircle,
   ChevronDown,
   FileText,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -43,9 +46,11 @@ type YardTicketsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   yardName: string;
+  yardId?: number | string | null;
   reportStartDate?: string;
   reportEndDate?: string;
-  tickets: Ticket[];
+  tickets?: Ticket[];
+  dispositionCounts?: { disposition: string; count: number }[];
 };
 
 type CustomerTicketGroup = {
@@ -144,12 +149,15 @@ export function YardTicketsModal({
   open,
   onOpenChange,
   yardName,
+  yardId,
   reportStartDate,
   reportEndDate,
-  tickets,
+  tickets = [],
+  dispositionCounts = [],
 }: YardTicketsModalProps) {
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [expandedCustomerGroups, setExpandedCustomerGroups] = useState<
     Record<string, boolean>
@@ -158,9 +166,120 @@ export function YardTicketsModal({
     null,
   );
   const [showIssueDetailDialog, setShowIssueDetailDialog] = useState(false);
+  const [serverTickets, setServerTickets] = useState<Ticket[]>([]);
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
+
+  const isServerMode = Boolean(yardId);
+  const pageSize = 100;
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 250);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!open) return;
+    setCurrentPage(1);
+  }, [activeTab, debouncedSearchQuery, open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (!isServerMode || !yardId) {
+      setServerTickets([]);
+      setServerLoading(false);
+      setServerError(null);
+      setTotalPages(1);
+      setTotalTickets(tickets.length);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchPage = async () => {
+      try {
+        setServerLoading(true);
+        setServerError(null);
+
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          limit: String(pageSize),
+          sortBy: "createdAt",
+          order: "DESC",
+        });
+
+        if (reportStartDate) params.set("start", reportStartDate);
+        if (reportEndDate) params.set("end", reportEndDate);
+        if (debouncedSearchQuery) params.set("search", debouncedSearchQuery);
+        if (activeTab !== "ALL") params.set("disposition", activeTab);
+
+        const response = await fetchFromBackend(
+          `/yards/${yardId}/tickets?${params.toString()}`,
+        );
+        if (cancelled) return;
+
+        const pageTickets: Ticket[] = Array.isArray(response)
+          ? response
+          : response?.data || [];
+        const responseTotal = Array.isArray(response)
+          ? pageTickets.length
+          : Number(response?.total) || 0;
+        const responseTotalPages = Array.isArray(response)
+          ? 1
+          : Math.max(1, Number(response?.totalPages) || 1);
+
+        setServerTickets(pageTickets);
+        setTotalTickets(responseTotal);
+        setTotalPages(responseTotalPages);
+
+        if (currentPage > responseTotalPages) {
+          setCurrentPage(responseTotalPages);
+        }
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error("Error loading yard tickets page:", error);
+        setServerTickets([]);
+        setTotalTickets(0);
+        setTotalPages(1);
+        setServerError(error?.message || "Failed to load tickets");
+      } finally {
+        if (!cancelled) {
+          setServerLoading(false);
+        }
+      }
+    };
+
+    fetchPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    isServerMode,
+    yardId,
+    reportStartDate,
+    reportEndDate,
+    currentPage,
+    debouncedSearchQuery,
+    activeTab,
+    tickets.length,
+  ]);
+
+  const sourceTickets = useMemo(
+    () => (isServerMode ? serverTickets : tickets),
+    [isServerMode, serverTickets, tickets],
+  );
 
   const sortedTickets = useMemo(() => {
-    return [...tickets].sort((left, right) => {
+    return [...sourceTickets].sort((left, right) => {
       const leftDate = new Date(
         left.createdAt || left.updatedAt || 0,
       ).getTime();
@@ -169,7 +288,7 @@ export function YardTicketsModal({
       ).getTime();
       return rightDate - leftDate;
     });
-  }, [tickets]);
+  }, [sourceTickets]);
 
   const dispositionGroups = useMemo(() => {
     const groups = new Map<string, Ticket[]>();
@@ -196,14 +315,33 @@ export function YardTicketsModal({
     [dispositionGroups],
   );
 
-  const tabs = useMemo(
-    () => ["ALL", ...dispositionGroups.map(([key]) => key)],
-    [dispositionGroups],
-  );
+  const tabs = useMemo(() => {
+    if (
+      isServerMode &&
+      dispositionCounts.length > 0 &&
+      !debouncedSearchQuery
+    ) {
+      const keys = dispositionCounts
+        .filter((item) => item.count > 0)
+        .map((item) => normalizeDisposition(item.disposition));
+      return ["ALL", ...keys];
+    }
+
+    return ["ALL", ...dispositionGroups.map(([key]) => key)];
+  }, [isServerMode, dispositionCounts, debouncedSearchQuery, dispositionGroups]);
 
   const tabCounts = useMemo(() => {
+    if (isServerMode && !debouncedSearchQuery && dispositionCounts.length > 0) {
+      const counts = new Map<string, number>();
+      counts.set("ALL", totalTickets);
+      dispositionCounts.forEach((item) => {
+        counts.set(normalizeDisposition(item.disposition), item.count);
+      });
+      return counts;
+    }
+
     const counts = new Map<string, number>();
-    counts.set("ALL", sortedTickets.length);
+    counts.set("ALL", isServerMode ? totalTickets : sortedTickets.length);
 
     dispositionGroups.forEach(([key, groupTickets]) => {
       counts.set(
@@ -217,6 +355,7 @@ export function YardTicketsModal({
 
   // Filtrar tickets por búsqueda
   const filterTicketsBySearch = (ticketsToFilter: Ticket[]) => {
+    if (isServerMode) return ticketsToFilter;
     if (!searchQuery.trim()) return ticketsToFilter;
 
     const query = searchQuery.toLowerCase();
@@ -235,11 +374,14 @@ export function YardTicketsModal({
   };
 
   const filteredTicketsByTab = useMemo(() => {
+    if (isServerMode) {
+      return activeTab === "ALL" ? sortedTickets : dispositionMap.get(activeTab) || [];
+    }
     if (activeTab === "ALL") {
       return filterTicketsBySearch(sortedTickets);
     }
     return filterTicketsBySearch(dispositionMap.get(activeTab) || []);
-  }, [activeTab, sortedTickets, dispositionMap, searchQuery]);
+  }, [isServerMode, activeTab, sortedTickets, dispositionMap, searchQuery]);
 
   const groupedCustomerTickets = useMemo(() => {
     const groups = new Map<string, CustomerTicketGroup>();
@@ -289,6 +431,8 @@ export function YardTicketsModal({
     if (open) {
       setActiveTab("ALL");
       setSearchQuery("");
+      setDebouncedSearchQuery("");
+      setCurrentPage(1);
       setExpandedCustomerGroups({});
     }
   }, [open]);
@@ -302,7 +446,7 @@ export function YardTicketsModal({
 
   useEffect(() => {
     setExpandedCustomerGroups({});
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, currentPage]);
 
   const periodLabel =
     reportStartDate && reportEndDate
@@ -348,14 +492,14 @@ export function YardTicketsModal({
                 className="px-4 py-1.5 text-sm bg-background/50 backdrop-blur-sm border-muted-foreground/20"
               >
                 <FolderOpen className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                {dispositionGroups.length} Categories
+                {Math.max(tabs.length - 1, 0)} Categories
               </Badge>
               <Badge
                 variant="outline"
                 className="border-primary/30 bg-primary/5 px-4 py-1.5 text-sm text-primary ring-1 ring-primary/20"
               >
                 <TicketIcon className="mr-2 h-4 w-4" />
-                {tickets.length} Total Tickets
+                {isServerMode ? totalTickets : tickets.length} Total Tickets
               </Badge>
             </div>
           </div>
@@ -449,7 +593,40 @@ export function YardTicketsModal({
           >
             <div className="h-full overflow-hidden rounded-xl border bg-card shadow-lg transition-all duration-200 hover:shadow-xl">
               <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]]:max-h-full">
-                {groupedCustomerTickets.length === 0 ? (
+                {serverLoading ? (
+                  <div className="flex h-[400px] flex-col items-center justify-center text-center p-8">
+                    <div className="rounded-full bg-muted/50 p-6 mb-4 ring-8 ring-muted/20">
+                      <Loader2 className="h-12 w-12 animate-spin text-muted-foreground/60" />
+                    </div>
+                    <p className="text-xl font-semibold text-foreground">
+                      Loading tickets...
+                    </p>
+                    <p className="text-sm text-muted-foreground max-w-[320px] mt-1">
+                      Fetching page {currentPage} of {Math.max(totalPages, 1)}
+                      {activeTab !== "ALL" ? ` (${formatLabel(activeTab)})` : ""}.
+                    </p>
+                  </div>
+                ) : serverError ? (
+                  <div className="flex h-[400px] flex-col items-center justify-center text-center p-8">
+                    <div className="rounded-full bg-destructive/10 p-6 mb-4 ring-8 ring-destructive/5">
+                      <XCircle className="h-12 w-12 text-destructive/70" />
+                    </div>
+                    <p className="text-xl font-semibold text-foreground">
+                      Failed to load tickets
+                    </p>
+                    <p className="text-sm text-muted-foreground max-w-[360px] mt-1">
+                      {serverError}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => setCurrentPage((page) => page)}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : groupedCustomerTickets.length === 0 ? (
                   <div className="flex h-[400px] flex-col items-center justify-center text-center p-8">
                     <div className="rounded-full bg-muted/50 p-6 mb-4 ring-8 ring-muted/20">
                       {searchQuery ? (
@@ -779,9 +956,52 @@ export function YardTicketsModal({
                     </span>
                   </span>
                 )}
+                {isServerMode && (
+                  <span>
+                    <span className="mx-1 text-muted-foreground/60">|</span>
+                    Page{" "}
+                    <span className="text-foreground font-bold">
+                      {currentPage}
+                    </span>{" "}
+                    of{" "}
+                    <span className="text-foreground font-bold">
+                      {Math.max(totalPages, 1)}
+                    </span>
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {isServerMode && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
+                    disabled={serverLoading || currentPage <= 1}
+                  >
+                    Prev
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((page) =>
+                        Math.min(Math.max(totalPages, 1), page + 1),
+                      )
+                    }
+                    disabled={
+                      serverLoading || currentPage >= Math.max(totalPages, 1)
+                    }
+                  >
+                    Next
+                  </Button>
+                </>
+              )}
               <Button
                 onClick={() => onOpenChange(false)}
                 className="min-w-[120px] shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"

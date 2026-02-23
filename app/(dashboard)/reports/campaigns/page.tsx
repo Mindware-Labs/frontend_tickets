@@ -254,6 +254,7 @@ const CustomerTable = ({
   expectedCalls?: number;
 }) => {
   const router = useRouter();
+  const [tableSearch, setTableSearch] = useState("");
   const totalCalls = rows.reduce(
     (sum, row) =>
       sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
@@ -261,6 +262,69 @@ const CustomerTable = ({
   );
   // Siempre mostrar el total de llamadas sumadas desde callCount
   const callsToShow = totalCalls;
+  const normalizedTableSearch = tableSearch.trim().toLowerCase();
+  const compactSearchDigits = normalizedTableSearch.replace(/\D/g, "");
+
+  const filteredRows = useMemo(() => {
+    if (!normalizedTableSearch) return rows;
+
+    const matchesValue = (value: unknown) => {
+      const text = String(value || "").toLowerCase();
+      const normalizedText = text.replace(/[_-]+/g, " ");
+      if (
+        text.includes(normalizedTableSearch) ||
+        normalizedText.includes(normalizedTableSearch)
+      ) {
+        return true;
+      }
+
+      if (compactSearchDigits.length >= 2) {
+        const compactValueDigits = text.replace(/\D/g, "");
+        if (compactValueDigits.includes(compactSearchDigits)) return true;
+      }
+
+      return false;
+    };
+
+    return rows.filter((row) => {
+      if (matchesValue(title)) return true;
+
+      const baseValues = [
+        row.name,
+        row.phone,
+        row.status,
+        row.note,
+        row.direction,
+        row.customerId?.toString(),
+        row.ticketId?.toString(),
+      ];
+
+      const baseMatch = baseValues.some((value) => matchesValue(value));
+
+      if (baseMatch) return true;
+
+      return (row.callHistory || []).some((call) =>
+        [
+          call.ticketId?.toString(),
+          call.status,
+          call.note,
+          call.direction,
+          call.agentName,
+          call.createdAt,
+        ].some((value) => matchesValue(value)),
+      );
+    });
+  }, [rows, normalizedTableSearch, compactSearchDigits, title]);
+
+  const filteredCallsToShow = useMemo(
+    () =>
+      filteredRows.reduce(
+        (sum, row) =>
+          sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
+        0,
+      ),
+    [filteredRows],
+  );
 
   const handleRowClick = async (row: CustomerRow, index: number) => {
     // Función helper para redirigir a tickets con filtros de campaña y cliente
@@ -330,15 +394,34 @@ const CustomerTable = ({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card text-card-foreground shadow-sm">
-      <div className="flex flex-col border-b px-6 py-4">
+      <div className="border-b px-6 py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
         <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found (
-          {rows.length} {rows.length === 1 ? "customer" : "customers"})
+          {filteredCallsToShow} {filteredCallsToShow === 1 ? "call" : "calls"} found (
+          {filteredRows.length} {filteredRows.length === 1 ? "customer" : "customers"})
+          {normalizedTableSearch && (
+            <span>
+              {" "}
+              · filtered from {callsToShow} {callsToShow === 1 ? "call" : "calls"}
+            </span>
+          )}
         </p>
         <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
           💡 Click on any row to view customer details in Customer Management
         </p>
+          </div>
+          <div className="relative w-full lg:w-80 lg:shrink-0">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={tableSearch}
+            onChange={(e) => setTableSearch(e.target.value)}
+            placeholder={`Search ${title.toLowerCase()}...`}
+            className="h-9 pl-9"
+          />
+        </div>
+        </div>
       </div>
 
       {/* Container with horizontal scroll for mobile responsiveness */}
@@ -354,13 +437,15 @@ const CustomerTable = ({
             <div className="col-span-2 px-6 py-3">Contact Date</div>
           </div>
           <div className="divide-y">
-            {rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
                 <Users className="h-8 w-8 mb-2 opacity-20" />
-                No customer data available for this section.
+                {normalizedTableSearch
+                  ? "No matching customers in this table."
+                  : "No customer data available for this section."}
               </div>
             ) : (
-              rows.map((row, index) => {
+              filteredRows.map((row, index) => {
                 const callCount = row.callCount || 1;
                 const hasHistory =
                   row.callHistory && row.callHistory.length > 1;
@@ -392,26 +477,42 @@ const CustomerTable = ({
                     </div>
                     <div className="col-span-2 px-6 py-3">
                       {(() => {
-                        const direction = (row.direction || "Unknown").toString().toLowerCase();
+                        const direction = (row.direction || "Unknown")
+                          .toString()
+                          .toLowerCase();
                         const isMissed = direction.includes("missed");
-                        const isTextMessage = direction.includes("text") || direction.includes("message");
-                        
+                        const isTextMessage =
+                          direction.includes("text") ||
+                          direction.includes("message");
+
                         // Determinar la dirección original si es missed
                         let originalDirection = null;
-                        if (isMissed && row.callHistory && row.callHistory.length > 0) {
+                        if (
+                          isMissed &&
+                          row.callHistory &&
+                          row.callHistory.length > 0
+                        ) {
                           // Buscar en el historial la dirección original (inbound o outbound)
                           for (const call of row.callHistory) {
-                            const callDir = (call.direction || "").toString().toLowerCase();
-                            if (callDir.includes("inbound") && !callDir.includes("missed")) {
+                            const callDir = (call.direction || "")
+                              .toString()
+                              .toLowerCase();
+                            if (
+                              callDir.includes("inbound") &&
+                              !callDir.includes("missed")
+                            ) {
                               originalDirection = "inbound";
                               break;
-                            } else if (callDir.includes("outbound") && !callDir.includes("missed")) {
+                            } else if (
+                              callDir.includes("outbound") &&
+                              !callDir.includes("missed")
+                            ) {
                               originalDirection = "outbound";
                               break;
                             }
                           }
                         }
-                        
+
                         // Si no encontramos en callHistory, intentar inferir desde el direction actual
                         if (isMissed && !originalDirection) {
                           if (direction.includes("inbound")) {
@@ -420,21 +521,21 @@ const CustomerTable = ({
                             originalDirection = "outbound";
                           }
                         }
-                        
+
                         let bgColor = "bg-slate-100 dark:bg-slate-800";
                         let textColor = "text-slate-700 dark:text-slate-300";
                         let borderColor =
                           "border-slate-200 dark:border-slate-700";
                         let icon = null;
                         let displayText = row.direction || "Unknown";
-                        
+
                         if (isMissed) {
                           // Siempre rojo para missed
                           bgColor = "bg-red-50 dark:bg-red-950/30";
                           textColor = "text-red-700 dark:text-red-400";
                           borderColor = "border-red-200 dark:border-red-800";
                           icon = <PhoneOff className="h-3 w-3" />;
-                          
+
                           // Formatear el texto como "Inbound (Missed)" o "Outbound (Missed)"
                           if (originalDirection === "inbound") {
                             displayText = "Inbound (Missed)";
@@ -588,22 +689,31 @@ const CustomerTable = ({
                         <div className="space-y-1.5">
                           {row.callHistory.map((call, idx) => {
                             const date = new Date(call.createdAt);
-                            const formattedDate = date.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            });
-                            const formattedTime = date.toLocaleTimeString("en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            });
-                            const isToday = date.toDateString() === new Date().toDateString();
-                            const isYesterday = date.toDateString() === new Date(Date.now() - 86400000).toDateString();
-                            
+                            const formattedDate = date.toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            );
+                            const formattedTime = date.toLocaleTimeString(
+                              "en-US",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              },
+                            );
+                            const isToday =
+                              date.toDateString() === new Date().toDateString();
+                            const isYesterday =
+                              date.toDateString() ===
+                              new Date(Date.now() - 86400000).toDateString();
+
                             return (
-                              <div 
-                                key={idx} 
+                              <div
+                                key={idx}
                                 className="flex items-start gap-2 p-1.5 rounded bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800"
                               >
                                 <span className="flex-shrink-0 text-[10px] font-semibold text-primary w-4 text-center pt-0.5">
@@ -611,7 +721,11 @@ const CustomerTable = ({
                                 </span>
                                 <div className="flex-1 min-w-0 flex flex-col">
                                   <div className="text-xs font-medium text-foreground leading-tight">
-                                    {isToday ? "Today" : isYesterday ? "Yesterday" : formattedDate}
+                                    {isToday
+                                      ? "Today"
+                                      : isYesterday
+                                        ? "Yesterday"
+                                        : formattedDate}
                                   </div>
                                   <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">
                                     {formattedTime}
@@ -623,7 +737,9 @@ const CustomerTable = ({
                         </div>
                       ) : (
                         <div className="text-center py-1">
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         </div>
                       )}
                     </div>
@@ -640,14 +756,7 @@ const CustomerTable = ({
 
 export default function CampaignReportsPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const campaignIdParam = searchParams.get("campaignId");
-  const sourceReportParam = searchParams.get("fromReport");
-  const sourceYardIdParam = searchParams.get("yardId");
-  const sourceYardStartDateParam =
-    searchParams.get("yardStartDate") || searchParams.get("startDate");
-  const sourceYardEndDateParam =
-    searchParams.get("yardEndDate") || searchParams.get("endDate");
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
@@ -660,7 +769,6 @@ export default function CampaignReportsPage() {
   const [logoFormat, setLogoFormat] = useState<"PNG" | "JPEG">("JPEG");
   const [logoSize, setLogoSize] = useState<ImageSize | null>(null);
   const urlParamsLoaded = useRef(false);
-  const yardSourceToastShown = useRef(false);
 
   const getLogoUrl = () =>
     typeof window !== "undefined"
@@ -807,59 +915,6 @@ export default function CampaignReportsPage() {
     return map;
   }, [report]);
 
-  const backToYardHref = useMemo(() => {
-    if (sourceReportParam !== "yard" || !sourceYardIdParam) return null;
-
-    const params = new URLSearchParams({
-      yardId: sourceYardIdParam,
-    });
-
-    if (sourceYardStartDateParam) {
-      params.set("startDate", sourceYardStartDateParam);
-    }
-
-    if (sourceYardEndDateParam) {
-      params.set("endDate", sourceYardEndDateParam);
-    }
-
-    return `/reports/yards?${params.toString()}`;
-  }, [
-    sourceReportParam,
-    sourceYardIdParam,
-    sourceYardStartDateParam,
-    sourceYardEndDateParam,
-  ]);
-
-  useEffect(() => {
-    if (sourceReportParam !== "yard" || !backToYardHref) return;
-    if (yardSourceToastShown.current) return;
-
-    yardSourceToastShown.current = true;
-
-    const { dismiss } = toast({
-      title: "Viewing campaign report from yard",
-      description: (
-        <div className="flex flex-col gap-2">
-          <p>
-            You are viewing a campaign report opened from the yard report.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              dismiss();
-              router.push(backToYardHref);
-            }}
-            className="w-fit"
-          >
-            Back to Report
-          </Button>
-        </div>
-      ),
-      duration: Infinity,
-    });
-  }, [sourceReportParam, backToYardHref, router]);
-
   const buildReport = async () => {
     if (!selectedCampaignId || !startDate || !endDate) {
       toast({
@@ -982,7 +1037,6 @@ export default function CampaignReportsPage() {
       });
     }
   };
-
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100 p-4 md:p-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">

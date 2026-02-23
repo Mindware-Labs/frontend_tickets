@@ -104,6 +104,10 @@ const data = {
       icon: Building,
       items: [
         {
+          title: "All Yards",
+          url: "/yards",
+        },
+        {
           title: "Reports",
           url: "/reports/yards",
         },
@@ -232,7 +236,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             if (item.title === "Dashboard") {
               return { ...item, url: "/agent-dashboard" };
             }
-            if (item.title === "Landlords" || item.title === "Campaigns") {
+            if (
+              item.title === "Landlords" ||
+              item.title === "Campaigns" ||
+              item.title === "Yards"
+            ) {
               return { ...item, items: [] };
             }
             return item;

@@ -20,22 +20,6 @@ import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
 import type { Ticket, Yard, YardStats } from "./components/types";
 
-type CampaignSummary = {
-  id: number | string;
-  nombre?: string | null;
-  isActive?: boolean | null;
-  yardaId?: number | string | null;
-  yardId?: number | string | null;
-  yarda?: { id?: number | string | null } | null;
-  yard?: { id?: number | string | null } | null;
-};
-
-type AgentSummary = {
-  id: number | string;
-  name?: string | null;
-  isActive?: boolean | null;
-};
-
 const parseLocalDateStart = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day, 0, 0, 0, 0);
@@ -46,32 +30,73 @@ const parseLocalDateEnd = (value: string) => {
   return new Date(year, month - 1, day, 23, 59, 59, 999);
 };
 
-const toLocalDateKey = (value: Date | string) => {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+type YardsOverviewReportRow = {
+  yard?: Partial<Yard> & { id: number | string; name?: string | null };
+  id?: number | string;
+  name?: string | null;
+  commonName?: string | null;
+  isActive?: boolean | null;
+  totalTickets?: number | string | null;
+  openTickets?: number | string | null;
+  inProgressTickets?: number | string | null;
+  closedTickets?: number | string | null;
+  lastActivity?: string | null;
 };
 
-const fromDateKeyToLocalDate = (value: string) => {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+const toSafeNumber = (value: unknown) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const getCampaignYardKey = (campaign: CampaignSummary): string | null => {
-  const candidateYardId =
-    campaign.yarda?.id ??
-    campaign.yard?.id ??
-    campaign.yardaId ??
-    campaign.yardId;
+const buildEmptyYardStats = (yard: Yard): YardStats => ({
+  yard,
+  totalTickets: 0,
+  openTickets: 0,
+  inProgressTickets: 0,
+  closedTickets: 0,
+  todayTickets: 0,
+  lastActivity: null,
+  ticketsByStatus: [],
+  ticketsByDirection: [],
+  ticketsByDisposition: [],
+  ticketsByPriority: [],
+  ticketsByDay: [],
+  ticketsByAgent: [],
+  ticketsByCampaign: [],
+  ticketsByNewLead: [],
+  avgResolutionTime: undefined,
+  peakDay: undefined,
+  peakDayCount: undefined,
+});
 
-  if (candidateYardId === null || candidateYardId === undefined) {
+const mapOverviewRowToYardStats = (row: YardsOverviewReportRow): YardStats | null => {
+  const rawYardId = row.yard?.id ?? row.id;
+  if (rawYardId === null || rawYardId === undefined) {
     return null;
   }
 
-  return candidateYardId.toString();
+  const yardId = toSafeNumber(rawYardId);
+  if (!yardId) {
+    return null;
+  }
+
+  const yard: Yard = {
+    id: yardId,
+    name: row.yard?.name?.trim() || row.name?.trim() || `Yard #${yardId}`,
+    commonName: row.yard?.commonName ?? row.commonName ?? null,
+    isActive:
+      row.yard?.isActive ??
+      (typeof row.isActive === "boolean" ? row.isActive : true),
+  };
+
+  return {
+    ...buildEmptyYardStats(yard),
+    totalTickets: toSafeNumber(row.totalTickets),
+    openTickets: toSafeNumber(row.openTickets),
+    inProgressTickets: toSafeNumber(row.inProgressTickets),
+    closedTickets: toSafeNumber(row.closedTickets),
+    lastActivity: row.lastActivity || null,
+  };
 };
 
 export default function YardReportsPage() {
@@ -79,6 +104,7 @@ export default function YardReportsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const yardIdParam = searchParams.get("yardId");
+  const openFiltersParam = searchParams.get("openFilters");
   const startDateParam = searchParams.get("startDate");
   const endDateParam = searchParams.get("endDate");
 
@@ -91,8 +117,10 @@ export default function YardReportsPage() {
   const [selectedYardStats, setSelectedYardStats] = useState<YardStats | null>(
     null,
   );
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [ticketsInRange, setTicketsInRange] = useState<Ticket[]>([]);
+  const [loadingOverviewStats, setLoadingOverviewStats] = useState(false);
+  const [loadingSelectedYardDetail, setLoadingSelectedYardDetail] =
+    useState(false);
+  const [selectedYardTickets, setSelectedYardTickets] = useState<Ticket[]>([]);
   const [showYardTicketsModal, setShowYardTicketsModal] = useState(false);
   const [startDate, setStartDate] = useState<string>(startDateParam || "");
   const [endDate, setEndDate] = useState<string>(endDateParam || "");
@@ -105,6 +133,15 @@ export default function YardReportsPage() {
       return true;
     }
   }, [startDate, endDate]);
+
+  const selectedYardQueryKey = useMemo(() => {
+    if (!selectedYardId || !startDate || !endDate || !isDateRangeValid) {
+      return "";
+    }
+    return `${selectedYardId}|${startDate}|${endDate}`;
+  }, [selectedYardId, startDate, endDate, isDateRangeValid]);
+
+  const loadingStats = loadingOverviewStats || loadingSelectedYardDetail;
 
   useEffect(() => {
     const fetchYards = async () => {
@@ -144,462 +181,35 @@ export default function YardReportsPage() {
   }, []);
 
   useEffect(() => {
-    const fetchYardsStats = async () => {
-      if (!startDate || !endDate) return;
-      if (!isDateRangeValid) return;
+    if (!startDate || !endDate || !isDateRangeValid) {
+      setLoadingOverviewStats(false);
+      setYardsStats([]);
+      return;
+    }
 
+    let cancelled = false;
+
+    const fetchYardsOverview = async () => {
       try {
-        setLoadingStats(true);
-        const rangeStart = parseLocalDateStart(startDate);
-        const rangeEnd = parseLocalDateEnd(endDate);
-        const ticketQueryParams = new URLSearchParams({
-          page: "1",
-          limit: "10000",
-          includeTotal: "false",
-          startDate: rangeStart.toISOString(),
-          endDate: rangeEnd.toISOString(),
+        setLoadingOverviewStats(true);
+        const params = new URLSearchParams({
+          start: startDate,
+          end: endDate,
         });
+        const response = await fetchFromBackend(`/reports/yards?${params.toString()}`);
+        if (cancelled) return;
 
-        const [ticketsData, campaignsData, agentsData] = await Promise.all([
-          fetchFromBackend(`/tickets?${ticketQueryParams.toString()}`),
-          fetchFromBackend("/campaign?page=1&limit=1000"),
-          fetchFromBackend("/agents?page=1&limit=10000").catch((error) => {
-            console.warn(
-              "Failed to load agents directory for yards report:",
-              error,
-            );
-            return [];
-          }),
-        ]);
-        const allTickets: Ticket[] = Array.isArray(ticketsData)
-          ? ticketsData
-          : ticketsData?.data || [];
-        const allCampaigns: CampaignSummary[] = Array.isArray(campaignsData)
-          ? campaignsData
-          : campaignsData?.data || [];
-        const allAgents: AgentSummary[] = Array.isArray(agentsData)
-          ? agentsData
-          : agentsData?.data || [];
-        const agentNamesById = allAgents.reduce<Map<string, string>>(
-          (accumulator, agent) => {
-            const id = agent?.id;
-            const name = agent?.name?.trim();
-            if (
-              id !== null &&
-              id !== undefined &&
-              name &&
-              !name.startsWith("Agent #")
-            ) {
-              accumulator.set(id.toString(), name);
-            }
-            return accumulator;
-          },
-          new Map(),
-        );
-        const campaignsById = allCampaigns.reduce<
-          Map<string, { yardIdKey: string | null; isActive: boolean; name: string }>
-        >((accumulator, campaign) => {
-          accumulator.set(campaign.id.toString(), {
-            yardIdKey: getCampaignYardKey(campaign),
-            isActive: campaign.isActive !== false,
-            name: campaign.nombre?.trim() || "",
-          });
-          return accumulator;
-        }, new Map());
-
-        const filteredTickets = allTickets.filter((ticket) => {
-          const ticketDate = ticket.createdAt || ticket.updatedAt;
-          if (!ticketDate) return false;
-          const date = new Date(ticketDate);
-          if (Number.isNaN(date.getTime())) return false;
-          return date >= rangeStart && date <= rangeEnd;
-        });
-        setTicketsInRange(filteredTickets);
-
-        const ticketsByYardId = new Map<string, Ticket[]>();
-        filteredTickets.forEach((ticket) => {
-          const ticketYardId = ticket.yardId ?? ticket.yard?.id;
-          if (ticketYardId === null || ticketYardId === undefined) return;
-          const yardKey = ticketYardId.toString();
-          const existing = ticketsByYardId.get(yardKey);
-          if (existing) {
-            existing.push(ticket);
-          } else {
-            ticketsByYardId.set(yardKey, [ticket]);
-          }
-        });
-
-        const statsMap = new Map<number, YardStats>();
-        const todayDateKey = toLocalDateKey(new Date());
-        const daysDiff = Math.ceil(
-          (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        yards.forEach((yard) => {
-          const yardTickets = ticketsByYardId.get(yard.id.toString()) || [];
-
-          const ticketsByStatus = yardTickets.reduce(
-            (accumulator, ticket) => {
-              const status = ticket.status || "UNKNOWN";
-              accumulator[status] = (accumulator[status] || 0) + 1;
-              return accumulator;
-            },
-            {} as Record<string, number>,
-          );
-
-          const ticketsByDirection = yardTickets.reduce(
-            (accumulator, ticket) => {
-              const direction = ticket.direction || "UNKNOWN";
-              accumulator[direction] = (accumulator[direction] || 0) + 1;
-              return accumulator;
-            },
-            {} as Record<string, number>,
-          );
-          const dispositionCounts = yardTickets.reduce(
-            (accumulator, ticket) => {
-              const disposition = ticket.disposition || "UNKNOWN";
-              accumulator[disposition] = (accumulator[disposition] || 0) + 1;
-              return accumulator;
-            },
-            {} as Record<string, number>,
-          );
-
-          const allDispositions = [
-            "BOOKING",
-            "GENERAL_INFO",
-            "COMPLAINT",
-            "SUPPORT",
-            "BILLING",
-            "TECHNICAL_ISSUE",
-            "NEW_LEAD",
-            "SPAM",
-          ];
-          const ticketsByDisposition = allDispositions.reduce(
-            (accumulator, disposition) => {
-              const count = dispositionCounts[disposition] || 0;
-              accumulator[disposition] = count;
-              return accumulator;
-            },
-            {} as Record<string, number>,
-          );
-
-          const ticketsByPriority = yardTickets.reduce(
-            (accumulator, ticket) => {
-              const priority = ticket.priority || "UNKNOWN";
-              accumulator[priority] = (accumulator[priority] || 0) + 1;
-              return accumulator;
-            },
-            {} as Record<string, number>,
-          );
-
-          const ticketsByAgentMap = new Map<
-            number,
-            { agentId: number; agentName: string; count: number }
-          >();
-          yardTickets.forEach((ticket) => {
-            const rawAgentId =
-              ticket.agentId ?? ticket.assignedTo?.id ?? ticket.agent?.id;
-            if (rawAgentId === null || rawAgentId === undefined) return;
-
-            const agentId = Number(rawAgentId);
-            if (!Number.isFinite(agentId)) return;
-
-            const agentName =
-              ticket.assignedTo?.name?.trim() ||
-              ticket.agent?.name?.trim() ||
-              agentNamesById.get(agentId.toString()) ||
-              `Agent #${agentId}`;
-
-            const existing = ticketsByAgentMap.get(agentId);
-            if (existing) {
-              existing.count += 1;
-              if (
-                existing.agentName.startsWith("Agent #") &&
-                !agentName.startsWith("Agent #")
-              ) {
-                existing.agentName = agentName;
-              }
-            } else {
-              ticketsByAgentMap.set(agentId, {
-                agentId,
-                agentName,
-                count: 1,
-              });
-            }
-          });
-
-          const ticketsByCampaignMap = new Map<
-            string,
-            { campaignId: number | string; campaignName: string; count: number }
-          >();
-          yardTickets.forEach((ticket) => {
-            const rawCampaignId = ticket.campaignId ?? ticket.campaign?.id;
-            if (rawCampaignId === null || rawCampaignId === undefined) return;
-
-            const campaignIdKey = rawCampaignId.toString();
-            const campaignMeta = campaignsById.get(campaignIdKey);
-            if (!campaignMeta || !campaignMeta.isActive) return;
-            if (campaignMeta.yardIdKey !== yard.id.toString()) return;
-
-            const parsedCampaignId = Number(campaignIdKey);
-            const normalizedCampaignId = Number.isFinite(parsedCampaignId)
-              ? parsedCampaignId
-              : campaignIdKey;
-
-            const campaignNameFromTicket = ticket.campaign?.nombre?.trim() || "";
-            const campaignName = campaignMeta.name || campaignNameFromTicket;
-            const existing = ticketsByCampaignMap.get(campaignIdKey);
-            if (existing) {
-              existing.count += 1;
-              if (campaignName && existing.campaignName.startsWith("Campaign #")) {
-                existing.campaignName = campaignName;
-              }
-            } else {
-              ticketsByCampaignMap.set(campaignIdKey, {
-                campaignId: normalizedCampaignId,
-                campaignName: campaignName || `Campaign #${campaignIdKey}`,
-                count: 1,
-              });
-            }
-          });
-
-          const ticketsByNewLeadMap = new Map<
-            string,
-            {
-              customerId: number | null;
-              customerName: string;
-              count: number;
-              phone?: string | null;
-              issueDetails: {
-                ticketId: number;
-                issueDetail: string;
-                createdAt?: string | null;
-              }[];
-            }
-          >();
-          yardTickets.forEach((ticket) => {
-            if ((ticket.disposition || "").toUpperCase() !== "NEW_LEAD") return;
-
-            const rawCustomerId = ticket.customer?.id ?? ticket.customerId;
-            const parsedCustomerId =
-              rawCustomerId !== null && rawCustomerId !== undefined
-                ? Number(rawCustomerId)
-                : null;
-            const customerId = Number.isFinite(parsedCustomerId)
-              ? parsedCustomerId
-              : null;
-            const customerName =
-              ticket.customer?.name?.trim() ||
-              (customerId !== null ? `Customer #${customerId}` : "Unknown Lead");
-            const phone =
-              ticket.customer?.phone?.trim() ||
-              ticket.customerPhone?.trim() ||
-              ticket.phone?.trim() ||
-              null;
-            const issueDetail = ticket.issueDetail?.trim();
-            const leadKey =
-              customerId !== null
-                ? `id:${customerId}`
-                : `name:${customerName.toLowerCase()}|phone:${(phone || "").toLowerCase()}`;
-
-            const existing = ticketsByNewLeadMap.get(leadKey);
-            if (existing) {
-              existing.count += 1;
-              if (
-                existing.customerName.startsWith("Customer #") &&
-                !customerName.startsWith("Customer #")
-              ) {
-                existing.customerName = customerName;
-              }
-              if (!existing.phone && phone) {
-                existing.phone = phone;
-              }
-              if (issueDetail) {
-                existing.issueDetails.push({
-                  ticketId: ticket.id,
-                  issueDetail,
-                  createdAt: ticket.createdAt || ticket.updatedAt || null,
-                });
-              }
-            } else {
-              ticketsByNewLeadMap.set(leadKey, {
-                customerId,
-                customerName,
-                count: 1,
-                phone,
-                issueDetails: issueDetail
-                  ? [
-                      {
-                        ticketId: ticket.id,
-                        issueDetail,
-                        createdAt: ticket.createdAt || ticket.updatedAt || null,
-                      },
-                    ]
-                  : [],
-              });
-            }
-          });
-
-          let lastActivity: string | null = null;
-          let lastActivityTimestamp = 0;
-          yardTickets.forEach((ticket) => {
-            const candidate = ticket.updatedAt || ticket.createdAt;
-            if (!candidate) return;
-            const candidateDate = new Date(candidate);
-            const candidateTimestamp = candidateDate.getTime();
-            if (Number.isNaN(candidateTimestamp)) return;
-            if (candidateTimestamp > lastActivityTimestamp) {
-              lastActivityTimestamp = candidateTimestamp;
-              lastActivity = candidate;
-            }
-          });
-
-          const ticketsByDayMap = new Map<
-            string,
-            { total: number; open: number; closed: number }
-          >();
-
-          const currentDate = new Date(rangeStart.getTime());
-
-          while (currentDate <= rangeEnd) {
-            const dateKey = toLocalDateKey(currentDate);
-            ticketsByDayMap.set(dateKey, {
-              total: 0,
-              open: 0,
-              closed: 0,
-            });
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-
-          yardTickets.forEach((ticket) => {
-            const ticketDate = ticket.createdAt || ticket.updatedAt;
-            if (!ticketDate) return;
-            const dateKey = toLocalDateKey(ticketDate);
-            if (!dateKey) return;
-            const existing = ticketsByDayMap.get(dateKey);
-            if (existing) {
-              existing.total += 1;
-              if (ticket.status === "CLOSED") {
-                existing.closed += 1;
-              } else {
-                existing.open += 1;
-              }
-            }
-          });
-
-          const ticketsByDay = Array.from(ticketsByDayMap.entries())
-            .map(([date, data]) => {
-              const dayDate = fromDateKeyToLocalDate(date);
-              const dayOfMonth = dayDate.getDate();
-              const weekday = dayDate.toLocaleDateString("en-US", {
-                weekday: "short",
-              });
-              const month = dayDate.toLocaleDateString("en-US", {
-                month: "short",
-              });
-
-              let dayLabel: string;
-              if (daysDiff <= 14) {
-                dayLabel = `${weekday} ${dayOfMonth}`;
-              } else {
-                dayLabel = `${month} ${dayOfMonth}`;
-              }
-
-              return {
-                date,
-                day: dayLabel,
-                fullDate: dayDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
-                dayOfMonth,
-                ...data,
-              };
-            })
-            .sort((left, right) => left.date.localeCompare(right.date));
-
-          const peakDayEntry = ticketsByDay.reduce(
-            (max, day) => (day.total > (max?.total || 0) ? day : max),
-            null as (typeof ticketsByDay)[0] | null,
-          );
-
-          const closedTicketsWithDates = yardTickets.filter(
-            (ticket) =>
-              ticket.status === "CLOSED" &&
-              ticket.createdAt &&
-              ticket.updatedAt,
-          );
-
-          let avgResolutionTime: number | undefined;
-          if (closedTicketsWithDates.length > 0) {
-            const totalHours = closedTicketsWithDates.reduce((sum, ticket) => {
-              const createdAt = new Date(ticket.createdAt!);
-              const updatedAt = new Date(ticket.updatedAt!);
-              const hours =
-                (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-              return sum + hours;
-            }, 0);
-            avgResolutionTime = totalHours / closedTicketsWithDates.length;
-          }
-
-          const openTickets = ticketsByStatus.OPEN || 0;
-          const inProgressTickets = ticketsByStatus.IN_PROGRESS || 0;
-          const closedTickets = ticketsByStatus.CLOSED || 0;
-
-          statsMap.set(yard.id, {
-            yard,
-            totalTickets: yardTickets.length,
-            openTickets,
-            inProgressTickets,
-            closedTickets,
-            todayTickets:
-              ticketsByDay.find((day) => day.date === todayDateKey)?.total || 0,
-            lastActivity: lastActivity || null,
-            ticketsByStatus: Object.entries(ticketsByStatus).map(
-              ([status, count]) => ({
-                status,
-                count,
-              }),
-            ),
-            ticketsByDirection: Object.entries(ticketsByDirection).map(
-              ([direction, count]) => ({
-                direction,
-                count,
-              }),
-            ),
-            ticketsByDisposition: Object.entries(ticketsByDisposition)
-              .filter(([, count]) => count > 0)
-              .map(([disposition, count]) => ({ disposition, count })),
-            ticketsByPriority: Object.entries(ticketsByPriority).map(
-              ([priority, count]) => ({
-                priority,
-                count,
-              }),
-            ),
-            ticketsByDay,
-            ticketsByAgent: Array.from(ticketsByAgentMap.values()).sort(
-              (left, right) => right.count - left.count,
-            ),
-            ticketsByCampaign: Array.from(ticketsByCampaignMap.values()).sort(
-              (left, right) => right.count - left.count,
-            ),
-            ticketsByNewLead: Array.from(ticketsByNewLeadMap.values()).sort(
-              (left, right) => {
-                if (right.count !== left.count) return right.count - left.count;
-                return left.customerName.localeCompare(right.customerName);
-              },
-            ),
-            avgResolutionTime,
-            peakDay: peakDayEntry?.day || undefined,
-            peakDayCount: peakDayEntry?.total || undefined,
-          });
-        });
-
-        setYardsStats(Array.from(statsMap.values()));
+        const rows: YardsOverviewReportRow[] = Array.isArray(response)
+          ? response
+          : response?.data || [];
+        const overviewStats = rows
+          .map(mapOverviewRowToYardStats)
+          .filter(Boolean) as YardStats[];
+        setYardsStats(overviewStats);
       } catch (error: any) {
-        console.error("Error fetching yard stats:", error);
-        setTicketsInRange([]);
+        if (cancelled) return;
+        console.error("Error fetching yard overview stats:", error);
+        setYardsStats([]);
 
         let errorMessage = "Failed to load yard statistics";
         if (
@@ -621,25 +231,203 @@ export default function YardReportsPage() {
           variant: "destructive",
         });
       } finally {
-        setLoadingStats(false);
+        if (!cancelled) {
+          setLoadingOverviewStats(false);
+        }
       }
     };
 
-    if (yards.length > 0 && startDate && endDate && isDateRangeValid) {
-      fetchYardsStats();
-    }
-  }, [yards, startDate, endDate]);
+    fetchYardsOverview();
+    return () => {
+      cancelled = true;
+    };
+  }, [startDate, endDate, isDateRangeValid]);
 
   useEffect(() => {
-    if (selectedYardId && yardsStats.length > 0) {
-      const stats = yardsStats.find(
-        (item) => item.yard.id.toString() === selectedYardId,
-      );
-      setSelectedYardStats(stats || null);
-    } else {
+    if (!selectedYardQueryKey) {
+      setLoadingSelectedYardDetail(false);
+      setSelectedYardTickets([]);
       setSelectedYardStats(null);
+      return;
     }
-  }, [selectedYardId, yardsStats]);
+
+    let cancelled = false;
+
+    const fetchSelectedYardTickets = async () => {
+      try {
+        setLoadingSelectedYardDetail(true);
+        setSelectedYardTickets([]);
+        setSelectedYardStats(null);
+
+        const pageSize = 1000;
+
+        const fetchTicketsPage = async (pageNumber: number) => {
+          const params = new URLSearchParams({
+            page: String(pageNumber),
+            limit: String(pageSize),
+            sortBy: "createdAt",
+            order: "ASC",
+            start: startDate,
+            end: endDate,
+          });
+
+          return fetchFromBackend(`/yards/${selectedYardId}/tickets?${params.toString()}`);
+        };
+
+        const firstResponse = await fetchTicketsPage(1);
+        if (cancelled) return;
+
+        const firstPageTickets: Ticket[] = Array.isArray(firstResponse)
+          ? firstResponse
+          : firstResponse?.data || [];
+
+        const totalPagesRaw = Array.isArray(firstResponse)
+          ? 1
+          : Number(firstResponse?.totalPages);
+        const totalPages =
+          Number.isFinite(totalPagesRaw) && totalPagesRaw > 0
+            ? totalPagesRaw
+            : 1;
+
+        if (totalPages <= 1) {
+          setSelectedYardTickets(firstPageTickets);
+          return;
+        }
+
+        const remainingPages = Array.from(
+          { length: totalPages - 1 },
+          (_, index) => index + 2,
+        );
+        const remainingTicketsByPage = new Map<number, Ticket[]>();
+        const chunkSize = 4;
+
+        for (let index = 0; index < remainingPages.length; index += chunkSize) {
+          if (cancelled) return;
+
+          const pageChunk = remainingPages.slice(index, index + chunkSize);
+          const chunkResponses = await Promise.all(
+            pageChunk.map(async (pageNumber) => ({
+              pageNumber,
+              response: await fetchTicketsPage(pageNumber),
+            })),
+          );
+
+          if (cancelled) return;
+
+          chunkResponses.forEach(({ pageNumber, response }) => {
+            const pageTickets: Ticket[] = Array.isArray(response)
+              ? response
+              : response?.data || [];
+            remainingTicketsByPage.set(pageNumber, pageTickets);
+          });
+        }
+
+        const allTickets = [...firstPageTickets];
+        remainingPages
+          .sort((left, right) => left - right)
+          .forEach((pageNumber) => {
+            const pageTickets = remainingTicketsByPage.get(pageNumber);
+            if (pageTickets?.length) {
+              allTickets.push(...pageTickets);
+            }
+          });
+
+        setSelectedYardTickets(allTickets);
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error("Error fetching selected yard tickets:", error);
+        setSelectedYardTickets([]);
+
+        let errorMessage = "Failed to load selected yard tickets";
+        if (
+          error?.isNetworkError ||
+          error?.message?.includes("fetch failed") ||
+          error?.message?.includes("Failed to fetch")
+        ) {
+          errorMessage =
+            "Cannot connect to backend server. Please check if the backend is running.";
+        } else if (error?.status === 401) {
+          errorMessage = "Session expired. Please login again.";
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        if (!cancelled) {
+          setLoadingSelectedYardDetail(false);
+        }
+      }
+    };
+
+    fetchSelectedYardTickets();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedYardQueryKey, selectedYardId, startDate, endDate]);
+
+  useEffect(() => {
+    if (!selectedYardQueryKey) {
+      setSelectedYardStats(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchSelectedYardStats = async () => {
+      try {
+        const params = new URLSearchParams({
+          start: startDate,
+          end: endDate,
+        });
+        const response = await fetchFromBackend(
+          `/reports/yards/${selectedYardId}/detail?${params.toString()}`,
+        );
+        if (cancelled) return;
+
+        const stats = (response?.data || response) as YardStats | null;
+        setSelectedYardStats(stats || null);
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error("Error fetching selected yard report detail:", error);
+        setSelectedYardStats(null);
+
+        let errorMessage = "Failed to load selected yard report";
+        if (
+          error?.isNetworkError ||
+          error?.message?.includes("fetch failed") ||
+          error?.message?.includes("Failed to fetch")
+        ) {
+          errorMessage =
+            "Cannot connect to backend server. Please check if the backend is running.";
+        } else if (error?.status === 401) {
+          errorMessage = "Session expired. Please login again.";
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchSelectedYardStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selectedYardQueryKey,
+    selectedYardId,
+    startDate,
+    endDate,
+  ]);
 
   useEffect(() => {
     if (yardIdParam) {
@@ -647,17 +435,17 @@ export default function YardReportsPage() {
     }
   }, [yardIdParam]);
 
-  const selectedYard =
-    yards.find((yard) => yard.id.toString() === selectedYardId) || null;
-  const selectedYardTickets = useMemo(() => {
-    if (!selectedYardId) return [];
+  useEffect(() => {
+    if (openFiltersParam === "1" || openFiltersParam === "true") {
+      setFiltersModalOpen(true);
+    }
+  }, [openFiltersParam]);
 
-    return ticketsInRange.filter((ticket) => {
-      const ticketYardId = ticket.yardId ?? ticket.yard?.id;
-      if (ticketYardId === null || ticketYardId === undefined) return false;
-      return ticketYardId.toString() === selectedYardId;
-    });
-  }, [ticketsInRange, selectedYardId]);
+  const selectedYard =
+    yards.find((yard) => yard.id.toString() === selectedYardId) ||
+    selectedYardStats?.yard ||
+    yardsStats.find((item) => item.yard.id.toString() === selectedYardId)?.yard ||
+    null;
   const hasDateRange = Boolean(startDate && endDate);
 
   const handleYardSelect = (yardId: string) => {

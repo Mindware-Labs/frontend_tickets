@@ -780,6 +780,21 @@ export default function TicketsPage() {
     const fromReport = searchParams.get("fromReport");
     const reportStartDate = searchParams.get("reportStartDate");
     const reportEndDate = searchParams.get("reportEndDate");
+    const parseReportDate = (value?: string | null) => {
+      if (!value) return null;
+      const parsed = value.includes("T")
+        ? new Date(value)
+        : new Date(`${value}T12:00:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    if (reportStartDate && reportEndDate) {
+      const from = parseReportDate(reportStartDate);
+      const to = parseReportDate(reportEndDate);
+      if (from && to) {
+        setDateRange({ from, to });
+      }
+    }
 
     if (fromReport === "campaign") {
       const campaignId = searchParams.get("campaignId");
@@ -824,6 +839,10 @@ export default function TicketsPage() {
       const yardId = searchParams.get("yardId");
       const reportYardName = searchParams.get("reportYardName");
       const reportLeadName = searchParams.get("reportLeadName");
+
+      if (yardId) {
+        setYardFilter(yardId);
+      }
 
       const params = new URLSearchParams();
       if (yardId) params.set("yardId", yardId);
