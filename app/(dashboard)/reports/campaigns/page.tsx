@@ -1,7 +1,5 @@
 "use client";
 
-console.log("REPORTS CAMPAIGNS PAGE FILE LOADED");
-
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -49,7 +47,6 @@ import {
   FileSpreadsheet, // <--- 1. Importación agregada
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ExcelJS from "exceljs";
 
 type Campaign = {
   id: number;
@@ -123,6 +120,7 @@ const ONBOARDING = {
   REGISTERED: "REGISTERED",
   NOT_REGISTERED: "NOT_REGISTERED",
   PAID_WITH_LL: "PAID_WITH_LL",
+  CANCELED: "CANCELED",
 };
 
 const AR_LABELS: Record<string, string> = {
@@ -257,40 +255,16 @@ const CustomerTable = ({
 }) => {
   const router = useRouter();
   const totalCalls = rows.reduce(
-    (sum, row) => sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
+    (sum, row) =>
+      sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
     0,
   );
-  const callsToShow =
-    typeof expectedCalls === "number" && !Number.isNaN(expectedCalls)
-      ? expectedCalls
-      : totalCalls;
-
-  console.log("🟡 [Reports Campaigns] Rendering CustomerTable:", {
-    title,
-    rowsCount: rows.length,
-    firstRowSample: rows[0],
-  });
+  // Siempre mostrar el total de llamadas sumadas desde callCount
+  const callsToShow = totalCalls;
 
   const handleRowClick = async (row: CustomerRow, index: number) => {
-    console.log("🟣 [Reports Campaigns] Row clicked!", {
-      title,
-      index,
-      row,
-      customerId: row.customerId,
-      name: row.name,
-      phone: row.phone,
-      campaignId: campaignId,
-    });
-
     // Función helper para redirigir a tickets con filtros de campaña y cliente
     const navigateToTickets = async (row: CustomerRow) => {
-      console.log("🔍 [Reports Campaigns] navigateToTickets called:", {
-        customerId: row.customerId,
-        customerName: row.name,
-        customerPhone: row.phone,
-        campaignId: campaignId,
-      });
-
       // Si tenemos customerId directamente, usarlo
       if (row.customerId && campaignId) {
         // Verificar si es llamada perdida
@@ -303,35 +277,16 @@ const CustomerTable = ({
         }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
           startDate,
         )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
-        console.log(
-          "🟢 [Reports Campaigns] ✅ Navigating to tickets with customerId and campaignId:",
-          {
-            customerId: row.customerId,
-            campaignId: campaignId,
-            startDate,
-            endDate,
-            isMissed,
-            url: ticketsUrl,
-          },
-        );
         router.push(ticketsUrl);
         return;
       }
 
       // Si no tenemos customerId, buscar por nombre/teléfono
       try {
-        console.log(
-          "🔍 [Reports Campaigns] Fetching customers to find match...",
-        );
         const customers = await fetchFromBackend("/customers?page=1&limit=500");
         const customerList = Array.isArray(customers)
           ? customers
           : customers?.data || [];
-
-        console.log("🔍 [Reports Campaigns] Customer list fetched:", {
-          totalCustomers: customerList.length,
-          searchingFor: { name: row.name, phone: row.phone },
-        });
 
         // Buscar el cliente que coincida con el nombre o teléfono
         const customer = customerList.find(
@@ -352,25 +307,8 @@ const CustomerTable = ({
           }&campaignId=${campaignId}&fromReport=campaign&reportStartDate=${encodeURIComponent(
             startDate,
           )}&reportEndDate=${encodeURIComponent(endDate)}${viewParam}`;
-          console.log(
-            "🟢 [Reports Campaigns] ✅ Navigating to tickets (found by search):",
-            {
-              customerId: customer.id,
-              customerName: customer.name,
-              campaignId: campaignId,
-              startDate,
-              endDate,
-              isMissed,
-              url: ticketsUrl,
-            },
-          );
           router.push(ticketsUrl);
         } else {
-          console.warn("⚠️ [Reports Campaigns] Customer not found:", {
-            rowName: row.name,
-            rowPhone: row.phone,
-            searchResult: customer,
-          });
           toast({
             title: "Cliente no encontrado",
             description: "No se pudo encontrar el cliente en la base de datos.",
@@ -378,7 +316,6 @@ const CustomerTable = ({
           });
         }
       } catch (error) {
-        console.error("🔴 [Reports Campaigns] Error buscando cliente:", error);
         toast({
           title: "Error",
           description: "No se pudo buscar el cliente.",
@@ -396,8 +333,8 @@ const CustomerTable = ({
       <div className="flex flex-col border-b px-6 py-4">
         <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found ({rows.length}{" "}
-          {rows.length === 1 ? "customer" : "customers"})
+          {callsToShow} {callsToShow === 1 ? "call" : "calls"} found (
+          {rows.length} {rows.length === 1 ? "customer" : "customers"})
         </p>
         <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
           💡 Click on any row to view customer details in Customer Management
@@ -424,12 +361,6 @@ const CustomerTable = ({
               </div>
             ) : (
               rows.map((row, index) => {
-                console.log(`🟡 [Reports Campaigns] Rendering row ${index}:`, {
-                  ticketId: row.ticketId,
-                  name: row.name,
-                  hasTicketId: !!row.ticketId,
-                });
-
                 const callCount = row.callCount || 1;
                 const hasHistory =
                   row.callHistory && row.callHistory.length > 1;
@@ -439,13 +370,10 @@ const CustomerTable = ({
                     key={`${title}-${index}`}
                     className="grid grid-cols-13 text-sm hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={(e) => {
-                      console.log("=== ROW CLICK EVENT ===", index);
                       e.preventDefault();
                       e.stopPropagation();
                       handleRowClick(row, index);
                     }}
-                    onMouseDown={() => console.log("=== MOUSE DOWN ===", index)}
-                    onMouseUp={() => console.log("=== MOUSE UP ===", index)}
                     style={{ cursor: "pointer" }}
                   >
                     <div
@@ -711,10 +639,6 @@ const CustomerTable = ({
 };
 
 export default function CampaignReportsPage() {
-  console.log("═══════════════════════════════════════════════════");
-  console.log("🎯 CAMPAIGN REPORTS PAGE COMPONENT RENDERING");
-  console.log("═══════════════════════════════════════════════════");
-
   const searchParams = useSearchParams();
   const router = useRouter();
   const campaignIdParam = searchParams.get("campaignId");
@@ -724,11 +648,6 @@ export default function CampaignReportsPage() {
     searchParams.get("yardStartDate") || searchParams.get("startDate");
   const sourceYardEndDateParam =
     searchParams.get("yardEndDate") || searchParams.get("endDate");
-
-  console.log("📋 Component initialized:", {
-    campaignIdParam,
-    timestamp: new Date().toISOString(),
-  });
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
@@ -866,11 +785,6 @@ export default function CampaignReportsPage() {
         !loading &&
         campaigns.length > 0
       ) {
-        console.log("🔄 Auto-generating report from URL params:", {
-          selectedCampaignId,
-          startDate,
-          endDate,
-        });
         await buildReport();
       }
     };
@@ -961,120 +875,17 @@ export default function CampaignReportsPage() {
         startDate,
         endDate,
       });
-      console.log("🔵 [Reports Campaigns] Fetching report data...");
-      console.log(
-        "🔵 [Reports Campaigns] URL:",
+
+      const response = await fetchFromBackend(
         `/campaign/${selectedCampaignId}/report?${params.toString()}`,
       );
 
-      const [response, campaignStats, ticketsResponse] = await Promise.all([
-        fetchFromBackend(
-          `/campaign/${selectedCampaignId}/report?${params.toString()}`,
-        ),
-        fetchFromBackend(`/campaign/${selectedCampaignId}`),
-        fetchFromBackend("/tickets?page=1&limit=5000"),
-      ]);
-
-      console.log("🟢 [Reports Campaigns] Report data received:", response);
-      console.log(
-        "🟢 [Reports Campaigns] Tables count:",
-        response?.tables?.length,
-      );
-
-      if (response?.tables && response.tables.length > 0) {
-        console.log(
-          "🟢 [Reports Campaigns] First table sample:",
-          response.tables[0],
-        );
-        if (response.tables[0]?.rows && response.tables[0].rows.length > 0) {
-          console.log(
-            "🟢 [Reports Campaigns] First row sample:",
-            response.tables[0].rows[0],
-          );
-          console.log(
-            "🟢 [Reports Campaigns] First row has ticketId?",
-            !!response.tables[0].rows[0].ticketId,
-          );
-        }
-      }
-
       if (!response) throw new Error("No data from backend");
-      const allTickets: Ticket[] = Array.isArray(ticketsResponse)
-        ? ticketsResponse
-        : ticketsResponse?.data || [];
-      const campaignTickets = allTickets.filter((ticket) => {
-        const ticketCampaignId =
-          ticket.campaignId ??
-          (ticket.campaign && typeof ticket.campaign === "object"
-            ? ticket.campaign.id
-            : null);
-        return (
-          ticketCampaignId !== null &&
-          ticketCampaignId !== undefined &&
-          ticketCampaignId.toString() === selectedCampaignId
-        );
-      });
-      const totalTicketsFromCampaign = Number(
-        campaignStats?.ticketCount ?? campaignTickets.length ?? 0,
-      );
-      let inboundFromTickets = 0;
-      let outboundFromTickets = 0;
-      campaignTickets.forEach((ticket) => {
-        const direction = (ticket.direction || "").toString().toUpperCase();
-        const originalDirection = (ticket.originalDirection || "")
-          .toString()
-          .toUpperCase();
-        if (direction === "INBOUND") {
-          inboundFromTickets += 1;
-          return;
-        }
-        if (direction === "OUTBOUND") {
-          outboundFromTickets += 1;
-          return;
-        }
-        if (direction === "MISSED") {
-          if (originalDirection === "INBOUND") {
-            inboundFromTickets += 1;
-          } else {
-            outboundFromTickets += 1;
-          }
-        }
-      });
-      const remainder =
-        totalTicketsFromCampaign - (inboundFromTickets + outboundFromTickets);
-      if (remainder > 0) {
-        outboundFromTickets += remainder;
-      }
 
-      const mergedMetrics = (response.metrics || []).map((metric: ReportMetric) => {
-        if (metric.title === "Total Tickets") {
-          return { ...metric, value: Number(campaignStats?.ticketCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Inbound Calls") {
-          return { ...metric, value: inboundFromTickets };
-        }
-        if (metric.title === "Outbound Calls") {
-          return { ...metric, value: outboundFromTickets };
-        }
-        if (metric.title === "Registered") {
-          return { ...metric, value: Number(campaignStats?.registeredCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Not Registered") {
-          return { ...metric, value: Number(campaignStats?.notRegisteredCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Paid") {
-          return { ...metric, value: Number(campaignStats?.paidCount ?? metric.value ?? 0) };
-        }
-        if (metric.title === "Not Paid") {
-          return { ...metric, value: Number(campaignStats?.notPaidCount ?? metric.value ?? 0) };
-        }
-        return metric;
-      });
-
-      // El backend ya entrega los datos agregados y tablas
+      // El backend ya entrega los datos correctos: cuenta clientes únicos, no tickets individuales
       setReport({
         campaign: response.campaign || null,
-        metrics: mergedMetrics,
+        metrics: response.metrics || [],
         totalCustomers: response.totals?.total || 0,
         reportLines: [],
         tables: response.tables || [],
@@ -1129,7 +940,6 @@ export default function CampaignReportsPage() {
     }
   };
 
-  // --- 2. Función Export Excel mejorada con formato estético ---
   const exportExcelBackend = async () => {
     if (!report) return;
     if (!startDate || !endDate) {
@@ -1140,379 +950,16 @@ export default function CampaignReportsPage() {
       });
       return;
     }
+
     try {
-      // Crear un nuevo workbook
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = "Tickets Hut System";
-      workbook.created = new Date();
-      workbook.modified = new Date();
-
-      // Crear hoja principal
-      const worksheet = workbook.addWorksheet("Reporte de Campaña");
-
-      // Configurar anchos de columna
-      worksheet.columns = [
-        { width: 25 }, // Customer
-        { width: 18 }, // Phone
-        { width: 10 }, // Calls
-        { width: 20 }, // Direction
-        { width: 20 }, // Status
-        { width: 40 }, // Notes
-        { width: 25 }, // Contact Date
-      ];
-
-      // ========== ENCABEZADO ==========
-      const headerRow1 = worksheet.addRow([]);
-      headerRow1.height = 30;
-      const headerCell1 = worksheet.mergeCells(1, 1, 1, 7);
-      const headerCell = worksheet.getCell(1, 1);
-      headerCell.value = `REPORTE DE CAMPAÑA - ${report.campaign?.nombre || "N/A"}`;
-      headerCell.font = { size: 18, bold: true, color: { argb: "FFFFFFFF" } };
-      headerCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1E40AF" }, // Azul oscuro
-      };
-      headerCell.alignment = { vertical: "middle", horizontal: "center" };
-      headerCell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-
-      // Información de fechas
-      const dateRow = worksheet.addRow([]);
-      dateRow.height = 25;
-      const dateCell = worksheet.mergeCells(2, 1, 2, 7);
-      const dateCellValue = worksheet.getCell(2, 1);
-      dateCellValue.value = `Período: ${startDate} - ${endDate}`;
-      dateCellValue.font = { size: 12, bold: true, color: { argb: "FF1E40AF" } };
-      dateCellValue.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFE0E7FF" }, // Azul muy claro
-      };
-      dateCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      dateCellValue.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-
-      // Información adicional de la campaña
-      if (report.campaign) {
-        const campaignInfoRow = worksheet.addRow([]);
-        campaignInfoRow.height = 20;
-        const campaignInfoCell = worksheet.mergeCells(3, 1, 3, 7);
-        const campaignInfoCellValue = worksheet.getCell(3, 1);
-        let campaignInfo = `Campaña: ${report.campaign.nombre}`;
-        if (report.campaign.yarda?.name) {
-          campaignInfo += ` | Yarda: ${report.campaign.yarda.name}`;
-        }
-        if (report.campaign.tipo) {
-          campaignInfo += ` | Tipo: ${report.campaign.tipo}`;
-        }
-        campaignInfoCellValue.value = campaignInfo;
-        campaignInfoCellValue.font = { size: 11, italic: true };
-        campaignInfoCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      }
-
-      // Espacio
-      worksheet.addRow([]);
-
-      // ========== MÉTRICAS ==========
-      if (report.metrics && report.metrics.length > 0) {
-        const metricsTitleRow = worksheet.addRow(["MÉTRICAS DEL REPORTE"]);
-        metricsTitleRow.height = 25;
-        const metricsTitleCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-        const metricsTitleCellValue = worksheet.getCell(worksheet.rowCount, 1);
-        metricsTitleCellValue.value = "MÉTRICAS DEL REPORTE";
-        metricsTitleCellValue.font = { size: 14, bold: true, color: { argb: "FFFFFFFF" } };
-        metricsTitleCellValue.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF475569" }, // Gris oscuro
-        };
-        metricsTitleCellValue.alignment = { vertical: "middle", horizontal: "center" };
-        metricsTitleCellValue.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
-
-        // Crear filas de métricas (3 métricas por fila)
-        const metricsPerRow = 3;
-        const totalRows = Math.ceil(report.metrics.length / metricsPerRow);
-        
-        for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
-          const metricsRow = worksheet.addRow([]);
-          metricsRow.height = 30;
-          
-          const startIndex = rowIndex * metricsPerRow;
-          const endIndex = Math.min(startIndex + metricsPerRow, report.metrics.length);
-          
-          for (let i = startIndex; i < endIndex; i++) {
-            const metric = report.metrics[i];
-            const colIndex = (i % metricsPerRow) * 2 + 1;
-            
-            // Merge cells para cada métrica (2 columnas por métrica)
-            worksheet.mergeCells(worksheet.rowCount, colIndex, worksheet.rowCount, colIndex + 1);
-            
-            const metricCell = worksheet.getCell(worksheet.rowCount, colIndex);
-            metricCell.value = `${metric.title}: ${metric.value}`;
-            metricCell.font = { size: 11, bold: true };
-            metricCell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FFF1F5F9" }, // Gris muy claro
-            };
-            metricCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            metricCell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-          }
-        }
-
-        // Espacio
-        worksheet.addRow([]);
-        worksheet.addRow([]);
-      }
-
-      // ========== TABLAS DE CLIENTES ==========
-      if (report.tables && report.tables.length > 0) {
-        report.tables.forEach((table, tableIndex) => {
-          // Título de la tabla
-          const tableTitleRow = worksheet.addRow([]);
-          tableTitleRow.height = 28;
-          const tableTitleCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-          const tableTitleCellValue = worksheet.getCell(worksheet.rowCount, 1);
-          tableTitleCellValue.value = table.title.toUpperCase();
-          tableTitleCellValue.font = { size: 13, bold: true, color: { argb: "FFFFFFFF" } };
-          tableTitleCellValue.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FF0F766E" }, // Verde oscuro
-          };
-          tableTitleCellValue.alignment = { vertical: "middle", horizontal: "center" };
-          tableTitleCellValue.border = {
-            top: { style: "medium" },
-            left: { style: "medium" },
-            bottom: { style: "medium" },
-            right: { style: "medium" },
-          };
-
-          // Encabezados de columnas
-          const headerRow = worksheet.addRow([
-            "Cliente",
-            "Teléfono",
-            "Llamadas",
-            "Dirección",
-            "Estado",
-            "Notas",
-            "Fecha de Contacto",
-          ]);
-          headerRow.height = 25;
-          headerRow.eachCell((cell, colNumber) => {
-            cell.font = { size: 11, bold: true, color: { argb: "FFFFFFFF" } };
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FF334155" }, // Gris azulado oscuro
-            };
-            cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-          });
-
-          // Filas de datos
-          table.rows.forEach((row, rowIndex) => {
-            // Formatear dirección
-            let directionText = row.direction || "N/A";
-            const directionLower = directionText.toLowerCase();
-            if (directionLower.includes("missed")) {
-              if (directionLower.includes("inbound")) {
-                directionText = "Inbound (Missed)";
-              } else if (directionLower.includes("outbound")) {
-                directionText = "Outbound (Missed)";
-              } else {
-                directionText = "Missed";
-              }
-            } else if (directionLower.includes("inbound")) {
-              directionText = "Inbound";
-            } else if (directionLower.includes("outbound")) {
-              directionText = "Outbound";
-            } else if (directionLower.includes("text") || directionLower.includes("message")) {
-              directionText = "Text Message";
-            }
-
-            // Formatear fecha de contacto
-            let contactDateText = "—";
-            if (row.callHistory && row.callHistory.length > 0) {
-              const dates = row.callHistory.map((call) => {
-                const date = new Date(call.createdAt);
-                const formattedDate = date.toLocaleDateString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                });
-                const formattedTime = date.toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                return `${formattedDate} ${formattedTime}`;
-              });
-              contactDateText = dates.join("\n");
-            }
-
-            const dataRow = worksheet.addRow([
-              row.name || "—",
-              row.phone || "—",
-              row.callCount || 1,
-              directionText,
-              row.status || "—",
-              row.note || "—",
-              contactDateText,
-            ]);
-            dataRow.height = row.callHistory && row.callHistory.length > 1 ? 20 * row.callHistory.length : 20;
-
-            // Aplicar formato a cada celda
-            dataRow.eachCell((cell, colNumber) => {
-              // Sombreado alternado
-              if (rowIndex % 2 === 0) {
-                cell.fill = {
-                  type: "pattern",
-                  pattern: "solid",
-                  fgColor: { argb: "FFFFFFFF" }, // Blanco
-                };
-              } else {
-                cell.fill = {
-                  type: "pattern",
-                  pattern: "solid",
-                  fgColor: { argb: "FFF8FAFC" }, // Gris muy muy claro
-                };
-              }
-
-              // Colores según el tipo de columna
-              if (colNumber === 4) {
-                // Columna de Dirección
-                const directionLower = (row.direction || "").toLowerCase();
-                if (directionLower.includes("missed")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFDC2626" } }; // Rojo
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFEBEE" }, // Rojo muy claro
-                  };
-                } else if (directionLower.includes("inbound")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF1E40AF" } }; // Azul
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFE0E7FF" }, // Azul muy claro
-                  };
-                } else if (directionLower.includes("outbound")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF059669" } }; // Verde
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFD1FAE5" }, // Verde muy claro
-                  };
-                } else if (directionLower.includes("text") || directionLower.includes("message")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF7C3AED" } }; // Púrpura
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFF3E8FF" }, // Púrpura muy claro
-                  };
-                }
-              } else if (colNumber === 5) {
-                // Columna de Estado
-                const statusUpper = (row.status || "").toString().toUpperCase();
-                if (statusUpper.includes("PAID") && !statusUpper.includes("NOT")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FF059669" } }; // Verde
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFD1FAE5" }, // Verde muy claro
-                  };
-                } else if (statusUpper.includes("NOT_PAID") || (statusUpper.includes("NOT") && statusUpper.includes("PAID"))) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFDC2626" } }; // Rojo
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFEBEE" }, // Rojo muy claro
-                  };
-                } else if (statusUpper.includes("OFFLINE_PAYMENT")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFF59E0B" } }; // Ámbar
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFF7ED" }, // Ámbar muy claro
-                  };
-                } else if (statusUpper.includes("CANCELED") || statusUpper.includes("CANCELLED")) {
-                  cell.font = { size: 10, bold: true, color: { argb: "FFE11D48" } }; // Rosa
-                  cell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFF1F2" }, // Rosa muy claro
-                  };
-                }
-              }
-
-              cell.font = cell.font || { size: 10 };
-              cell.alignment = { vertical: "middle", horizontal: colNumber === 6 || colNumber === 7 ? "left" : "center", wrapText: true };
-              cell.border = {
-                top: { style: "thin", color: { argb: "FFE2E8F0" } },
-                left: { style: "thin", color: { argb: "FFE2E8F0" } },
-                bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-                right: { style: "thin", color: { argb: "FFE2E8F0" } },
-              };
-            });
-          });
-
-          // Espacio entre tablas
-          worksheet.addRow([]);
-          worksheet.addRow([]);
-        });
-      }
-
-      // Resumen final
-      const summaryRow = worksheet.addRow([]);
-      summaryRow.height = 25;
-      const summaryCell = worksheet.mergeCells(worksheet.rowCount, 1, worksheet.rowCount, 7);
-      const summaryCellValue = worksheet.getCell(worksheet.rowCount, 1);
-      summaryCellValue.value = `Total de Clientes: ${report.totalCustomers || 0}`;
-      summaryCellValue.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
-      summaryCellValue.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1E40AF" }, // Azul oscuro
-      };
-      summaryCellValue.alignment = { vertical: "middle", horizontal: "center" };
-      summaryCellValue.border = {
-        top: { style: "medium" },
-        left: { style: "medium" },
-        bottom: { style: "medium" },
-        right: { style: "medium" },
-      };
-
-      // Generar el archivo
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
       });
-
+      const blob = await fetchBlobFromBackend(
+        `/campaign/${selectedCampaignId}/report/excel?${params.toString()}`,
+        { method: "GET" },
+      );
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -1523,18 +970,19 @@ export default function CampaignReportsPage() {
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Éxito",
-        description: "Archivo Excel generado exitosamente con formato mejorado",
+        title: "Success",
+        description: "Excel file downloaded successfully.",
       });
     } catch (error: any) {
       console.error("Excel export error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate Excel file",
+        description: error.message || "Failed to download Excel file",
         variant: "destructive",
       });
     }
   };
+
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100 p-4 md:p-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">
@@ -1720,7 +1168,6 @@ export default function CampaignReportsPage() {
                   key={table.title}
                   title={table.title}
                   rows={table.rows}
-                  expectedCalls={metricValueByTitle.get(table.title)}
                   campaignId={
                     selectedCampaignId ? parseInt(selectedCampaignId) : null
                   }

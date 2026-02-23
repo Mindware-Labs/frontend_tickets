@@ -32,6 +32,7 @@ export enum OnboardingOption {
   NOT_REGISTER = "NOT_REGISTERED",
   REGISTER = "REGISTERED",
   PAID_WITH_LL = "PAID_WITH_LL",
+  CANCELED = "CANCELED",
 }
 
 export enum ArOption {
