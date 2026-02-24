@@ -57,10 +57,25 @@ export function YardDashboard({
     useState(false);
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
 
+  const missedTicketsCount = useMemo(
+    () =>
+      stats.ticketsByDirection.reduce((total, item) => {
+        return (item.direction || "").toUpperCase() === "MISSED"
+          ? total + item.count
+          : total;
+      }, 0),
+    [stats.ticketsByDirection],
+  );
+  const nonMissedTicketsCount = Math.max(
+    stats.totalTickets - missedTicketsCount,
+    0,
+  );
   const resolutionRate =
-    stats.totalTickets > 0
-      ? Math.round((stats.closedTickets / stats.totalTickets) * 100)
-      : 0;
+    typeof stats.resolutionRate === "number"
+      ? stats.resolutionRate
+      : nonMissedTicketsCount > 0
+        ? Math.round((stats.closedTickets / nonMissedTicketsCount) * 100)
+        : 0;
   const topNewLead = stats.ticketsByNewLead[0];
   const topNewLeadName = topNewLead?.customerName?.trim() || "No data";
   const highPriorityPendingTickets = useMemo(
@@ -75,7 +90,20 @@ export function YardDashboard({
       }),
     [yardTickets],
   );
+  const highPriorityClosedTickets = useMemo(
+    () =>
+      yardTickets.filter((ticket) => {
+        const priority = (ticket.priority || "").toUpperCase();
+        const status = (ticket.status || "").toUpperCase();
+        const isCriticalPriority =
+          priority === "HIGH" || priority === "EMERGENCY";
+        const isClosed = status === "CLOSED" || status === "RESOLVED";
+        return isCriticalPriority && isClosed;
+      }),
+    [yardTickets],
+  );
   const highPriorityPendingCount = highPriorityPendingTickets.length;
+  const highPriorityClosedCount = highPriorityClosedTickets.length;
   const emergencyPendingCount = highPriorityPendingTickets.filter(
     (ticket) => (ticket.priority || "").toUpperCase() === "EMERGENCY",
   ).length;
@@ -83,6 +111,55 @@ export function YardDashboard({
     stats.totalTickets > 0
       ? Math.round((highPriorityPendingCount / stats.totalTickets) * 100)
       : 0;
+  const topCustomers = useMemo(() => {
+    const buckets = new Map<
+      string,
+      { key: string; name: string; meta: string; count: number }
+    >();
+
+    yardTickets.forEach((ticket) => {
+      const customerId = ticket.customerId ?? ticket.customer?.id ?? null;
+      const customerName = ticket.customer?.name?.trim() || "";
+      const customerPhone =
+        ticket.customerPhone?.trim() ||
+        ticket.customer?.phone?.trim() ||
+        ticket.phone?.trim() ||
+        "";
+
+      const key =
+        customerId !== null && customerId !== undefined
+          ? `id:${customerId}`
+          : customerPhone
+            ? `phone:${customerPhone}`
+            : customerName
+              ? `name:${customerName.toLowerCase()}`
+              : `unknown:${ticket.id}`;
+
+      const name =
+        customerName ||
+        (customerId !== null && customerId !== undefined
+          ? `Customer #${customerId}`
+          : customerPhone || "Unknown customer");
+      const meta =
+        customerId !== null && customerId !== undefined
+          ? `ID: ${customerId}`
+          : customerPhone
+            ? customerPhone
+            : "No customer ID";
+
+      const existing = buckets.get(key);
+      if (existing) {
+        existing.count += 1;
+        return;
+      }
+
+      buckets.set(key, { key, name, meta, count: 1 });
+    });
+
+    return Array.from(buckets.values())
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .slice(0, 5);
+  }, [yardTickets]);
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -159,7 +236,9 @@ export function YardDashboard({
                 {resolutionRate}%
               </h3>
               <p className="text-xs font-medium text-muted-foreground bg-muted/50 inline-flex px-2 py-1 rounded-md">
-                {stats.closedTickets} of {stats.totalTickets} resolved
+                {missedTicketsCount > 0
+                  ? `${stats.closedTickets} closed • missed calls excluded`
+                  : `${stats.closedTickets} of ${stats.totalTickets} resolved`}
               </p>
             </div>
             <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
@@ -231,6 +310,12 @@ export function YardDashboard({
                     {emergencyPendingCount}
                   </span>{" "}
                   emergency, {highPriorityPendingRate}% of total
+                </p>
+                <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                  Closed / resolved high priority:{" "}
+                  <span className="font-semibold text-foreground">
+                    {highPriorityClosedCount}
+                  </span>
                 </p>
               </div>
             </div>
@@ -385,7 +470,6 @@ export function YardDashboard({
                     />
                   ))}
                 </Pie>
-                
               </PieChart>
             </ResponsiveContainer>
             {/* Texto Centralizado Seguro */}
@@ -488,7 +572,6 @@ export function YardDashboard({
                       />
                     ))}
                   </Pie>
-                 
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -594,15 +677,15 @@ export function YardDashboard({
           </div>
         </div>
 
-        {/* Top Campaigns */}
+        {/* Top Customers */}
         <div className="rounded-2xl border bg-card shadow-sm p-6">
           <div className="flex items-center justify-between mb-6 pb-4 border-b">
             <div>
               <h3 className="text-lg font-bold text-foreground">
-                Top Campaigns
+                Top Customers
               </h3>
               <p className="text-sm text-muted-foreground">
-                Highest volume drivers
+                Highest ticket volume
               </p>
             </div>
             <div className="p-2 bg-muted rounded-lg">
@@ -611,10 +694,10 @@ export function YardDashboard({
           </div>
 
           <div className="space-y-3">
-            {stats.ticketsByCampaign.length > 0 ? (
-              stats.ticketsByCampaign.slice(0, 5).map((campaign, index) => (
+            {topCustomers.length > 0 ? (
+              topCustomers.map((customer, index) => (
                 <div
-                  key={campaign.campaignId}
+                  key={customer.key}
                   className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
                 >
                   <div className="flex items-center gap-4">
@@ -633,16 +716,16 @@ export function YardDashboard({
                     </div>
                     <div>
                       <p className="font-semibold text-foreground line-clamp-1">
-                        {campaign.campaignName}
+                        {customer.name}
                       </p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        ID: {campaign.campaignId}
+                        {customer.meta}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-lg text-foreground">
-                      {campaign.count}
+                      {customer.count}
                     </p>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                       tickets
@@ -652,7 +735,7 @@ export function YardDashboard({
               ))
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-xl">
-                No campaign data available
+                No customer data available
               </div>
             )}
           </div>
@@ -675,6 +758,7 @@ export function YardDashboard({
         open={showHighPriorityPendingModal}
         onOpenChange={setShowHighPriorityPendingModal}
         side="right"
+        yardId={stats.yard.id}
         yardName={stats.yard.name}
         reportStartDate={reportStartDate}
         reportEndDate={reportEndDate}

@@ -49,6 +49,7 @@ export type YardStats = {
   openTickets: number;
   inProgressTickets: number;
   closedTickets: number;
+  resolutionRate?: number;
   todayTickets: number;
   lastActivity?: string | null;
   ticketsByStatus: { status: string; count: number }[];

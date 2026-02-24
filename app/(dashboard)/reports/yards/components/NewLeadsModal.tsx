@@ -26,7 +26,6 @@ import {
   Phone,
   UserPlus,
   XCircle,
-  Trophy,
   Ticket,
   FileText,
 } from "lucide-react";
@@ -54,17 +53,8 @@ type NewLeadsModalProps = {
   customersByNewLead: NewLeadCustomer[];
 };
 
-const getRankBadgeClass = (index: number) => {
-  switch (index) {
-    case 0:
-      return "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800/50";
-    case 1:
-      return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600";
-    case 2:
-      return "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800/50";
-    default:
-      return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50";
-  }
+const getRankBadgeClass = () => {
+  return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50";
 };
 
 const getSheetMaxWidthClass = (cardCount: number) => {
@@ -220,8 +210,7 @@ export function NewLeadsModal({
             ) : (
               <div className={`grid gap-5 ${cardsGridClass}`}>
                 {leads.map((lead, index) => {
-                  const isTop3 = index < 3;
-                  const rankClass = getRankBadgeClass(index);
+                  const rankClass = getRankBadgeClass();
 
                   // URL params building
                   const params = new URLSearchParams({
@@ -265,9 +254,9 @@ export function NewLeadsModal({
                         </div>
                         <Badge
                           variant="outline"
-                          className={`shrink-0 font-bold px-2.5 py-0.5 shadow-sm flex items-center gap-1 ${rankClass}`}
+                          className={`shrink-0 font-bold px-2.5 py-0.5 shadow-sm ${rankClass}`}
                         >
-                          {isTop3 && <Trophy className="h-3 w-3" />}#{index + 1}
+                          #{index + 1}
                         </Badge>
                       </div>
 

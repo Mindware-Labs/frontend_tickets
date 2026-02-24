@@ -145,23 +145,6 @@ const getCardsGridClass = (cardCount: number) => {
 
 const FETCH_TIMEOUT_MS = 15000;
 
-const resolveCampaignYardId = (campaign: Campaign): string | null => {
-  const possibleIds = [
-    campaign.yarda?.id,
-    campaign.yard?.id,
-    campaign.yardaId,
-    campaign.yardId,
-  ];
-
-  for (const id of possibleIds) {
-    if (id !== null && id !== undefined) {
-      return id.toString();
-    }
-  }
-
-  return null;
-};
-
 const normalizeCampaignId = (value: number | string) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : value.toString();
@@ -242,10 +225,13 @@ export function ActiveCampaignsModal({
       }
 
       try {
-        const response = await fetch("/api/campaigns?active=true", {
+        const response = await fetch(
+          `/api/campaigns?active=true&yardId=${encodeURIComponent(yardId.toString())}`,
+          {
           signal: abortController.signal,
           cache: "no-store",
-        });
+          },
+        );
 
         const payload = await response.json().catch(() => null);
         if (!response.ok || payload?.success === false) {
@@ -256,7 +242,6 @@ export function ActiveCampaignsModal({
           return;
         }
 
-        const yardIdKey = yardId.toString();
         const ticketCountByCampaignId = campaignsByTickets.reduce<
           Map<string, number>
         >((accumulator, campaign) => {
@@ -278,7 +263,6 @@ export function ActiveCampaignsModal({
             ? payload
             : [];
         const yardCampaigns = allCampaigns
-          .filter((campaign) => resolveCampaignYardId(campaign) === yardIdKey)
           .filter((campaign) => campaign.isActive !== false)
           .map((campaign) => {
             const idKey = campaign.id.toString();

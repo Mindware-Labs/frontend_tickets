@@ -54,6 +54,7 @@ const buildEmptyYardStats = (yard: Yard): YardStats => ({
   openTickets: 0,
   inProgressTickets: 0,
   closedTickets: 0,
+  resolutionRate: 0,
   todayTickets: 0,
   lastActivity: null,
   ticketsByStatus: [],

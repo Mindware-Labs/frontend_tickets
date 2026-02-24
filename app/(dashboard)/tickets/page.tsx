@@ -879,6 +879,63 @@ export default function TicketsPage() {
         ),
         duration: Infinity,
       });
+      return;
+    }
+
+    if (fromReport === "highPriorityPending") {
+      const yardId = searchParams.get("yardId");
+      const status = searchParams.get("status");
+      const view = searchParams.get("view");
+      const reportYardName = searchParams.get("reportYardName");
+      const reportTicketId = searchParams.get("reportTicketId");
+      const reportSection = searchParams.get("reportSection");
+
+      if (yardId) {
+        setYardFilter(yardId);
+      }
+      if (status) {
+        setStatusFilter(status);
+      }
+      if (view) {
+        setActiveView(view);
+      }
+
+      const params = new URLSearchParams();
+      if (yardId) params.set("yardId", yardId);
+      if (reportStartDate) params.set("startDate", reportStartDate);
+      if (reportEndDate) params.set("endDate", reportEndDate);
+      const reportUrl = params.toString()
+        ? `/reports/yards?${params.toString()}`
+        : "/reports/yards";
+
+      const sectionLabel =
+        reportSection === "closed" ? "Closed / Resolved" : "Pending";
+      const contextLabel = reportYardName || "the yard report";
+
+      const { dismiss } = toast({
+        title: "Viewing filtered tickets",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>
+              You are viewing ticket
+              {reportTicketId ? ` #${reportTicketId}` : ""} from High Priority{" "}
+              {sectionLabel} in {contextLabel}.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                dismiss();
+                router.push(reportUrl);
+              }}
+              className="w-fit"
+            >
+              Back to Report
+            </Button>
+          </div>
+        ),
+        duration: Infinity,
+      });
     }
   }, [searchParams, router]);
 
@@ -1001,12 +1058,13 @@ export default function TicketsPage() {
             return response.json();
           })
           .then((ticketData) => {
-            if (!ticketData) return;
+            const resolvedTicket = ticketData?.data ?? ticketData;
+            if (!resolvedTicket) return;
             processedTicketIdRef.current = ticketIdParam;
             setUrlTicketId(ticketIdParam);
-            setSelectedTicket(ticketData);
+            setSelectedTicket(resolvedTicket);
             setShowDetails(true);
-            if (ticketData.yardId) {
+            if (resolvedTicket.yardId) {
               setShowViewModal(true);
             } else {
               setShowEditModal(true);
