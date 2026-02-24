@@ -86,6 +86,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/campaigns", request.url));
   }
 
+  if (pathname.startsWith("/reports/yards") && role !== "admin") {
+    return NextResponse.redirect(new URL("/yards", request.url));
+  }
+
   if (
     (pathname.startsWith("/reports/performance") ||
       pathname.startsWith("/reports/agents")) &&

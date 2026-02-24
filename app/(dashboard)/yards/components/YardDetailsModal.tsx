@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRole } from "@/components/providers/role-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,6 +82,8 @@ export function YardDetailsModal({
   onViewLandlord,
 }: YardDetailsModalProps) {
   const [copied, setCopied] = useState(false);
+  const { role } = useRole();
+  const isAdmin = role?.toString().toLowerCase() === "admin";
 
   const handleCopyId = () => {
     if (yard?.id) {
@@ -314,12 +317,14 @@ export function YardDetailsModal({
         <DialogFooter className="p-4 bg-muted/20 border-t border-border/50">
           <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
-              <Button asChild variant="default" size="sm" className="gap-2">
-                <Link href={`/reports/yards?yardId=${yard.id}&openFilters=1`}>
-                  <BarChart3 className="h-4 w-4" />
-                  Open Reports
-                </Link>
-              </Button>
+              {isAdmin && (
+                <Button asChild variant="default" size="sm" className="gap-2">
+                  <Link href={`/reports/yards?yardId=${yard.id}&openFilters=1`}>
+                    <BarChart3 className="h-4 w-4" />
+                    Open Reports
+                  </Link>
+                </Button>
+              )}
             </div>
             <Button
               variant="outline"
