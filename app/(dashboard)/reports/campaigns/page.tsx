@@ -44,9 +44,20 @@ import {
   BadgeDollarSign,
   ReceiptText,
   MoveRight,
-  FileSpreadsheet, // <--- 1. Importación agregada
+  FileSpreadsheet,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 type Campaign = {
   id: number;
@@ -255,6 +266,8 @@ const CustomerTable = ({
 }) => {
   const router = useRouter();
   const [tableSearch, setTableSearch] = useState("");
+  const [showIssueDetailModal, setShowIssueDetailModal] = useState(false);
+  const [selectedRowForIssueDetail, setSelectedRowForIssueDetail] = useState<CustomerRow | null>(null);
   const totalCalls = rows.reduce(
     (sum, row) =>
       sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
@@ -457,9 +470,9 @@ const CustomerTable = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleRowClick(row, index);
+                      setSelectedRowForIssueDetail(row);
+                      setShowIssueDetailModal(true);
                     }}
-                    style={{ cursor: "pointer" }}
                   >
                     <div
                       className="col-span-2 px-6 py-3 font-medium truncate"
@@ -750,6 +763,109 @@ const CustomerTable = ({
           </div>
         </div>
       </div>
+
+      {/* Issue Detail Modal */}
+      <Dialog open={showIssueDetailModal} onOpenChange={setShowIssueDetailModal}>
+        <DialogContent className="flex flex-col gap-0 w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:size-[min(520px,calc(100vh-2rem))] sm:max-w-none sm:max-h-none">
+          <DialogHeader className="border-b bg-card/60 px-5 py-4">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <FileText className="h-5 w-5 text-primary" />
+              Issue Detail
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {selectedRowForIssueDetail?.phone || selectedRowForIssueDetail?.name || "Customer"} -{" "}
+              {selectedRowForIssueDetail?.callHistory?.length || 0} detail
+              {selectedRowForIssueDetail?.callHistory?.length === 1 ? "" : "s"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="min-h-0 flex-1 bg-muted/10">
+            <div className="space-y-3 p-4">
+              {selectedRowForIssueDetail?.callHistory && selectedRowForIssueDetail.callHistory.length > 0 ? (
+                [...selectedRowForIssueDetail.callHistory]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((call, index) => {
+                    const formatDate = (date: string | Date) => {
+                      const d = new Date(date);
+                      return d.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    };
+
+                    return (
+                      <div
+                        key={`${call.ticketId}-${index}`}
+                        className="rounded-xl border bg-card p-3.5 shadow-sm"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+                          <Badge variant="outline" className="font-mono">
+                            Ticket #{call.ticketId}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(call.createdAt)}
+                          </span>
+                        </div>
+                        {call.note || call.issueDetail ? (
+                          <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">
+                            {call.note || call.issueDetail}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No note available</p>
+                        )}
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="rounded-xl border border-dashed bg-card/60 p-6 text-center text-sm text-muted-foreground">
+                  No Issue Detail available for this customer.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="border-t bg-card/60 px-5 py-3">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 sm:flex-none"
+                onClick={() => {
+                  if (selectedRowForIssueDetail) {
+                    const params = new URLSearchParams();
+                    if (selectedRowForIssueDetail.customerId) {
+                      params.set('customerId', selectedRowForIssueDetail.customerId.toString());
+                    }
+                    if (campaignId) {
+                      params.set('campaignId', campaignId.toString());
+                    }
+                    params.set('fromReport', 'campaign');
+                    params.set('reportStartDate', startDate);
+                    params.set('reportEndDate', endDate);
+                    
+                    const ticketsUrl = `/tickets?${params.toString()}`;
+                    router.push(ticketsUrl);
+                  }
+                }}
+              >
+                <History className="h-4 w-4 mr-2" />
+                View Tickets
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                className="flex-1 sm:flex-none"
+                onClick={() => setShowIssueDetailModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
