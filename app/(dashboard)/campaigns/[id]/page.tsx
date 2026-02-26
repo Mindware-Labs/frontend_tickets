@@ -9,7 +9,7 @@ if (typeof window !== 'undefined') {
   console.log('📦 Server-side: Campaign Report Page file loaded');
 }
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type React } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
@@ -42,6 +42,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReportMetric {
   title: string;
@@ -121,6 +130,8 @@ export default function CampaignReportPage() {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [reportData, setReportData] = useState<CampaignReportData | null>(null);
+  const [showIssueDetailModal, setShowIssueDetailModal] = useState(false);
+  const [selectedRowForIssueDetail, setSelectedRowForIssueDetail] = useState<ReportRow | null>(null);
 
   useEffect(() => {
     console.log('🔵 [Campaign Report] useEffect - Loading campaign:', id);
@@ -148,6 +159,37 @@ export default function CampaignReportPage() {
     };
     if (id) load();
   }, [id]);
+
+  useEffect(() => {
+    if (!reportData) {
+      setShowIssueDetailModal(false);
+      setSelectedRowForIssueDetail(null);
+    }
+  }, [reportData]);
+
+  // Prevenir navegación cuando el modal está abierto
+  useEffect(() => {
+    if (showIssueDetailModal) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        // No hacer nada, solo prevenir navegación
+      };
+      
+      const handlePopState = (e: PopStateEvent) => {
+        // Prevenir navegación cuando el modal está abierto
+        if (showIssueDetailModal) {
+          window.history.pushState(null, '', window.location.href);
+        }
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [showIssueDetailModal]);
 
   const handleGenerate = async () => {
     if (!startDate || !endDate) return;
@@ -416,18 +458,19 @@ export default function CampaignReportPage() {
                     <tr>
                       <th className="px-6 py-3 whitespace-nowrap">Customer</th>
                       <th className="px-6 py-3 whitespace-nowrap">Phone</th>
+                      <th className="px-6 py-3 whitespace-nowrap">Calls</th>
                       <th className="px-6 py-3 whitespace-nowrap">Status</th>
                       <th className="px-6 py-3 min-w-[200px]">Notes</th>
                       <th className="px-6 py-3 whitespace-nowrap">Date</th>
                       <th className="px-6 py-3 whitespace-nowrap">Agent</th>
-                      <th className="px-6 py-3 whitespace-nowrap">Actions</th>
+                      <th className="px-6 py-3 whitespace-nowrap sticky right-0 bg-muted/50 z-20">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {table.rows.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-6 py-8 text-center italic text-muted-foreground"
                         >
                           No records found for this category.
@@ -533,87 +576,12 @@ export default function CampaignReportPage() {
                         return (
                           <tr
                             key={idx}
-                            className="transition-colors [&:has([data-history-section]):hover]:bg-transparent hover:bg-muted/30 cursor-pointer"
-                            data-row-type="campaign-report"
-                            data-customer-id={row.customerId || ''}
-                            data-customer-name={row.name}
-                            data-customer-phone={row.phone}
-                            // IMPORTANTE: NO usar data-ticket-id para evitar redirecciones automáticas a tickets
-                            onClick={async (e) => {
-                              // IMPORTANTE: Prevenir cualquier redirección a tickets
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Prevenir cualquier comportamiento por defecto que pueda causar navegación
-                              e.nativeEvent.stopImmediatePropagation();
-                              
-                              // Verificar que el clic NO fue en elementos interactivos
-                              const target = e.target as HTMLElement;
-                              const isInteractive = target.closest('button') || 
-                                                   target.closest('details') || 
-                                                   target.closest('summary') || 
-                                                   target.closest('[data-history-section]') ||
-                                                   target.closest('a') ||
-                                                   target.closest('badge');
-                              
-                              if (isInteractive) {
-                                console.log('🛑 [Campaign Report] Click on interactive element, ignoring');
-                                return; // Dejar que los elementos interactivos manejen su propio clic
-                              }
-                              
-                              // Si el clic fue en la fila (no en elementos interactivos), redirigir a customer management
-                              console.log('🟢 [Campaign Report] Row clicked, navigating to customer management (NOT tickets)');
-                              await navigateToCustomerManagement(row);
-                            }}
-                            onMouseDown={(e) => {
-                              // Prevenir cualquier comportamiento por defecto en mousedown también
-                              const target = e.target as HTMLElement;
-                              const isInteractive = target.closest('button') || 
-                                                   target.closest('details') || 
-                                                   target.closest('summary') || 
-                                                   target.closest('[data-history-section]') ||
-                                                   target.closest('a') ||
-                                                   target.closest('badge');
-                              
-                              if (!isInteractive) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }
-                            }}
+                            className="transition-colors"
                           >
-                            <td 
-                              className="px-6 py-3 font-medium text-foreground"
-                              onClick={(e) => {
-                                // Permitir que el evento se propague al <tr> para que maneje la navegación
-                                // Solo detener si es un elemento interactivo
-                                const target = e.target as HTMLElement;
-                                const isInteractive = target.closest('details') || 
-                                                     target.closest('summary') || 
-                                                     target.closest('[data-history-section]') ||
-                                                     target.closest('button');
-                                if (isInteractive) {
-                                  e.stopPropagation();
-                                  return;
-                                }
-                              }}
-                            >
+                            <td className="px-6 py-3 font-medium text-foreground">
                               {row.name}
                             </td>
-                            <td 
-                              className="px-6 py-3 text-muted-foreground font-mono text-xs"
-                              onClick={(e) => {
-                                // Permitir que el evento se propague al <tr> para que maneje la navegación
-                                // Solo detener si es un elemento interactivo
-                                const target = e.target as HTMLElement;
-                                const isInteractive = target.closest('details') || 
-                                                     target.closest('summary') || 
-                                                     target.closest('[data-history-section]') ||
-                                                     target.closest('button');
-                                if (isInteractive) {
-                                  e.stopPropagation();
-                                  return;
-                                }
-                              }}
-                            >
+                            <td className="px-6 py-3 text-muted-foreground font-mono text-xs">
                               {row.phone}
                             </td>
                             <td 
@@ -846,25 +814,56 @@ export default function CampaignReportPage() {
                               {row.agentName}
                             </td>
                             <td 
-                              className="px-6 py-3"
+                              className="px-6 py-3 whitespace-nowrap sticky right-0 bg-card z-10"
                               onClick={(e) => e.stopPropagation()}
                               onMouseDown={(e) => e.stopPropagation()}
                             >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  
-                                  // Redirigir a customer management y abrir el modal del cliente
-                                  await navigateToCustomerManagement(row);
-                                }}
-                              >
-                                <History className="h-3 w-3 mr-1" />
-                                View history
-                              </Button>
+                              <div className="flex gap-2 flex-wrap">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs whitespace-nowrap"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    // Abrir modal de Issue Detail
+                                    setSelectedRowForIssueDetail(row);
+                                    setShowIssueDetailModal(true);
+                                  }}
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  Issue Details
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs whitespace-nowrap"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    
+                                    // Construir URL para tickets
+                                    const params = new URLSearchParams();
+                                    if (row.customerId) {
+                                      params.set('customerId', row.customerId.toString());
+                                    }
+                                    params.set('campaignId', id);
+                                    params.set('fromReport', 'campaign');
+                                    if (startDate) {
+                                      params.set('reportStartDate', startDate.toISOString().split('T')[0]);
+                                    }
+                                    if (endDate) {
+                                      params.set('reportEndDate', endDate.toISOString().split('T')[0]);
+                                    }
+                                    
+                                    const ticketsUrl = `/tickets?${params.toString()}`;
+                                    router.push(ticketsUrl);
+                                  }}
+                                >
+                                  <History className="h-3 w-3 mr-1" />
+                                  View Tickets
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -878,6 +877,82 @@ export default function CampaignReportPage() {
           })}
         </div>
       )}
+
+      {/* Issue Detail Modal */}
+      <Dialog open={showIssueDetailModal} onOpenChange={setShowIssueDetailModal}>
+        <DialogContent className="flex flex-col gap-0 w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:size-[min(520px,calc(100vh-2rem))] sm:max-w-none sm:max-h-none">
+          <DialogHeader className="border-b bg-card/60 px-5 py-4">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <FileText className="h-5 w-5 text-primary" />
+              Issue Detail
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {selectedRowForIssueDetail?.phone || selectedRowForIssueDetail?.name || "Customer"} -{" "}
+              {selectedRowForIssueDetail?.callHistory?.length || 0} detail
+              {selectedRowForIssueDetail?.callHistory?.length === 1 ? "" : "s"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="min-h-0 flex-1 bg-muted/10">
+            <div className="space-y-3 p-4">
+              {selectedRowForIssueDetail?.callHistory && selectedRowForIssueDetail.callHistory.length > 0 ? (
+                [...selectedRowForIssueDetail.callHistory]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((call, index) => {
+                    const formatDate = (date: string | Date) => {
+                      const d = new Date(date);
+                      return d.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    };
+
+                    return (
+                      <div
+                        key={`${call.ticketId}-${index}`}
+                        className="rounded-xl border bg-card p-3.5 shadow-sm"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+                          <Badge variant="outline" className="font-mono">
+                            Ticket #{call.ticketId}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(call.createdAt)}
+                          </span>
+                        </div>
+                        {call.note || call.issueDetail ? (
+                          <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">
+                            {call.note || call.issueDetail}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No note available</p>
+                        )}
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="rounded-xl border border-dashed bg-card/60 p-6 text-center text-sm text-muted-foreground">
+                  No Issue Detail available for this customer.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="border-t bg-card/60 px-5 py-3">
+            <Button
+              type="button"
+              variant="default"
+              className="w-full sm:w-auto"
+              onClick={() => setShowIssueDetailModal(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
