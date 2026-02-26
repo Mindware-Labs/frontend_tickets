@@ -163,6 +163,18 @@ export function CreateTicketModal({
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
+  const normalizePhoneForSearch = (value?: string | null) => {
+    if (!value) return "";
+    return value.replace(/\D/g, "");
+  };
+
+  const stripUsCountryCode = (digits: string) => {
+    if (digits.length > 10 && digits.startsWith("1")) {
+      return digits.slice(1);
+    }
+    return digits;
+  };
+
   // --- LOGIC (MEMOS) ---
   // Filtrado de customers
   const filteredCustomers = useMemo(() => {
@@ -170,11 +182,32 @@ export function CreateTicketModal({
       return customers; // Mostrar TODOS los customers
     }
     const searchLower = localCustomerSearch.toLowerCase();
+    const searchPhoneDigits = normalizePhoneForSearch(localCustomerSearch);
+    const searchPhoneDigitsWithoutCountryCode =
+      stripUsCountryCode(searchPhoneDigits);
     return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(searchLower) ||
-        c.phone?.toLowerCase().includes(searchLower) ||
-        c.id.toString().includes(searchLower),
+      (c) => {
+        const customerPhone = c.phone ?? "";
+        const customerPhoneDigits = normalizePhoneForSearch(customerPhone);
+        const customerPhoneDigitsWithoutCountryCode =
+          stripUsCountryCode(customerPhoneDigits);
+
+        const matchesPhoneNormalized =
+          !!searchPhoneDigits &&
+          (customerPhoneDigits.includes(searchPhoneDigits) ||
+            customerPhoneDigitsWithoutCountryCode.includes(searchPhoneDigits) ||
+            customerPhoneDigits.includes(searchPhoneDigitsWithoutCountryCode) ||
+            customerPhoneDigitsWithoutCountryCode.includes(
+              searchPhoneDigitsWithoutCountryCode,
+            ));
+
+        return (
+          c.name.toLowerCase().includes(searchLower) ||
+          customerPhone.toLowerCase().includes(searchLower) ||
+          c.id.toString().includes(searchLower) ||
+          matchesPhoneNormalized
+        );
+      },
     );
   }, [customers, localCustomerSearch]);
 
