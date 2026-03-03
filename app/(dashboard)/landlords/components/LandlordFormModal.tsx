@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -57,6 +57,13 @@ export function LandlordFormModal({
 }: LandlordFormModalProps) {
   const [yardSearch, setYardSearch] = useState("");
 
+  // Reset search when modal opens
+  useEffect(() => {
+    if (open) {
+      setYardSearch("");
+    }
+  }, [open]);
+
   const formatPhoneNumber = (value: string) => {
     // Si ya tiene el formato correcto, dejarlo así
     if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
@@ -83,9 +90,13 @@ export function LandlordFormModal({
   const filteredYards = useMemo(() => {
     const term = yardSearch.trim().toLowerCase();
     if (!term) return yards;
+    if (!yards || yards.length === 0) return [];
     return yards.filter((yard) => {
-      const label = yard.name || "";
-      return label.toLowerCase().includes(term);
+      if (!yard) return false;
+      const name = (yard.name || "").toLowerCase();
+      const commonName = (yard.commonName || "").toLowerCase();
+      const id = yard.id ? yard.id.toString().toLowerCase() : "";
+      return name.includes(term) || commonName.includes(term) || id.includes(term);
     });
   }, [yards, yardSearch]);
 
@@ -243,7 +254,9 @@ export function LandlordFormModal({
                     <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
                       <Building className="h-8 w-8 opacity-20" />
                       <p className="text-xs">
-                        No yards found matching "{yardSearch}"
+                        {yardSearch.trim() 
+                          ? `No yards found matching "${yardSearch}"`
+                          : "No yards available"}
                       </p>
                     </div>
                   ) : (
