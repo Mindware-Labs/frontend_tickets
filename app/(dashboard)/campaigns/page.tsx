@@ -130,7 +130,7 @@ export default function CampaignsPage() {
 
   const fetchYards = async () => {
     try {
-      const data = await fetchFromBackend("/yards");
+      const data = await fetchFromBackend("/yards?page=1&limit=10000");
       const items = Array.isArray(data) ? data : data?.data || [];
       setYards(items);
     } catch (error: any) {
