@@ -79,6 +79,11 @@ const campaignTypeLabels: Record<ManagementType, string> = {
   [ManagementType.OTHER]: "Other",
 };
 
+/** Solo dígitos del teléfono para buscar con o sin formato (+1, guiones, espacios). */
+function normalizePhone(phone: string): string {
+  return (phone || "").replace(/\D/g, "");
+}
+
 export default function CampaignsPage() {
   const { role } = useRole();
   const normalizedRole = role?.toString().toLowerCase();
@@ -257,13 +262,18 @@ export default function CampaignsPage() {
 
   const filteredTickets = useMemo(() => {
     const term = ticketSearch.toLowerCase();
+    const termDigits = normalizePhone(ticketSearch);
     return campaignTickets.filter((ticket) => {
       const name = ticket.customer?.name?.toLowerCase() || "";
       const phone = (ticket.customerPhone || "").toLowerCase();
+      const phoneDigits = normalizePhone(ticket.customerPhone || "");
       const id = `#${ticket.id}`;
+      const matchesPhoneFormatted = phone.includes(term);
+      const matchesPhoneDigits = termDigits.length > 0 && phoneDigits.includes(termDigits);
       return (
         name.includes(term) ||
-        phone.includes(term) ||
+        matchesPhoneFormatted ||
+        matchesPhoneDigits ||
         id.toLowerCase().includes(term)
       );
     });
