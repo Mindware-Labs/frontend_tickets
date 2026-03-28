@@ -57,6 +57,7 @@ import {
   Download,
   ChevronsUpDown,
   Check,
+  StickyNote,
 } from "lucide-react";
 import {
   AgentOption,
@@ -191,6 +192,23 @@ export function EditTicketModal({
             Update the ticket information below
           </DialogDescription>
         </DialogHeader>
+
+        {/* Customer Note Banner */}
+        {ticket.customer?.note && (
+          <div className="flex items-start gap-3 px-6 py-3 border-b border-amber-400/40 bg-amber-400/10">
+            <StickyNote className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+            <div className="space-y-0.5 min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Customer Note
+              </p>
+              <div className="max-h-[140px] overflow-y-auto">
+                <p className="text-sm text-amber-700 dark:text-amber-300 break-words break-all whitespace-pre-wrap">
+                  {ticket.customer.note}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SCROLLABLE BODY */}
         <ScrollArea className="flex-1 overflow-y-auto">

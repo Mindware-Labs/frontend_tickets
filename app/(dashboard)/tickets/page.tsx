@@ -113,7 +113,7 @@ declare module "@/lib/mock-data" {
     yardType?: string;
     campaignId?: number;
     customerId?: number | string;
-    customer?: { name: string; phone?: string; email?: string; id?: number };
+    customer?: { name: string; phone?: string; email?: string; id?: number; note?: string };
     customerPhone?: string;
     disposition?: string;
     campaignOption?: string;
@@ -122,6 +122,7 @@ declare module "@/lib/mock-data" {
     updatedAt?: string;
     callDate?: string;
     agentId?: number | string;
+    phoneLine?: { id: number; label: string | null; phoneNumber: string } | null;
   }
 }
 
@@ -146,6 +147,9 @@ export default function TicketsPage() {
   const [yardFilterSearch, setYardFilterSearch] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [agentFilterSearch, setAgentFilterSearch] = useState("");
+  const [phoneLineFilter, setPhoneLineFilter] = useState("all");
+  const [phoneLineFilterSearch, setPhoneLineFilterSearch] = useState("");
+  const [phoneLines, setPhoneLines] = useState<{ id: number; label: string | null; phoneNumber: string }[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -535,6 +539,7 @@ export default function TicketsPage() {
     if (campaignFilter !== "all") params.set("campaignId", campaignFilter);
     if (yardFilter !== "all") params.set("yardId", yardFilter);
     if (agentFilter !== "all") params.set("agentId", agentFilter);
+    if (phoneLineFilter !== "all") params.set("phoneLineId", phoneLineFilter);
     if (currentCustomerIdParam) params.set("customerId", currentCustomerIdParam);
     if (currentAgent?.id) {
       params.set("assignedMeAgentId", currentAgent.id.toString());
@@ -558,6 +563,7 @@ export default function TicketsPage() {
     campaignFilter,
     yardFilter,
     agentFilter,
+    phoneLineFilter,
     currentAgent?.id,
     dateRange?.from?.getTime(),
     dateRange?.to?.getTime(),
@@ -700,6 +706,16 @@ export default function TicketsPage() {
     }
   };
 
+  const fetchPhoneLines = async () => {
+    try {
+      const data = await fetchFromBackend("/phone-lines");
+      setPhoneLines(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load phone lines", err);
+      setPhoneLines([]);
+    }
+  };
+
   // Detectar si el tab está activo para optimizar polling
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -759,6 +775,7 @@ export default function TicketsPage() {
       fetchCustomers();
       fetchAgents();
       fetchCampaigns();
+      fetchPhoneLines();
     } else if (process.env.NODE_ENV === "development") {
       console.warn("[tickets/page] Skipping data fetch - user or token not available", {
         hasUser: !!user,
@@ -1154,6 +1171,15 @@ export default function TicketsPage() {
         (a.email || "").toLowerCase().includes(term),
     );
   }, [agents, agentFilterSearch]);
+
+  const filteredPhoneLineFilterOptions = useMemo(() => {
+    const term = phoneLineFilterSearch.toLowerCase();
+    return phoneLines.filter(
+      (l) =>
+        (l.label || "").toLowerCase().includes(term) ||
+        l.phoneNumber.includes(term),
+    );
+  }, [phoneLines, phoneLineFilterSearch]);
 
   // Función auxiliar para calcular tickets filtrados por vista
   const getFilteredCountForView = useMemo(() => {
@@ -2921,6 +2947,32 @@ export default function TicketsPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Line</Label>
+            <Select value={phoneLineFilter} onValueChange={setPhoneLineFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Lines" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    placeholder="Search line..."
+                    value={phoneLineFilterSearch}
+                    onChange={(e) => setPhoneLineFilterSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </div>
+                <SelectItem value="all">All Lines</SelectItem>
+                {filteredPhoneLineFilterOptions.map((l) => (
+                  <SelectItem key={l.id} value={l.id.toString()}>
+                    {l.label || l.phoneNumber}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -3003,12 +3055,13 @@ export default function TicketsPage() {
                   <TableHead className="w-[100px]">Priority</TableHead>
                   <TableHead className="w-[120px]">Created</TableHead>
                   <TableHead className="w-[100px]">Direction</TableHead>
+                  <TableHead className="w-[160px]">Line</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center">
+                    <TableCell colSpan={11} className="h-24 text-center">
                       <div className="flex items-center justify-center">
                         <Loader2 className="h-6 w-6 animate-spin mr-2" />
                         Loading tickets...
@@ -3018,7 +3071,7 @@ export default function TicketsPage() {
                 ) : filteredTickets.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={10}
+                      colSpan={11}
                       className="h-24 text-center text-muted-foreground"
                     >
                       No tickets found.
@@ -3153,6 +3206,15 @@ export default function TicketsPage() {
                               )}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {ticket.phoneLine?.label ? (
+                            <Badge variant="outline" className="text-xs font-normal max-w-[150px] truncate">
+                              {ticket.phoneLine.label}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );

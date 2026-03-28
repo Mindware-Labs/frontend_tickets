@@ -31,6 +31,7 @@ import {
   Headphones,
   Activity,
   Building,
+  Phone,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
@@ -498,6 +499,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     )}
                     <Users className={`${getIconColor()} stroke-2`} />
                     <span className={getTextColor()}>User Management</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {normalizedRole !== "agent" && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Phone Lines"
+                  isActive={pathname.startsWith("/phone-lines")}
+                  className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
+                >
+                  <a href="/phone-lines">
+                    {pathname.startsWith("/phone-lines") && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+                    )}
+                    <Phone className={`${getIconColor()} stroke-2`} />
+                    <span className={getTextColor()}>Phone Lines</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

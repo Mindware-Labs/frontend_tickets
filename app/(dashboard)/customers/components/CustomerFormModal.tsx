@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CampaignOption, CustomerFormData } from "../types";
 
@@ -122,6 +123,24 @@ export function CustomerFormModal({
                 <p className="text-xs text-red-500">{validationErrors.phone}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`${idPrefix}-note`}>
+              Note{" "}
+              <span className="text-muted-foreground font-normal text-xs">
+                (shown as alert on every ticket)
+              </span>
+            </Label>
+            <Textarea
+              id={`${idPrefix}-note`}
+              placeholder="e.g. Payment method not registered"
+              value={formData.note}
+              rows={3}
+              onChange={(e) =>
+                onFormChange({ ...formData, note: e.target.value })
+              }
+            />
           </div>
 
           <div className="space-y-2">

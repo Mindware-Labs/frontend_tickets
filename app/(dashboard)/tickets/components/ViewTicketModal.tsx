@@ -30,6 +30,7 @@ import {
   Clock,
   PhoneIncoming,
   PhoneOutgoing,
+  StickyNote,
 } from "lucide-react";
 import { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,11 @@ interface ViewTicketModalProps {
   getPriorityColor: HelperFn<(priority?: string) => string>;
   getDirectionIcon: HelperFn<(direction: string) => JSX.Element>;
   getDirectionText: HelperFn<
-    (direction: string, originalDirection?: string, agentId?: number | string) => string
+    (
+      direction: string,
+      originalDirection?: string,
+      agentId?: number | string,
+    ) => string
   >;
   getCampaign: HelperFn<(ticket: Ticket) => string | null>;
   getAttachmentUrl: HelperFn<(value: string) => string>;
@@ -117,23 +122,25 @@ export function ViewTicketModal({
         setTimeout(() => {
           // Try to find the Radix ScrollArea viewport
           if (scrollAreaRef.current) {
-            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+            const viewport = scrollAreaRef.current.querySelector(
+              "[data-radix-scroll-area-viewport]",
+            ) as HTMLElement;
             if (viewport) {
               viewport.scrollTo({
                 top: viewport.scrollHeight,
-                behavior: 'smooth'
+                behavior: "smooth",
               });
               return;
             }
           }
-          
+
           // Fallback: try scrolling the content div directly
           if (contentRef.current) {
             const parent = contentRef.current.parentElement;
             if (parent) {
               parent.scrollTo({
                 top: parent.scrollHeight,
-                behavior: 'smooth'
+                behavior: "smooth",
               });
             }
           }
@@ -179,7 +186,7 @@ export function ViewTicketModal({
               variant="secondary"
               className={cn(
                 "w-fit px-3 py-1 text-xs font-semibold uppercase shadow-none border-0 self-start sm:self-center mr-2", // Añadido mr-2
-                getStatusBadgeColor(ticket.status || "")
+                getStatusBadgeColor(ticket.status || ""),
               )}
             >
               {formatEnumLabel(ticket.status as any)}
@@ -190,6 +197,23 @@ export function ViewTicketModal({
         {/* Scrollable Content */}
         <ScrollArea className="max-h-[70vh]" ref={scrollAreaRef}>
           <div className="p-6 space-y-8" ref={contentRef}>
+            {/* Customer Note Alert */}
+            {ticket.customer?.note && (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-3">
+                <StickyNote className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    Customer Note
+                  </p>
+                  <div className="max-h-[140px] overflow-y-auto">
+                    <p className="text-sm text-amber-700 dark:text-amber-300 break-words break-all whitespace-pre-wrap">
+                      {ticket.customer.note}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Main Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column: Customer & Location */}
@@ -253,7 +277,7 @@ export function ViewTicketModal({
                             variant="outline"
                             className={cn(
                               "mt-1",
-                              getPriorityColor(ticket.priority as any)
+                              getPriorityColor(ticket.priority as any),
                             )}
                           >
                             {formatEnumLabel(ticket.priority as any)}
@@ -270,7 +294,7 @@ export function ViewTicketModal({
                               {getDirectionText(
                                 ticket.direction || "inbound",
                                 (ticket as any).originalDirection,
-                                ticket.agentId
+                                ticket.agentId,
                               )}
                             </span>
                           </div>
@@ -295,28 +319,28 @@ export function ViewTicketModal({
 
                     {(ticket.campaignOption ||
                       (ticket as any).onboardingOption) && (
-                        <>
-                          <Separator className="opacity-50" />
-                          <DetailRow
-                            icon={Tag}
-                            label="Campaign Option"
-                            value={
-                              <span
-                                className="truncate block max-w-[150px]"
-                                title={formatEnumLabel(
-                                  (ticket.campaignOption ||
-                                    (ticket as any).onboardingOption) as any
-                                )}
-                              >
-                                {formatEnumLabel(
-                                  (ticket.campaignOption ||
-                                    (ticket as any).onboardingOption) as any
-                                )}
-                              </span>
-                            }
-                          />
-                        </>
-                      )}
+                      <>
+                        <Separator className="opacity-50" />
+                        <DetailRow
+                          icon={Tag}
+                          label="Campaign Option"
+                          value={
+                            <span
+                              className="truncate block max-w-[150px]"
+                              title={formatEnumLabel(
+                                (ticket.campaignOption ||
+                                  (ticket as any).onboardingOption) as any,
+                              )}
+                            >
+                              {formatEnumLabel(
+                                (ticket.campaignOption ||
+                                  (ticket as any).onboardingOption) as any,
+                              )}
+                            </span>
+                          }
+                        />
+                      </>
+                    )}
 
                     <Separator className="opacity-50" />
 
@@ -331,7 +355,9 @@ export function ViewTicketModal({
                           >
                             {formatEnumLabel(ticket.disposition as any)}
                           </span>
-                        ) : "-"
+                        ) : (
+                          "-"
+                        )
                       }
                     />
                   </div>
@@ -386,87 +412,115 @@ export function ViewTicketModal({
               )}
 
               {/* Call History - Ledger Style */}
-              {(ticket as any).callHistory && (ticket as any).callHistory.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <History className="h-4 w-4" /> Historial de Actualizaciones
-                  </h4>
-                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                    <ScrollArea className="max-h-[400px]">
-                      <div className="divide-y divide-border/50">
-                        {((ticket as any).callHistory || []).slice().reverse().map((call: any, idx: number) => {
-                          const directionText = call.isMissed 
-                            ? `Missed (${call.originalDirection || call.direction})`
-                            : call.direction;
-                          const directionColor = call.isMissed 
-                            ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
-                            : call.direction === 'INBOUND'
-                            ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
-                            : 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20';
-                          
-                          const DirectionIcon = call.direction === 'INBOUND' ? PhoneIncoming : PhoneOutgoing;
-                          
-                          return (
-                            <div key={idx} className="p-4 hover:bg-muted/30 transition-colors">
-                              <div className="flex items-start gap-3">
-                                <div className="mt-0.5 p-1.5 bg-muted rounded-md text-muted-foreground shrink-0">
-                                  <Clock className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-2">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-semibold text-foreground">
-                                      {new Date(call.createdAt).toLocaleString('es-ES', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric'
-                                      })}
-                                    </span>
-                                    <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${directionColor}`}>
-                                      <DirectionIcon className="h-2.5 w-2.5 mr-1" />
-                                      {directionText}
-                                    </Badge>
-                                    {call.agentName && (
-                                      <span className="text-xs text-muted-foreground">
-                                        • {call.agentName}
-                                      </span>
-                                    )}
-                                    {call.duration !== undefined && call.duration !== null && (
-                                      <span className="text-xs text-muted-foreground">
-                                        • {Math.floor(call.duration / 60)}m {call.duration % 60}s
-                                      </span>
-                                    )}
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                                      {formatEnumLabel(call.status)}
-                                    </Badge>
-                                  </div>
-                                  
-                                  {(call.issueDetail || call.campaignOption) && (
-                                    <div className="space-y-1 pl-2 border-l-2 border-muted">
-                                      {call.campaignOption && (
-                                        <div className="text-xs">
-                                          <span className="font-medium text-muted-foreground">Campaign Option: </span>
-                                          <span className="text-foreground">{formatEnumLabel(call.campaignOption)}</span>
-                                        </div>
-                                      )}
-                                      {call.issueDetail && (
-                                        <div className="text-xs text-foreground whitespace-pre-wrap">
-                                          {call.issueDetail}
+              {(ticket as any).callHistory &&
+                (ticket as any).callHistory.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <History className="h-4 w-4" /> Historial de
+                      Actualizaciones
+                    </h4>
+                    <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+                      <ScrollArea className="max-h-[400px]">
+                        <div className="divide-y divide-border/50">
+                          {((ticket as any).callHistory || [])
+                            .slice()
+                            .reverse()
+                            .map((call: any, idx: number) => {
+                              const directionText = call.isMissed
+                                ? `Missed (${call.originalDirection || call.direction})`
+                                : call.direction;
+                              const directionColor = call.isMissed
+                                ? "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20"
+                                : call.direction === "INBOUND"
+                                  ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                                  : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
+
+                              const DirectionIcon =
+                                call.direction === "INBOUND"
+                                  ? PhoneIncoming
+                                  : PhoneOutgoing;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className="p-4 hover:bg-muted/30 transition-colors"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 p-1.5 bg-muted rounded-md text-muted-foreground shrink-0">
+                                      <Clock className="h-3.5 w-3.5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-xs font-semibold text-foreground">
+                                          {new Date(
+                                            call.createdAt,
+                                          ).toLocaleString("es-ES", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                          })}
+                                        </span>
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-[9px] px-1.5 py-0 ${directionColor}`}
+                                        >
+                                          <DirectionIcon className="h-2.5 w-2.5 mr-1" />
+                                          {directionText}
+                                        </Badge>
+                                        {call.agentName && (
+                                          <span className="text-xs text-muted-foreground">
+                                            • {call.agentName}
+                                          </span>
+                                        )}
+                                        {call.duration !== undefined &&
+                                          call.duration !== null && (
+                                            <span className="text-xs text-muted-foreground">
+                                              • {Math.floor(call.duration / 60)}
+                                              m {call.duration % 60}s
+                                            </span>
+                                          )}
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[9px] px-1.5 py-0"
+                                        >
+                                          {formatEnumLabel(call.status)}
+                                        </Badge>
+                                      </div>
+
+                                      {(call.issueDetail ||
+                                        call.campaignOption) && (
+                                        <div className="space-y-1 pl-2 border-l-2 border-muted">
+                                          {call.campaignOption && (
+                                            <div className="text-xs">
+                                              <span className="font-medium text-muted-foreground">
+                                                Campaign Option:{" "}
+                                              </span>
+                                              <span className="text-foreground">
+                                                {formatEnumLabel(
+                                                  call.campaignOption,
+                                                )}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {call.issueDetail && (
+                                            <div className="text-xs text-foreground whitespace-pre-wrap">
+                                              {call.issueDetail}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
+                              );
+                            })}
+                        </div>
+                      </ScrollArea>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         </ScrollArea>

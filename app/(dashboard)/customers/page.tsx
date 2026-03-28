@@ -17,6 +17,7 @@ import { CustomerDetailsModal } from "./components/CustomerDetailsModal";
 const DEFAULT_FORM: CustomerFormData = {
   name: "",
   phone: "",
+  note: "",
   campaignIds: [],
 };
 
@@ -170,6 +171,7 @@ export default function CustomersPage() {
     setFormData({
       name: customer.name || "",
       phone: customer.phone || "",
+      note: customer.note || "",
       campaignIds:
         customer.campaigns?.map((campaign) => campaign.id.toString()) || [],
     });
@@ -212,6 +214,7 @@ export default function CustomersPage() {
   const buildPayload = (data: CustomerFormData) => ({
     name: data.name.trim(),
     phone: data.phone.trim(),
+    note: data.note.trim() || undefined,
     campaignIds: data.campaignIds.map((id) => Number(id)),
   });
 
