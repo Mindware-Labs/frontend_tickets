@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         "campaignId",
         "yardId",
         "agentId",
+        "phoneLineId",
         "customerId",
         "view",
         "assignedMeAgentId",
@@ -64,19 +65,18 @@ export async function GET(request: NextRequest) {
     // Primera petición para obtener el total
     const firstPageData = await fetchFromBackendServer(
       request,
-      `/tickets?page=1&limit=${pageSize}`
+      `/tickets?page=1&limit=${pageSize}`,
     );
 
     const firstPageTickets = firstPageData?.data || firstPageData || [];
     const total = firstPageData?.total || firstPageTickets.length;
-    
-    // Calcular cuántas páginas necesitamos
-    const totalPages = Math.min(
-      Math.ceil(total / pageSize),
-      maxPages
-    );
 
-    console.log(`[NextAPI] Total tickets: ${total}, Total pages: ${totalPages}`);
+    // Calcular cuántas páginas necesitamos
+    const totalPages = Math.min(Math.ceil(total / pageSize), maxPages);
+
+    console.log(
+      `[NextAPI] Total tickets: ${total}, Total pages: ${totalPages}`,
+    );
 
     // Si solo hay una página, retornar inmediatamente
     if (totalPages <= 1) {
@@ -92,16 +92,23 @@ export async function GET(request: NextRequest) {
     const remainingPages = totalPages - 1;
 
     // Procesar páginas en lotes para no sobrecargar
-    for (let startPage = 2; startPage <= totalPages; startPage += maxConcurrentRequests) {
-      const endPage = Math.min(startPage + maxConcurrentRequests - 1, totalPages);
+    for (
+      let startPage = 2;
+      startPage <= totalPages;
+      startPage += maxConcurrentRequests
+    ) {
+      const endPage = Math.min(
+        startPage + maxConcurrentRequests - 1,
+        totalPages,
+      );
       const pagePromises = [];
 
       for (let page = startPage; page <= endPage; page++) {
         pagePromises.push(
           fetchFromBackendServer(
             request,
-            `/tickets?page=${page}&limit=${pageSize}&includeTotal=false`
-          )
+            `/tickets?page=${page}&limit=${pageSize}&includeTotal=false`,
+          ),
         );
       }
 
@@ -114,7 +121,9 @@ export async function GET(request: NextRequest) {
         allTickets.push(...pageTickets);
       }
 
-      console.log(`[NextAPI] Fetched pages ${startPage}-${endPage}/${totalPages}`);
+      console.log(
+        `[NextAPI] Fetched pages ${startPage}-${endPage}/${totalPages}`,
+      );
     }
 
     const count = total || allTickets.length;
@@ -139,7 +148,7 @@ export async function GET(request: NextRequest) {
         success: false,
         message: error.message || "Failed to fetch tickets",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -170,7 +179,7 @@ export async function POST(request: NextRequest) {
         success: false,
         message: error.message || "Failed to create ticket",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

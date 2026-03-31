@@ -13,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Hash,
   User,
   Phone,
@@ -31,6 +36,7 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   StickyNote,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -197,21 +203,82 @@ export function ViewTicketModal({
         {/* Scrollable Content */}
         <ScrollArea className="max-h-[70vh]" ref={scrollAreaRef}>
           <div className="p-6 space-y-8" ref={contentRef}>
-            {/* Customer Note Alert */}
-            {ticket.customer?.note && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-3">
-                <StickyNote className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                <div className="space-y-0.5 min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                    Customer Note
-                  </p>
-                  <div className="max-h-[140px] overflow-y-auto">
-                    <p className="text-sm text-amber-700 dark:text-amber-300 break-words break-all whitespace-pre-wrap">
-                      {ticket.customer.note}
-                    </p>
+            {/* Customer Notes Popover */}
+            {((ticket.customer?.notes && ticket.customer.notes.length > 0) ||
+              ticket.customer?.note) && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="w-full flex items-center gap-3 p-3.5 rounded-lg border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/15 transition-colors cursor-pointer text-left shadow-sm">
+                    <div className="h-9 w-9 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
+                      <StickyNote className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        Customer Notes
+                      </p>
+                      <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">
+                        {ticket.customer?.notes &&
+                        ticket.customer.notes.length > 0
+                          ? `${ticket.customer.notes.length} note${ticket.customer.notes.length !== 1 ? "s" : ""}`
+                          : "1 note"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] font-mono bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                    >
+                      {ticket.customer?.notes &&
+                      ticket.customer.notes.length > 0
+                        ? ticket.customer.notes.length
+                        : 1}
+                    </Badge>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 p-0">
+                  <div className="px-4 py-3 border-b border-border/50">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <StickyNote className="h-4 w-4 text-amber-500" />
+                      Notes
+                    </h4>
                   </div>
-                </div>
-              </div>
+                  <div className="max-h-[280px] overflow-y-auto p-2 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/50">
+                    {ticket.customer?.notes &&
+                    ticket.customer.notes.length > 0 ? (
+                      ticket.customer.notes.map((n: any) => (
+                        <div
+                          key={n.id}
+                          className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm"
+                        >
+                          <p className="text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                            {n.content}
+                          </p>
+                          {n.createdAt && (
+                            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              <CalendarIcon className="h-3 w-3 opacity-70" />
+                              {new Date(n.createdAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm">
+                        <p className="text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                          {ticket.customer!.note}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             {/* Main Info Grid */}

@@ -13,6 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Phone,
   User,
   Calendar,
@@ -31,6 +36,7 @@ import {
   HelpCircle,
   ExternalLink,
   List,
+  StickyNote,
 } from "lucide-react";
 import type { Customer } from "../types";
 import { cn } from "@/lib/utils";
@@ -243,6 +249,65 @@ export function CustomerDetailsModal({
                   </div>
                 </div>
 
+                {/* Notes Popover */}
+                {customer.notes && customer.notes.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="w-full flex items-center gap-3 p-3.5 rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer text-left shadow-sm">
+                        <div className="h-9 w-9 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
+                          <StickyNote className="h-4 w-4 text-amber-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">Notes</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {customer.notes.length} note
+                            {customer.notes.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] font-mono"
+                        >
+                          {customer.notes.length}
+                        </Badge>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-80 p-0">
+                      <div className="px-4 py-3 border-b border-border/50">
+                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                          <StickyNote className="h-4 w-4 text-amber-500" />
+                          Notes
+                        </h4>
+                      </div>
+                      <div className="max-h-[280px] overflow-y-auto p-2 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/50">
+                        {customer.notes.map((note) => (
+                          <div
+                            key={note.id}
+                            className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm"
+                          >
+                            <p className="text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                              {note.content}
+                            </p>
+                            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              <Calendar className="h-3 w-3 opacity-70" />
+                              {new Date(note.createdAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+
                 {/* Campaigns Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -327,10 +392,7 @@ export function CustomerDetailsModal({
                           const hasHistory = callHistory.length > 0;
 
                           return (
-                            <div
-                              key={ticket.id}
-                              className="group"
-                            >
+                            <div key={ticket.id} className="group">
                               <div
                                 className="p-4 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors cursor-pointer"
                                 onClick={() => {
@@ -352,7 +414,7 @@ export function CustomerDetailsModal({
                                         <Calendar className="h-3 w-3" />
                                         {ticket.createdAt
                                           ? new Date(
-                                              ticket.createdAt
+                                              ticket.createdAt,
                                             ).toLocaleDateString()
                                           : "No date"}
                                       </span>
@@ -375,7 +437,10 @@ export function CustomerDetailsModal({
                                             •
                                           </span>
                                           <span className="text-blue-600 dark:text-blue-400">
-                                            {callHistory.length} llamada{callHistory.length !== 1 ? 's' : ''}
+                                            {callHistory.length} llamada
+                                            {callHistory.length !== 1
+                                              ? "s"
+                                              : ""}
                                           </span>
                                         </>
                                       )}
@@ -387,71 +452,91 @@ export function CustomerDetailsModal({
                                   variant="outline"
                                   className={cn(
                                     "flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] uppercase tracking-wider font-bold shadow-none shrink-0 transition-colors",
-                                    statusConfig.color
+                                    statusConfig.color,
                                   )}
                                 >
                                   <StatusIcon className="h-3 w-3" />
                                   {(statusConfig.label || "Unknown").replace(
                                     /_/g,
-                                    " "
+                                    " ",
                                   )}
                                 </Badge>
                               </div>
-                              
+
                               {/* Call History */}
                               {hasHistory && (
                                 <div className="px-4 pb-4 border-t border-border/50 bg-muted/5">
                                   <details className="mt-2">
                                     <summary className="cursor-pointer text-xs text-blue-600 dark:text-blue-400 hover:underline select-none flex items-center gap-1 py-1">
-                                      <svg 
-                                        className="w-3 h-3 transition-transform group-open:rotate-90" 
-                                        fill="none" 
-                                        stroke="currentColor" 
+                                      <svg
+                                        className="w-3 h-3 transition-transform group-open:rotate-90"
+                                        fill="none"
+                                        stroke="currentColor"
                                         viewBox="0 0 24 24"
                                       >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 5l7 7-7 7"
+                                        />
                                       </svg>
-                                      Ver historial de llamadas ({callHistory.length})
+                                      Ver historial de llamadas (
+                                      {callHistory.length})
                                     </summary>
                                     <div className="mt-2 space-y-2 pl-4 border-l-2 border-muted max-h-40 overflow-y-auto">
-                                      {callHistory.slice().reverse().map((call, idx) => {
-                                        const directionText = call.isMissed 
-                                          ? `Missed (${call.originalDirection || call.direction})`
-                                          : call.direction;
-                                        const directionColor = call.isMissed 
-                                          ? 'text-red-600 dark:text-red-400'
-                                          : call.direction === 'INBOUND'
-                                          ? 'text-green-600 dark:text-green-400'
-                                          : 'text-blue-600 dark:text-blue-400';
-                                        
-                                        return (
-                                          <div key={idx} className="text-[10px] space-y-1 py-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-semibold">
-                                                {new Date(call.createdAt).toLocaleString()}
-                                              </span>
-                                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${directionColor}`}>
-                                                {directionText}
-                                              </Badge>
-                                              {call.agentName && (
-                                                <span className="text-muted-foreground">
-                                                  {call.agentName}
+                                      {callHistory
+                                        .slice()
+                                        .reverse()
+                                        .map((call, idx) => {
+                                          const directionText = call.isMissed
+                                            ? `Missed (${call.originalDirection || call.direction})`
+                                            : call.direction;
+                                          const directionColor = call.isMissed
+                                            ? "text-red-600 dark:text-red-400"
+                                            : call.direction === "INBOUND"
+                                              ? "text-green-600 dark:text-green-400"
+                                              : "text-blue-600 dark:text-blue-400";
+
+                                          return (
+                                            <div
+                                              key={idx}
+                                              className="text-[10px] space-y-1 py-1"
+                                            >
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-semibold">
+                                                  {new Date(
+                                                    call.createdAt,
+                                                  ).toLocaleString()}
                                                 </span>
-                                              )}
-                                              {call.duration && (
-                                                <span className="text-muted-foreground">
-                                                  {Math.floor(call.duration / 60)}m {call.duration % 60}s
-                                                </span>
+                                                <Badge
+                                                  variant="outline"
+                                                  className={`text-[9px] px-1 py-0 ${directionColor}`}
+                                                >
+                                                  {directionText}
+                                                </Badge>
+                                                {call.agentName && (
+                                                  <span className="text-muted-foreground">
+                                                    {call.agentName}
+                                                  </span>
+                                                )}
+                                                {call.duration && (
+                                                  <span className="text-muted-foreground">
+                                                    {Math.floor(
+                                                      call.duration / 60,
+                                                    )}
+                                                    m {call.duration % 60}s
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {call.issueDetail && (
+                                                <div className="text-muted-foreground italic">
+                                                  {call.issueDetail}
+                                                </div>
                                               )}
                                             </div>
-                                            {call.issueDetail && (
-                                              <div className="text-muted-foreground italic">
-                                                {call.issueDetail}
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+                                          );
+                                        })}
                                     </div>
                                   </details>
                                 </div>

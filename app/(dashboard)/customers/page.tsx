@@ -18,6 +18,7 @@ const DEFAULT_FORM: CustomerFormData = {
   name: "",
   phone: "",
   note: "",
+  pendingNotes: [],
   campaignIds: [],
 };
 
@@ -36,7 +37,7 @@ export default function CustomersPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
+    null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,14 +97,17 @@ export default function CustomersPage() {
     const customerIdParam = searchParams.get("customerId");
     if (customerIdParam && customers.length > 0 && !showDetailsModal) {
       const customer = customers.find(
-        (c) => c.id.toString() === customerIdParam
+        (c) => c.id.toString() === customerIdParam,
       );
       if (customer) {
-        console.log('🔍 [Customers Page] Opening modal automatically for customer:', customerIdParam);
+        console.log(
+          "🔍 [Customers Page] Opening modal automatically for customer:",
+          customerIdParam,
+        );
         handleDetails(customer);
         // Limpiar el parámetro de la URL después de abrir el modal
         setTimeout(() => {
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             const url = new URL(window.location.href);
             url.searchParams.delete("customerId");
             window.history.replaceState({}, "", url.toString());
@@ -119,7 +123,7 @@ export default function CustomersPage() {
     const customerIdParam = searchParams.get("customerId");
     if (customerIdParam && customers.length > 0) {
       const customer = customers.find(
-        (c) => c.id.toString() === customerIdParam
+        (c) => c.id.toString() === customerIdParam,
       );
       if (customer) {
         handleDetails(customer);
@@ -172,6 +176,7 @@ export default function CustomersPage() {
       name: customer.name || "",
       phone: customer.phone || "",
       note: customer.note || "",
+      pendingNotes: [],
       campaignIds:
         customer.campaigns?.map((campaign) => campaign.id.toString()) || [],
     });
@@ -195,12 +200,12 @@ export default function CustomersPage() {
       const tickets = Array.isArray(response?.data)
         ? response.data
         : Array.isArray(response)
-        ? response
-        : [];
+          ? response
+          : [];
       const filtered = tickets.filter(
         (ticket: any) =>
           ticket.customerId === customer.id ||
-          ticket.customer?.id === customer.id
+          ticket.customer?.id === customer.id,
       );
       setCustomerTickets(filtered);
     } catch (error) {
@@ -240,10 +245,22 @@ export default function CustomersPage() {
 
     try {
       setIsSubmitting(true);
-      await fetchFromBackend("/customers", {
+      const created = await fetchFromBackend("/customers", {
         method: "POST",
         body: JSON.stringify(buildPayload(formData)),
       });
+
+      // Create pending notes if any
+      if (formData.pendingNotes.length > 0 && created?.id) {
+        await Promise.all(
+          formData.pendingNotes.map((content) =>
+            fetchFromBackend(`/customers/${created.id}/notes`, {
+              method: "POST",
+              body: JSON.stringify({ content }),
+            }),
+          ),
+        );
+      }
 
       toast({
         title: "Success",
@@ -438,6 +455,17 @@ export default function CustomersPage() {
             onSubmit={handleSubmitEdit}
             campaigns={campaigns}
             idPrefix="edit"
+            customerId={selectedCustomer?.id}
+            existingNotes={selectedCustomer?.notes ?? []}
+            onNotesChange={(notes) => {
+              if (selectedCustomer) {
+                const updated = { ...selectedCustomer, notes };
+                setSelectedCustomer(updated);
+                setCustomers((prev) =>
+                  prev.map((c) => (c.id === updated.id ? updated : c)),
+                );
+              }
+            }}
           />
 
           <DeleteCustomerModal

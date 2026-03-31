@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, JSX, useRef, useDeferredValue } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  JSX,
+  useRef,
+  useDeferredValue,
+} from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
@@ -113,7 +120,14 @@ declare module "@/lib/mock-data" {
     yardType?: string;
     campaignId?: number;
     customerId?: number | string;
-    customer?: { name: string; phone?: string; email?: string; id?: number; note?: string };
+    customer?: {
+      name: string;
+      phone?: string;
+      email?: string;
+      id?: number;
+      note?: string;
+      notes?: { id: number; content: string; createdAt: string }[];
+    };
     customerPhone?: string;
     disposition?: string;
     campaignOption?: string;
@@ -122,7 +136,11 @@ declare module "@/lib/mock-data" {
     updatedAt?: string;
     callDate?: string;
     agentId?: number | string;
-    phoneLine?: { id: number; label: string | null; phoneNumber: string } | null;
+    phoneLine?: {
+      id: number;
+      label: string | null;
+      phoneNumber: string;
+    } | null;
   }
 }
 
@@ -149,7 +167,9 @@ export default function TicketsPage() {
   const [agentFilterSearch, setAgentFilterSearch] = useState("");
   const [phoneLineFilter, setPhoneLineFilter] = useState("all");
   const [phoneLineFilterSearch, setPhoneLineFilterSearch] = useState("");
-  const [phoneLines, setPhoneLines] = useState<{ id: number; label: string | null; phoneNumber: string }[]>([]);
+  const [phoneLines, setPhoneLines] = useState<
+    { id: number; label: string | null; phoneNumber: string }[]
+  >([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -535,12 +555,14 @@ export default function TicketsPage() {
     if (directionValue && directionValue !== "all") {
       params.set("direction", directionValue);
     }
-    if (dispositionFilter !== "all") params.set("disposition", dispositionFilter);
+    if (dispositionFilter !== "all")
+      params.set("disposition", dispositionFilter);
     if (campaignFilter !== "all") params.set("campaignId", campaignFilter);
     if (yardFilter !== "all") params.set("yardId", yardFilter);
     if (agentFilter !== "all") params.set("agentId", agentFilter);
     if (phoneLineFilter !== "all") params.set("phoneLineId", phoneLineFilter);
-    if (currentCustomerIdParam) params.set("customerId", currentCustomerIdParam);
+    if (currentCustomerIdParam)
+      params.set("customerId", currentCustomerIdParam);
     if (currentAgent?.id) {
       params.set("assignedMeAgentId", currentAgent.id.toString());
     }
@@ -621,13 +643,16 @@ export default function TicketsPage() {
   const fetchYards = async () => {
     try {
       // Check if token is available before making request
-      const token = typeof window !== "undefined"
-        ? (getCookie("auth-token") || localStorage.getItem("auth_token"))
-        : null;
+      const token =
+        typeof window !== "undefined"
+          ? getCookie("auth-token") || localStorage.getItem("auth_token")
+          : null;
 
       if (!token) {
         if (process.env.NODE_ENV === "development") {
-          console.warn("[tickets/page] fetchYards: No token available, skipping request");
+          console.warn(
+            "[tickets/page] fetchYards: No token available, skipping request",
+          );
         }
         return;
       }
@@ -766,9 +791,10 @@ export default function TicketsPage() {
   useEffect(() => {
     // Wait for user to be authenticated before fetching data
     const user = auth.getUser();
-    const token = typeof window !== "undefined"
-      ? (getCookie("auth-token") || localStorage.getItem("auth_token"))
-      : null;
+    const token =
+      typeof window !== "undefined"
+        ? getCookie("auth-token") || localStorage.getItem("auth_token")
+        : null;
 
     if (user && token) {
       fetchYards();
@@ -777,10 +803,13 @@ export default function TicketsPage() {
       fetchCampaigns();
       fetchPhoneLines();
     } else if (process.env.NODE_ENV === "development") {
-      console.warn("[tickets/page] Skipping data fetch - user or token not available", {
-        hasUser: !!user,
-        hasToken: !!token,
-      });
+      console.warn(
+        "[tickets/page] Skipping data fetch - user or token not available",
+        {
+          hasUser: !!user,
+          hasToken: !!token,
+        },
+      );
     }
   }, []);
 
@@ -3055,7 +3084,7 @@ export default function TicketsPage() {
                   <TableHead className="w-[100px]">Priority</TableHead>
                   <TableHead className="w-[120px]">Created</TableHead>
                   <TableHead className="w-[100px]">Direction</TableHead>
-                  <TableHead className="w-[160px]">Line</TableHead>
+                  <TableHead>Line</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -3209,11 +3238,16 @@ export default function TicketsPage() {
                         </TableCell>
                         <TableCell>
                           {ticket.phoneLine?.label ? (
-                            <Badge variant="outline" className="text-xs font-normal max-w-[150px] truncate">
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-normal whitespace-nowrap"
+                            >
                               {ticket.phoneLine.label}
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
+                            <span className="text-muted-foreground text-xs">
+                              —
+                            </span>
                           )}
                         </TableCell>
                       </TableRow>
