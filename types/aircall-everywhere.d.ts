@@ -1,3 +1,8 @@
+declare module "*.css" {
+  const content: Record<string, string>;
+  export default content;
+}
+
 declare module "aircall-everywhere" {
   interface AircallPhoneOptions {
     domToLoadPhone: string;
