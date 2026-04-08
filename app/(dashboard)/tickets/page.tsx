@@ -335,6 +335,8 @@ export default function TicketsPage() {
       return <PhoneOutgoing className="h-3 w-3 text-blue-500" />;
     } else if (d === "text_message") {
       return <MessageCircle className="h-3 w-3 text-purple-500" />;
+    } else if (d === "manual_entry") {
+      return <Edit2 className="h-3 w-3 text-orange-500" />;
     } else {
       return <PhoneIncoming className="h-3 w-3 text-emerald-500" />;
     }
@@ -365,6 +367,9 @@ export default function TicketsPage() {
     }
     if (d === "text_message") {
       return "Text Message";
+    }
+    if (d === "manual_entry") {
+      return "Manual Entry";
     }
     return d === "outbound" ? "Outbound" : "Inbound";
   };
@@ -1613,10 +1618,15 @@ export default function TicketsPage() {
         const updatedTicket = { ...selectedTicket, ...result.data };
 
         mutate(
-          (currentTickets: Ticket[]) =>
-            currentTickets.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t,
-            ),
+          (currentTickets: any) =>
+            currentTickets
+              ? {
+                  ...currentTickets,
+                  data: (currentTickets.data || []).map((t: Ticket) =>
+                    t.id === updatedTicket.id ? updatedTicket : t,
+                  ),
+                }
+              : currentTickets,
           false,
         );
 
@@ -1719,10 +1729,15 @@ export default function TicketsPage() {
         }
 
         mutate(
-          (currentTickets: Ticket[]) =>
-            currentTickets.map((t) =>
-              t.id === updatedTicket.id ? updatedTicket : t,
-            ),
+          (currentTickets: any) =>
+            currentTickets
+              ? {
+                  ...currentTickets,
+                  data: (currentTickets.data || []).map((t: Ticket) =>
+                    t.id === updatedTicket.id ? updatedTicket : t,
+                  ),
+                }
+              : currentTickets,
           false,
         );
 
@@ -1787,10 +1802,15 @@ export default function TicketsPage() {
 
         setSelectedTicket(mergedTicket);
         mutate(
-          (currentTickets: Ticket[]) =>
-            currentTickets.map((t) =>
-              t.id === targetTicket.id ? mergedTicket : t,
-            ),
+          (currentTickets: any) =>
+            currentTickets
+              ? {
+                  ...currentTickets,
+                  data: (currentTickets.data || []).map((t: Ticket) =>
+                    t.id === targetTicket.id ? mergedTicket : t,
+                  ),
+                }
+              : currentTickets,
           false,
         );
         setEditData((prev) => ({
@@ -1832,17 +1852,22 @@ export default function TicketsPage() {
         const updatedYard = selectedYard.name;
 
         mutate(
-          (currentTickets: Ticket[]) =>
-            currentTickets.map((t) =>
-              t.id === selectedTicket.id
-                ? {
-                    ...t,
-                    yardId: selectedYardId,
-                    yard: updatedYard,
-                    yardType: selectedYard.yardType,
-                  }
-                : t,
-            ),
+          (currentTickets: any) =>
+            currentTickets
+              ? {
+                  ...currentTickets,
+                  data: (currentTickets.data || []).map((t: Ticket) =>
+                    t.id === selectedTicket.id
+                      ? {
+                          ...t,
+                          yardId: selectedYardId,
+                          yard: updatedYard,
+                          yardType: selectedYard.yardType,
+                        }
+                      : t,
+                  ),
+                }
+              : currentTickets,
           false,
         );
 

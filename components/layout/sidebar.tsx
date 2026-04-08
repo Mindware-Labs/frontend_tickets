@@ -99,6 +99,12 @@ const data = {
       icon: Ticket,
       items: [],
     },
+     {
+      title: "Aircall",
+      url: "/aircall-test",
+      icon: PhoneCall,
+      items: [],
+    },
     {
       title: "Yards",
       url: "/yards",

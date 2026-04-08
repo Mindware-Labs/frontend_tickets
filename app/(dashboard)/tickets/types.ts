@@ -51,6 +51,7 @@ export enum CallDirection {
   OUTBOUND = "OUTBOUND",
   MISSED = "MISSED",
   TEXT_MESSAGE = "TEXT_MESSAGE",
+  MANUAL_ENTRY = "MANUAL_ENTRY",
 }
 
 export interface CustomerOption {
