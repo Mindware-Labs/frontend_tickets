@@ -4,12 +4,13 @@ import { fetchFromBackendServer } from "@/lib/api-server";
 // DELETE /api/customers/:id/notes/:noteId
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; noteId: string } },
+  { params }: { params: Promise<{ id: string; noteId: string }> },
 ) {
+  const { id, noteId } = await params;
   try {
     const data = await fetchFromBackendServer(
       request,
-      `/customers/${params.id}/notes/${params.noteId}`,
+      `/customers/${id}/notes/${noteId}`,
       { method: "DELETE" },
     );
     return NextResponse.json({ success: true, data });
@@ -24,13 +25,14 @@ export async function DELETE(
 // PATCH /api/customers/:id/notes/:noteId
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; noteId: string } },
+  { params }: { params: Promise<{ id: string; noteId: string }> },
 ) {
+  const { id, noteId } = await params;
   try {
     const body = await request.json();
     const data = await fetchFromBackendServer(
       request,
-      `/customers/${params.id}/notes/${params.noteId}`,
+      `/customers/${id}/notes/${noteId}`,
       { method: "PATCH", body: JSON.stringify(body) },
     );
     return NextResponse.json({ success: true, data });

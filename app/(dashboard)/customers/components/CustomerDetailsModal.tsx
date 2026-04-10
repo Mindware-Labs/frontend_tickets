@@ -288,18 +288,25 @@ export function CustomerDetailsModal({
                             <p className="text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
                               {note.content}
                             </p>
-                            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                              <Calendar className="h-3 w-3 opacity-70" />
-                              {new Date(note.createdAt).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              {note.createdBy && (
+                                <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wider truncate">
+                                  {note.createdBy}
+                                </span>
                               )}
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ml-auto">
+                                <Calendar className="h-3 w-3 opacity-70" />
+                                {new Date(note.createdAt).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}

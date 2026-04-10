@@ -49,10 +49,15 @@ export function middleware(request: NextRequest) {
 
   if (authToken) {
     try {
+      // NOTE: The Edge Runtime cannot verify the JWT signature (no secret access).
+      // This decode is used ONLY for client-side navigation/redirects.
+      // All real authorization is enforced by the backend on each API request.
       const payloadPart = authToken.split(".")[1];
       if (payloadPart) {
+        // Convert base64url → base64 and add required padding
         const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-        const payloadString = atob(base64);
+        const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+        const payloadString = atob(padded);
         const payload = JSON.parse(payloadString);
         role = payload?.role || null;
       }

@@ -253,18 +253,25 @@ export function ViewTicketModal({
                             {n.content}
                           </p>
                           {n.createdAt && (
-                            <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                              <CalendarIcon className="h-3 w-3 opacity-70" />
-                              {new Date(n.createdAt).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              {n.createdBy && (
+                                <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wider truncate">
+                                  {n.createdBy}
+                                </span>
                               )}
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ml-auto">
+                                <CalendarIcon className="h-3 w-3 opacity-70" />
+                                {new Date(n.createdAt).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>

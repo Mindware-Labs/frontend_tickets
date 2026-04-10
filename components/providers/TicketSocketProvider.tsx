@@ -15,6 +15,7 @@ export function TicketSocketProvider() {
   const user = auth.getUser();
 
   const socketRef = useRef<Socket | null>(null);
+  const revalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -35,8 +36,12 @@ export function TicketSocketProvider() {
 
     socketRef.current = socket;
 
+    // Debounced so that bursts of events (e.g. bulk updates) collapse into one re-fetch
     const revalidateTicketCaches = () => {
-      mutate((key) => typeof key === "string" && key.startsWith("/api/tickets"));
+      if (revalidateDebounceRef.current) clearTimeout(revalidateDebounceRef.current);
+      revalidateDebounceRef.current = setTimeout(() => {
+        mutate((key) => typeof key === "string" && key.startsWith("/api/tickets"));
+      }, 300);
     };
 
     socket.on(
@@ -83,6 +88,7 @@ export function TicketSocketProvider() {
     );
 
     return () => {
+      if (revalidateDebounceRef.current) clearTimeout(revalidateDebounceRef.current);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;

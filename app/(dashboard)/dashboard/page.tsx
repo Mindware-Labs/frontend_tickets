@@ -111,24 +111,35 @@ export default function DashboardPage() {
     setLoadError(null);
     setAgentsError(null);
     try {
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("auth_token")
-          : null;
-      const response = await fetch("/api/dashboard/stats", {
-        cache: "no-store",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      const payload = await response.json();
+      // Read token from cookie (auth-token), not localStorage
+      let token: string | null = null;
+      if (typeof window !== "undefined") {
+        const match = document.cookie.match(/(?:^|;\s*)auth-token=([^;]*)/);
+        token = match ? decodeURIComponent(match[1]) : null;
+      }
+
+      const authHeaders: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+
+      const [dashboardResponse, agentsResponse] = await Promise.all([
+        fetch("/api/dashboard/stats", {
+          cache: "no-store",
+          headers: authHeaders,
+        }),
+        fetch("/api/agents", {
+          cache: "no-store",
+          headers: authHeaders,
+        }),
+      ]);
+
+      const payload = await dashboardResponse.json();
       if (!payload?.success) {
         throw new Error(payload?.message || "Unable to load dashboard data.");
       }
       setDashboardData(payload.data);
 
       try {
-        const agentsResponse = await fetch("/api/agents", {
-          cache: "no-store",
-        });
         const agentsPayload = await agentsResponse.json();
         if (!agentsPayload?.success) {
           throw new Error(agentsPayload?.message || "Unable to load agents.");

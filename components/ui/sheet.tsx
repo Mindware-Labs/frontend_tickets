@@ -1,16 +1,23 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import * as SheetPrimitive from '@radix-ui/react-dialog'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { XIcon } from 'lucide-react'
+import * as React from "react";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Variants,
+} from "framer-motion";
+import { XIcon } from "lucide-react";
 
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
-type SheetSide = 'top' | 'right' | 'bottom' | 'left'
-type SheetRootProps = React.ComponentProps<typeof SheetPrimitive.Root>
+type SheetSide = "top" | "right" | "bottom" | "left";
+type SheetRootProps = React.ComponentProps<typeof SheetPrimitive.Root>;
 
-const SheetStateContext = React.createContext<{ open: boolean }>({ open: false })
+const SheetStateContext = React.createContext<{ open: boolean }>({
+  open: false,
+});
 
 function Sheet({
   open: openProp,
@@ -18,19 +25,19 @@ function Sheet({
   onOpenChange,
   ...props
 }: SheetRootProps) {
-  const isControlled = openProp !== undefined
-  const [internalOpen, setInternalOpen] = React.useState(defaultOpen)
-  const open = isControlled ? Boolean(openProp) : internalOpen
+  const isControlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+  const open = isControlled ? Boolean(openProp) : internalOpen;
 
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
       if (!isControlled) {
-        setInternalOpen(nextOpen)
+        setInternalOpen(nextOpen);
       }
-      onOpenChange?.(nextOpen)
+      onOpenChange?.(nextOpen);
     },
     [isControlled, onOpenChange],
-  )
+  );
 
   return (
     <SheetStateContext.Provider value={{ open }}>
@@ -41,25 +48,25 @@ function Sheet({
         {...props}
       />
     </SheetStateContext.Provider>
-  )
+  );
 }
 
 function SheetTrigger({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
 function SheetClose({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
 function SheetPortal({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
 function SheetOverlay({
@@ -69,33 +76,33 @@ function SheetOverlay({
   return (
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
-      className={cn('fixed inset-0 z-50 bg-transparent', className)}
+      className={cn("fixed inset-0 z-50 bg-transparent", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetContent({
   className,
   children,
-  side = 'right',
+  side = "right",
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
-  side?: SheetSide
+  side?: SheetSide;
 }) {
-  const { open } = React.useContext(SheetStateContext)
-  const reduceMotion = useReducedMotion()
+  const { open } = React.useContext(SheetStateContext);
+  const reduceMotion = useReducedMotion();
 
-  const contentVariants = React.useMemo<Record<'open' | 'closed', object>>(() => {
-    const variantsBySide: Record<SheetSide, { open: object; closed: object }> = {
-      right: { open: { x: 0 }, closed: { x: '100%' } },
-      left: { open: { x: 0 }, closed: { x: '-100%' } },
-      top: { open: { y: 0 }, closed: { y: '-100%' } },
-      bottom: { open: { y: 0 }, closed: { y: '100%' } },
-    }
+  const contentVariants = React.useMemo<Variants>(() => {
+    const variantsBySide: Record<SheetSide, Variants> = {
+      right: { open: { x: 0 }, closed: { x: "100%" } },
+      left: { open: { x: 0 }, closed: { x: "-100%" } },
+      top: { open: { y: 0 }, closed: { y: "-100%" } },
+      bottom: { open: { y: 0 }, closed: { y: "100%" } },
+    };
 
-    return variantsBySide[side]
-  }, [side])
+    return variantsBySide[side];
+  }, [side]);
 
   return (
     <AnimatePresence>
@@ -119,7 +126,12 @@ function SheetContent({
             />
           </SheetPrimitive.Overlay>
 
-          <SheetPrimitive.Content data-slot="sheet-content" forceMount asChild {...props}>
+          <SheetPrimitive.Content
+            data-slot="sheet-content"
+            forceMount
+            asChild
+            {...props}
+          >
             <motion.div
               key={`sheet-content-${side}`}
               initial="closed"
@@ -132,13 +144,13 @@ function SheetContent({
                   : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
               }
               className={cn(
-                'bg-background fixed z-50 flex flex-col gap-4 shadow-lg will-change-transform',
-                side === 'right' &&
-                  'inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
-                side === 'left' &&
-                  'inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm',
-                side === 'top' && 'inset-x-0 top-0 h-auto border-b',
-                side === 'bottom' && 'inset-x-0 bottom-0 h-auto border-t',
+                "bg-background fixed z-50 flex flex-col gap-4 shadow-lg will-change-transform",
+                side === "right" &&
+                  "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+                side === "left" &&
+                  "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+                side === "top" && "inset-x-0 top-0 h-auto border-b",
+                side === "bottom" && "inset-x-0 bottom-0 h-auto border-t",
                 className,
               )}
             >
@@ -152,27 +164,27 @@ function SheetContent({
         </SheetPortal>
       ) : null}
     </AnimatePresence>
-  )
+  );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn('flex flex-col gap-1.5 p-4', className)}
+      className={cn("flex flex-col gap-1.5 p-4", className)}
       {...props}
     />
-  )
+  );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn('mt-auto flex flex-col gap-2 p-4', className)}
+      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetTitle({
@@ -182,10 +194,10 @@ function SheetTitle({
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn('text-foreground font-semibold', className)}
+      className={cn("text-foreground font-semibold", className)}
       {...props}
     />
-  )
+  );
 }
 
 function SheetDescription({
@@ -195,10 +207,10 @@ function SheetDescription({
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn("text-muted-foreground text-sm", className)}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -210,4 +222,4 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription,
-}
+};

@@ -26,10 +26,17 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  React.useEffect(() => {
+    if (rateLimitCountdown <= 0) return;
+    const timer = setTimeout(() => setRateLimitCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [rateLimitCountdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,20 +61,26 @@ function LoginForm() {
     } catch (err: any) {
       console.error("Login error:", err);
 
-      // Handle specific error cases
       let errorMessage =
         err.message || "Login failed. Please check your credentials.";
 
-      // Check if it's a connection error
-      if (errorMessage.includes("Cannot connect to the server")) {
-        errorMessage =
-          "Unable to connect to the server. Please ensure the backend is running and try again.";
+      if (
+        errorMessage.toLowerCase().includes("too many requests") ||
+        errorMessage.toLowerCase().includes("throttler")
+      ) {
+        setRateLimitCountdown(60);
+        setError("too_many_requests");
+      } else if (errorMessage.includes("Cannot connect to the server")) {
+        setError(
+          "Unable to connect to the server. Please ensure the backend is running and try again.",
+        );
       } else if (errorMessage.includes("fetch")) {
-        errorMessage =
-          "Network error. Please check your connection and ensure the backend server is running.";
+        setError(
+          "Network error. Please check your connection and ensure the backend server is running.",
+        );
+      } else {
+        setError(errorMessage);
       }
-
-      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -166,8 +179,26 @@ function LoginForm() {
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-sm text-red-400 text-center">{error}</p>
+            <div
+              className={`p-3 rounded-lg border ${error === "too_many_requests" ? "bg-orange-500/10 border-orange-500/30" : "bg-red-500/10 border-red-500/20"}`}
+            >
+              {error === "too_many_requests" ? (
+                <div className="flex flex-col items-center gap-1">
+                  <p className="text-sm text-orange-400 text-center font-medium">
+                    Too many failed attempts. Please wait before trying again.
+                  </p>
+                  {rateLimitCountdown > 0 && (
+                    <p className="text-xs text-orange-300/70 text-center">
+                      You can try again in{" "}
+                      <span className="font-bold text-orange-300">
+                        {rateLimitCountdown}s
+                      </span>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
             </div>
           )}
 
@@ -175,7 +206,7 @@ function LoginForm() {
           <Button
             type="submit"
             className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-lg shadow-blue-900/20 transition-all duration-200"
-            disabled={isLoading}
+            disabled={isLoading || rateLimitCountdown > 0}
           >
             {isLoading ? (
               <>

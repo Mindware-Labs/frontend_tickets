@@ -4,12 +4,13 @@ import { fetchFromBackendServer } from "@/lib/api-server";
 // GET /api/customers/:id/notes
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const data = await fetchFromBackendServer(
       request,
-      `/customers/${params.id}/notes`,
+      `/customers/${id}/notes`,
     );
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
@@ -23,13 +24,14 @@ export async function GET(
 // POST /api/customers/:id/notes
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
     const data = await fetchFromBackendServer(
       request,
-      `/customers/${params.id}/notes`,
+      `/customers/${id}/notes`,
       { method: "POST", body: JSON.stringify(body) },
     );
     return NextResponse.json({ success: true, data });

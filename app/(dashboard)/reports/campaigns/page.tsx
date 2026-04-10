@@ -92,6 +92,7 @@ type CustomerCallHistory = {
   direction: string;
   createdAt: string;
   agentName: string;
+  issueDetail?: string;
 };
 
 type CustomerRow = {
@@ -267,7 +268,8 @@ const CustomerTable = ({
   const router = useRouter();
   const [tableSearch, setTableSearch] = useState("");
   const [showIssueDetailModal, setShowIssueDetailModal] = useState(false);
-  const [selectedRowForIssueDetail, setSelectedRowForIssueDetail] = useState<CustomerRow | null>(null);
+  const [selectedRowForIssueDetail, setSelectedRowForIssueDetail] =
+    useState<CustomerRow | null>(null);
   const totalCalls = rows.reduce(
     (sum, row) =>
       sum + (row.callCount && row.callCount > 0 ? row.callCount : 1),
@@ -410,30 +412,36 @@ const CustomerTable = ({
       <div className="border-b px-6 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-        <h3 className="font-semibold leading-none tracking-tight">{title}</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {filteredCallsToShow} {filteredCallsToShow === 1 ? "call" : "calls"} found (
-          {filteredRows.length} {filteredRows.length === 1 ? "customer" : "customers"})
-          {normalizedTableSearch && (
-            <span>
-              {" "}
-              · filtered from {callsToShow} {callsToShow === 1 ? "call" : "calls"}
-            </span>
-          )}
-        </p>
-        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
-          💡 Click on any row to view customer details in Customer Management
-        </p>
+            <h3 className="font-semibold leading-none tracking-tight">
+              {title}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredCallsToShow}{" "}
+              {filteredCallsToShow === 1 ? "call" : "calls"} found (
+              {filteredRows.length}{" "}
+              {filteredRows.length === 1 ? "customer" : "customers"})
+              {normalizedTableSearch && (
+                <span>
+                  {" "}
+                  · filtered from {callsToShow}{" "}
+                  {callsToShow === 1 ? "call" : "calls"}
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
+              💡 Click on any row to view customer details in Customer
+              Management
+            </p>
           </div>
           <div className="relative w-full lg:w-80 lg:shrink-0">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={tableSearch}
-            onChange={(e) => setTableSearch(e.target.value)}
-            placeholder={`Search ${title.toLowerCase()}...`}
-            className="h-9 pl-9"
-          />
-        </div>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              placeholder={`Search ${title.toLowerCase()}...`}
+              className="h-9 pl-9"
+            />
+          </div>
         </div>
       </div>
 
@@ -765,7 +773,10 @@ const CustomerTable = ({
       </div>
 
       {/* Issue Detail Modal */}
-      <Dialog open={showIssueDetailModal} onOpenChange={setShowIssueDetailModal}>
+      <Dialog
+        open={showIssueDetailModal}
+        onOpenChange={setShowIssueDetailModal}
+      >
         <DialogContent className="flex flex-col gap-0 w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:size-[min(520px,calc(100vh-2rem))] sm:max-w-none sm:max-h-none">
           <DialogHeader className="border-b bg-card/60 px-5 py-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
@@ -773,17 +784,24 @@ const CustomerTable = ({
               Issue Detail
             </DialogTitle>
             <DialogDescription className="text-sm">
-              {selectedRowForIssueDetail?.phone || selectedRowForIssueDetail?.name || "Customer"} -{" "}
-              {selectedRowForIssueDetail?.callHistory?.length || 0} detail
+              {selectedRowForIssueDetail?.phone ||
+                selectedRowForIssueDetail?.name ||
+                "Customer"}{" "}
+              - {selectedRowForIssueDetail?.callHistory?.length || 0} detail
               {selectedRowForIssueDetail?.callHistory?.length === 1 ? "" : "s"}
             </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="min-h-0 flex-1 bg-muted/10">
             <div className="space-y-3 p-4">
-              {selectedRowForIssueDetail?.callHistory && selectedRowForIssueDetail.callHistory.length > 0 ? (
+              {selectedRowForIssueDetail?.callHistory &&
+              selectedRowForIssueDetail.callHistory.length > 0 ? (
                 [...selectedRowForIssueDetail.callHistory]
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .sort(
+                    (a, b) =>
+                      new Date(b.createdAt).getTime() -
+                      new Date(a.createdAt).getTime(),
+                  )
                   .map((call, index) => {
                     const formatDate = (date: string | Date) => {
                       const d = new Date(date);
@@ -814,7 +832,9 @@ const CustomerTable = ({
                             {call.note || call.issueDetail}
                           </p>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">No note available</p>
+                          <p className="text-sm text-muted-foreground italic">
+                            No note available
+                          </p>
                         )}
                       </div>
                     );
@@ -837,15 +857,18 @@ const CustomerTable = ({
                   if (selectedRowForIssueDetail) {
                     const params = new URLSearchParams();
                     if (selectedRowForIssueDetail.customerId) {
-                      params.set('customerId', selectedRowForIssueDetail.customerId.toString());
+                      params.set(
+                        "customerId",
+                        selectedRowForIssueDetail.customerId.toString(),
+                      );
                     }
                     if (campaignId) {
-                      params.set('campaignId', campaignId.toString());
+                      params.set("campaignId", campaignId.toString());
                     }
-                    params.set('fromReport', 'campaign');
-                    params.set('reportStartDate', startDate);
-                    params.set('reportEndDate', endDate);
-                    
+                    params.set("fromReport", "campaign");
+                    params.set("reportStartDate", startDate);
+                    params.set("reportEndDate", endDate);
+
                     const ticketsUrl = `/tickets?${params.toString()}`;
                     router.push(ticketsUrl);
                   }

@@ -324,16 +324,23 @@ export function CustomerFormModal({
                             </>
                           ) : (
                             <>
-                              <p
-                                className="flex-1 whitespace-pre-wrap break-words cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => {
-                                  setEditingNoteId(note.id);
-                                  setEditingText(note.content);
-                                }}
-                                title="Click to edit"
-                              >
-                                {note.content}
-                              </p>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className="whitespace-pre-wrap break-words cursor-pointer hover:text-primary transition-colors text-sm"
+                                  onClick={() => {
+                                    setEditingNoteId(note.id);
+                                    setEditingText(note.content);
+                                  }}
+                                  title="Click to edit"
+                                >
+                                  {note.content}
+                                </p>
+                                {note.createdBy && (
+                                  <span className="text-[10px] text-amber-500/80 font-semibold uppercase tracking-wider">
+                                    {note.createdBy}
+                                  </span>
+                                )}
+                              </div>
                               <Button
                                 type="button"
                                 variant="ghost"
