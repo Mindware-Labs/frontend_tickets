@@ -102,3 +102,35 @@ export interface CreateTicketFormData {
   issueDetail: string;
   attachments: string[];
 }
+
+// Extend the Ticket type with fields used across the tickets feature
+declare module "@/lib/mock-data" {
+  interface Ticket {
+    issueDetail?: string;
+    yardId?: string;
+    yardType?: string;
+    campaignId?: number;
+    customerId?: number | string;
+    customer?: {
+      name: string;
+      phone?: string;
+      email?: string;
+      id?: number;
+      note?: string;
+      notes?: { id: number; content: string; createdAt: string }[];
+    };
+    customerPhone?: string;
+    disposition?: string;
+    campaignOption?: string;
+    onboardingOption?: string;
+    attachments?: string[];
+    updatedAt?: string;
+    callDate?: string;
+    agentId?: number | string;
+    phoneLine?: {
+      id: number;
+      label: string | null;
+      phoneNumber: string;
+    } | null;
+  }
+}

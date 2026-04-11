@@ -59,8 +59,6 @@ function LoginForm() {
       // Redirect to dashboard or original destination
       router.push(redirectTo);
     } catch (err: any) {
-      console.error("Login error:", err);
-
       let errorMessage =
         err.message || "Login failed. Please check your credentials.";
 
@@ -96,6 +94,7 @@ function LoginForm() {
             src="/images/LOGO CQ-13.png"
             alt="cq Logo"
             fill
+            sizes="200px"
             className="object-contain" // Esto evita que el logo se estire o deforme
             priority
           />

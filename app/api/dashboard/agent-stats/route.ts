@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchFromBackendServer } from "@/lib/api-server";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 type Ticket = {
   id: number;
@@ -84,7 +84,7 @@ function normalizeLabel(value: unknown, labels: Record<string, string>) {
 
 function getCampaignLabel(
   ticket: Ticket,
-  campaignsById: Record<number, string>
+  campaignsById: Record<number, string>,
 ) {
   if (ticket.campaign && typeof ticket.campaign === "object") {
     const maybeCampaign = ticket.campaign as { nombre?: string };
@@ -119,7 +119,7 @@ function getTicketDateKey(createdAt: string) {
 }
 
 async function getUserIdFromRequest(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<number | null> {
   // First, try to extract from token directly (faster)
   const cookieToken =
@@ -155,7 +155,7 @@ async function getUserIdFromRequest(
   try {
     const profileResponse = await fetchFromBackendServer(
       request,
-      "/auth/profile"
+      "/auth/profile",
     );
 
     console.log("[agent-stats] Profile response:", {
@@ -186,13 +186,13 @@ async function fetchTicketsWithLimit(
   request: NextRequest,
   limit: number,
   maxPages: number,
-  agentId: number | null
+  agentId: number | null,
 ) {
   const tickets: Ticket[] = [];
   let total = 0;
 
   console.log(
-    `[agent-stats] Fetching tickets from database for agentId: ${agentId}`
+    `[agent-stats] Fetching tickets from database for agentId: ${agentId}`,
   );
 
   for (let page = 1; page <= maxPages; page += 1) {
@@ -205,7 +205,7 @@ async function fetchTicketsWithLimit(
 
     const response = await fetchFromBackendServer(
       request,
-      `/tickets?${queryParams}`
+      `/tickets?${queryParams}`,
     );
     const pageTickets: Ticket[] = response?.data || response || [];
     if (page === 1 && typeof response?.total === "number") {
@@ -213,7 +213,7 @@ async function fetchTicketsWithLimit(
     }
 
     console.log(
-      `[agent-stats] Page ${page}: ${pageTickets.length} tickets from database (total: ${total})`
+      `[agent-stats] Page ${page}: ${pageTickets.length} tickets from database (total: ${total})`,
     );
 
     tickets.push(...pageTickets);
@@ -223,7 +223,7 @@ async function fetchTicketsWithLimit(
   }
 
   console.log(
-    `[agent-stats] Total tickets from database: ${total || tickets.length}`
+    `[agent-stats] Total tickets from database: ${total || tickets.length}`,
   );
 
   return { tickets, total: total || tickets.length };
@@ -232,7 +232,7 @@ async function fetchTicketsWithLimit(
 async function fetchCampaigns(request: NextRequest, limit: number) {
   const response = await fetchFromBackendServer(
     request,
-    `/campaign?page=1&limit=${limit}`
+    `/campaign?page=1&limit=${limit}`,
   );
   const campaigns: Campaign[] = response?.data || response || [];
   return campaigns;
@@ -258,7 +258,7 @@ export async function GET(request: NextRequest) {
           success: false,
           message: "Unable to identify agent. Please ensure you are logged in.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -266,21 +266,21 @@ export async function GET(request: NextRequest) {
       request,
       200,
       5,
-      agentId
+      agentId,
     );
 
     console.log(
-      `[agent-stats] Processing ${tickets.length} tickets for agent ${agentId}`
+      `[agent-stats] Processing ${tickets.length} tickets for agent ${agentId}`,
     );
 
     // If no tickets found, log warning but continue
     if (tickets.length === 0) {
       console.warn(
-        `[agent-stats] WARNING: No tickets found for agent ${agentId}. This might mean:`
+        `[agent-stats] WARNING: No tickets found for agent ${agentId}. This might mean:`,
       );
       console.warn(`[agent-stats] 1. No tickets are assigned to this agent`);
       console.warn(
-        `[agent-stats] 2. The agentId doesn't match the assignedTo field format`
+        `[agent-stats] 2. The agentId doesn't match the assignedTo field format`,
       );
       console.warn(`[agent-stats] 3. All tickets are unassigned`);
     }
@@ -297,7 +297,7 @@ export async function GET(request: NextRequest) {
     const totalCalls = totalTickets;
 
     console.log(
-      `[agent-stats] Total tickets: ${totalTickets}, Total calls: ${totalCalls}`
+      `[agent-stats] Total tickets: ${totalTickets}, Total calls: ${totalCalls}`,
     );
 
     // Create campaignsById map first (needed for campaignCounts calculation)
@@ -306,28 +306,28 @@ export async function GET(request: NextRequest) {
         acc[campaign.id] = campaign.nombre;
         return acc;
       },
-      {}
+      {},
     );
 
     const openTickets = tickets.filter(
-      (ticket) => ticket.status === "OPEN" || ticket.status === "Open"
+      (ticket) => ticket.status === "OPEN" || ticket.status === "Open",
     ).length;
     const inProgressTickets = tickets.filter(
       (ticket) =>
-        ticket.status === "IN_PROGRESS" || ticket.status === "In Progress"
+        ticket.status === "IN_PROGRESS" || ticket.status === "In Progress",
     ).length;
     const activeTickets = openTickets + inProgressTickets;
 
     console.log(
-      `[agent-stats] Open: ${openTickets}, In Progress: ${inProgressTickets}, Active: ${activeTickets}`
+      `[agent-stats] Open: ${openTickets}, In Progress: ${inProgressTickets}, Active: ${activeTickets}`,
     );
     const closedTickets = tickets.filter((ticket) =>
-      STATUS_CLOSED.has(ticket.status || "")
+      STATUS_CLOSED.has(ticket.status || ""),
     ).length;
     const pendingActions = tickets.filter(
       (ticket) =>
         PRIORITY_ALERT.has(ticket.priority || "") &&
-        !STATUS_CLOSED.has(ticket.status || "")
+        !STATUS_CLOSED.has(ticket.status || ""),
     ).length;
 
     const resolutionRate =
@@ -357,7 +357,7 @@ export async function GET(request: NextRequest) {
         acc[campaignName] = (acc[campaignName] || 0) + 1;
         return acc;
       },
-      {}
+      {},
     );
 
     const dispositionCounts = tickets.reduce<Record<string, number>>(
@@ -366,7 +366,7 @@ export async function GET(request: NextRequest) {
         acc[label] = (acc[label] || 0) + 1;
         return acc;
       },
-      {}
+      {},
     );
 
     const now = new Date();
@@ -385,7 +385,7 @@ export async function GET(request: NextRequest) {
         acc[bucket.key] = index;
         return acc;
       },
-      {}
+      {},
     );
 
     tickets.forEach((ticket) => {
@@ -417,7 +417,7 @@ export async function GET(request: NextRequest) {
       ([name, count]) => ({
         name,
         count,
-      })
+      }),
     );
 
     // campaignsById already created above, no need to recreate
@@ -471,7 +471,7 @@ export async function GET(request: NextRequest) {
         success: false,
         message: error.message || "Failed to fetch agent dashboard stats",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

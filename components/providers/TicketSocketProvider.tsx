@@ -8,14 +8,16 @@ import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { auth } from "@/lib/auth";
 
-export function TicketSocketProvider() {
+export function useTicketSocket() {
   const { toast } = useToast();
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const user = auth.getUser();
 
   const socketRef = useRef<Socket | null>(null);
-  const revalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!user?.id) return;
@@ -38,9 +40,12 @@ export function TicketSocketProvider() {
 
     // Debounced so that bursts of events (e.g. bulk updates) collapse into one re-fetch
     const revalidateTicketCaches = () => {
-      if (revalidateDebounceRef.current) clearTimeout(revalidateDebounceRef.current);
+      if (revalidateDebounceRef.current)
+        clearTimeout(revalidateDebounceRef.current);
       revalidateDebounceRef.current = setTimeout(() => {
-        mutate((key) => typeof key === "string" && key.startsWith("/api/tickets"));
+        mutate(
+          (key) => typeof key === "string" && key.startsWith("/api/tickets"),
+        );
       }, 300);
     };
 
@@ -88,13 +93,17 @@ export function TicketSocketProvider() {
     );
 
     return () => {
-      if (revalidateDebounceRef.current) clearTimeout(revalidateDebounceRef.current);
+      if (revalidateDebounceRef.current)
+        clearTimeout(revalidateDebounceRef.current);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
   }, [user?.id, toast, router, mutate]);
+}
 
+export function TicketSocketProvider() {
+  useTicketSocket();
   return null;
 }
