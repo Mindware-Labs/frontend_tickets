@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   Ban,
   UserPlus,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -67,6 +68,7 @@ type User = {
   role: UserRole;
   isActive: boolean;
   createdAt?: string;
+  lastLogin?: string;
 };
 
 type FormState = {
@@ -388,7 +390,7 @@ export default function UsersPage() {
                 <div
                   className={cn(
                     "absolute top-0 left-0 w-1 h-full",
-                    user.isActive ? "bg-emerald-500" : "bg-destructive"
+                    user.isActive ? "bg-emerald-500" : "bg-destructive",
                   )}
                 />
 
@@ -414,7 +416,7 @@ export default function UsersPage() {
                             "text-[10px] font-medium flex items-center gap-1",
                             user.isActive
                               ? "text-emerald-600"
-                              : "text-destructive"
+                              : "text-destructive",
                           )}
                         >
                           {user.isActive ? (
@@ -464,10 +466,18 @@ export default function UsersPage() {
                   </DropdownMenu>
                 </CardHeader>
 
-                <CardContent className="pl-6 pt-2 pb-3">
+                <CardContent className="pl-6 pt-2 pb-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded border border-dashed">
                     <Mail className="h-3.5 w-3.5" />
                     <span className="truncate">{user.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>
+                      {user.lastLogin
+                        ? `Last login: ${new Date(user.lastLogin).toLocaleString()}`
+                        : "Never logged in"}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -537,7 +547,7 @@ export default function UsersPage() {
                     }))
                   }
                   className={cn(
-                    validationErrors.lastName && "border-destructive"
+                    validationErrors.lastName && "border-destructive",
                   )}
                 />
                 {validationErrors.lastName && (
@@ -582,7 +592,7 @@ export default function UsersPage() {
                     "cursor-pointer border rounded-lg p-3 flex flex-col gap-1 transition-all hover:border-primary/50",
                     formData.role === "agent"
                       ? "bg-primary/5 border-primary ring-1 ring-primary/20"
-                      : "bg-card"
+                      : "bg-card",
                   )}
                 >
                   <div className="flex items-center gap-2 font-medium text-sm">
@@ -600,7 +610,7 @@ export default function UsersPage() {
                     "cursor-pointer border rounded-lg p-3 flex flex-col gap-1 transition-all hover:border-primary/50",
                     formData.role === "admin"
                       ? "bg-primary/5 border-primary ring-1 ring-primary/20"
-                      : "bg-card"
+                      : "bg-card",
                   )}
                 >
                   <div className="flex items-center gap-2 font-medium text-sm">
@@ -719,7 +729,7 @@ export default function UsersPage() {
                     className={cn(
                       formData.isActive
                         ? "text-emerald-600"
-                        : "text-destructive"
+                        : "text-destructive",
                     )}
                   >
                     <SelectValue />
