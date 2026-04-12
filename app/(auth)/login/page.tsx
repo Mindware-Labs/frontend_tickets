@@ -86,13 +86,12 @@ function LoginForm() {
             alt="cq Logo"
             fill
             sizes="200px"
-            className="object-contain" // Esto evita que el logo se estire o deforme
+            className="object-contain"
             priority
+            fetchPriority="high"
           />
         </div>
         {/* --------------------------------------------------------- */}
-
-        <h1 className="text-2xl font-bold text-white tracking-tight "></h1>
       </div>
 
       {/* Card body */}
@@ -229,7 +228,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div className="min-h-[496px] flex items-center justify-center bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-sm">
           <div className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto" />
           </div>

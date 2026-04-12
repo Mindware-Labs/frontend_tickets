@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
+  reactCompiler: true,
+  optimizePackageImports: ['lucide-react', 'date-fns', 'recharts', '@radix-ui/react-toast', '@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-popover'],
   images: {
     remotePatterns: [
       {

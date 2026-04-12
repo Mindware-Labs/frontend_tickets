@@ -11,6 +11,7 @@ export default {
     "/reports/campaigns",
     "/reports/yards",
     "/settings",
+    "/landlords",
   ],
   scanner: {
     crawler: false,
@@ -21,7 +22,7 @@ export default {
     {
       name: "auth-token",
       value:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoibGFic21pbmR3YXJlQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsIm5hbWUiOiJNaW5kd2FyZSBMYWJzIiwiaWF0IjoxNzc1OTQwMzIyLCJleHAiOjE3NzU5ODM1MjJ9.pM_bslc9sWgICSVkXg49XUqnzhP0rJbvsFhAHepMxNI",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoibGFic21pbmR3YXJlQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsIm5hbWUiOiJNaW5kd2FyZSBMYWJzIiwiaWF0IjoxNzc2MDEwODM5LCJleHAiOjE3NzYwNTQwMzl9.J7aqePw12r-fWsZWtaFk7kLhgZYo7Xn9CyqupB1PqkQ",
       domain: "righutsupportcenter.vercel.app",
       path: "/",
     },
