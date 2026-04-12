@@ -20,7 +20,6 @@ import {
   Copy,
   Check,
   Info,
-  MapPin,
   ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";

@@ -157,10 +157,14 @@ export default function Topbar() {
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground/80 shadow-sm transition-colors hover:bg-accent/60"
             aria-label="Toggle light and dark mode"
           >
-            {mounted && currentTheme === "dark" ? (
-              <Sun className="h-4 w-4 text-muted-foreground" />
+            {mounted ? (
+              currentTheme === "dark" ? (
+                <Sun className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Moon className="h-4 w-4 text-muted-foreground" />
+              )
             ) : (
-              <Moon className="h-4 w-4 text-muted-foreground" />
+              <Sun className="h-4 w-4 text-muted-foreground opacity-0" />
             )}
           </button>
 

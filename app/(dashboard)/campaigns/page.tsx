@@ -33,20 +33,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowUpRight,
-  CalendarDays,
   CheckCircle2,
-  Clock,
   MapPin,
   MoreVertical,
   Plus,
   Search,
-  ShieldAlert,
   Tag,
   Ticket,
   Megaphone,
@@ -95,24 +90,30 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<ManagementType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
   const [yardFilter, setYardFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
+    null,
+  );
+
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [campaignTickets, setCampaignTickets] = useState<CampaignTicket[]>([]);
   const [showTicketsPanel, setShowTicketsPanel] = useState(false);
   const [ticketSearch, setTicketSearch] = useState("");
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [formData, setFormData] = useState<CampaignFormData>(DEFAULT_FORM);
 
   const fetchCampaigns = async () => {
@@ -142,7 +143,9 @@ export default function CampaignsPage() {
       console.error("Error fetching yards:", error);
       // Only show toast if it's not a 401 (unauthorized) - those are handled globally
       if (error?.status !== 401) {
-        console.warn("Failed to load yards. This might be expected if the yards feature is not enabled.");
+        console.warn(
+          "Failed to load yards. This might be expected if the yards feature is not enabled.",
+        );
       }
     }
   };
@@ -249,7 +252,8 @@ export default function CampaignsPage() {
       const items: CampaignTicket[] = response?.data || response || [];
       const filtered = items.filter(
         (ticket) =>
-          ticket.campaignId === campaignId || ticket.campaign?.id === campaignId
+          ticket.campaignId === campaignId ||
+          ticket.campaign?.id === campaignId,
       );
       setCampaignTickets(filtered);
     } catch (error) {
@@ -269,7 +273,8 @@ export default function CampaignsPage() {
       const phoneDigits = normalizePhone(ticket.customerPhone || "");
       const id = `#${ticket.id}`;
       const matchesPhoneFormatted = phone.includes(term);
-      const matchesPhoneDigits = termDigits.length > 0 && phoneDigits.includes(termDigits);
+      const matchesPhoneDigits =
+        termDigits.length > 0 && phoneDigits.includes(termDigits);
       return (
         name.includes(term) ||
         matchesPhoneFormatted ||
@@ -288,24 +293,44 @@ export default function CampaignsPage() {
   const handleSubmitCreate = async () => {
     setValidationErrors({});
     const errors: Record<string, string> = {};
-    if (!formData.nombre.trim()) errors.nombre = "Please enter the campaign name.";
+    if (!formData.nombre.trim())
+      errors.nombre = "Please enter the campaign name.";
     if (!formData.tipo) errors.tipo = "Please select a campaign type.";
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({ title: "Missing fields", description: "Please review fields.", variant: "destructive" });
+      toast({
+        title: "Missing fields",
+        description: "Please review fields.",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await fetchFromBackend("/campaign", { method: "POST", body: JSON.stringify(buildPayload(formData)) });
-      toast({ title: "Saved", description: <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /><span>Campaign created successfully</span></div> });
+      await fetchFromBackend("/campaign", {
+        method: "POST",
+        body: JSON.stringify(buildPayload(formData)),
+      });
+      toast({
+        title: "Saved",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Campaign created successfully</span>
+          </div>
+        ),
+      });
       setShowCreateModal(false);
       fetchCampaigns();
       resetForm();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to create.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -315,25 +340,45 @@ export default function CampaignsPage() {
     if (!selectedCampaign) return;
     setValidationErrors({});
     const errors: Record<string, string> = {};
-    if (!formData.nombre.trim()) errors.nombre = "Please enter the campaign name.";
+    if (!formData.nombre.trim())
+      errors.nombre = "Please enter the campaign name.";
     if (!formData.tipo) errors.tipo = "Please select a campaign type.";
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({ title: "Missing fields", description: "Please review fields.", variant: "destructive" });
+      toast({
+        title: "Missing fields",
+        description: "Please review fields.",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/campaign/${selectedCampaign.id}`, { method: "PATCH", body: JSON.stringify(buildPayload(formData)) });
-      toast({ title: "Saved", description: <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /><span>Campaign updated successfully</span></div> });
+      await fetchFromBackend(`/campaign/${selectedCampaign.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(buildPayload(formData)),
+      });
+      toast({
+        title: "Saved",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Campaign updated successfully</span>
+          </div>
+        ),
+      });
       setShowEditModal(false);
       fetchCampaigns();
       resetForm();
       setSelectedCampaign(null);
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to update.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -343,13 +388,27 @@ export default function CampaignsPage() {
     if (!selectedCampaign) return;
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/campaign/${selectedCampaign.id}`, { method: "DELETE" });
-      toast({ title: "Deleted", description: <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /><span>Campaign deleted successfully</span></div> });
+      await fetchFromBackend(`/campaign/${selectedCampaign.id}`, {
+        method: "DELETE",
+      });
+      toast({
+        title: "Deleted",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Campaign deleted successfully</span>
+          </div>
+        ),
+      });
       setShowDeleteModal(false);
       fetchCampaigns();
       setSelectedCampaign(null);
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to delete.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -360,38 +419,51 @@ export default function CampaignsPage() {
       <div className="flex justify-between items-center">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Megaphone className="h-8 w-8 text-primary"/> Campaigns
+            <Megaphone className="h-8 w-8 text-primary" /> Campaigns
           </h1>
           <p className="text-muted-foreground">Manage initiatives.</p>
         </div>
         {canManage && (
-          <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={handleCreate}>
-            <Plus className="h-4 w-4"/> New Campaign
+          <Button
+            className="bg-primary hover:bg-primary/90 gap-2"
+            onClick={handleCreate}
+          >
+            <Plus className="h-4 w-4" /> New Campaign
           </Button>
         )}
       </div>
-      
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Input
+            placeholder="Search..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        
+
         <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Type"/>
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             {Object.entries(campaignTypeLabels).map(([v, l]) => (
-              <SelectItem key={v} value={v}>{l}</SelectItem>
+              <SelectItem key={v} value={v}>
+                {l}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        
-        <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(v: any) => setStatusFilter(v)}
+        >
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status"/>
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
@@ -399,33 +471,30 @@ export default function CampaignsPage() {
             <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <Select value={yardFilter} onValueChange={(v) => setYardFilter(v)}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Yard"/>
+            <SelectValue placeholder="Yard" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Yards</SelectItem>
             {yards.map((y) => (
-              <SelectItem 
-                key={y.id} 
-                value={y.id.toString()}
-                title={y.name}
-              >
-                <span className="truncate block max-w-[180px]">
-                  {y.name}
-                </span>
+              <SelectItem key={y.id} value={y.id.toString()} title={y.name}>
+                <span className="truncate block max-w-[180px]">{y.name}</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        
-        <Button variant="outline" onClick={() => { 
-          setTypeFilter("all"); 
-          setStatusFilter("all"); 
-          setYardFilter("all"); 
-          setSearchTerm(""); 
-        }}>
+
+        <Button
+          variant="outline"
+          onClick={() => {
+            setTypeFilter("all");
+            setStatusFilter("all");
+            setYardFilter("all");
+            setSearchTerm("");
+          }}
+        >
           Clear
         </Button>
       </div>
@@ -436,18 +505,21 @@ export default function CampaignsPage() {
         <>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {paginatedCampaigns.map((campaign) => (
-              <Card key={campaign.id} className="group relative flex flex-col justify-between overflow-hidden border border-border/60 bg-gradient-to-b from-card to-card/50 text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/20">
+              <Card
+                key={campaign.id}
+                className="group relative flex flex-col justify-between overflow-hidden border border-border/60 bg-gradient-to-b from-card to-card/50 text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/20"
+              >
                 {campaign.isActive && (
                   <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-emerald-600 opacity-80" />
                 )}
-                
+
                 <CardHeader className="pb-4 pt-5 pl-7">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 flex-1 min-w-0">
                       {/* TÍTULO CON TRUNCAMIENTO */}
                       <CardTitle className="text-lg font-bold flex items-center gap-2">
-                        <span 
-                          className="truncate block max-w-[200px]" 
+                        <span
+                          className="truncate block max-w-[200px]"
                           title={campaign.nombre}
                         >
                           {campaign.nombre}
@@ -459,30 +531,38 @@ export default function CampaignsPage() {
                           </span>
                         )}
                       </CardTitle>
-                      
+
                       <CardDescription className="flex items-center gap-2 text-xs">
-                        <span className="font-mono text-primary/70">#{campaign.id}</span>
-                        <span>{new Date(campaign.createdAt).toLocaleDateString()}</span>
+                        <span className="font-mono text-primary/70">
+                          #{campaign.id}
+                        </span>
+                        <span>
+                          {new Date(campaign.createdAt).toLocaleDateString()}
+                        </span>
                       </CardDescription>
                     </div>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4"/>
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleDetails(campaign)}>
+                        <DropdownMenuItem
+                          onClick={() => handleDetails(campaign)}
+                        >
                           View Details
                         </DropdownMenuItem>
                         {canManage && (
                           <>
-                            <DropdownMenuItem onClick={() => handleEdit(campaign)}>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(campaign)}
+                            >
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive" 
+                            <DropdownMenuItem
+                              className="text-destructive"
                               onClick={() => handleDelete(campaign)}
                             >
                               Delete
@@ -493,31 +573,42 @@ export default function CampaignsPage() {
                     </DropdownMenu>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-6 pb-6 pl-7 pr-6">
                   <div className="grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-3 border border-border/30">
                     <div className="space-y-0.5">
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        <Ticket className="h-3 w-3"/>Tickets
+                        <Ticket className="h-3 w-3" />
+                        Tickets
                       </span>
-                      <p className="text-2xl font-bold">{campaign.ticketCount ?? 0}</p>
+                      <p className="text-2xl font-bold">
+                        {campaign.ticketCount ?? 0}
+                      </p>
                     </div>
-                    
+
                     <div className="space-y-1 border-l border-border/40 pl-4 flex flex-col justify-center">
                       {/* CONTADORES CON ESTILO DE CHIPS/BADGES */}
                       {campaign.tipo === ManagementType.ONBOARDING ? (
                         <>
                           <div className="flex items-center justify-between text-xs mb-1.5">
-                            <Badge variant="outline" className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm">
-                              <CheckCircle2 className="h-3 w-3 mr-1"/> Registered
+                            <Badge
+                              variant="outline"
+                              className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm"
+                            >
+                              <CheckCircle2 className="h-3 w-3 mr-1" />{" "}
+                              Registered
                             </Badge>
                             <span className="font-bold text-foreground text-sm">
                               {campaign.registeredCount ?? 0}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <Badge variant="outline" className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm">
-                              <XCircle className="h-3 w-3 mr-1"/> Not Registered
+                            <Badge
+                              variant="outline"
+                              className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" /> Not
+                              Registered
                             </Badge>
                             <span className="font-bold text-foreground text-sm">
                               {campaign.notRegisteredCount ?? 0}
@@ -527,16 +618,22 @@ export default function CampaignsPage() {
                       ) : campaign.tipo === ManagementType.AR ? (
                         <>
                           <div className="flex items-center justify-between text-xs mb-1.5">
-                            <Badge variant="outline" className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm">
-                              <DollarSign className="h-3 w-3 mr-1"/> Paid
+                            <Badge
+                              variant="outline"
+                              className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm"
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" /> Paid
                             </Badge>
                             <span className="font-bold text-foreground text-sm">
                               {campaign.paidCount ?? 0}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <Badge variant="outline" className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm">
-                              <Ban className="h-3 w-3 mr-1"/> Not Paid
+                            <Badge
+                              variant="outline"
+                              className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm"
+                            >
+                              <Ban className="h-3 w-3 mr-1" /> Not Paid
                             </Badge>
                             <span className="font-bold text-foreground text-sm">
                               {campaign.notPaidCount ?? 0}
@@ -545,7 +642,9 @@ export default function CampaignsPage() {
                         </>
                       ) : (
                         <div>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Duration</span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                            Duration
+                          </span>
                           <p className="text-lg font-semibold truncate">
                             {campaign.duracion || "—"}
                           </p>
@@ -553,23 +652,29 @@ export default function CampaignsPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
-                    <Badge variant="outline" className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/5 text-blue-700 border-blue-200/40 hover:bg-blue-500/10 dark:text-blue-400 dark:border-blue-900/40 transition-colors">
-                      <Tag className="h-3 w-3"/> 
-                      <span className="truncate block max-w-[100px]" title={campaignTypeLabels[campaign.tipo]}>
+                    <Badge
+                      variant="outline"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/5 text-blue-700 border-blue-200/40 hover:bg-blue-500/10 dark:text-blue-400 dark:border-blue-900/40 transition-colors"
+                    >
+                      <Tag className="h-3 w-3" />
+                      <span
+                        className="truncate block max-w-[100px]"
+                        title={campaignTypeLabels[campaign.tipo]}
+                      >
                         {campaignTypeLabels[campaign.tipo]}
                       </span>
                     </Badge>
-                    
+
                     {/* BADGE DEL YARD CON TRUNCAMIENTO */}
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/5 text-orange-700 border-orange-200/40 hover:bg-orange-500/10 dark:text-orange-400 dark:border-orange-900/40 transition-colors"
                     >
-                      <MapPin className="h-3 w-3 flex-shrink-0" /> 
-                      <span 
-                        className="truncate block max-w-[100px]" 
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span
+                        className="truncate block max-w-[100px]"
                         title={getYardLabel(campaign)}
                       >
                         {getYardLabel(campaign)}
@@ -577,95 +682,96 @@ export default function CampaignsPage() {
                     </Badge>
                   </div>
                 </CardContent>
-                
+
                 <CardFooter className="border-t bg-muted/30 px-6 py-3">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full justify-between text-xs" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-between text-xs"
                     onClick={() => handleDetails(campaign)}
                   >
-                    View Full Report <ArrowUpRight className="h-3 w-3"/>
+                    View Full Report <ArrowUpRight className="h-3 w-3" />
                   </Button>
                 </CardFooter>
               </Card>
             ))}
           </div>
-          
-          <CampaignsPagination 
-            totalCount={filteredCampaigns.length} 
-            currentPage={currentPage} 
-            totalPages={totalPages} 
-            itemsPerPage={itemsPerPage} 
-            onItemsPerPageChange={setItemsPerPage} 
-            onPageChange={setCurrentPage} 
+
+          <CampaignsPagination
+            totalCount={filteredCampaigns.length}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={setItemsPerPage}
+            onPageChange={setCurrentPage}
           />
         </>
       )}
-      
+
       {canManage && (
         <>
-          <CampaignFormModal 
-            open={showCreateModal} 
-            onOpenChange={setShowCreateModal} 
-            title="Create" 
-            description="" 
-            submitLabel="Create" 
-            isSubmitting={isSubmitting} 
-            formData={formData} 
-            onFormChange={setFormData} 
-            validationErrors={validationErrors} 
-            onValidationErrorChange={setValidationErrors} 
-            onSubmit={handleSubmitCreate} 
-            idPrefix="create" 
-            yards={yards} 
+          <CampaignFormModal
+            open={showCreateModal}
+            onOpenChange={setShowCreateModal}
+            title="Create"
+            description=""
+            submitLabel="Create"
+            isSubmitting={isSubmitting}
+            formData={formData}
+            onFormChange={setFormData}
+            validationErrors={validationErrors}
+            onValidationErrorChange={setValidationErrors}
+            onSubmit={handleSubmitCreate}
+            idPrefix="create"
+            yards={yards}
           />
-          
-          <CampaignFormModal 
-            open={showEditModal} 
-            onOpenChange={setShowEditModal} 
-            title="Edit" 
-            description="" 
-            submitLabel="Save" 
-            isSubmitting={isSubmitting} 
-            formData={formData} 
-            onFormChange={setFormData} 
-            validationErrors={validationErrors} 
-            onValidationErrorChange={setValidationErrors} 
-            onSubmit={handleSubmitEdit} 
-            idPrefix="edit" 
-            yards={yards} 
+
+          <CampaignFormModal
+            open={showEditModal}
+            onOpenChange={setShowEditModal}
+            title="Edit"
+            description=""
+            submitLabel="Save"
+            isSubmitting={isSubmitting}
+            formData={formData}
+            onFormChange={setFormData}
+            validationErrors={validationErrors}
+            onValidationErrorChange={setValidationErrors}
+            onSubmit={handleSubmitEdit}
+            idPrefix="edit"
+            yards={yards}
           />
-          
-          <DeleteCampaignModal 
-            open={showDeleteModal} 
-            onOpenChange={setShowDeleteModal} 
-            campaignName={selectedCampaign?.nombre} 
-            ticketCount={selectedCampaign?.ticketCount} 
-            isSubmitting={isSubmitting} 
-            onConfirm={handleSubmitDelete} 
+
+          <DeleteCampaignModal
+            open={showDeleteModal}
+            onOpenChange={setShowDeleteModal}
+            campaignName={selectedCampaign?.nombre}
+            ticketCount={selectedCampaign?.ticketCount}
+            isSubmitting={isSubmitting}
+            onConfirm={handleSubmitDelete}
           />
         </>
       )}
-      
-      <CampaignDetailsModal 
-        open={showDetailsModal} 
-        onOpenChange={setShowDetailsModal} 
-        campaign={selectedCampaign} 
-        campaignTypeLabels={campaignTypeLabels} 
-        getStatusColor={getStatusColor} 
-        getYardLabel={getYardLabel} 
-        showTicketsPanel={showTicketsPanel} 
-        ticketsLoading={ticketsLoading} 
-        tickets={filteredTickets} 
-        ticketSearch={ticketSearch} 
-        setTicketSearch={setTicketSearch} 
-        onViewTickets={async () => { 
-          if(selectedCampaign) { 
-            if(!showTicketsPanel) await fetchTicketsForCampaign(selectedCampaign.id); 
-            setShowTicketsPanel(true); 
-          } 
-        }} 
+
+      <CampaignDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        campaign={selectedCampaign}
+        campaignTypeLabels={campaignTypeLabels}
+        getStatusColor={getStatusColor}
+        getYardLabel={getYardLabel}
+        showTicketsPanel={showTicketsPanel}
+        ticketsLoading={ticketsLoading}
+        tickets={filteredTickets}
+        ticketSearch={ticketSearch}
+        setTicketSearch={setTicketSearch}
+        onViewTickets={async () => {
+          if (selectedCampaign) {
+            if (!showTicketsPanel)
+              await fetchTicketsForCampaign(selectedCampaign.id);
+            setShowTicketsPanel(true);
+          }
+        }}
       />
     </div>
   );

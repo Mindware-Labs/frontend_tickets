@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   Shield,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -478,7 +477,7 @@ export default function PoliciesPage() {
                       className={cn(
                         "pl-9",
                         validationErrors.name &&
-                          "border-destructive focus-visible:ring-destructive"
+                          "border-destructive focus-visible:ring-destructive",
                       )}
                     />
                   </div>
@@ -524,7 +523,7 @@ export default function PoliciesPage() {
                       "border-2 border-dashed rounded-lg p-6 transition-colors flex flex-col items-center justify-center text-center gap-2",
                       formState.file
                         ? "border-primary/30 bg-primary/5"
-                        : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
+                        : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30",
                     )}
                   >
                     <Input

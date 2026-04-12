@@ -2,34 +2,27 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import KPICard from "@/components/dashboard/kpi-card";
 import { TicketActions } from "@/components/dashboard/ticket-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   Ticket as TicketIcon,
-  Calendar,
   RotateCcw,
   TrendingUp,
-  User,
   Clock,
   Target,
-  Activity,
   CheckCircle2,
   AlertCircle,
   BarChart3,
   PieChart,
-  Phone,
-  Timer,
   ArrowRight,
 } from "lucide-react";
-import { FiPhoneCall, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
+import { FiAlertTriangle } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -39,7 +32,6 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Table,
@@ -54,16 +46,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  LabelList,
-  Line,
-  LineChart,
   RadialBar,
   RadialBarChart,
   XAxis,
   YAxis,
   Area,
   AreaChart,
-  ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -121,11 +109,11 @@ const RADIAL_PALETTE = [
 export default function AgentDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [agentKpis, setAgentKpis] = useState<DashboardData["kpis"] | null>(
-    null
+    null,
   );
   const [personalData, setPersonalData] = useState<DashboardData | null>(null);
 
@@ -145,7 +133,7 @@ export default function AgentDashboardPage() {
         {
           cache: "no-store",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
+        },
       );
       const payload = await response.json();
       if (!payload?.success) {
@@ -174,7 +162,7 @@ export default function AgentDashboardPage() {
       const payload = await response.json();
       if (!payload?.success || !Array.isArray(payload.data)) {
         throw new Error(
-          payload?.message || "No se pudieron cargar los tickets del agente."
+          payload?.message || "No se pudieron cargar los tickets del agente.",
         );
       }
 
@@ -217,7 +205,7 @@ export default function AgentDashboardPage() {
       };
 
       const myTickets: AgentTicket[] = payload.data.filter(
-        isTicketAssignedToUser
+        isTicketAssignedToUser,
       );
 
       const statusIs = (ticket: AgentTicket, targets: Set<string>) => {
@@ -231,13 +219,13 @@ export default function AgentDashboardPage() {
       const STATUS_IN_PROGRESS = new Set(["IN_PROGRESS"]);
 
       const openTickets = myTickets.filter((t) =>
-        statusIs(t, STATUS_OPEN)
+        statusIs(t, STATUS_OPEN),
       ).length;
       const inProgressTickets = myTickets.filter((t) =>
-        statusIs(t, STATUS_IN_PROGRESS)
+        statusIs(t, STATUS_IN_PROGRESS),
       ).length;
       const closedTickets = myTickets.filter((t) =>
-        statusIs(t, STATUS_CLOSED)
+        statusIs(t, STATUS_CLOSED),
       ).length;
       const pendingActions = myTickets.filter((t) => {
         const priority = (t.priority || "").toString().toUpperCase();
@@ -296,7 +284,7 @@ export default function AgentDashboardPage() {
           acc[bucket.key] = index;
           return acc;
         },
-        {}
+        {},
       );
 
       myTickets.forEach((ticket) => {
@@ -343,25 +331,25 @@ export default function AgentDashboardPage() {
           acc[campaignLabel] = (acc[campaignLabel] || 0) + 1;
           return acc;
         },
-        {}
+        {},
       );
 
       const ticketsByDispositionMap = myTickets.reduce<Record<string, number>>(
         (acc, ticket) => {
           const label = normalizeLabel(
-            (ticket as any).disposition || "Unspecified"
+            (ticket as any).disposition || "Unspecified",
           );
           acc[label] = (acc[label] || 0) + 1;
           return acc;
         },
-        {}
+        {},
       );
 
       const ticketsByCampaign = Object.entries(ticketsByCampaignMap).map(
-        ([name, count]) => ({ name, count })
+        ([name, count]) => ({ name, count }),
       );
       const ticketsByDisposition = Object.entries(ticketsByDispositionMap).map(
-        ([name, count]) => ({ name, count })
+        ([name, count]) => ({ name, count }),
       );
 
       const recentTickets: DashboardTicket[] = myTickets
@@ -431,7 +419,7 @@ export default function AgentDashboardPage() {
             { day: "Sat", calls: 0 },
             { day: "Sun", calls: 0 },
           ],
-    [dashboardData, personalData]
+    [dashboardData, personalData],
   );
 
   const typeData = useMemo(
@@ -439,7 +427,7 @@ export default function AgentDashboardPage() {
       (personalData || dashboardData)?.charts.ticketsByDisposition?.length
         ? (personalData || dashboardData)!.charts.ticketsByDisposition
         : [{ name: "No data", count: 0 }],
-    [dashboardData, personalData]
+    [dashboardData, personalData],
   );
 
   const campaignData = useMemo(
@@ -447,7 +435,7 @@ export default function AgentDashboardPage() {
       (personalData || dashboardData)?.charts.ticketsByCampaign?.length
         ? (personalData || dashboardData)!.charts.ticketsByCampaign
         : [{ name: "No data", count: 0 }],
-    [dashboardData, personalData]
+    [dashboardData, personalData],
   );
 
   const chartConfig = useMemo<ChartConfig>(
@@ -467,7 +455,7 @@ export default function AgentDashboardPage() {
       "segment-3": { label: "Type 4", color: "hsl(var(--chart-4))" },
       "segment-4": { label: "Type 5", color: "hsl(var(--chart-5))" },
     }),
-    []
+    [],
   );
 
   const radialData = useMemo(
@@ -481,14 +469,14 @@ export default function AgentDashboardPage() {
           fill: `var(--color-${segmentKey})`,
         };
       }),
-    [typeData]
+    [typeData],
   );
 
   const totalCallsLast7Days = useMemo(
     () =>
       agentKpis?.callsLast7Days ??
       callsData.reduce((sum, item) => sum + item.calls, 0),
-    [agentKpis, callsData]
+    [agentKpis, callsData],
   );
 
   const campaignChartData = useMemo(
@@ -497,7 +485,7 @@ export default function AgentDashboardPage() {
         name: campaign.name,
         tickets: campaign.count,
       })),
-    [campaignData]
+    [campaignData],
   );
 
   const getGreeting = () => {
@@ -807,7 +795,7 @@ export default function AgentDashboardPage() {
                               </span>
                               <span className="text-[10px] text-muted-foreground">
                                 {new Date(
-                                  ticket.createdAt
+                                  ticket.createdAt,
                                 ).toLocaleDateString()}
                               </span>
                             </div>
@@ -826,7 +814,7 @@ export default function AgentDashboardPage() {
                             variant="secondary"
                             className={cn(
                               "font-medium text-[10px] uppercase",
-                              statusClass(ticket.status)
+                              statusClass(ticket.status),
                             )}
                           >
                             {ticket.status}

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -13,9 +14,19 @@ import {
   TicketPriority,
   CallDirection,
 } from "./types";
-import { CreateTicketModal } from "./components/CreateTicketModal";
-import { EditTicketModal } from "./components/EditTicketModal";
-import { ViewTicketModal } from "./components/ViewTicketModal";
+const CreateTicketModal = dynamic(
+  () =>
+    import("./components/CreateTicketModal").then((m) => m.CreateTicketModal),
+  { ssr: false },
+);
+const EditTicketModal = dynamic(
+  () => import("./components/EditTicketModal").then((m) => m.EditTicketModal),
+  { ssr: false },
+);
+const ViewTicketModal = dynamic(
+  () => import("./components/ViewTicketModal").then((m) => m.ViewTicketModal),
+  { ssr: false },
+);
 import { TicketsSidebar } from "./components/TicketsSidebar";
 import { TicketsTable } from "./components/TicketsTable";
 import { useReferenceData } from "./hooks/useReferenceData";
@@ -222,9 +233,9 @@ export default function TicketsPage() {
         else if (viewType === "high_priority")
           matchesView = Boolean(
             !isMissed &&
-              status !== "CLOSED" &&
-              status !== "RESOLVED" &&
-              (priority === "HIGH" || priority === "EMERGENCY"),
+            status !== "CLOSED" &&
+            status !== "RESOLVED" &&
+            (priority === "HIGH" || priority === "EMERGENCY"),
           );
         else if (viewType === "all") matchesView = !isMissed;
 
@@ -355,8 +366,7 @@ export default function TicketsPage() {
         previousTicketCountRef.current > 0 &&
         totalMatchingTickets > previousTicketCountRef.current
       ) {
-        const newCount =
-          totalMatchingTickets - previousTicketCountRef.current;
+        const newCount = totalMatchingTickets - previousTicketCountRef.current;
         toast({
           title: "New Ticket" + (newCount > 1 ? "s" : ""),
           description: `${newCount} new ticket${newCount > 1 ? "s" : ""} created`,
@@ -978,9 +988,7 @@ export default function TicketsPage() {
         getAttachmentLabel={getAttachmentLabel}
         getClientName={getClientName}
         getClientPhone={getClientPhone}
-        getYardDisplayName={(t: Ticket) =>
-          getYardDisplayName(t, refData.yards)
-        }
+        getYardDisplayName={(t: Ticket) => getYardDisplayName(t, refData.yards)}
       />
 
       <EditTicketModal

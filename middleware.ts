@@ -74,6 +74,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Redirect root to dashboard based on role
+  if (pathname === "/" && authToken) {
+    const redirectPath = role === "agent" ? "/agent-dashboard" : "/dashboard";
+    return NextResponse.redirect(new URL(redirectPath, request.url));
+  }
+
+  if (pathname === "/" && !authToken) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   if (pathname.startsWith("/dashboard") && role !== "admin") {
     return NextResponse.redirect(new URL("/tickets", request.url));
   }

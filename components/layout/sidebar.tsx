@@ -3,14 +3,9 @@
 import * as React from "react";
 import {
   BookOpen,
-  Bot,
-  Command,
-  Frame,
   LifeBuoy,
   Map,
   PieChart,
-  SquareTerminal,
-  Send,
   LayoutDashboard,
   Ticket,
   Megaphone,
@@ -19,30 +14,16 @@ import {
   PhoneCall,
   ChevronRight,
   User,
-  Settings2,
   UserCircle,
-  CreditCard,
-  LogOut,
-  Sparkles,
-  MoreHorizontal,
-  Calendar,
-  FileText,
-  ShieldCheck,
-  Headphones,
-  Activity,
   Building,
   Phone,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -62,18 +43,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HelpCircle, Mail } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -99,7 +70,7 @@ const data = {
       icon: Ticket,
       items: [],
     },
-     /*{
+    /*{
       title: "Aircall",
       url: "/aircall-test",
       icon: PhoneCall,
@@ -214,24 +185,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Detectar tema actual
-  const currentTheme = resolvedTheme || theme || "dark";
-  const isDarkMode = currentTheme === "dark";
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    // Renderizar placeholder mientras se carga el tema
-    return (
-      <Sidebar
-        collapsible="icon"
-        className="bg-sidebar text-sidebar-foreground border-r"
-        {...props}
-      />
-    );
-  }
+  // Detectar tema actual - defaults to "dark" on SSR
+  const currentTheme = mounted ? resolvedTheme || theme || "dark" : "dark";
+  const isDarkMode = currentTheme === "dark";
 
   // Filtrar navegación para agentes
   const normalizedRole = role?.toString().toLowerCase();
@@ -307,7 +267,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="/dashboard" className="relative overflow-hidden">
+              <Link href="/dashboard" className="relative overflow-hidden">
                 {/* Subtle background effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -360,7 +320,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </span>
                   </div>
                 )}
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -380,7 +340,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       isActive={active}
                       className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
                     >
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         {active && (
                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                         )}
@@ -388,7 +348,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <item.icon className={`${getIconColor()} stroke-2`} />
                         )}
                         <span className={getTextColor()}>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -403,7 +363,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       isActive={active}
                       className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
                     >
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         {active && (
                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                         )}
@@ -411,7 +371,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <item.icon className={`${getIconColor()} stroke-2`} />
                         )}
                         <span className={getTextColor()}>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -452,11 +412,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               isActive={pathname === subItem.url}
                               className={`data-[active=true]:text-primary ${getHoverColor()}`}
                             >
-                              <a href={subItem.url}>
+                              <Link href={subItem.url}>
                                 <span className={getTextColor()}>
                                   {subItem.title}
                                 </span>
-                              </a>
+                              </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -482,13 +442,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 isActive={pathname.startsWith("/customers")}
                 className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
               >
-                <a href="/customers">
+                <Link href="/customers">
                   {pathname.startsWith("/customers") && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                   )}
                   <Users className={`${getIconColor()} stroke-2`} />
                   <span className={getTextColor()}>Customer Management</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             {normalizedRole !== "agent" && (
@@ -499,13 +459,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   isActive={pathname.startsWith("/users")}
                   className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
                 >
-                  <a href="/users">
+                  <Link href="/users">
                     {pathname.startsWith("/users") && (
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                     )}
                     <Users className={`${getIconColor()} stroke-2`} />
                     <span className={getTextColor()}>User Management</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
@@ -517,13 +477,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   isActive={pathname.startsWith("/phone-lines")}
                   className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
                 >
-                  <a href="/phone-lines">
+                  <Link href="/phone-lines">
                     {pathname.startsWith("/phone-lines") && (
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                     )}
                     <Phone className={`${getIconColor()} stroke-2`} />
                     <span className={getTextColor()}>Phone Lines</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
@@ -534,13 +494,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 isActive={pathname.startsWith("/profile")}
                 className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
               >
-                <a href="/profile">
+                <Link href="/profile">
                   {pathname.startsWith("/profile") && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
                   )}
                   <UserCircle className={`${getIconColor()} stroke-2`} />
                   <span className={getTextColor()}>Profile</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -557,10 +517,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     size="sm"
                     className={getHoverColor()}
                   >
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon className={`${getIconColor()} stroke-2`} />
                       <span className={getTextColor()}>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

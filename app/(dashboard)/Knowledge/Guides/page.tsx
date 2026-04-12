@@ -17,7 +17,6 @@ import {
   AlertCircle,
   BookPlus,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -458,7 +457,7 @@ export default function GuidesPage() {
                       className={cn(
                         "pl-9",
                         validationErrors.name &&
-                          "border-destructive focus-visible:ring-destructive"
+                          "border-destructive focus-visible:ring-destructive",
                       )}
                     />
                   </div>
@@ -496,7 +495,7 @@ export default function GuidesPage() {
                     className={cn(
                       "resize-none",
                       validationErrors.description &&
-                        "border-destructive focus-visible:ring-destructive"
+                        "border-destructive focus-visible:ring-destructive",
                     )}
                   />
                   {validationErrors.description && (
@@ -518,7 +517,7 @@ export default function GuidesPage() {
                       "border-2 border-dashed rounded-lg p-6 transition-colors flex flex-col items-center justify-center text-center gap-2",
                       formState.file
                         ? "border-primary/30 bg-primary/5"
-                        : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
+                        : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30",
                     )}
                   >
                     <Input

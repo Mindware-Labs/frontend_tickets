@@ -4,28 +4,16 @@ import * as React from "react";
 import { AppSidebar } from "./sidebar";
 import Topbar from "./topbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { TicketSocketProvider } from "@/components/providers/TicketSocketProvider";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
   return (
     <SidebarProvider>
+      <TicketSocketProvider />
       <AppSidebar />
       <SidebarInset>
         <Topbar />
