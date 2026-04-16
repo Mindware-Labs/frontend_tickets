@@ -185,30 +185,28 @@ export function CreateTicketModal({
     const searchPhoneDigits = normalizePhoneForSearch(localCustomerSearch);
     const searchPhoneDigitsWithoutCountryCode =
       stripUsCountryCode(searchPhoneDigits);
-    return customers.filter(
-      (c) => {
-        const customerPhone = c.phone ?? "";
-        const customerPhoneDigits = normalizePhoneForSearch(customerPhone);
-        const customerPhoneDigitsWithoutCountryCode =
-          stripUsCountryCode(customerPhoneDigits);
+    return customers.filter((c) => {
+      const customerPhone = c.phone ?? "";
+      const customerPhoneDigits = normalizePhoneForSearch(customerPhone);
+      const customerPhoneDigitsWithoutCountryCode =
+        stripUsCountryCode(customerPhoneDigits);
 
-        const matchesPhoneNormalized =
-          !!searchPhoneDigits &&
-          (customerPhoneDigits.includes(searchPhoneDigits) ||
-            customerPhoneDigitsWithoutCountryCode.includes(searchPhoneDigits) ||
-            customerPhoneDigits.includes(searchPhoneDigitsWithoutCountryCode) ||
-            customerPhoneDigitsWithoutCountryCode.includes(
-              searchPhoneDigitsWithoutCountryCode,
-            ));
+      const matchesPhoneNormalized =
+        !!searchPhoneDigits &&
+        (customerPhoneDigits.includes(searchPhoneDigits) ||
+          customerPhoneDigitsWithoutCountryCode.includes(searchPhoneDigits) ||
+          customerPhoneDigits.includes(searchPhoneDigitsWithoutCountryCode) ||
+          customerPhoneDigitsWithoutCountryCode.includes(
+            searchPhoneDigitsWithoutCountryCode,
+          ));
 
-        return (
-          c.name.toLowerCase().includes(searchLower) ||
-          customerPhone.toLowerCase().includes(searchLower) ||
-          c.id.toString().includes(searchLower) ||
-          matchesPhoneNormalized
-        );
-      },
-    );
+      return (
+        c.name.toLowerCase().includes(searchLower) ||
+        customerPhone.toLowerCase().includes(searchLower) ||
+        c.id.toString().includes(searchLower) ||
+        matchesPhoneNormalized
+      );
+    });
   }, [customers, localCustomerSearch]);
 
   // Filtrado de yards
@@ -275,10 +273,10 @@ export function CreateTicketModal({
         <DialogHeader className="px-6 py-4 border-b bg-muted/20">
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
-            Create Manual Ticket
+            Create Manual Call
           </DialogTitle>
           <DialogDescription>
-            Fill in the details below to generate a new support ticket.
+            Fill in the details below to generate a new call record.
           </DialogDescription>
         </DialogHeader>
 
@@ -324,7 +322,7 @@ export function CreateTicketModal({
                           value={localCampaignSearch}
                           onValueChange={setLocalCampaignSearch}
                         />
-                        <ScrollArea className="h-[300px]">
+                        <ScrollArea className="h-75">
                           <CommandList>
                             <CommandEmpty>No campaign found.</CommandEmpty>
                             <CommandGroup>
@@ -421,7 +419,7 @@ export function CreateTicketModal({
                           value={localYardSearch}
                           onValueChange={setLocalYardSearch}
                         />
-                        <ScrollArea className="h-[300px]">
+                        <ScrollArea className="h-75">
                           <CommandList>
                             <CommandEmpty>No yard found.</CommandEmpty>
                             <CommandGroup>
@@ -559,7 +557,7 @@ export function CreateTicketModal({
                             className="h-9"
                           />
                         </div>
-                        <ScrollArea className="h-[300px]">
+                        <ScrollArea className="h-75">
                           <div className="p-1">
                             {filteredCustomers.length === 0 ? (
                               <div className="py-6 text-center text-sm text-muted-foreground">
@@ -667,7 +665,7 @@ export function CreateTicketModal({
                           value={localAgentSearch}
                           onValueChange={setLocalAgentSearch}
                         />
-                        <ScrollArea className="h-[300px]">
+                        <ScrollArea className="h-75">
                           <CommandList>
                             <CommandEmpty>No agent found.</CommandEmpty>
                             <CommandGroup>
@@ -861,11 +859,9 @@ export function CreateTicketModal({
 
               {/* Description */}
               <div className="space-y-2 pt-2">
-                <Label className="text-xs font-semibold">
-                  Issue Description
-                </Label>
+                <Label className="text-xs font-semibold">Notes</Label>
                 <Textarea
-                  placeholder="Describe the issue in detail..."
+                  placeholder="Enter call notes..."
                   value={createFormData.issueDetail}
                   onChange={(e) =>
                     setCreateFormData({
@@ -873,77 +869,15 @@ export function CreateTicketModal({
                       issueDetail: e.target.value,
                     })
                   }
-                  className="min-h-[120px] resize-y bg-background"
+                  className="min-h-30 resize-y bg-background"
                 />
               </div>
-            </div>
-
-            {/* SECTION 4: ATTACHMENTS */}
-            <div className="space-y-4">
-              <Label className="text-xs font-semibold flex items-center gap-1.5">
-                <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                Attachments
-              </Label>
-
-              <div className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-all rounded-lg p-6 flex flex-col items-center justify-center gap-3 text-center cursor-pointer relative">
-                <Input
-                  id="create-ticket-files"
-                  type="file"
-                  multiple
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length === 0) return;
-                    setAttachmentFiles([...attachmentFiles, ...files]);
-                    e.currentTarget.value = "";
-                  }}
-                />
-                <div className="p-3 bg-background rounded-full shadow-sm">
-                  <UploadCloud className="w-6 h-6 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">
-                    Click or drag files to upload
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Support for documents, images (Max 10MB)
-                  </p>
-                </div>
-              </div>
-
-              {attachmentFiles.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                  {attachmentFiles.map((file, idx) => (
-                    <div
-                      key={`${file.name}-${idx}`}
-                      className="flex items-center justify-between p-2.5 bg-muted/40 border rounded-md group"
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <FileText className="w-4 h-4 text-primary shrink-0" />
-                        <span className="text-sm truncate">{file.name}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-red-500"
-                        onClick={() =>
-                          setAttachmentFiles(
-                            attachmentFiles.filter((_, i) => i !== idx),
-                          )
-                        }
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </ScrollArea>
 
         {/* STICKY FOOTER */}
-        <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
@@ -952,7 +886,7 @@ export function CreateTicketModal({
             Cancel
           </Button>
           <Button onClick={onSubmit} disabled={isCreating} className="px-8">
-            {isCreating ? <>Creating...</> : <>Create Ticket</>}
+            {isCreating ? <>Creating...</> : <>Create Call</>}
           </Button>
         </DialogFooter>
       </DialogContent>

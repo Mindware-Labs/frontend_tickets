@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
           </ChartCard>
         </div>
         <div className="lg:col-span-1">
-          <ChartCard title="Ticket Distribution by Type">
+          <ChartCard title="Call Distribution by Type">
             <BarChart data={typeData} color="oklch(0.65 0.18 160)" />
           </ChartCard>
         </div>

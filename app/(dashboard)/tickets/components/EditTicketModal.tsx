@@ -187,10 +187,10 @@ export function EditTicketModal({
         <DialogHeader className="px-6 py-4 border-b bg-muted/20">
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Pencil className="w-5 h-5 text-primary" />
-            Edit Ticket #{ticket.id}
+            Edit Call #{ticket.id}
           </DialogTitle>
           <DialogDescription>
-            Update the ticket information below
+            Update the call information below
           </DialogDescription>
         </DialogHeader>
 

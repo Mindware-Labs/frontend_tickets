@@ -95,7 +95,7 @@ export function TicketsSidebar({
   return (
     <div className="w-full lg:w-48 shrink-0 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Ticketing</h2>
+        <h2 className="text-lg font-semibold">Call Management</h2>
         <Button size="icon" variant="ghost">
           <SlidersHorizontal className="h-4 w-4" />
         </Button>
@@ -103,7 +103,7 @@ export function TicketsSidebar({
 
       <Button onClick={onCreateTicket} className="w-full" size="sm">
         <Plus className="mr-2 h-4 w-4" />
-        New Ticket
+        New Call
       </Button>
 
       <div className="space-y-1">
@@ -115,7 +115,7 @@ export function TicketsSidebar({
           <RefreshCw
             className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
           />
-          All Tickets
+          All Calls
           <span className="ml-auto text-xs">{getViewCount("all")}</span>
         </Button>
         <Button
@@ -133,7 +133,7 @@ export function TicketsSidebar({
           onClick={() => onViewChange("assigned_me")}
         >
           <User className="mr-2 h-4 w-4" />
-          My Tickets
+          My Calls
           <span className="ml-auto text-xs">{getViewCount("assigned_me")}</span>
         </Button>
         <Button
@@ -249,7 +249,7 @@ export function TicketsSidebar({
               <SelectItem value="inbound">Inbound</SelectItem>
               <SelectItem value="outbound">Outbound</SelectItem>
               <SelectItem value="missed">Missed</SelectItem>
-              <SelectItem value="text_message">Text Message</SelectItem>
+              <SelectItem value="voicemail">Voicemail</SelectItem>
             </SelectContent>
           </Select>
         </div>

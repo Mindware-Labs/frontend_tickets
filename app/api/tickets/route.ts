@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       }
 
       const queryString = backendParams.toString();
-      const backendPath = queryString ? `/tickets?${queryString}` : "/tickets";
+      const backendPath = queryString ? `/calls?${queryString}` : "/calls";
 
       console.log(`[NextAPI] GET /api/tickets (page mode) -> ${backendPath}`);
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     // Primera petición para obtener el total
     const firstPageData = await fetchFromBackendServer(
       request,
-      `/tickets?page=1&limit=${pageSize}`,
+      `/calls?page=1&limit=${pageSize}`,
     );
 
     const firstPageTickets = firstPageData?.data || firstPageData || [];
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         pagePromises.push(
           fetchFromBackendServer(
             request,
-            `/tickets?page=${page}&limit=${pageSize}&includeTotal=false`,
+            `/calls?page=${page}&limit=${pageSize}&includeTotal=false`,
           ),
         );
       }
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[NextAPI] POST /api/tickets - Creating ticket...`);
 
-    const data = await fetchFromBackendServer(request, "/tickets", {
+    const data = await fetchFromBackendServer(request, "/calls", {
       method: "POST",
       body: JSON.stringify(body),
     });

@@ -35,7 +35,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
         const data = await fetchFromBackend(`/tickets/${id}`);
         setTicket(data);
       } catch (err: any) {
-        setError(err?.message || "Ticket not found");
+        setError(err?.message || "Call not found");
         setTicket(null);
       } finally {
         setIsLoading(false);
@@ -55,13 +55,17 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={() => router.push("/tickets")} className="gap-2">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/tickets")}
+          className="gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Tickets
         </Button>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Hash className="h-4 w-4" />
-          <span className="font-mono text-sm">Ticket #{id}</span>
+          <span className="font-mono text-sm">Call #{id}</span>
         </div>
       </div>
 
@@ -106,7 +110,9 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                     <p className="text-foreground font-semibold mb-1">
                       Description
                     </p>
-                    <p className="text-sm leading-relaxed">{ticket.issueDetail}</p>
+                    <p className="text-sm leading-relaxed">
+                      {ticket.issueDetail}
+                    </p>
                   </div>
                 )}
               </div>

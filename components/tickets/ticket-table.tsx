@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import type { Ticket } from "@/lib/mock-data"
+import Link from "next/link";
+import type { Call } from "@/lib/mock-data";
 
 interface TicketTableProps {
-  tickets: Ticket[]
+  tickets: Call[];
 }
 
 export default function TicketTable({ tickets }: TicketTableProps) {
@@ -15,7 +15,7 @@ export default function TicketTable({ tickets }: TicketTableProps) {
           <table className="table table-hover mb-0">
             <thead className="table-light">
               <tr>
-                <th>Ticket ID</th>
+                <th>Call ID</th>
                 <th>Client Name</th>
                 <th>Phone</th>
                 <th>Type</th>
@@ -29,7 +29,10 @@ export default function TicketTable({ tickets }: TicketTableProps) {
               {tickets.map((ticket) => (
                 <tr key={ticket.id}>
                   <td>
-                    <Link href={`/tickets/${ticket.id}`} className="text-decoration-none fw-semibold">
+                    <Link
+                      href={`/tickets/${ticket.id}`}
+                      className="text-decoration-none fw-semibold"
+                    >
                       {ticket.id}
                     </Link>
                   </td>
@@ -38,7 +41,9 @@ export default function TicketTable({ tickets }: TicketTableProps) {
                     <small className="text-muted">{ticket.phone}</small>
                   </td>
                   <td>
-                    <span className={`badge ${ticket.type === "Onboarding" ? "bg-info" : "bg-warning"}`}>
+                    <span
+                      className={`badge ${ticket.type === "Onboarding" ? "bg-info" : "bg-warning"}`}
+                    >
                       {ticket.type}
                     </span>
                   </td>
@@ -71,7 +76,10 @@ export default function TicketTable({ tickets }: TicketTableProps) {
                       </button>
                       <ul className="dropdown-menu">
                         <li>
-                          <Link className="dropdown-item" href={`/tickets/${ticket.id}`}>
+                          <Link
+                            className="dropdown-item"
+                            href={`/tickets/${ticket.id}`}
+                          >
                             <i className="bi bi-eye me-2"></i>View Details
                           </Link>
                         </li>
@@ -82,7 +90,8 @@ export default function TicketTable({ tickets }: TicketTableProps) {
                         </li>
                         <li>
                           <button className="dropdown-item">
-                            <i className="bi bi-check-circle me-2"></i>Mark as Closed
+                            <i className="bi bi-check-circle me-2"></i>Mark as
+                            Closed
                           </button>
                         </li>
                         <li>
@@ -103,5 +112,5 @@ export default function TicketTable({ tickets }: TicketTableProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

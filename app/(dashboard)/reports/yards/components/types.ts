@@ -7,7 +7,7 @@ export type Yard = {
   createdAt?: string;
 };
 
-export type Ticket = {
+export type Call = {
   id: number;
   yardId?: number | string | null;
   yard?: { id?: number | string | null; name?: string | null } | null;
@@ -15,10 +15,15 @@ export type Ticket = {
   priority?: string | null;
   disposition?: string | null;
   direction?: string | null;
+  originalDirection?: string | null;
   issueDetail?: string | null;
   createdAt?: string;
   updatedAt?: string;
-  customer?: { id?: number | string | null; name?: string | null; phone?: string | null };
+  customer?: {
+    id?: number | string | null;
+    name?: string | null;
+    phone?: string | null;
+  };
   customerId?: number | string | null;
   customerPhone?: string | null;
   phone?: string | null;
@@ -29,9 +34,23 @@ export type Ticket = {
     email?: string | null;
   } | null;
   agentId?: number | null;
+  aircallId?: string | null;
+  phoneLineId?: number | string | null;
+  duration?: number | null;
+  startedAt?: string | null;
+  answeredAt?: string | null;
+  endedAt?: string | null;
+  recordingUrl?: string | null;
+  voicemailUrl?: string | null;
+  missedCallReason?: string | null;
+  notes?: string | null;
+  followUpDueDate?: string | null;
+  followUpAssignedToId?: number | string | null;
   campaignId?: number | string | null;
   campaign?: { id?: number | string | null; nombre?: string | null } | null;
 };
+
+export type Ticket = Call;
 
 export type YardStatsDay = {
   date: string;

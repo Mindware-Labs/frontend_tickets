@@ -28,7 +28,7 @@ import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { Search, AlertTriangle, Loader2, X, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import type { Ticket } from "@/lib/mock-data";
+import type { Call } from "@/lib/mock-data";
 import type { CampaignOption, YardOption } from "../types";
 import {
   getClientName,
@@ -47,7 +47,7 @@ import {
 } from "../utils/ticket-helpers";
 
 interface TicketsTableProps {
-  tickets: Ticket[];
+  tickets: Call[];
   isLoading: boolean;
   search: string;
   onSearchChange: (value: string) => void;
@@ -61,7 +61,7 @@ interface TicketsTableProps {
   onItemsPerPageChange: (n: number) => void;
   yards: YardOption[];
   campaigns: CampaignOption[];
-  onViewDetails: (ticket: Ticket) => void;
+  onViewDetails: (ticket: Call) => void;
 }
 
 export function TicketsTable({
@@ -170,7 +170,7 @@ export function TicketsTable({
                   <TableCell colSpan={11} className="h-24 text-center">
                     <div className="flex items-center justify-center">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                      Loading tickets...
+                      Loading calls...
                     </div>
                   </TableCell>
                 </TableRow>
@@ -180,11 +180,11 @@ export function TicketsTable({
                     colSpan={11}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No tickets found.
+                    No calls found.
                   </TableCell>
                 </TableRow>
               ) : (
-                tickets.map((ticket: Ticket) => {
+                tickets.map((ticket: Call) => {
                   const yardDisplayName = getYardDisplayName(ticket, yards);
                   let yardType = ticket.yardType;
 

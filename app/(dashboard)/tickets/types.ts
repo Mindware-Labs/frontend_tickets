@@ -1,21 +1,23 @@
-export enum TicketDisposition {
-  BOOKING = "BOOKING",
-  GENERAL_INFO = "GENERAL_INFO",
-  COMPLAINT = "COMPLAINT",
-  SUPPORT = "SUPPORT",
-  BILLING = "BILLING",
-  TECHNICAL_ISSUE = "TECHNICAL_ISSUE",
-  NEW_LEAD = "NEW_LEAD",
-  SPAM = "SPAM",
+export enum CallDisposition {
+  RESOLVED = "RESOLVED",
+  CALLBACK_REQUIRED = "CALLBACK_REQUIRED",
+  CALLBACK_SCHEDULED = "CALLBACK_SCHEDULED",
+  VOICEMAIL_LEFT = "VOICEMAIL_LEFT",
+  NO_ANSWER = "NO_ANSWER",
+  PROMISE_TO_PAY = "PROMISE_TO_PAY",
+  DISPUTE = "DISPUTE",
+  WRONG_NUMBER = "WRONG_NUMBER",
+  ENROLLED = "ENROLLED",
+  ESCALATED = "ESCALATED",
 }
 
-export enum TicketStatus {
+export enum CallStatus {
   OPEN = "OPEN",
   IN_PROGRESS = "IN_PROGRESS",
   CLOSED = "CLOSED",
 }
 
-export enum TicketPriority {
+export enum CallPriority {
   LOW = "LOW",
   MEDIUM = "MEDIUM",
   HIGH = "HIGH",
@@ -50,8 +52,7 @@ export enum CallDirection {
   INBOUND = "INBOUND",
   OUTBOUND = "OUTBOUND",
   MISSED = "MISSED",
-  TEXT_MESSAGE = "TEXT_MESSAGE",
-  MANUAL_ENTRY = "MANUAL_ENTRY",
+  VOICEMAIL = "VOICEMAIL",
 }
 
 export interface CustomerOption {
@@ -87,29 +88,82 @@ export interface YardOption {
   isActive: boolean;
 }
 
-export interface CreateTicketFormData {
+export interface CallRecord {
+  id: number;
+  aircallId?: string | null;
+  direction?: CallDirection | string | null;
+  originalDirection?: CallDirection | string | null;
+  customerId?: number | null;
+  customerPhone?: string | null;
+  phoneLineId?: number | null;
+  phoneLine?: {
+    id: number;
+    label: string | null;
+    phoneNumber: string;
+  } | null;
+  agentId?: number | null;
+  agent?: AgentOption | null;
+  duration?: number | null;
+  startedAt?: string | null;
+  answeredAt?: string | null;
+  endedAt?: string | null;
+  recordingUrl?: string | null;
+  voicemailUrl?: string | null;
+  missedCallReason?: string | null;
+  disposition?: CallDisposition | string | null;
+  notes?: string | null;
+  followUpDueDate?: string | null;
+  followUpAssignedToId?: number | null;
+  followUpAssignedTo?: AgentOption | null;
+  yardId?: number | null;
+  yard?: YardOption | null;
+  campaignId?: number | null;
+  campaign?: CampaignOption | null;
+  campaignOption?: string | null;
+  status?: CallStatus | string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateCallFormData {
   customerId: string;
   customerPhone: string;
   yardId: string;
   campaignId: string;
   campaignOption: string;
   agentId: string;
-  status: TicketStatus;
-  priority: TicketPriority;
+  status: CallStatus;
+  priority: CallPriority;
   direction: CallDirection;
+  originalDirection: CallDirection | "";
+  aircallId: string;
+  phoneLineId: string;
+  duration: string;
+  startedAt: string;
+  answeredAt: string;
+  endedAt: string;
+  recordingUrl: string;
+  voicemailUrl: string;
+  missedCallReason: string;
+  notes: string;
+  followUpDueDate: string;
+  followUpAssignedToId: string;
   callDate: string;
   disposition: string;
   issueDetail: string;
   attachments: string[];
 }
 
-// Extend the Ticket type with fields used across the tickets feature
+export type CreateTicketFormData = CreateCallFormData;
+export type UpdateCallFormData = Partial<CreateCallFormData>;
+export type UpdateTicketFormData = UpdateCallFormData;
+
+// Extend the Call type with fields used across the calls feature
 declare module "@/lib/mock-data" {
-  interface Ticket {
-    issueDetail?: string;
-    yardId?: string;
-    yardType?: string;
-    campaignId?: number;
+  interface Call {
+    aircallId?: string;
+    direction?: string;
+    originalDirection?: string;
     customerId?: number | string;
     customer?: {
       name: string;
@@ -120,17 +174,37 @@ declare module "@/lib/mock-data" {
       notes?: { id: number; content: string; createdAt: string }[];
     };
     customerPhone?: string;
-    disposition?: string;
-    campaignOption?: string;
-    onboardingOption?: string;
-    attachments?: string[];
-    updatedAt?: string;
-    callDate?: string;
-    agentId?: number | string;
+    phoneLineId?: number | string;
     phoneLine?: {
       id: number;
       label: string | null;
       phoneNumber: string;
     } | null;
+    agentId?: number | string;
+    duration?: number | null;
+    startedAt?: string;
+    answeredAt?: string;
+    endedAt?: string;
+    recordingUrl?: string;
+    voicemailUrl?: string;
+    missedCallReason?: string;
+    disposition?: string;
+    notes?: string;
+    followUpDueDate?: string;
+    followUpAssignedToId?: number | string;
+    followUpAssignedTo?: AgentOption | null;
+    yardId?: number | string;
+    yardType?: string;
+    campaignId?: number | string;
+    campaignOption?: string;
+    onboardingOption?: string;
+    attachments?: string[];
+    updatedAt?: string;
+    callDate?: string;
+    issueDetail?: string;
   }
 }
+
+export const TicketDisposition = CallDisposition;
+export const TicketStatus = CallStatus;
+export const TicketPriority = CallPriority;

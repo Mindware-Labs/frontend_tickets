@@ -11,7 +11,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const data = await fetchFromBackendServer(request, `/tickets/${id}`);
+    const data = await fetchFromBackendServer(request, `/calls/${id}`);
 
     return NextResponse.json({
       success: true,
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         success: false,
         message: error.message || "Failed to fetch ticket",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
 
-    const data = await fetchFromBackendServer(request, `/tickets/${id}`, {
+    const data = await fetchFromBackendServer(request, `/calls/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     });
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         success: false,
         message: error.message || "Failed to update ticket",
       },
-      { status }
+      { status },
     );
   }
 }
@@ -63,7 +63,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
-    await fetchFromBackendServer(request, `/tickets/${id}`, {
+    await fetchFromBackendServer(request, `/calls/${id}`, {
       method: "DELETE",
     });
 
@@ -77,7 +77,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         success: false,
         message: error.message || "Failed to delete ticket",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

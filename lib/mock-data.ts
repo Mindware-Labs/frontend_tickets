@@ -1,4 +1,4 @@
-export interface Ticket {
+export interface Call {
   id: string;
   clientName: string;
   yard?: any;
@@ -13,13 +13,33 @@ export interface Ticket {
   callDuration?: string;
   aircallId?: string;
   direction?: "inbound" | "outbound" | "missed";
-  originalDirection?: "inbound" | "outbound";
+  originalDirection?: "inbound" | "outbound" | "voicemail";
+  customerId?: number | string;
+  customerPhone?: string;
+  phoneLineId?: number | string;
+  agentId?: number | string;
+  duration?: number | null;
+  startedAt?: string;
+  answeredAt?: string;
+  endedAt?: string;
+  recordingUrl?: string;
+  voicemailUrl?: string;
+  missedCallReason?: string;
+  notes?: string;
+  followUpDueDate?: string;
+  followUpAssignedToId?: number | string;
+  yardId?: number | string;
+  campaignId?: number | string;
+  campaignOption?: string;
 }
+
+export interface Ticket extends Call {}
 
 export interface Campaign {
   id: string;
   name: string;
-  ticketCount: number;
+  callCount: number;
+  ticketCount?: number;
   status: "Active" | "Paused" | "Completed";
   startDate: string;
 }
@@ -30,11 +50,12 @@ export interface User {
   email: string;
   role: "Admin" | "Supervisor" | "Agent";
   avatar?: string;
-  ticketsAssigned: number;
+  callsAssigned: number;
+  ticketsAssigned?: number;
   status: "Active" | "Inactive";
 }
 
-export const mockTickets: Ticket[] = [
+export const mockCalls: Call[] = [
   {
     id: "TKT-001",
     clientName: "John Smith",
@@ -104,10 +125,13 @@ export const mockTickets: Ticket[] = [
   },
 ];
 
+export const mockTickets = mockCalls;
+
 export const mockCampaigns: Campaign[] = [
   {
     id: "CMP-001",
     name: "Spring Campaign 2024",
+    callCount: 45,
     ticketCount: 45,
     status: "Active",
     startDate: "2024-01-01",
@@ -115,6 +139,7 @@ export const mockCampaigns: Campaign[] = [
   {
     id: "CMP-002",
     name: "Q1 Collections",
+    callCount: 32,
     ticketCount: 32,
     status: "Active",
     startDate: "2024-01-01",
@@ -122,6 +147,7 @@ export const mockCampaigns: Campaign[] = [
   {
     id: "CMP-003",
     name: "New Customer Outreach",
+    callCount: 28,
     ticketCount: 28,
     status: "Active",
     startDate: "2024-01-05",
@@ -129,6 +155,7 @@ export const mockCampaigns: Campaign[] = [
   {
     id: "CMP-004",
     name: "Holiday Follow-up",
+    callCount: 15,
     ticketCount: 15,
     status: "Completed",
     startDate: "2023-12-01",
@@ -141,6 +168,7 @@ export const mockUsers: User[] = [
     name: "Agent Smith",
     email: "agent.smith@callcenter.com",
     role: "Agent",
+    callsAssigned: 12,
     ticketsAssigned: 12,
     status: "Active",
   },
@@ -149,6 +177,7 @@ export const mockUsers: User[] = [
     name: "Agent Davis",
     email: "agent.davis@callcenter.com",
     role: "Agent",
+    callsAssigned: 8,
     ticketsAssigned: 8,
     status: "Active",
   },
@@ -157,6 +186,7 @@ export const mockUsers: User[] = [
     name: "Supervisor Jones",
     email: "supervisor.jones@callcenter.com",
     role: "Supervisor",
+    callsAssigned: 5,
     ticketsAssigned: 5,
     status: "Active",
   },
@@ -165,6 +195,7 @@ export const mockUsers: User[] = [
     name: "Admin Taylor",
     email: "admin.taylor@callcenter.com",
     role: "Admin",
+    callsAssigned: 0,
     ticketsAssigned: 0,
     status: "Active",
   },
@@ -172,41 +203,49 @@ export const mockUsers: User[] = [
 
 export const getDashboardStats = () => {
   const totalCalls = 342;
-  const ticketsCreated = mockTickets.length;
-  const onboardingCompleted = mockTickets.filter(
-    (t) => t.type === "Onboarding" && t.status === "Closed"
+  const callsCreated = mockCalls.length;
+  const ticketsCreated = callsCreated;
+  const onboardingCompleted = mockCalls.filter(
+    (t) => t.type === "Onboarding" && t.status === "Closed",
   ).length;
-  const arPayments = mockTickets.filter(
-    (t) => t.type === "AR" && t.status === "Closed"
+  const arPayments = mockCalls.filter(
+    (t) => t.type === "AR" && t.status === "Closed",
   ).length;
-  const openTickets = mockTickets.filter((t) => t.status === "Open").length;
-  const closedTickets = mockTickets.filter((t) => t.status === "Closed").length;
+  const openCalls = mockCalls.filter((t) => t.status === "Open").length;
+  const closedCalls = mockCalls.filter((t) => t.status === "Closed").length;
 
   return {
     totalCalls,
+    callsCreated,
     ticketsCreated,
     onboardingCompleted,
     arPayments,
-    openTickets,
-    closedTickets,
+    openCalls,
+    closedCalls,
+    openTickets: openCalls,
+    closedTickets: closedCalls,
   };
 };
 
-export const getTicketsByCampaign = () => {
+export const getCallsByCampaign = () => {
   const campaignData: Record<string, number> = {};
-  mockTickets.forEach((ticket) => {
-    campaignData[ticket.campaign] = (campaignData[ticket.campaign] || 0) + 1;
+  mockCalls.forEach((call) => {
+    campaignData[call.campaign] = (campaignData[call.campaign] || 0) + 1;
   });
   return Object.entries(campaignData).map(([name, count]) => ({ name, count }));
 };
 
-export const getTicketsByType = () => {
+export const getTicketsByCampaign = getCallsByCampaign;
+
+export const getCallsByType = () => {
   const typeData: Record<string, number> = {};
-  mockTickets.forEach((ticket) => {
-    typeData[ticket.type] = (typeData[ticket.type] || 0) + 1;
+  mockCalls.forEach((call) => {
+    typeData[call.type] = (typeData[call.type] || 0) + 1;
   });
   return Object.entries(typeData).map(([name, count]) => ({ name, count }));
 };
+
+export const getTicketsByType = getCallsByType;
 
 export const getCallsPerDay = () => {
   return [

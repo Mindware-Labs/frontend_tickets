@@ -7,7 +7,6 @@ import {
   Map,
   PieChart,
   LayoutDashboard,
-  Ticket,
   Megaphone,
   Users,
   BarChart3,
@@ -65,9 +64,9 @@ const data = {
       items: [],
     },
     {
-      title: "Tickets",
+      title: "Calls",
       url: "/tickets",
-      icon: Ticket,
+      icon: PhoneCall,
       items: [],
     },
     /*{
@@ -269,14 +268,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard" className="relative overflow-hidden">
                 {/* Subtle background effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 {/* Image logo */}
                 <div
                   className={`flex aspect-square size-12 items-center justify-center rounded-lg border backdrop-blur-sm overflow-hidden ${
                     isDarkMode
-                      ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/20"
-                      : "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10"
+                      ? "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20"
+                      : "bg-linear-to-br from-primary/10 to-primary/5 border-primary/10"
                   }`}
                 >
                   <div className="relative w-full h-full">

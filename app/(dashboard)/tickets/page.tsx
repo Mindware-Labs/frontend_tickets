@@ -7,11 +7,11 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Ticket } from "@/lib/mock-data";
+import { Call } from "@/lib/mock-data";
 import {
-  CreateTicketFormData,
-  TicketStatus,
-  TicketPriority,
+  CreateCallFormData,
+  CallStatus,
+  CallPriority,
   CallDirection,
 } from "./types";
 const CreateTicketModal = dynamic(
@@ -61,6 +61,22 @@ const ticketsFetcher = async (url: string) => {
 };
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+const normalizeCallStatusForApi = (status?: string | null): string => {
+  const normalized = (status || "")
+    .toString()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
+  if (normalized === "ACTIVE" || normalized === "COMPLETED") return normalized;
+  if (normalized === "PENDING_FOLLOWUP" || normalized === "OVERDUE")
+    return normalized;
+  if (normalized === "CLOSED" || normalized === "RESOLVED") return "COMPLETED";
+  if (normalized === "OPEN" || normalized === "IN_PROGRESS") return "ACTIVE";
+  return "ACTIVE";
+};
+
+// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 export default function TicketsPage() {
@@ -88,7 +104,7 @@ export default function TicketsPage() {
     shouldRetryOnError: false,
   });
 
-  const tickets: Ticket[] = Array.isArray(ticketsPageData)
+  const tickets: Call[] = Array.isArray(ticketsPageData)
     ? ticketsPageData
     : ticketsPageData?.data || [];
   const totalMatchingTickets =
@@ -118,7 +134,7 @@ export default function TicketsPage() {
         return totalMatchingTickets;
       }
 
-      return tickets.filter((ticket: Ticket) => {
+      return tickets.filter((ticket: Call) => {
         if (currentCustomerIdParam) {
           if (
             !ticket.customerId ||
@@ -325,9 +341,22 @@ export default function TicketsPage() {
     campaignId: "",
     campaignOption: "",
     agentId: "",
-    status: TicketStatus.IN_PROGRESS,
-    priority: TicketPriority.LOW,
+    status: CallStatus.IN_PROGRESS,
+    priority: CallPriority.LOW,
     direction: CallDirection.INBOUND,
+    originalDirection: "",
+    aircallId: "",
+    phoneLineId: "",
+    duration: "",
+    startedAt: "",
+    answeredAt: "",
+    endedAt: "",
+    recordingUrl: "",
+    voicemailUrl: "",
+    missedCallReason: "",
+    notes: "",
+    followUpDueDate: "",
+    followUpAssignedToId: "",
     callDate: "",
     disposition: "",
     issueDetail: "",
@@ -341,9 +370,22 @@ export default function TicketsPage() {
     campaignId: "",
     campaignOption: "",
     agentId: "",
-    status: TicketStatus.IN_PROGRESS,
-    priority: TicketPriority.LOW,
+    status: CallStatus.IN_PROGRESS,
+    priority: CallPriority.LOW,
     direction: CallDirection.INBOUND,
+    originalDirection: "",
+    aircallId: "",
+    phoneLineId: "",
+    duration: "",
+    startedAt: "",
+    answeredAt: "",
+    endedAt: "",
+    recordingUrl: "",
+    voicemailUrl: "",
+    missedCallReason: "",
+    notes: "",
+    followUpDueDate: "",
+    followUpAssignedToId: "",
     callDate: "",
     disposition: "",
     issueDetail: "",
@@ -642,9 +684,9 @@ export default function TicketsPage() {
         "",
       agentId: ticketAgentId,
       status: (ticket.status?.toString().toUpperCase().replace(" ", "_") ||
-        TicketStatus.IN_PROGRESS) as TicketStatus,
+        CallStatus.IN_PROGRESS) as CallStatus,
       priority: (ticket.priority?.toString().toUpperCase() ||
-        TicketPriority.LOW) as TicketPriority,
+        CallPriority.LOW) as CallPriority,
       direction: (ticket.direction || CallDirection.INBOUND) as CallDirection,
       callDate:
         ticket.callDate || ticket.createdAt
@@ -659,7 +701,7 @@ export default function TicketsPage() {
             })()
           : "",
       disposition: ticket.disposition || "",
-      issueDetail: ticket.issueDetail || "",
+      issueDetail: ticket.notes || ticket.issueDetail || "",
       attachments: ticket.attachments || [],
     });
 
@@ -690,11 +732,11 @@ export default function TicketsPage() {
           editFormData.agentId && editFormData.agentId !== "none"
             ? Number(editFormData.agentId)
             : undefined,
-        status: editFormData.status?.toUpperCase().replace(" ", "_"),
+        status: normalizeCallStatusForApi(editFormData.status),
         priority: editFormData.priority?.toUpperCase(),
         direction: editFormData.direction?.toUpperCase(),
         disposition: editFormData.disposition || null,
-        issueDetail: editFormData.issueDetail || null,
+        notes: editFormData.issueDetail || null,
         callDate: editFormData.callDate || null,
       };
 
@@ -707,19 +749,6 @@ export default function TicketsPage() {
 
       if (result.success) {
         let updatedTicket = { ...selectedTicket, ...result.data };
-
-        if (attachmentFiles.length > 0) {
-          const formData = new FormData();
-          attachmentFiles.forEach((file) => formData.append("files", file));
-          const uploadResponse = await fetch(
-            `/api/tickets/${updatedTicket.id}/attachments`,
-            { method: "POST", body: formData },
-          );
-          const uploadResult = await uploadResponse.json();
-          if (uploadResult?.success) {
-            updatedTicket = { ...updatedTicket, ...uploadResult.data };
-          }
-        }
 
         mutate(
           (currentTickets: any) =>
@@ -742,7 +771,7 @@ export default function TicketsPage() {
           description: (
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Ticket updated successfully</span>
+              <span>Call updated successfully</span>
             </div>
           ),
         });
@@ -750,7 +779,7 @@ export default function TicketsPage() {
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to update ticket",
+          description: result.message || "Failed to update call",
           variant: "destructive",
         });
       }
@@ -758,7 +787,7 @@ export default function TicketsPage() {
       console.error("Update error:", err);
       toast({
         title: "Error",
-        description: "An error occurred while updating the ticket",
+        description: "An error occurred while updating the call",
         variant: "destructive",
       });
     } finally {
@@ -774,8 +803,8 @@ export default function TicketsPage() {
       campaignId: "",
       campaignOption: "",
       agentId: "",
-      status: TicketStatus.IN_PROGRESS,
-      priority: TicketPriority.LOW,
+      status: CallStatus.IN_PROGRESS,
+      priority: CallPriority.LOW,
       direction: CallDirection.INBOUND,
       callDate: "",
       disposition: "",
@@ -821,13 +850,12 @@ export default function TicketsPage() {
         agentId: createFormData.agentId
           ? Number(createFormData.agentId)
           : undefined,
-        status: createFormData.status || undefined,
+        status: createFormData.status
+          ? normalizeCallStatusForApi(createFormData.status)
+          : undefined,
         priority: createFormData.priority || undefined,
         disposition: createFormData.disposition || undefined,
-        issueDetail: createFormData.issueDetail?.trim() || undefined,
-        attachments: createFormData.attachments.length
-          ? createFormData.attachments
-          : undefined,
+        notes: createFormData.issueDetail?.trim() || undefined,
       };
 
       const response = await fetch("/api/tickets", {
@@ -839,42 +867,12 @@ export default function TicketsPage() {
       const result = await response.json();
       if (result.success) {
         let createdTicket = result.data;
-        if (createAttachmentFiles.length > 0 && createdTicket?.id) {
-          try {
-            const formData = new FormData();
-            createAttachmentFiles.forEach((file) =>
-              formData.append("files", file),
-            );
-            const uploadResponse = await fetch(
-              `/api/tickets/${createdTicket.id}/attachments`,
-              { method: "POST", body: formData },
-            );
-            const uploadResult = await uploadResponse.json();
-            if (uploadResult?.success) {
-              createdTicket = uploadResult.data;
-            } else {
-              toast({
-                title: "Warning",
-                description:
-                  uploadResult?.message ||
-                  "Ticket created, but attachments failed to upload",
-                variant: "destructive",
-              });
-            }
-          } catch {
-            toast({
-              title: "Warning",
-              description: "Ticket created, but attachments failed to upload",
-              variant: "destructive",
-            });
-          }
-        }
         toast({
           title: "Success",
           description: (
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Ticket created successfully</span>
+              <span>Call created successfully</span>
             </div>
           ),
         });

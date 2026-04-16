@@ -12,17 +12,17 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Rig Hut Support Center",
+    default: "Rig Hut Call Center",
     template: "%s | Rig Hut",
   },
-  description: "Call Center Ticket Management System",
+  description: "Call Center Call Management System",
   icons: {
     icon: "/images/LOGO CQ-01.png",
     apple: "/images/LOGO CQ-01.png",
   },
   openGraph: {
     title: "Rig Hut Support Center",
-    description: "Call Center Ticket Management System",
+    description: "Call Center Call Management System",
     images: [
       {
         url: "/images/LOGO CQ-01.png",

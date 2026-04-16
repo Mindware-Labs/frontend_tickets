@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { auth } from "@/lib/auth";
 
-export function useTicketSocket() {
+export function useCallSocket() {
   const { toast } = useToast();
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -39,7 +39,7 @@ export function useTicketSocket() {
     socketRef.current = socket;
 
     // Debounced so that bursts of events (e.g. bulk updates) collapse into one re-fetch
-    const revalidateTicketCaches = () => {
+    const revalidateCallCaches = () => {
       if (revalidateDebounceRef.current)
         clearTimeout(revalidateDebounceRef.current);
       revalidateDebounceRef.current = setTimeout(() => {
@@ -73,13 +73,13 @@ export function useTicketSocket() {
               }
               className="text-blue-200 hover:text-white border-blue-200 hover:border-white"
             >
-              View Ticket
+              View Call
             </ToastAction>
           ),
         });
 
         // Recargar datos
-        revalidateTicketCaches();
+        revalidateCallCaches();
       },
     );
 
@@ -88,7 +88,7 @@ export function useTicketSocket() {
       "ticketsUpdated",
       (data: { action: string; ticketId: number; timestamp: string }) => {
         // Revalidar la lista de tickets cuando hay cambios
-        revalidateTicketCaches();
+        revalidateCallCaches();
       },
     );
 
@@ -103,7 +103,11 @@ export function useTicketSocket() {
   }, [user?.id, toast, router, mutate]);
 }
 
-export function TicketSocketProvider() {
-  useTicketSocket();
+export const useTicketSocket = useCallSocket;
+
+export function CallSocketProvider() {
+  useCallSocket();
   return null;
 }
+
+export const TicketSocketProvider = CallSocketProvider;

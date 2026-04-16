@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import KPICard from "@/components/dashboard/kpi-card";
-import { TicketActions } from "@/components/dashboard/ticket-actions";
+import { CallActions } from "@/components/dashboard/ticket-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   Ticket as TicketIcon,
@@ -460,9 +460,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-base">
                       Workflow Distribution
                     </CardTitle>
-                    <CardDescription>
-                      Share by ticket disposition
-                    </CardDescription>
+                    <CardDescription>Share by call disposition</CardDescription>
                   </CardHeader>
                   <CardContent className="flex h-[260px] items-center justify-center">
                     <ChartContainer
@@ -511,7 +509,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle>Campaign Performance</CardTitle>
                   <CardDescription>
-                    Top active campaigns by ticket volume
+                    Top active campaigns by call volume
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="px-2 sm:p-6">
@@ -769,7 +767,7 @@ export default function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <TicketActions ticketId={String(ticket.id)} />
+                      <CallActions ticketId={String(ticket.id)} />
                     </TableCell>
                   </TableRow>
                 ))
@@ -779,7 +777,7 @@ export default function DashboardPage() {
                     colSpan={5}
                     className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    No recent ticket activity found.
+                    No recent call activity found.
                   </TableCell>
                 </TableRow>
               )}

@@ -4,7 +4,7 @@ import * as React from "react";
 import { AppSidebar } from "./sidebar";
 import Topbar from "./topbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { TicketSocketProvider } from "@/components/providers/TicketSocketProvider";
+import { CallSocketProvider } from "@/components/providers/TicketSocketProvider";
 
 export default function DashboardLayout({
   children,
@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <TicketSocketProvider />
+      <CallSocketProvider />
       <AppSidebar />
       <SidebarInset>
         <Topbar />

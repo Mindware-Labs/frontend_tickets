@@ -12,25 +12,25 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, FileText, User, Activity } from "lucide-react";
 import { toast } from "sonner";
 
-interface TicketActionsProps {
+interface CallActionsProps {
   ticketId: string;
 }
 
-export function TicketActions({ ticketId }: TicketActionsProps) {
+export function CallActions({ ticketId }: CallActionsProps) {
   const router = useRouter();
 
-  const handleViewTicket = () => {
-    toast.success(`Opening ticket #${ticketId}`);
+  const handleViewCall = () => {
+    toast.success(`Opening call #${ticketId}`);
     router.push(`/tickets?id=${ticketId}`);
   };
 
   const handleViewCustomer = () => {
-    toast.success(`Loading customer information for ticket #${ticketId}`);
+    toast.success(`Loading customer information for call #${ticketId}`);
     router.push(`/customers`);
   };
 
   const handleViewRecentActivity = () => {
-    toast.success("Navigating to Recent Tickets Activity");
+    toast.success("Navigating to recent call activity");
     router.push(`/tickets`);
   };
 
@@ -53,11 +53,11 @@ export function TicketActions({ ticketId }: TicketActionsProps) {
           Actions
         </DropdownMenuLabel>
         <DropdownMenuItem
-          onClick={handleViewTicket}
+          onClick={handleViewCall}
           className="rounded-xl px-3 py-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors"
         >
           <FileText className="mr-3 h-4 w-4" />
-          <span>View Ticket</span>
+          <span>View Call</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleViewCustomer}
@@ -71,9 +71,11 @@ export function TicketActions({ ticketId }: TicketActionsProps) {
           className="rounded-xl px-3 py-2 cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-500 transition-colors"
         >
           <Activity className="mr-3 h-4 w-4" />
-          <span>Recent Tickets Activity</span>
+          <span>Recent Calls Activity</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
+
+export const TicketActions = CallActions;

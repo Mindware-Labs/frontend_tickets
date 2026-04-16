@@ -2,8 +2,6 @@ import {
   PhoneOutgoing,
   PhoneIncoming,
   AlertTriangle,
-  MessageCircle,
-  Edit2,
   Users,
   Sparkles,
   Building,
@@ -80,12 +78,11 @@ export function getDirectionIcon(direction: string) {
   if (d === "missed") {
     return <AlertTriangle className="h-3 w-3 text-rose-500" />;
   }
+  if (d === "voicemail") {
+    return <PhoneIncoming className="h-3 w-3 text-slate-500" />;
+  }
   if (d === "outbound") {
     return <PhoneOutgoing className="h-3 w-3 text-blue-500" />;
-  } else if (d === "text_message") {
-    return <MessageCircle className="h-3 w-3 text-purple-500" />;
-  } else if (d === "manual_entry") {
-    return <Edit2 className="h-3 w-3 text-orange-500" />;
   } else {
     return <PhoneIncoming className="h-3 w-3 text-emerald-500" />;
   }
@@ -112,8 +109,8 @@ export function getDirectionText(
   if (d === "text_message") {
     return "Text Message";
   }
-  if (d === "manual_entry") {
-    return "Manual Entry";
+  if (d === "voicemail") {
+    return "Voicemail";
   }
   return d === "outbound" ? "Outbound" : "Inbound";
 }

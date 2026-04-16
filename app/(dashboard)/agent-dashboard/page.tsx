@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { TicketActions } from "@/components/dashboard/ticket-actions";
+import { CallActions } from "@/components/dashboard/ticket-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   Ticket as TicketIcon,
@@ -552,7 +552,7 @@ export default function AgentDashboardPage() {
             Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
-            Here's what's happening with your tickets today.
+            Here's what's happening with your calls today.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -687,14 +687,14 @@ export default function AgentDashboardPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
-                Ticket Volume
+                Call Volume
               </CardTitle>
               <CardDescription>
-                Daily ticket inflow over the last week
+                Daily call inflow over the last week
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <ChartContainer config={chartConfig} className="h-62.5 w-full">
                 <AreaChart
                   data={callsData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -743,7 +743,7 @@ export default function AgentDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Recent Tickets Table */}
+          {/* Recent Calls Table */}
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -751,9 +751,7 @@ export default function AgentDashboardPage() {
                   <Clock className="h-4 w-4 text-primary" />
                   Recent Activity
                 </CardTitle>
-                <CardDescription>
-                  Latest tickets assigned to you
-                </CardDescription>
+                <CardDescription>Latest calls assigned to you</CardDescription>
               </div>
               <Button
                 variant="ghost"
@@ -770,7 +768,7 @@ export default function AgentDashboardPage() {
               <Table>
                 <TableHeader className="bg-muted/40">
                   <TableRow>
-                    <TableHead className="w-[80px]">ID</TableHead>
+                    <TableHead className="w-20">ID</TableHead>
                     <TableHead>Client</TableHead>
                     <TableHead>Campaign</TableHead>
                     <TableHead>Status</TableHead>
@@ -821,7 +819,7 @@ export default function AgentDashboardPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <TicketActions ticketId={String(ticket.id)} />
+                          <CallActions ticketId={String(ticket.id)} />
                         </TableCell>
                       </TableRow>
                     ))
@@ -831,7 +829,7 @@ export default function AgentDashboardPage() {
                         colSpan={5}
                         className="h-32 text-center text-muted-foreground"
                       >
-                        No recent activity found.
+                        No recent call activity found.
                       </TableCell>
                     </TableRow>
                   )}
@@ -850,12 +848,12 @@ export default function AgentDashboardPage() {
                 <PieChart className="h-4 w-4 text-primary" />
                 Distribution
               </CardTitle>
-              <CardDescription>Tickets by disposition</CardDescription>
+              <CardDescription>Calls by disposition</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer
                 config={chartConfig}
-                className="mx-auto aspect-square max-h-[250px]"
+                className="mx-auto aspect-square max-h-62.5"
               >
                 <RadialBarChart
                   data={radialData}
@@ -883,7 +881,7 @@ export default function AgentDashboardPage() {
                       className="h-2 w-2 rounded-full"
                       style={{ backgroundColor: entry.fill }}
                     />
-                    <span className="truncate max-w-[80px]">{entry.name}</span>
+                    <span className="truncate max-w-20">{entry.name}</span>
                   </div>
                 ))}
               </div>
@@ -897,10 +895,10 @@ export default function AgentDashboardPage() {
                 <Target className="h-4 w-4 text-primary" />
                 Top Campaigns
               </CardTitle>
-              <CardDescription>Ticket volume by campaign</CardDescription>
+              <CardDescription>Call volume by campaign</CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <ChartContainer config={chartConfig} className="h-62.5 w-full">
                 <BarChart
                   data={campaignChartData}
                   layout="vertical"
