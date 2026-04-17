@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
 import { fetchFromBackend } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
-import { ManagementType } from "../tickets/types";
+import { ManagementType } from "../calls/types";
 import { Campaign, CampaignFormData, YardSummary } from "./types";
 import { CampaignFormModal } from "./components/CampaignFormModal";
 import { DeleteCampaignModal } from "./components/DeleteCampaignModal";

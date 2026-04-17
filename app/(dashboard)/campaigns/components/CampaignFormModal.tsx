@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ManagementType } from "../../tickets/types";
+import { ManagementType } from "../../calls/types";
 import { CampaignFormData, YardSummary } from "../types";
 
 interface CampaignFormModalProps {
@@ -156,11 +156,13 @@ export function CampaignFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            
             {/* --- YARD COMBOBOX (SEARCHABLE) --- */}
             <div className="space-y-2 flex flex-col">
               <Label htmlFor={`${idPrefix}-yardaId`}>Yard</Label>
-              <Popover open={openYardCombobox} onOpenChange={setOpenYardCombobox}>
+              <Popover
+                open={openYardCombobox}
+                onOpenChange={setOpenYardCombobox}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     id={`${idPrefix}-yardaId`}
@@ -170,13 +172,14 @@ export function CampaignFormModal({
                     className={cn(
                       "w-full justify-between font-normal",
                       !formData.yardaId && "text-muted-foreground",
-                      validationErrors.yardaId && "border-red-500"
+                      validationErrors.yardaId && "border-red-500",
                     )}
                   >
                     {/* EDITADO: Envolvemos el texto en un span truncate */}
                     <span className="truncate">
                       {formData.yardaId
-                        ? yards.find((yard) => yard.id === formData.yardaId)?.name
+                        ? yards.find((yard) => yard.id === formData.yardaId)
+                            ?.name
                         : "Select a yard..."}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -198,12 +201,12 @@ export function CampaignFormModal({
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              !formData.yardaId ? "opacity-100" : "opacity-0"
+                              !formData.yardaId ? "opacity-100" : "opacity-0",
                             )}
                           />
                           No yard
                         </CommandItem>
-                        
+
                         {yards.map((yard) => (
                           <CommandItem
                             key={yard.id}
@@ -224,7 +227,7 @@ export function CampaignFormModal({
                                 "mr-2 h-4 w-4",
                                 formData.yardaId === yard.id
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {yard.name}

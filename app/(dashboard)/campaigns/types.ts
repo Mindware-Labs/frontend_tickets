@@ -1,4 +1,4 @@
-import { ManagementType } from "../tickets/types"; 
+import { ManagementType } from "../calls/types";
 
 export interface YardSummary {
   id: number;
@@ -16,7 +16,7 @@ export interface Campaign {
   createdAt: string;
   updatedAt: string;
   ticketCount?: number;
-  
+
   // CAMPOS NUEVOS
   registeredCount?: number;
   notRegisteredCount?: number;

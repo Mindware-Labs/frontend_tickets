@@ -25,13 +25,13 @@ import {
   CalendarDays,
   BarChart3,
   CheckCircle2, // Nuevo icono
-  XCircle,      // Nuevo icono
-  DollarSign,   // Nuevo icono
-  Ban,          // Nuevo icono
+  XCircle, // Nuevo icono
+  DollarSign, // Nuevo icono
+  Ban, // Nuevo icono
 } from "lucide-react";
 import type { Campaign } from "../types";
 // Importamos el Enum
-import { ManagementType } from "../../tickets/types";
+import { ManagementType } from "../../calls/types";
 import { useRole } from "@/components/providers/role-provider";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +151,7 @@ export function CampaignDetailsModal({
                   variant="secondary"
                   className={cn(
                     "w-fit px-3 py-1 text-xs font-semibold uppercase shadow-none border-0",
-                    getStatusColor(campaign.isActive)
+                    getStatusColor(campaign.isActive),
                   )}
                 >
                   {campaign.isActive ? "Active" : "Inactive"}
@@ -200,7 +200,7 @@ export function CampaignDetailsModal({
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <BarChart3 className="h-4 w-4" /> Metrics
                   </h4>
-                  
+
                   {/* Total Tickets */}
                   <div className="p-5 rounded-lg border bg-gradient-to-br from-card to-muted/20 shadow-sm flex items-center justify-between mb-3">
                     <div className="space-y-1">
@@ -276,7 +276,7 @@ export function CampaignDetailsModal({
                           </p>
                         </div>
                       </div>
-                       <Button asChild className="w-full" variant="secondary">
+                      <Button asChild className="w-full" variant="secondary">
                         <Link
                           href={`/reports/campaigns?campaignId=${campaign.id}`}
                         >
