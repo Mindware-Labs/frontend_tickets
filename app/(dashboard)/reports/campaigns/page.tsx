@@ -27,7 +27,7 @@ import {
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { fetchFromBackend, fetchBlobFromBackend } from "@/lib/api-client";
-import { CallDirection } from "@/app/(dashboard)/tickets/types";
+import { CallDirection } from "@/app/(dashboard)/calls/types";
 import {
   FileText,
   Download,
