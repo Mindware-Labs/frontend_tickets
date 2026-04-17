@@ -5,15 +5,10 @@ import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
-import {
-  CreateCallFormData,
-  CallStatus,
-  CallPriority,
-  CallDirection,
-} from "./types";
+import { CreateCallFormData, CallStatus, CallDirection } from "./types";
 const CreateTicketModal = dynamic(
   () =>
     import("./components/CreateTicketModal").then((m) => m.CreateTicketModal),
@@ -27,10 +22,19 @@ const ViewTicketModal = dynamic(
   () => import("./components/ViewTicketModal").then((m) => m.ViewTicketModal),
   { ssr: false },
 );
-import { TicketsSidebar } from "./components/TicketsSidebar";
 import { TicketsTable } from "./components/TicketsTable";
+import { GroupedCallsTable } from "./components/GroupedCallsTable";
+import type { CustomerCallGroup } from "./components/CustomerTimelineDrawer";
+const CustomerTimelineDrawer = dynamic(
+  () =>
+    import("./components/CustomerTimelineDrawer").then(
+      (m) => m.CustomerTimelineDrawer,
+    ),
+  { ssr: false },
+);
 import { useReferenceData } from "./hooks/useReferenceData";
 import { useTicketFilters } from "./hooks/useTicketFilters";
+import { OverdueCallsBanner } from "./components/OverdueCallsBanner";
 import {
   formatEnumLabel,
   getStatusBadgeColor,
@@ -112,10 +116,6 @@ export default function TicketsPage() {
       ? ticketsPageData.total
       : tickets.length;
   const serverViewCounts = ticketsPageData?.viewCounts || null;
-  const serverTotalPages = Math.max(
-    1,
-    Number(ticketsPageData?.totalPages) || 1,
-  );
 
   // ---- View counts ----
   const getFilteredCountForView = useMemo(() => {
@@ -155,7 +155,6 @@ export default function TicketsPage() {
           ticket.customerPhone ||
           "";
         const status = normalizeEnumValue(ticket.status as any);
-        const priority = (ticket.priority as any)?.toString().toUpperCase();
         const isAssignedToMe = refData.isTicketAssignedToCurrentUser(ticket);
 
         const searchLower = ticketFilters.search
@@ -181,10 +180,6 @@ export default function TicketsPage() {
         const matchesStatus =
           filters.status === "all" ||
           status === normalizeEnumValue(filters.status);
-        const matchesPriority =
-          filters.priority === "all" ||
-          ticket.priority === filters.priority ||
-          priority === filters.priority.toUpperCase();
         const dirFilterValue = filters.direction.toLowerCase();
         const ticketDirection = ticket.direction
           ? ticket.direction.toString().toLowerCase()
@@ -246,19 +241,11 @@ export default function TicketsPage() {
           matchesView = !ticket.assignedTo && !isMissed;
         else if (viewType === "assigned")
           matchesView = !!ticket.assignedTo && !isMissed;
-        else if (viewType === "high_priority")
-          matchesView = Boolean(
-            !isMissed &&
-            status !== "CLOSED" &&
-            status !== "RESOLVED" &&
-            (priority === "HIGH" || priority === "EMERGENCY"),
-          );
-        else if (viewType === "all") matchesView = !isMissed;
+        else if (viewType === "all") matchesView = true;
 
         return (
           matchesSearch &&
           matchesStatus &&
-          matchesPriority &&
           matchesDirection &&
           matchesDisposition &&
           matchesCampaign &&
@@ -281,38 +268,15 @@ export default function TicketsPage() {
     refData.isTicketAssignedToCurrentUser,
   ]);
 
-  const hasHighPriorityOpen = useMemo(
-    () =>
-      tickets.some((t: Ticket) => {
-        if (isMissedCall(t)) return false;
-        const priority = (t.priority || "").toString().toUpperCase();
-        const status = (t.status || "")
-          .toString()
-          .toUpperCase()
-          .replace(/\s+/g, "_");
-        return (
-          (priority === "HIGH" || priority === "EMERGENCY") &&
-          (status === "OPEN" || status === "IN_PROGRESS")
-        );
-      }),
-    [tickets],
-  );
-
-  // ---- Page bounds ----
-  useEffect(() => {
-    if (
-      typeof ticketsPageData?.totalPages === "number" &&
-      ticketFilters.currentPage > serverTotalPages
-    ) {
-      ticketFilters.setCurrentPage(serverTotalPages);
-    }
-  }, [ticketFilters.currentPage, serverTotalPages]);
-
   // ---- Modal state ----
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
+  const [timelineGroup, setTimelineGroup] = useState<CustomerCallGroup | null>(
+    null,
+  );
+  const [selectedTicket, setSelectedTicket] = useState<Call | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
@@ -334,15 +298,14 @@ export default function TicketsPage() {
   const [customerSearchEdit, setCustomerSearchEdit] = useState("");
   const [yardSearchEdit, setYardSearchEdit] = useState("");
 
-  const [createFormData, setCreateFormData] = useState<CreateTicketFormData>({
+  const [createFormData, setCreateFormData] = useState<CreateCallFormData>({
     customerId: "",
     customerPhone: "",
     yardId: "",
     campaignId: "",
     campaignOption: "",
     agentId: "",
-    status: CallStatus.IN_PROGRESS,
-    priority: CallPriority.LOW,
+    status: CallStatus.ACTIVE,
     direction: CallDirection.INBOUND,
     originalDirection: "",
     aircallId: "",
@@ -357,21 +320,17 @@ export default function TicketsPage() {
     notes: "",
     followUpDueDate: "",
     followUpAssignedToId: "",
-    callDate: "",
     disposition: "",
-    issueDetail: "",
-    attachments: [],
   });
 
-  const [editFormData, setEditFormData] = useState<CreateTicketFormData>({
+  const [editFormData, setEditFormData] = useState<CreateCallFormData>({
     customerId: "",
     customerPhone: "",
     yardId: "",
     campaignId: "",
     campaignOption: "",
     agentId: "",
-    status: CallStatus.IN_PROGRESS,
-    priority: CallPriority.LOW,
+    status: CallStatus.ACTIVE,
     direction: CallDirection.INBOUND,
     originalDirection: "",
     aircallId: "",
@@ -386,10 +345,7 @@ export default function TicketsPage() {
     notes: "",
     followUpDueDate: "",
     followUpAssignedToId: "",
-    callDate: "",
     disposition: "",
-    issueDetail: "",
-    attachments: [],
   });
 
   // ---- Ticket notification ----
@@ -424,6 +380,7 @@ export default function TicketsPage() {
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowViewModal(false);
+    setShowTimelineDrawer(false);
   }, [pathname]);
 
   // ---- Handle fromReport parameter ----
@@ -585,7 +542,7 @@ export default function TicketsPage() {
       if (processedTicketIdRef.current === ticketIdParam) return;
 
       const ticket = tickets.find(
-        (t: Ticket) => t.id.toString() === ticketIdParam,
+        (t: Call) => t.id.toString() === ticketIdParam,
       );
       if (ticket) {
         processedTicketIdRef.current = ticketIdParam;
@@ -611,7 +568,7 @@ export default function TicketsPage() {
   }, [ticketIdParam, customerIdParam, tickets.length]);
 
   // ---- Handlers ----
-  const openTicketModal = (ticket: Ticket) => {
+  const openTicketModal = (ticket: Call) => {
     setSelectedTicket(ticket);
     const ticketStatus = ticket.status
       ?.toString()
@@ -625,7 +582,7 @@ export default function TicketsPage() {
     }
   };
 
-  const handleViewDetails = async (ticket: Ticket) => {
+  const handleViewDetails = async (ticket: Call) => {
     try {
       const response = await fetch(`/api/tickets/${ticket.id}`);
       if (response.ok) {
@@ -638,6 +595,12 @@ export default function TicketsPage() {
       // Continue with the ticket from the list
     }
 
+    populateEditFormFromCall(ticket);
+    openTicketModal(ticket);
+  };
+
+  /** Shared form-population logic reused by handleViewDetails, timeline, etc. */
+  const populateEditFormFromCall = (ticket: Call) => {
     setSelectedTicket(ticket);
     setAttachmentFiles([]);
 
@@ -673,6 +636,17 @@ export default function TicketsPage() {
         ? (ticket.campaign as { id: string | number }).id.toString()
         : "";
 
+    const formatDateLocal = (d: string | undefined | null) => {
+      if (!d) return "";
+      const date = new Date(d);
+      const y = date.getFullYear();
+      const mo = String(date.getMonth() + 1).padStart(2, "0");
+      const da = String(date.getDate()).padStart(2, "0");
+      const h = String(date.getHours()).padStart(2, "0");
+      const mi = String(date.getMinutes()).padStart(2, "0");
+      return `${y}-${mo}-${da}T${h}:${mi}`;
+    };
+
     setEditFormData({
       customerId: ticketCustomerId,
       customerPhone: ticketCustomerPhone,
@@ -684,33 +658,54 @@ export default function TicketsPage() {
         "",
       agentId: ticketAgentId,
       status: (ticket.status?.toString().toUpperCase().replace(" ", "_") ||
-        CallStatus.IN_PROGRESS) as CallStatus,
-      priority: (ticket.priority?.toString().toUpperCase() ||
-        CallPriority.LOW) as CallPriority,
+        CallStatus.ACTIVE) as CallStatus,
       direction: (ticket.direction || CallDirection.INBOUND) as CallDirection,
-      callDate:
-        ticket.callDate || ticket.createdAt
-          ? (() => {
-              const date = new Date(ticket.callDate || ticket.createdAt);
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, "0");
-              const day = String(date.getDate()).padStart(2, "0");
-              const hours = String(date.getHours()).padStart(2, "0");
-              const minutes = String(date.getMinutes()).padStart(2, "0");
-              return `${year}-${month}-${day}T${hours}:${minutes}`;
-            })()
-          : "",
+      originalDirection: ((ticket as any).originalDirection || "") as
+        | CallDirection
+        | "",
+      aircallId: (ticket as any).aircallId?.toString() || "",
+      phoneLineId: (ticket as any).phoneLineId?.toString() || "",
+      duration: ticket.duration != null ? ticket.duration.toString() : "",
+      startedAt: formatDateLocal(ticket.startedAt || ticket.createdAt),
+      answeredAt: formatDateLocal((ticket as any).answeredAt),
+      endedAt: formatDateLocal((ticket as any).endedAt),
+      recordingUrl: (ticket as any).recordingUrl || "",
+      voicemailUrl: (ticket as any).voicemailUrl || "",
+      missedCallReason: (ticket as any).missedCallReason || "",
       disposition: ticket.disposition || "",
-      issueDetail: ticket.notes || ticket.issueDetail || "",
-      attachments: ticket.attachments || [],
+      notes: ticket.notes || "",
+      followUpDueDate: formatDateLocal((ticket as any).followUpDueDate),
+      followUpAssignedToId:
+        (ticket as any).followUpAssignedToId?.toString() || "",
     });
 
     setCampaignSearchEdit("");
     setAgentSearchEdit("");
     setCustomerSearchEdit("");
     setYardSearchEdit("");
+  };
 
-    openTicketModal(ticket);
+  /** Open the customer timeline drawer (grouped view) */
+  const handleOpenTimeline = (group: CustomerCallGroup) => {
+    populateEditFormFromCall(group.latestCall as Call);
+    setTimelineGroup(group);
+    setShowTimelineDrawer(true);
+  };
+
+  /** Called when user clicks a call in the timeline sidebar */
+  const handleSelectCallInTimeline = async (call: Call) => {
+    try {
+      const response = await fetch(`/api/tickets/${call.id}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          call = { ...call, ...result.data };
+        }
+      }
+    } catch {
+      // use call as-is
+    }
+    populateEditFormFromCall(call);
   };
 
   const handleUpdateTicketFromModal = async () => {
@@ -733,11 +728,21 @@ export default function TicketsPage() {
             ? Number(editFormData.agentId)
             : undefined,
         status: normalizeCallStatusForApi(editFormData.status),
-        priority: editFormData.priority?.toUpperCase(),
         direction: editFormData.direction?.toUpperCase(),
         disposition: editFormData.disposition || null,
-        notes: editFormData.issueDetail || null,
-        callDate: editFormData.callDate || null,
+        followUpDueDate:
+          (editFormData.disposition === "CALLBACK_REQUIRED" ||
+            editFormData.disposition === "CALLBACK_SCHEDULED") &&
+          editFormData.followUpDueDate
+            ? new Date(editFormData.followUpDueDate).toISOString()
+            : null,
+        followUpAssignedToId:
+          (editFormData.disposition === "CALLBACK_REQUIRED" ||
+            editFormData.disposition === "CALLBACK_SCHEDULED") &&
+          editFormData.followUpAssignedToId
+            ? Number(editFormData.followUpAssignedToId)
+            : null,
+        notes: editFormData.notes || null,
       };
 
       const response = await fetch(`/api/tickets/${selectedTicket.id}`, {
@@ -755,7 +760,7 @@ export default function TicketsPage() {
             currentTickets
               ? {
                   ...currentTickets,
-                  data: (currentTickets.data || []).map((t: Ticket) =>
+                  data: (currentTickets.data || []).map((t: Call) =>
                     t.id === updatedTicket.id ? updatedTicket : t,
                   ),
                 }
@@ -803,13 +808,22 @@ export default function TicketsPage() {
       campaignId: "",
       campaignOption: "",
       agentId: "",
-      status: CallStatus.IN_PROGRESS,
-      priority: CallPriority.LOW,
+      status: CallStatus.ACTIVE,
       direction: CallDirection.INBOUND,
-      callDate: "",
+      originalDirection: "",
+      aircallId: "",
+      phoneLineId: "",
+      duration: "",
+      startedAt: "",
+      answeredAt: "",
+      endedAt: "",
+      recordingUrl: "",
+      voicemailUrl: "",
+      missedCallReason: "",
+      notes: "",
+      followUpDueDate: "",
+      followUpAssignedToId: "",
       disposition: "",
-      issueDetail: "",
-      attachments: [],
     });
     setNewAttachment("");
     setCreateAttachmentFiles([]);
@@ -853,9 +867,8 @@ export default function TicketsPage() {
         status: createFormData.status
           ? normalizeCallStatusForApi(createFormData.status)
           : undefined,
-        priority: createFormData.priority || undefined,
         disposition: createFormData.disposition || undefined,
-        notes: createFormData.issueDetail?.trim() || undefined,
+        notes: createFormData.notes?.trim() || undefined,
       };
 
       const response = await fetch("/api/tickets", {
@@ -903,38 +916,31 @@ export default function TicketsPage() {
 
   // ---- Render ----
   return (
-    <div className="h-screen flex flex-col lg:flex-row gap-6 p-4">
-      <TicketsSidebar
-        activeView={ticketFilters.activeView}
-        onViewChange={ticketFilters.handleViewChange}
-        isLoading={isLoading}
-        getViewCount={getFilteredCountForView}
-        hasHighPriorityOpen={hasHighPriorityOpen}
-        filters={ticketFilters.filters}
-        onFilterChange={ticketFilters.setFilter}
-        agents={refData.agents}
-        campaigns={refData.campaigns}
-        yards={refData.yards}
-        phoneLines={refData.phoneLines}
-        onCreateTicket={() => setShowCreateModal(true)}
-      />
+    <div className="h-screen flex flex-col gap-6 p-4">
+      <OverdueCallsBanner />
 
-      <TicketsTable
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Call Management</h2>
+        <Button onClick={() => setShowCreateModal(true)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          New Call
+        </Button>
+      </div>
+
+      <GroupedCallsTable
         tickets={tickets}
         isLoading={isLoading}
         search={ticketFilters.search}
         onSearchChange={ticketFilters.setSearch}
         dateRange={ticketFilters.dateRange}
         onDateRangeChange={ticketFilters.setDateRange}
-        currentPage={ticketFilters.currentPage}
-        totalPages={serverTotalPages}
-        totalCount={totalMatchingTickets}
-        itemsPerPage={ticketFilters.itemsPerPage}
-        onPageChange={ticketFilters.setCurrentPage}
-        onItemsPerPageChange={ticketFilters.setItemsPerPage}
+        filters={ticketFilters.filters}
+        onFilterChange={ticketFilters.setFilter}
         yards={refData.yards}
         campaigns={refData.campaigns}
-        onViewDetails={handleViewDetails}
+        agents={refData.agents}
+        phoneLines={refData.phoneLines}
+        onOpenTimeline={handleOpenTimeline}
       />
 
       <CreateTicketModal
@@ -981,12 +987,12 @@ export default function TicketsPage() {
         getPriorityColor={getPriorityColor}
         getDirectionIcon={getDirectionIcon}
         getDirectionText={getDirectionText}
-        getCampaign={(t: Ticket) => getCampaign(t, refData.campaigns)}
+        getCampaign={(t: Call) => getCampaign(t, refData.campaigns)}
         getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
         getAttachmentLabel={getAttachmentLabel}
         getClientName={getClientName}
         getClientPhone={getClientPhone}
-        getYardDisplayName={(t: Ticket) => getYardDisplayName(t, refData.yards)}
+        getYardDisplayName={(t: Call) => getYardDisplayName(t, refData.yards)}
       />
 
       <EditTicketModal
@@ -998,7 +1004,9 @@ export default function TicketsPage() {
         agents={refData.agents}
         campaigns={refData.campaigns}
         editFormData={editFormData}
-        setEditFormData={setEditFormData}
+        setEditFormData={(next) =>
+          setEditFormData((prev) => ({ ...prev, ...next }))
+        }
         customerSearchEdit={customerSearchEdit}
         setCustomerSearchEdit={setCustomerSearchEdit}
         yardSearchEdit={yardSearchEdit}
@@ -1012,6 +1020,30 @@ export default function TicketsPage() {
         savedAttachments={savedAttachments}
         isUpdating={isUpdating}
         onSubmit={handleUpdateTicketFromModal}
+        getAttachmentLabel={getAttachmentLabel}
+        getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
+      />
+
+      <CustomerTimelineDrawer
+        open={showTimelineDrawer}
+        onClose={() => setShowTimelineDrawer(false)}
+        group={timelineGroup}
+        activeFilters={ticketFilters.filters}
+        selectedCall={selectedTicket}
+        onSelectCall={handleSelectCallInTimeline}
+        editFormData={editFormData}
+        setEditFormData={(next) =>
+          setEditFormData((prev) => ({ ...prev, ...next }))
+        }
+        attachmentFiles={attachmentFiles}
+        setAttachmentFiles={setAttachmentFiles}
+        savedAttachments={savedAttachments}
+        isUpdating={isUpdating}
+        onUpdate={handleUpdateTicketFromModal}
+        customers={refData.customers}
+        yards={refData.yards}
+        agents={refData.agents}
+        campaigns={refData.campaigns}
         getAttachmentLabel={getAttachmentLabel}
         getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
       />

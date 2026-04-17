@@ -105,14 +105,10 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                       : "N/A"}
                   </span>
                 </div>
-                {ticket.issueDetail && (
+                {ticket.notes && (
                   <div className="mt-3">
-                    <p className="text-foreground font-semibold mb-1">
-                      Description
-                    </p>
-                    <p className="text-sm leading-relaxed">
-                      {ticket.issueDetail}
-                    </p>
+                    <p className="text-foreground font-semibold mb-1">Notes</p>
+                    <p className="text-sm leading-relaxed">{ticket.notes}</p>
                   </div>
                 )}
               </div>

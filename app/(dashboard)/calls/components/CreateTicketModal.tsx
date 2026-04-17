@@ -65,8 +65,8 @@ import {
   OnboardingOption,
   ArOption,
   TicketDisposition,
-  TicketPriority,
   TicketStatus,
+  CallStatus,
   YardOption,
 } from "../types";
 import { cn } from "@/lib/utils"; // Utilidad estándar de shadcn
@@ -758,7 +758,7 @@ export function CreateTicketModal({
                     onValueChange={(value) =>
                       setCreateFormData({
                         ...createFormData,
-                        status: value as TicketStatus,
+                        status: value as CallStatus,
                       })
                     }
                   >
@@ -784,11 +784,11 @@ export function CreateTicketModal({
                   <Input
                     type="datetime-local"
                     className="block w-full"
-                    value={createFormData.callDate}
+                    value={createFormData.startedAt}
                     onChange={(e) =>
                       setCreateFormData({
                         ...createFormData,
-                        callDate: e.target.value,
+                        startedAt: e.target.value,
                       })
                     }
                   />
@@ -798,36 +798,12 @@ export function CreateTicketModal({
 
             <Separator />
 
-            {/* SECTION 3: PRIORITY & DISPOSITION */}
+            {/* SECTION 3: DISPOSITION & NOTES */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" /> Details & Resolution
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Priority</Label>
-                  <Select
-                    value={createFormData.priority}
-                    onValueChange={(value) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        priority: value as TicketPriority,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(TicketPriority).map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {formatEnumLabel(v)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />{" "}
@@ -862,11 +838,11 @@ export function CreateTicketModal({
                 <Label className="text-xs font-semibold">Notes</Label>
                 <Textarea
                   placeholder="Enter call notes..."
-                  value={createFormData.issueDetail}
+                  value={createFormData.notes}
                   onChange={(e) =>
                     setCreateFormData({
                       ...createFormData,
-                      issueDetail: e.target.value,
+                      notes: e.target.value,
                     })
                   }
                   className="min-h-30 resize-y bg-background"

@@ -69,8 +69,7 @@ import {
   OnboardingOption,
   ArOption,
   TicketDisposition,
-  TicketPriority,
-  TicketStatus,
+  CallStatus,
   YardOption,
 } from "../types";
 import { Ticket } from "@/lib/mock-data";
@@ -83,13 +82,13 @@ interface EditTicketFormData {
   campaignId: string;
   campaignOption: string;
   agentId: string;
-  status: TicketStatus;
-  priority: TicketPriority;
+  status: CallStatus;
   direction: CallDirection;
-  callDate: string;
+  startedAt: string;
   disposition: string;
-  issueDetail: string;
-  attachments: string[];
+  followUpDueDate: string;
+  followUpAssignedToId: string;
+  notes: string;
 }
 
 interface EditTicketModalProps {
@@ -684,7 +683,7 @@ export function EditTicketModal({
                     onValueChange={(value) =>
                       setEditFormData({
                         ...editFormData,
-                        status: value as TicketStatus,
+                        status: value as CallStatus,
                       })
                     }
                   >
@@ -692,7 +691,7 @@ export function EditTicketModal({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(TicketStatus).map((v) => (
+                      {Object.values(CallStatus).map((v) => (
                         <SelectItem key={v} value={v}>
                           {formatEnumLabel(v)}
                         </SelectItem>
@@ -710,11 +709,11 @@ export function EditTicketModal({
                   <Input
                     type="datetime-local"
                     className="block w-full"
-                    value={editFormData.callDate}
+                    value={editFormData.startedAt}
                     onChange={(e) =>
                       setEditFormData({
                         ...editFormData,
-                        callDate: e.target.value,
+                        startedAt: e.target.value,
                       })
                     }
                   />
@@ -724,36 +723,12 @@ export function EditTicketModal({
 
             <Separator />
 
-            {/* SECTION 3: PRIORITY & DISPOSITION */}
+            {/* SECTION 3: DISPOSITION & NOTES */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" /> Details & Resolution
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Priority</Label>
-                  <Select
-                    value={editFormData.priority}
-                    onValueChange={(value) =>
-                      setEditFormData({
-                        ...editFormData,
-                        priority: value as TicketPriority,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(TicketPriority).map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {formatEnumLabel(v)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />{" "}
@@ -783,119 +758,72 @@ export function EditTicketModal({
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-2 pt-2">
-                <Label className="text-xs font-semibold">
-                  Issue Description
-                </Label>
-                <Textarea
-                  placeholder="Describe the issue..."
-                  value={editFormData.issueDetail}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      issueDetail: e.target.value,
-                    })
-                  }
-                  className="min-h-[120px] resize-y"
-                />
-              </div>
-            </div>
-
-            {/* SECTION 4: ATTACHMENTS */}
-            <div className="space-y-6">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Paperclip className="w-4 h-4" /> Attachments
-              </h3>
-
-              {/* Saved Attachments */}
-              {savedAttachments.length > 0 && (
-                <div className="space-y-3">
-                  <Label className="text-xs font-semibold">
-                    Existing Files
-                  </Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {savedAttachments.map((att, idx) => (
-                      <div
-                        key={`${att}-${idx}`}
-                        className="flex items-center justify-between p-3 bg-muted/20 border rounded-lg hover:bg-muted/40 transition-colors group cursor-pointer"
-                        onClick={() =>
-                          window.open(getAttachmentUrl(att), "_blank")
-                        }
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <FileText className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="text-sm truncate font-medium">
-                            {getAttachmentLabel(att)}
-                          </span>
-                        </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    ))}
+              {/* Callback Required / Scheduled – follow-up fields */}
+              {(editFormData.disposition ===
+                TicketDisposition.CALLBACK_REQUIRED ||
+                editFormData.disposition ===
+                  TicketDisposition.CALLBACK_SCHEDULED) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5">
+                      <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+                      Follow-up Date
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      value={editFormData.followUpDueDate}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          followUpDueDate: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+                      Follow-up Assigned To
+                    </Label>
+                    <Select
+                      value={editFormData.followUpAssignedToId || "none"}
+                      onValueChange={(value) =>
+                        setEditFormData({
+                          ...editFormData,
+                          followUpAssignedToId: value === "none" ? "" : value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select agent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not assigned</SelectItem>
+                        {agents.map((a) => (
+                          <SelectItem key={a.id} value={a.id.toString()}>
+                            {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
 
-              {/* New Uploads */}
-              <div className="space-y-3">
-                <Label className="text-xs font-semibold">
-                  Upload New Files
-                </Label>
-                <div className="border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-muted/50 transition-all rounded-lg p-6 flex flex-col items-center justify-center gap-3 text-center cursor-pointer relative">
-                  <Input
-                    id="edit-ticket-files"
-                    type="file"
-                    multiple
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length === 0) return;
-                      setAttachmentFiles([...attachmentFiles, ...files]);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-                  <div className="p-3 bg-background rounded-full shadow-sm">
-                    <UploadCloud className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
-                      Click or drag files to upload
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Additional files for this ticket
-                    </p>
-                  </div>
-                </div>
-
-                {attachmentFiles.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                    {attachmentFiles.map((file, idx) => (
-                      <div
-                        key={`${file.name}-${idx}`}
-                        className="flex items-center justify-between p-2.5 bg-muted/40 border rounded-md group"
-                      >
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <Download className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span className="text-sm truncate">{file.name}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-red-500"
-                          onClick={() =>
-                            setAttachmentFiles(
-                              attachmentFiles.filter((_, i) => i !== idx),
-                            )
-                          }
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* Notes */}
+              <div className="space-y-2 pt-2">
+                <Label className="text-xs font-semibold">Notes</Label>
+                <Textarea
+                  placeholder="Enter call notes..."
+                  value={editFormData.notes}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      notes: e.target.value,
+                    })
+                  }
+                  className="min-h-[120px] resize-y"
+                />
               </div>
             </div>
           </div>

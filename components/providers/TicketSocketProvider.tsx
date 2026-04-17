@@ -7,6 +7,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { auth } from "@/lib/auth";
+import { revalidateNotifications } from "@/hooks/use-notifications";
 
 export function useCallSocket() {
   const { toast } = useToast();
@@ -88,6 +89,46 @@ export function useCallSocket() {
       "ticketsUpdated",
       (data: { action: string; ticketId: number; timestamp: string }) => {
         // Revalidar la lista de tickets cuando hay cambios
+        revalidateCallCaches();
+      },
+    );
+
+    // Listen for overdue callback notifications
+    socket.on(
+      "callbackDue",
+      (data: {
+        id: number;
+        type: string;
+        message: string;
+        callId: number;
+        agentId: number | null;
+        createdAt: string;
+      }) => {
+        // Play notification sound
+        try {
+          const audio = new Audio("/sounds/notification.mp3");
+          audio.play().catch(() => {});
+        } catch (e) {}
+
+        // Show toast
+        toast({
+          title: "⏰ Callback Overdue",
+          description: data.message,
+          duration: 10000,
+          className: "bg-slate-900 border-l-4 border-l-red-500 text-white",
+          action: (
+            <ToastAction
+              altText="View"
+              onClick={() => router.push(`/tickets?id=${data.callId}`)}
+              className="text-red-200 hover:text-white border-red-200 hover:border-white"
+            >
+              View Call
+            </ToastAction>
+          ),
+        });
+
+        // Revalidate notification + ticket caches
+        revalidateNotifications();
         revalidateCallCaches();
       },
     );

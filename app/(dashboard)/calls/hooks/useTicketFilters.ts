@@ -7,20 +7,20 @@ import { startOfDay, endOfDay } from "date-fns";
 
 export type FilterKey =
   | "status"
-  | "priority"
   | "direction"
   | "disposition"
   | "campaign"
+  | "campaignOption"
   | "yard"
   | "agent"
   | "phoneLine";
 
 export interface Filters {
   status: string;
-  priority: string;
   direction: string;
   disposition: string;
   campaign: string;
+  campaignOption: string;
   yard: string;
   agent: string;
   phoneLine: string;
@@ -37,10 +37,10 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
   const [search, setSearch] = useState("");
   const [activeView, setActiveView] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
   const [dispositionFilter, setDispositionFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
+  const [campaignOptionFilter, setCampaignOptionFilter] = useState("all");
   const [yardFilter, setYardFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
   const [phoneLineFilter, setPhoneLineFilter] = useState("all");
@@ -52,10 +52,10 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
 
   const filters: Filters = {
     status: statusFilter,
-    priority: priorityFilter,
     direction: directionFilter,
     disposition: dispositionFilter,
     campaign: campaignFilter,
+    campaignOption: campaignOptionFilter,
     yard: yardFilter,
     agent: agentFilter,
     phoneLine: phoneLineFilter,
@@ -64,10 +64,10 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
   const setFilter = (key: FilterKey, value: string) => {
     const setters: Record<FilterKey, (v: string) => void> = {
       status: setStatusFilter,
-      priority: setPriorityFilter,
       direction: setDirectionFilter,
       disposition: setDispositionFilter,
       campaign: setCampaignFilter,
+      campaignOption: setCampaignOptionFilter,
       yard: setYardFilter,
       agent: setAgentFilter,
       phoneLine: setPhoneLineFilter,
@@ -103,20 +103,20 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
       : null;
 
     params.set("mode", "page");
-    params.set("page", currentPage.toString());
-    params.set("limit", itemsPerPage.toString());
+    params.set("limit", "100000");
     params.set("includeTotal", "true");
     params.set("includeViewCounts", "true");
     params.set("view", activeView);
 
     if (normalizedSearch) params.set("search", normalizedSearch);
     if (statusFilter !== "all") params.set("status", statusFilter);
-    if (priorityFilter !== "all") params.set("priority", priorityFilter);
     if (directionValue && directionValue !== "all")
       params.set("direction", directionValue);
     if (dispositionFilter !== "all")
       params.set("disposition", dispositionFilter);
     if (campaignFilter !== "all") params.set("campaignId", campaignFilter);
+    if (campaignOptionFilter !== "all")
+      params.set("campaignOption", campaignOptionFilter);
     if (yardFilter !== "all") params.set("yardId", yardFilter);
     if (agentFilter !== "all") params.set("agentId", agentFilter);
     if (phoneLineFilter !== "all") params.set("phoneLineId", phoneLineFilter);
@@ -133,14 +133,12 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
   }, [
     searchParams,
     deferredSearch,
-    currentPage,
-    itemsPerPage,
     activeView,
     statusFilter,
-    priorityFilter,
     directionFilter,
     dispositionFilter,
     campaignFilter,
+    campaignOptionFilter,
     yardFilter,
     agentFilter,
     phoneLineFilter,
@@ -180,11 +178,11 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
   }, [
     search,
     statusFilter,
-    priorityFilter,
     directionFilter,
     dispositionFilter,
     activeView,
     campaignFilter,
+    campaignOptionFilter,
     yardFilter,
     agentFilter,
     phoneLineFilter,

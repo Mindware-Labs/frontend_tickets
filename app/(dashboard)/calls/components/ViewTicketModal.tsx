@@ -1,6 +1,7 @@
 "use client";
 
 import { JSX, useEffect, useRef } from "react";
+import { CallRecordingPlayer } from "@/components/tickets/CallRecordingPlayer";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ import {
   PhoneOutgoing,
   StickyNote,
   Calendar as CalendarIcon,
+  Headphones,
 } from "lucide-react";
 import { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -449,6 +451,18 @@ export function ViewTicketModal({
                   {ticket.issueDetail || "No details provided."}
                 </div>
               </div>
+
+              {/* Call Recording */}
+              {(ticket as any).recordingUrl && ticket.id && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Headphones className="h-4 w-4" /> Call Recording
+                  </h4>
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <CallRecordingPlayer callId={ticket.id} />
+                  </div>
+                </div>
+              )}
 
               {savedAttachments.length > 0 && (
                 <div className="space-y-4">

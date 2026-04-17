@@ -58,6 +58,12 @@ const user = {
 const data = {
   navMain: [
     {
+      title: "Aircall",
+      url: "/aircall",
+      icon: PhoneCall,
+      items: [],
+    },
+    {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutDashboard,
@@ -65,7 +71,7 @@ const data = {
     },
     {
       title: "Calls",
-      url: "/tickets",
+      url: "/calls",
       icon: PhoneCall,
       items: [],
     },

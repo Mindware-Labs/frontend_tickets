@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, Bell, Sun, Moon } from "lucide-react";
+import { NotificationBell } from "./notification-bell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -150,6 +151,8 @@ export default function Topbar() {
 
         <div className="flex items-center gap-4">
           <Separator orientation="vertical" className="h-4" />
+
+          <NotificationBell />
 
           <button
             type="button"

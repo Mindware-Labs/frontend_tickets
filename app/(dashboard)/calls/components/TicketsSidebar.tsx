@@ -11,18 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus, SlidersHorizontal } from "lucide-react";
 import {
-  RefreshCw,
-  Plus,
-  User,
-  Hash,
-  Star,
-  AlertTriangle,
-  SlidersHorizontal,
-} from "lucide-react";
-import {
-  TicketStatus,
-  TicketDisposition,
+  CallStatus,
+  CallDisposition,
+  CallDirection,
+  CampaignOptionEnum,
   type AgentOption,
   type CampaignOption,
   type YardOption,
@@ -31,11 +25,6 @@ import { formatEnumLabel } from "../utils/ticket-helpers";
 import type { Filters, FilterKey } from "../hooks/useTicketFilters";
 
 interface TicketsSidebarProps {
-  activeView: string;
-  onViewChange: (view: string) => void;
-  isLoading: boolean;
-  getViewCount: (view: string) => number;
-  hasHighPriorityOpen: boolean;
   filters: Filters;
   onFilterChange: (key: FilterKey, value: string) => void;
   agents: AgentOption[];
@@ -46,11 +35,6 @@ interface TicketsSidebarProps {
 }
 
 export function TicketsSidebar({
-  activeView,
-  onViewChange,
-  isLoading,
-  getViewCount,
-  hasHighPriorityOpen,
   filters,
   onFilterChange,
   agents,
@@ -106,75 +90,6 @@ export function TicketsSidebar({
         New Call
       </Button>
 
-      <div className="space-y-1">
-        <Button
-          variant={activeView === "all" ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          onClick={() => onViewChange("all")}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-          />
-          All Calls
-          <span className="ml-auto text-xs">{getViewCount("all")}</span>
-        </Button>
-        <Button
-          variant={activeView === "assigned" ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          onClick={() => onViewChange("assigned")}
-        >
-          <User className="mr-2 h-4 w-4" />
-          Assigned
-          <span className="ml-auto text-xs">{getViewCount("assigned")}</span>
-        </Button>
-        <Button
-          variant={activeView === "assigned_me" ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          onClick={() => onViewChange("assigned_me")}
-        >
-          <User className="mr-2 h-4 w-4" />
-          My Calls
-          <span className="ml-auto text-xs">{getViewCount("assigned_me")}</span>
-        </Button>
-        <Button
-          variant={activeView === "unassigned" ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          onClick={() => onViewChange("unassigned")}
-        >
-          <Hash className="mr-2 h-4 w-4" />
-          Unassigned
-          <span className="ml-auto text-xs">{getViewCount("unassigned")}</span>
-        </Button>
-        <Button
-          variant={activeView === "missed" ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          onClick={() => onViewChange("missed")}
-        >
-          <AlertTriangle className="mr-2 h-4 w-4" />
-          Missed Calls
-          <span className="ml-auto text-xs">{getViewCount("missed")}</span>
-        </Button>
-        <Button
-          variant={activeView === "high_priority" ? "secondary" : "ghost"}
-          className="w-full justify-start relative"
-          onClick={() => onViewChange("high_priority")}
-        >
-          <Star className="mr-2 h-4 w-4" />
-          High Priority
-          {hasHighPriorityOpen && (
-            <span
-              className="ml-2 animate-pulse"
-              title="High/Emergency Priority Abierta"
-            >
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-            </span>
-          )}
-          <span className="ml-auto text-xs">
-            {getViewCount("high_priority")}
-          </span>
-        </Button>
-      </div>
-
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Filters</h3>
         <div className="space-y-2">
@@ -188,29 +103,11 @@ export function TicketsSidebar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              {Object.values(TicketStatus).map((value) => (
+              {Object.values(CallStatus).map((value) => (
                 <SelectItem key={value} value={value}>
                   {formatEnumLabel(value)}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Priority</Label>
-          <Select
-            value={filters.priority}
-            onValueChange={(v) => onFilterChange("priority", v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -265,7 +162,7 @@ export function TicketsSidebar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Dispositions</SelectItem>
-              {Object.values(TicketDisposition).map((value) => (
+              {Object.values(CallDisposition).map((value) => (
                 <SelectItem key={value} value={value}>
                   {formatEnumLabel(value)}
                 </SelectItem>

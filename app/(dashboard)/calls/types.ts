@@ -12,16 +12,10 @@ export enum CallDisposition {
 }
 
 export enum CallStatus {
-  OPEN = "OPEN",
-  IN_PROGRESS = "IN_PROGRESS",
-  CLOSED = "CLOSED",
-}
-
-export enum CallPriority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
-  EMERGENCY = "EMERGENCY",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
+  PENDING_FOLLOWUP = "PENDING_FOLLOWUP",
+  OVERDUE = "OVERDUE",
 }
 
 export enum ManagementType {
@@ -53,6 +47,22 @@ export enum CallDirection {
   OUTBOUND = "OUTBOUND",
   MISSED = "MISSED",
   VOICEMAIL = "VOICEMAIL",
+}
+
+export enum CampaignOptionEnum {
+  // Onboarding options
+  NOT_REGISTER = "NOT_REGISTERED",
+  REGISTER = "REGISTERED",
+  PAID_WITH_LL = "PAID_WITH_LL",
+  CANCELED = "CANCELED",
+  // AR options
+  PAID = "PAID",
+  NOT_PAID = "NOT_PAID",
+  OFFLINE_PAYMENT = "OFFLINE_PAYMENT",
+  NOT_PAID_CHECK = "NOT_PAID_CHECK",
+  MOVED_OUT = "MOVED_OUT",
+  BALANCE_0 = "BALANCE_0",
+  DO_NOT_CALL = "DO_NOT_CALL",
 }
 
 export interface CustomerOption {
@@ -133,7 +143,6 @@ export interface CreateCallFormData {
   campaignOption: string;
   agentId: string;
   status: CallStatus;
-  priority: CallPriority;
   direction: CallDirection;
   originalDirection: CallDirection | "";
   aircallId: string;
@@ -148,10 +157,7 @@ export interface CreateCallFormData {
   notes: string;
   followUpDueDate: string;
   followUpAssignedToId: string;
-  callDate: string;
   disposition: string;
-  issueDetail: string;
-  attachments: string[];
 }
 
 export type CreateTicketFormData = CreateCallFormData;
@@ -162,8 +168,8 @@ export type UpdateTicketFormData = UpdateCallFormData;
 declare module "@/lib/mock-data" {
   interface Call {
     aircallId?: string;
-    direction?: string;
-    originalDirection?: string;
+    direction?: "inbound" | "outbound" | "missed";
+    originalDirection?: "inbound" | "outbound" | "voicemail";
     customerId?: number | string;
     customer?: {
       name: string;
@@ -207,4 +213,3 @@ declare module "@/lib/mock-data" {
 
 export const TicketDisposition = CallDisposition;
 export const TicketStatus = CallStatus;
-export const TicketPriority = CallPriority;
