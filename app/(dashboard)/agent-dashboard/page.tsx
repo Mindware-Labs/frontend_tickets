@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { CallActions } from "@/components/dashboard/ticket-actions";
+import { CallActions } from "@/components/dashboard/call-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   Ticket as TicketIcon,
@@ -158,7 +158,7 @@ export default function AgentDashboardPage() {
         return;
       }
 
-      const response = await fetch("/api/tickets");
+      const response = await fetch("/api/calls");
       const payload = await response.json();
       if (!payload?.success || !Array.isArray(payload.data)) {
         throw new Error(

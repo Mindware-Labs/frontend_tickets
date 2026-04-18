@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CallRecordingPlayer } from "@/components/tickets/CallRecordingPlayer";
+import { CallRecordingPlayer } from "@/components/calls/CallRecordingPlayer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -512,7 +512,12 @@ export function CallEditFormContent({
                 >
                   {formData.agentId
                     ? agents.find((a) => a.id.toString() === formData.agentId)
-                        ?.name || formData.agentId
+                        ?.name ||
+                      (ticket as any)?.agent?.name ||
+                      (typeof (ticket as any)?.assignedTo === "object"
+                        ? (ticket as any)?.assignedTo?.name
+                        : undefined) ||
+                      "Unassigned"
                     : "Unassigned"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>

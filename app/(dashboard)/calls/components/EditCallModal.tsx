@@ -91,7 +91,7 @@ interface EditTicketFormData {
   notes: string;
 }
 
-interface EditTicketModalProps {
+interface EditCallModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ticket: Ticket | null;
@@ -118,7 +118,7 @@ interface EditTicketModalProps {
   getAttachmentUrl: (value: string) => string;
 }
 
-export function EditTicketModal({
+export function EditCallModal({
   open,
   onOpenChange,
   ticket,
@@ -143,7 +143,7 @@ export function EditTicketModal({
   onSubmit,
   getAttachmentLabel,
   getAttachmentUrl,
-}: EditTicketModalProps) {
+}: EditCallModalProps) {
   // Estados para controlar la apertura de los Popovers
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [yardOpen, setYardOpen] = useState(false);
@@ -593,7 +593,12 @@ export function EditTicketModal({
                         {editFormData.agentId
                           ? agents.find(
                               (a) => a.id.toString() === editFormData.agentId,
-                            )?.name || editFormData.agentId
+                            )?.name ||
+                            (ticket as any)?.agent?.name ||
+                            (typeof (ticket as any)?.assignedTo === "object"
+                              ? (ticket as any)?.assignedTo?.name
+                              : undefined) ||
+                            "Unassigned"
                           : "Unassigned"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>

@@ -9,20 +9,18 @@ import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
 import { CreateCallFormData, CallStatus, CallDirection } from "./types";
-const CreateTicketModal = dynamic(
-  () =>
-    import("./components/CreateTicketModal").then((m) => m.CreateTicketModal),
+const CreateCallModal = dynamic(
+  () => import("./components/CreateCallModal").then((m) => m.CreateCallModal),
   { ssr: false },
 );
-const EditTicketModal = dynamic(
-  () => import("./components/EditTicketModal").then((m) => m.EditTicketModal),
+const EditCallModal = dynamic(
+  () => import("./components/EditCallModal").then((m) => m.EditCallModal),
   { ssr: false },
 );
-const ViewTicketModal = dynamic(
-  () => import("./components/ViewTicketModal").then((m) => m.ViewTicketModal),
+const ViewCallModal = dynamic(
+  () => import("./components/ViewCallModal").then((m) => m.ViewCallModal),
   { ssr: false },
 );
-import { TicketsTable } from "./components/TicketsTable";
 import { GroupedCallsTable } from "./components/GroupedCallsTable";
 import type { CustomerCallGroup } from "./components/CustomerTimelineDrawer";
 const CustomerTimelineDrawer = dynamic(
@@ -33,7 +31,7 @@ const CustomerTimelineDrawer = dynamic(
   { ssr: false },
 );
 import { useReferenceData } from "./hooks/useReferenceData";
-import { useTicketFilters } from "./hooks/useTicketFilters";
+import { useCallFilters } from "./hooks/useCallFilters";
 import { OverdueCallsBanner } from "./components/OverdueCallsBanner";
 import {
   formatEnumLabel,
@@ -49,7 +47,7 @@ import {
   getYardDisplayName,
   normalizeEnumValue,
   isMissedCall,
-} from "./utils/ticket-helpers";
+} from "./utils/call-helpers";
 import { startOfDay, endOfDay, isWithinInterval } from "date-fns";
 
 // ---------------------------------------------------------------------------
@@ -90,7 +88,7 @@ export default function TicketsPage() {
 
   // ---- Hooks ----
   const refData = useReferenceData();
-  const ticketFilters = useTicketFilters({
+  const ticketFilters = useCallFilters({
     currentAgentId: refData.currentAgent?.id,
   });
 
@@ -212,6 +210,9 @@ export default function TicketsPage() {
           ticket.agentId ??
           (ticket.assignedTo && typeof ticket.assignedTo === "object"
             ? (ticket.assignedTo as any).id
+            : null) ??
+          ((ticket as any).agent && typeof (ticket as any).agent === "object"
+            ? (ticket as any).agent.id
             : null);
         const matchesAgent =
           filters.agent === "all" ||
@@ -234,13 +235,17 @@ export default function TicketsPage() {
         const isMissed = isMissedCall(ticket);
 
         let matchesView = true;
+        const hasAssignee =
+          !!ticket.assignedTo ||
+          !!(ticket as any).agent ||
+          ticket.agentId != null;
         if (viewType === "missed") matchesView = isMissed;
         else if (viewType === "assigned_me")
           matchesView = isAssignedToMe && !isMissed;
         else if (viewType === "unassigned")
-          matchesView = !ticket.assignedTo && !isMissed;
+          matchesView = !hasAssignee && !isMissed;
         else if (viewType === "assigned")
-          matchesView = !!ticket.assignedTo && !isMissed;
+          matchesView = hasAssignee && !isMissed;
         else if (viewType === "all") matchesView = true;
 
         return (
@@ -548,7 +553,7 @@ export default function TicketsPage() {
         processedTicketIdRef.current = ticketIdParam;
         openTicketModal(ticket);
       } else {
-        fetch(`/api/tickets/${ticketIdParam}`)
+        fetch(`/api/calls/${ticketIdParam}`)
           .then(async (response) => {
             if (!response.ok) throw new Error("Not found");
             return response.json();
@@ -584,7 +589,7 @@ export default function TicketsPage() {
 
   const handleViewDetails = async (ticket: Call) => {
     try {
-      const response = await fetch(`/api/tickets/${ticket.id}`);
+      const response = await fetch(`/api/calls/${ticket.id}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -610,6 +615,11 @@ export default function TicketsPage() {
       typeof ticket.assignedTo === "object" &&
       "id" in ticket.assignedTo
         ? ((ticket.assignedTo as { id?: number }).id || "").toString()
+        : "") ||
+      ((ticket as any).agent &&
+      typeof (ticket as any).agent === "object" &&
+      "id" in (ticket as any).agent
+        ? ((ticket as any).agent.id || "").toString()
         : "");
 
     const ticketCustomerId = ticket.customerId
@@ -695,7 +705,7 @@ export default function TicketsPage() {
   /** Called when user clicks a call in the timeline sidebar */
   const handleSelectCallInTimeline = async (call: Call) => {
     try {
-      const response = await fetch(`/api/tickets/${call.id}`);
+      const response = await fetch(`/api/calls/${call.id}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -745,7 +755,7 @@ export default function TicketsPage() {
         notes: editFormData.notes || null,
       };
 
-      const response = await fetch(`/api/tickets/${selectedTicket.id}`, {
+      const response = await fetch(`/api/calls/${selectedTicket.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatePayload),
@@ -871,7 +881,7 @@ export default function TicketsPage() {
         notes: createFormData.notes?.trim() || undefined,
       };
 
-      const response = await fetch("/api/tickets", {
+      const response = await fetch("/api/calls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -941,9 +951,26 @@ export default function TicketsPage() {
         agents={refData.agents}
         phoneLines={refData.phoneLines}
         onOpenTimeline={handleOpenTimeline}
+        currentPage={ticketFilters.currentPage}
+        onPageChange={ticketFilters.setCurrentPage}
+        itemsPerPage={ticketFilters.itemsPerPage}
+        onItemsPerPageChange={ticketFilters.setItemsPerPage}
+        totalCount={
+          typeof ticketsPageData?.totalCalls === "number"
+            ? ticketsPageData.totalCalls
+            : totalMatchingTickets
+        }
+        totalCustomers={totalMatchingTickets}
+        totalPages={
+          ticketsPageData?.totalPages ??
+          Math.max(
+            1,
+            Math.ceil(totalMatchingTickets / ticketFilters.itemsPerPage),
+          )
+        }
       />
 
-      <CreateTicketModal
+      <CreateCallModal
         open={showCreateModal}
         onOpenChange={(open) => {
           setShowCreateModal(open);
@@ -973,7 +1000,7 @@ export default function TicketsPage() {
         onSubmit={handleCreateTicket}
       />
 
-      <ViewTicketModal
+      <ViewCallModal
         open={showViewModal}
         onOpenChange={setShowViewModal}
         ticket={selectedTicket}
@@ -995,7 +1022,7 @@ export default function TicketsPage() {
         getYardDisplayName={(t: Call) => getYardDisplayName(t, refData.yards)}
       />
 
-      <EditTicketModal
+      <EditCallModal
         open={showEditModal}
         onOpenChange={setShowEditModal}
         ticket={selectedTicket}

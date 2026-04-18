@@ -1,7 +1,7 @@
 "use client";
 
 import { JSX, useEffect, useRef } from "react";
-import { CallRecordingPlayer } from "@/components/tickets/CallRecordingPlayer";
+import { CallRecordingPlayer } from "@/components/calls/CallRecordingPlayer";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ type HelperFn<T extends (...args: any) => any> = (
   ...args: Parameters<T>
 ) => ReturnType<T>;
 
-interface ViewTicketModalProps {
+interface ViewCallModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ticket: Ticket | null;
@@ -101,7 +101,7 @@ const DetailRow = ({
   );
 };
 
-export function ViewTicketModal({
+export function ViewCallModal({
   open,
   onOpenChange,
   ticket,
@@ -118,7 +118,7 @@ export function ViewTicketModal({
   getClientName,
   getClientPhone,
   getYardDisplayName,
-}: ViewTicketModalProps) {
+}: ViewCallModalProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -569,6 +569,25 @@ export function ViewTicketModal({
                                               m {call.duration % 60}s
                                             </span>
                                           )}
+                                        {(() => {
+                                          const started = (call as any)
+                                            .startedAt;
+                                          const answered = (call as any)
+                                            .answeredAt;
+                                          if (!started || !answered)
+                                            return null;
+                                          const ringSec = Math.round(
+                                            (new Date(answered).getTime() -
+                                              new Date(started).getTime()) /
+                                              1000,
+                                          );
+                                          if (ringSec < 0) return null;
+                                          return (
+                                            <span className="text-xs text-muted-foreground">
+                                              • Ring {ringSec}s
+                                            </span>
+                                          );
+                                        })()}
                                         <Badge
                                           variant="outline"
                                           className="text-[9px] px-1.5 py-0"

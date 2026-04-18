@@ -45,7 +45,7 @@ export function useCallSocket() {
         clearTimeout(revalidateDebounceRef.current);
       revalidateDebounceRef.current = setTimeout(() => {
         mutate(
-          (key) => typeof key === "string" && key.startsWith("/api/tickets"),
+          (key) => typeof key === "string" && key.startsWith("/api/calls"),
         );
       }, 300);
     };
@@ -144,11 +144,7 @@ export function useCallSocket() {
   }, [user?.id, toast, router, mutate]);
 }
 
-export const useTicketSocket = useCallSocket;
-
 export function CallSocketProvider() {
   useCallSocket();
   return null;
 }
-
-export const TicketSocketProvider = CallSocketProvider;

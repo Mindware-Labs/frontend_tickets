@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import type { Ticket } from "./types";
 import { cn } from "@/lib/utils";
 
-type YardTicketsModalProps = {
+type YardCallsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   yardName: string;
@@ -145,7 +145,7 @@ const getPriorityColor = (priority?: string | null) => {
   return "bg-muted text-muted-foreground border-border";
 };
 
-export function YardTicketsModal({
+export function YardCallsModal({
   open,
   onOpenChange,
   yardName,
@@ -154,7 +154,7 @@ export function YardTicketsModal({
   reportEndDate,
   tickets = [],
   dispositionCounts = [],
-}: YardTicketsModalProps) {
+}: YardCallsModalProps) {
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");

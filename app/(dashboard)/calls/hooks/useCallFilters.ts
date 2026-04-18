@@ -26,11 +26,11 @@ export interface Filters {
   phoneLine: string;
 }
 
-interface UseTicketFiltersOptions {
+interface UseCallFiltersOptions {
   currentAgentId?: number;
 }
 
-export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
+export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -103,10 +103,12 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
       : null;
 
     params.set("mode", "page");
-    params.set("limit", "100000");
+    params.set("page", String(Math.max(1, currentPage)));
+    params.set("limit", String(Math.max(1, Math.min(itemsPerPage, 500))));
     params.set("includeTotal", "true");
     params.set("includeViewCounts", "true");
     params.set("view", activeView);
+    params.set("groupBy", "customer");
 
     if (normalizedSearch) params.set("search", normalizedSearch);
     if (statusFilter !== "all") params.set("status", statusFilter);
@@ -129,7 +131,7 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
       params.set("endDate", dateTo.toISOString());
     }
 
-    return `/api/tickets?${params.toString()}`;
+    return `/api/calls?${params.toString()}`;
   }, [
     searchParams,
     deferredSearch,
@@ -143,6 +145,8 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
     agentFilter,
     phoneLineFilter,
     currentAgentId,
+    currentPage,
+    itemsPerPage,
     dateRange?.from?.getTime(),
     dateRange?.to?.getTime(),
   ]);

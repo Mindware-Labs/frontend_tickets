@@ -36,9 +36,9 @@ import {
   getStatusBadgeColor,
   getPriorityColor,
   isMissedCall,
-} from "../utils/ticket-helpers";
+} from "../utils/call-helpers";
 import { CallEditFormContent } from "./CallEditFormContent";
-import type { Filters } from "../hooks/useTicketFilters";
+import type { Filters } from "../hooks/useCallFilters";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -247,7 +247,7 @@ export function CustomerTimelineDrawer({
       if (activeFilters.phoneLine && activeFilters.phoneLine !== "all")
         params.set("phoneLineId", activeFilters.phoneLine);
     }
-    return `/api/tickets?${params.toString()}`;
+    return `/api/calls?${params.toString()}`;
   }, [open, group?.customerId, activeFilters]);
 
   const { data: historyData, isLoading: isLoadingHistory } = useSWR(
@@ -402,6 +402,25 @@ export function CustomerTimelineDrawer({
                       </Badge>
                     </>
                   )}
+                  {(() => {
+                    const started = (selectedCall as any).startedAt;
+                    const answered = (selectedCall as any).answeredAt;
+                    if (!started || !answered) return null;
+                    const ringSec = Math.round(
+                      (new Date(answered).getTime() -
+                        new Date(started).getTime()) /
+                        1000,
+                    );
+                    if (ringSec < 0) return null;
+                    return (
+                      <>
+                        <span className="text-muted-foreground/40">·</span>
+                        <span className="text-xs text-muted-foreground">
+                          Ring {ringSec}s
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Form */}

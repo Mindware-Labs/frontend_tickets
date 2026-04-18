@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -34,14 +34,17 @@ import {
   Calendar,
   PhoneCall,
   Phone,
+  PhoneOutgoing,
   Clock,
-  Timer,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
+import { useAircall } from "@/components/providers/AircallProvider";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import type { Call } from "@/lib/mock-data";
 import type { AgentOption, CampaignOption, YardOption } from "../types";
-import type { Filters, FilterKey } from "../hooks/useTicketFilters";
+import type { Filters, FilterKey } from "../hooks/useCallFilters";
 import { CallFiltersBar } from "./CallFiltersBar";
 import {
   getClientName,
@@ -49,6 +52,7 @@ import {
   getClientInitials,
   getAssigneeName,
   getAssigneeInitials,
+  getTicketAssignee,
   getStatusBadgeColor,
   getDirectionIcon,
   getDirectionText,
@@ -57,8 +61,9 @@ import {
   getYardDisplayName,
   getCampaign,
   formatEnumLabel,
-} from "../utils/ticket-helpers";
+} from "../utils/call-helpers";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
+import { InlineCallTimeline } from "./InlineCallTimeline";
 
 interface GroupedCallsTableProps {
   tickets: Call[];
@@ -74,6 +79,13 @@ interface GroupedCallsTableProps {
   agents: AgentOption[];
   phoneLines: { id: number; label: string | null; phoneNumber: string }[];
   onOpenTimeline: (group: CustomerCallGroup) => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  itemsPerPage: number;
+  onItemsPerPageChange: (n: number) => void;
+  totalCount: number;
+  totalCustomers?: number;
+  totalPages: number;
 }
 
 export function GroupedCallsTable({
@@ -90,10 +102,21 @@ export function GroupedCallsTable({
   agents,
   phoneLines,
   onOpenTimeline,
+  currentPage,
+  onPageChange,
+  itemsPerPage,
+  onItemsPerPageChange,
+  totalCount,
+  totalCustomers,
+  totalPages,
 }: GroupedCallsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
   // ── Client-side grouping ─────────────────────────────────────────────────────
   const groups = useMemo<CustomerCallGroup[]>(() => {
     const map = new Map<
@@ -153,20 +176,9 @@ export function GroupedCallsTable({
     );
   }, [tickets]);
 
-  // ── Client-side pagination on groups ────────────────────────────────────────
-  const totalCount = tickets.length;
-  const totalPages = Math.max(1, Math.ceil(groups.length / itemsPerPage));
-  const paginatedGroups = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return groups.slice(start, start + itemsPerPage);
-  }, [groups, currentPage, itemsPerPage]);
-
-  // Reset page when groups change (e.g. new filter) and current page is out of range
-  useEffect(() => {
-    setCurrentPage((prev) =>
-      Math.min(prev, Math.max(1, Math.ceil(groups.length / itemsPerPage))),
-    );
-  }, [groups.length, itemsPerPage]);
+  // ── Server-side pagination: tickets are already the current page ────────
+  // Grouping happens on the current page of calls.
+  const paginatedGroups = groups;
 
   return (
     <div className="flex-1 flex flex-col gap-4">
@@ -259,7 +271,7 @@ export function GroupedCallsTable({
                 <TableHead className="w-28">Status</TableHead>
                 <TableHead className="w-36">Line</TableHead>
                 <TableHead className="w-24">Duration</TableHead>
-                <TableHead className="w-24">Ring</TableHead>
+                <TableHead className="w-36">Disposition</TableHead>
                 <TableHead className="w-36">Last Call</TableHead>
                 <TableHead className="w-28">Direction</TableHead>
               </TableRow>
@@ -305,71 +317,136 @@ export function GroupedCallsTable({
                       });
 
                   return (
-                    <TableRow
-                      key={group.key}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => onOpenTimeline(group)}
-                    >
-                      {/* Call ID */}
-                      <TableCell className="text-sm font-mono text-muted-foreground">
-                        #{t.id}
-                      </TableCell>
+                    <React.Fragment key={group.key}>
+                      <TableRow
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => onOpenTimeline(group)}
+                      >
+                        {/* Call ID */}
+                        <TableCell className="text-sm font-mono text-muted-foreground">
+                          #{t.id}
+                        </TableCell>
 
-                      {/* Aircall ID */}
-                      <TableCell className="text-sm font-mono text-muted-foreground">
-                        {(t as any).aircallId || "-"}
-                      </TableCell>
+                        {/* Aircall ID */}
+                        <TableCell className="text-sm font-mono text-muted-foreground">
+                          {(t as any).aircallId || "-"}
+                        </TableCell>
 
-                      {/* Customer */}
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7 shrink-0">
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                              {group.customerName
-                                ? group.customerName
-                                    .substring(0, 2)
-                                    .toUpperCase()
-                                : "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-sm truncate max-w-36">
-                            {group.customerName}
-                          </span>
-                        </div>
-                      </TableCell>
+                        {/* Customer */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                                {group.customerName
+                                  ? group.customerName
+                                      .substring(0, 2)
+                                      .toUpperCase()
+                                  : "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium text-sm truncate max-w-36">
+                              {group.customerName}
+                            </span>
+                          </div>
+                        </TableCell>
 
-                      {/* Phone */}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {group.customerPhone}
-                      </TableCell>
+                        {/* Phone */}
+                        <TableCell className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate">
+                              {group.customerPhone}
+                            </span>
+                            {group.customerPhone &&
+                              group.customerPhone !== "unknown" && (
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    dial(group.customerPhone, t.id);
+                                  }}
+                                  disabled={!canDial}
+                                  title={
+                                    canDial
+                                      ? `Call ${group.customerPhone}`
+                                      : "Aircall is not connected"
+                                  }
+                                  aria-label={`Call ${group.customerPhone}`}
+                                >
+                                  <PhoneOutgoing className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                          </div>
+                        </TableCell>
 
-                      {/* Call count */}
-                      <TableCell className="text-center">
-                        <Badge
-                          variant="secondary"
-                          className="gap-1 font-mono text-xs px-2"
-                        >
-                          <PhoneCall className="h-3 w-3" />
-                          {group.calls.length}
-                        </Badge>
-                      </TableCell>
-
-                      {/* Yard */}
-                      <TableCell>
-                        {yardDisplayName ? (
-                          <Badge
-                            variant="outline"
-                            className={getYardTypeColor(yardType)}
+                        {/* Call count — click to toggle inline timeline */}
+                        <TableCell className="text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedKey((prev) =>
+                                prev === group.key ? null : group.key,
+                              );
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md hover:bg-muted transition-colors"
+                            aria-label="Toggle call timeline"
+                            aria-expanded={expandedKey === group.key}
                           >
-                            <div className="flex items-center gap-1">
-                              {getYardTypeIcon(yardType)}
-                              <span className="truncate max-w-28">
-                                {yardDisplayName}
-                              </span>
+                            {expandedKey === group.key ? (
+                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            <Badge
+                              variant="secondary"
+                              className="gap-1 font-mono text-xs px-2"
+                            >
+                              <PhoneCall className="h-3 w-3" />
+                              {group.calls.length}
+                            </Badge>
+                          </button>
+                        </TableCell>
+
+                        {/* Yard */}
+                        <TableCell>
+                          {yardDisplayName ? (
+                            <Badge
+                              variant="outline"
+                              className={getYardTypeColor(yardType)}
+                            >
+                              <div className="flex items-center gap-1">
+                                {getYardTypeIcon(yardType)}
+                                <span className="truncate max-w-28">
+                                  {yardDisplayName}
+                                </span>
+                              </div>
+                            </Badge>
+                          ) : (
+                            <div className="group relative inline-block">
+                              <Badge
+                                variant="outline"
+                                className="border-amber-500/20 bg-amber-500/5 text-amber-600 animate-pulse"
+                              >
+                                <AlertTriangle className="mr-1 h-3 w-3" />
+                                Pending
+                              </Badge>
+                              <div className="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-900 text-xs text-amber-700 dark:text-amber-300 border border-amber-400 rounded px-2 py-1 shadow-lg left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap">
+                                Yard pending assignment
+                              </div>
                             </div>
-                          </Badge>
-                        ) : (
-                          <div className="group relative inline-block">
+                          )}
+                        </TableCell>
+
+                        {/* Campaign */}
+                        <TableCell>
+                          {getCampaign(t, campaigns) ? (
+                            <Badge variant="outline">
+                              {getCampaign(t, campaigns)}
+                            </Badge>
+                          ) : (
                             <Badge
                               variant="outline"
                               className="border-amber-500/20 bg-amber-500/5 text-amber-600 animate-pulse"
@@ -377,165 +454,146 @@ export function GroupedCallsTable({
                               <AlertTriangle className="mr-1 h-3 w-3" />
                               Pending
                             </Badge>
-                            <div className="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-900 text-xs text-amber-700 dark:text-amber-300 border border-amber-400 rounded px-2 py-1 shadow-lg left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap">
-                              Yard pending assignment
-                            </div>
-                          </div>
-                        )}
-                      </TableCell>
+                          )}
+                        </TableCell>
 
-                      {/* Campaign */}
-                      <TableCell>
-                        {getCampaign(t, campaigns) ? (
-                          <Badge variant="outline">
-                            {getCampaign(t, campaigns)}
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="border-amber-500/20 bg-amber-500/5 text-amber-600 animate-pulse"
-                          >
-                            <AlertTriangle className="mr-1 h-3 w-3" />
-                            Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-
-                      {/* Assignee */}
-                      <TableCell>
-                        {(() => {
-                          // Try to resolve agent name from agents list
-                          const agentId = (t as any).agentId;
-                          const agentObj = agentId
-                            ? agents.find(
-                                (a) => a.id.toString() === agentId.toString(),
-                              )
-                            : undefined;
-                          if (t.assignedTo) {
-                            return (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
-                                    {getAssigneeInitials(t.assignedTo)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm">
-                                  {getAssigneeName(t.assignedTo)}
-                                </span>
-                              </div>
-                            );
-                          } else if (agentObj) {
-                            return (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
-                                    {agentObj.name
-                                      .substring(0, 2)
-                                      .toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm">{agentObj.name}</span>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <span className="text-sm text-muted-foreground">
-                                Unassigned
-                              </span>
-                            );
-                          }
-                        })()}
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={getStatusBadgeColor(t.status)}
-                        >
-                          {formatEnumLabel(t.status)}
-                        </Badge>
-                      </TableCell>
-
-                      {/* Line */}
-                      <TableCell>
-                        {(t as any).phoneLine ? (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="text-sm truncate max-w-32">
-                              {(t as any).phoneLine.label ||
-                                (t as any).phoneLine.phoneNumber}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-
-                      {/* Duration */}
-                      <TableCell>
-                        {t.duration ? (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="text-sm">
-                              {Math.floor(t.duration / 60)}:
-                              {String(t.duration % 60).padStart(2, "0")}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-
-                      {/* Ring Time */}
-                      <TableCell>
-                        {(() => {
-                          const started = (t as any).startedAt;
-                          const answered = (t as any).answeredAt;
-                          if (started && answered) {
-                            const ringSec = Math.round(
-                              (new Date(answered).getTime() -
-                                new Date(started).getTime()) /
-                                1000,
-                            );
-                            if (ringSec >= 0) {
+                        {/* Assignee */}
+                        <TableCell>
+                          {(() => {
+                            // Prefer embedded assignee objects from backend
+                            const assignee = getTicketAssignee(t);
+                            // Fallback: resolve from agents list by agentId
+                            const agentId = (t as any).agentId;
+                            const agentObj =
+                              !assignee && agentId
+                                ? agents.find(
+                                    (a) =>
+                                      a.id.toString() === agentId.toString(),
+                                  )
+                                : undefined;
+                            if (assignee) {
                               return (
-                                <div className="flex items-center gap-1">
-                                  <Timer className="h-3 w-3 text-muted-foreground shrink-0" />
-                                  <span className="text-sm">{ringSec}s</span>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {getAssigneeInitials(assignee)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm">
+                                    {getAssigneeName(assignee)}
+                                  </span>
                                 </div>
                               );
+                            } else if (agentObj) {
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {agentObj.name
+                                        .substring(0, 2)
+                                        .toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm">
+                                    {agentObj.name}
+                                  </span>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <span className="text-sm text-muted-foreground">
+                                  Unassigned
+                                </span>
+                              );
                             }
-                          }
-                          return (
+                          })()}
+                        </TableCell>
+
+                        {/* Status */}
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={getStatusBadgeColor(t.status)}
+                          >
+                            {formatEnumLabel(t.status)}
+                          </Badge>
+                        </TableCell>
+
+                        {/* Line */}
+                        <TableCell>
+                          {(t as any).phoneLine ? (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-sm truncate max-w-32">
+                                {(t as any).phoneLine.label ||
+                                  (t as any).phoneLine.phoneNumber}
+                              </span>
+                            </div>
+                          ) : (
                             <span className="text-sm text-muted-foreground">
                               -
                             </span>
-                          );
-                        })()}
-                      </TableCell>
+                          )}
+                        </TableCell>
 
-                      {/* Last Call */}
-                      <TableCell className="text-sm">{dateLabel}</TableCell>
+                        {/* Duration */}
+                        <TableCell>
+                          {t.duration ? (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-sm">
+                                {Math.floor(t.duration / 60)}:
+                                {String(t.duration % 60).padStart(2, "0")}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              -
+                            </span>
+                          )}
+                        </TableCell>
 
-                      {/* Direction */}
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {getDirectionIcon(t.direction || "inbound")}
-                          <span className="text-xs">
-                            {getDirectionText(
-                              t.direction || "inbound",
-                              (t as any).originalDirection,
-                              (t as any).agentId,
-                            )}
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        {/* Disposition */}
+                        <TableCell>
+                          {t.disposition ? (
+                            <Badge variant="outline" className="text-xs">
+                              {formatEnumLabel(String(t.disposition))}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              -
+                            </span>
+                          )}
+                        </TableCell>
+
+                        {/* Last Call */}
+                        <TableCell className="text-sm">{dateLabel}</TableCell>
+
+                        {/* Direction */}
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {getDirectionIcon(t.direction || "inbound")}
+                            <span className="text-xs">
+                              {getDirectionText(
+                                t.direction || "inbound",
+                                (t as any).originalDirection,
+                                (t as any).agentId,
+                              )}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {expandedKey === group.key && (
+                        <TableRow
+                          key={`${group.key}-timeline`}
+                          className="bg-muted/30 hover:bg-muted/30"
+                        >
+                          <TableCell colSpan={14} className="p-0">
+                            <InlineCallTimeline group={group} agents={agents} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
@@ -549,16 +607,20 @@ export function GroupedCallsTable({
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {groups.length} customer{groups.length !== 1 ? "s" : ""} ·{" "}
               {totalCount} call{totalCount !== 1 ? "s" : ""} total
+              {typeof totalCustomers === "number"
+                ? ` · ${totalCustomers} customer${totalCustomers !== 1 ? "s" : ""} total`
+                : ""}{" "}
+              · {groups.length} customer{groups.length !== 1 ? "s" : ""} on this
+              page
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Select
               value={itemsPerPage.toString()}
               onValueChange={(value) => {
-                setItemsPerPage(Number(value));
-                setCurrentPage(1);
+                onItemsPerPageChange(Number(value));
+                onPageChange(1);
               }}
             >
               <SelectTrigger className="h-8 w-25">
@@ -575,7 +637,7 @@ export function GroupedCallsTable({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(1)}
+                onClick={() => onPageChange(1)}
                 disabled={currentPage === 1}
               >
                 First
@@ -583,7 +645,7 @@ export function GroupedCallsTable({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -595,17 +657,17 @@ export function GroupedCallsTable({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setCurrentPage(Math.min(currentPage + 1, totalPages))
+                  onPageChange(Math.min(currentPage + 1, totalPages))
                 }
-                disabled={currentPage === totalPages}
+                disabled={currentPage >= totalPages}
               >
                 Next
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(totalPages)}
+                disabled={currentPage >= totalPages}
               >
                 Last
               </Button>

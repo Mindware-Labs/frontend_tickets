@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import KPICard from "@/components/dashboard/kpi-card";
-import { CallActions } from "@/components/dashboard/ticket-actions";
+import { CallActions } from "@/components/dashboard/call-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   Ticket as TicketIcon,

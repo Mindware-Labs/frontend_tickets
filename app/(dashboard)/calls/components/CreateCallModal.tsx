@@ -71,7 +71,7 @@ import {
 } from "../types";
 import { cn } from "@/lib/utils"; // Utilidad estándar de shadcn
 
-interface CreateTicketModalProps {
+interface CreateCallModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customers: CustomerOption[];
@@ -98,7 +98,7 @@ interface CreateTicketModalProps {
   onSubmit: () => void;
 }
 
-export function CreateTicketModal({
+export function CreateCallModal({
   open,
   onOpenChange,
   customers,
@@ -121,7 +121,7 @@ export function CreateTicketModal({
   setAttachmentFiles,
   isCreating,
   onSubmit,
-}: CreateTicketModalProps) {
+}: CreateCallModalProps) {
   // Estados para controlar la apertura de los Popovers
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [yardOpen, setYardOpen] = useState(false);
@@ -653,7 +653,7 @@ export function CreateTicketModal({
                         {createFormData.agentId
                           ? agents.find(
                               (a) => a.id.toString() === createFormData.agentId,
-                            )?.name || createFormData.agentId
+                            )?.name || "Unassigned"
                           : "Unassigned"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>

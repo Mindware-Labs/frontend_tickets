@@ -10,7 +10,7 @@ import type {
   CustomerOption,
   YardOption,
 } from "../types";
-import { getAssigneeName } from "../utils/ticket-helpers";
+import { getAssigneeName } from "../utils/call-helpers";
 
 export function useReferenceData() {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

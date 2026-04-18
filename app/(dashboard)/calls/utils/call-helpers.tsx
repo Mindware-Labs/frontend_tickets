@@ -10,6 +10,11 @@ import type { Ticket } from "@/lib/mock-data";
 import type { CampaignOption, YardOption } from "../types";
 import { OnboardingOption } from "../types";
 
+export function getTicketAssignee(ticket: any): any {
+  if (!ticket) return null;
+  return ticket.assignedTo ?? ticket.agent ?? null;
+}
+
 export function getAssigneeName(assignedTo: any): string {
   if (!assignedTo) return "Unassigned";
   if (typeof assignedTo === "string") return assignedTo;

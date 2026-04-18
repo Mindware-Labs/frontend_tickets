@@ -4,7 +4,7 @@ import * as React from "react";
 import { AppSidebar } from "./sidebar";
 import Topbar from "./topbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { CallSocketProvider } from "@/components/providers/TicketSocketProvider";
+import { CallSocketProvider } from "@/components/providers/CallSocketProvider";
 
 export default function DashboardLayout({
   children,

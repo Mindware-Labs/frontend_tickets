@@ -15,7 +15,7 @@ import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
 import { YardDashboard } from "./components/YardDashboard";
-import { YardTicketsModal } from "./components/YardTicketsModal";
+import { YardCallsModal } from "./components/YardCallsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
 import type { Ticket, Yard, YardStats } from "./components/types";
@@ -122,7 +122,7 @@ export default function YardReportsPage() {
   const [loadingSelectedYardDetail, setLoadingSelectedYardDetail] =
     useState(false);
   const [selectedYardTickets, setSelectedYardTickets] = useState<Ticket[]>([]);
-  const [showYardTicketsModal, setShowYardTicketsModal] = useState(false);
+  const [showYardCallsModal, setShowYardCallsModal] = useState(false);
   const [startDate, setStartDate] = useState<string>(startDateParam || "");
   const [endDate, setEndDate] = useState<string>(endDateParam || "");
 
@@ -512,7 +512,7 @@ export default function YardReportsPage() {
       return;
     }
 
-    setShowYardTicketsModal(true);
+    setShowYardCallsModal(true);
   };
 
   const getLogoUrl = () =>
@@ -782,9 +782,9 @@ export default function YardReportsPage() {
         )}
       </div>
 
-      <YardTicketsModal
-        open={showYardTicketsModal}
-        onOpenChange={setShowYardTicketsModal}
+      <YardCallsModal
+        open={showYardCallsModal}
+        onOpenChange={setShowYardCallsModal}
         yardName={selectedYard?.name || "Selected Yard"}
         reportStartDate={startDate}
         reportEndDate={endDate}
