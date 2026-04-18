@@ -176,7 +176,7 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
           const meta = directionMeta(call.direction);
           const date = new Date(call.callDate || call.createdAt || 0);
           const dateLabel = isNaN(date.getTime()) ? "—" : formatShortDate(date);
-          const duration = formatDuration(call.duration);
+          const duration = formatDuration(call.duration ?? undefined);
           const agentName = resolveAgentName(call, agents);
           const notes = (call as any).notes as string | undefined;
           return (
