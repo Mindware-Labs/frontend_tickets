@@ -696,8 +696,22 @@ export default function TicketsPage() {
   };
 
   /** Open the customer timeline drawer (grouped view) */
-  const handleOpenTimeline = (group: CustomerCallGroup) => {
-    populateEditFormFromCall(group.latestCall as Call);
+  const handleOpenTimeline = async (group: CustomerCallGroup) => {
+    let call = group.latestCall as Call;
+    // List endpoint doesn't include customer.notes relation, so fetch the
+    // full call so the right-hand edit form shows customer notes on first open.
+    try {
+      const response = await fetch(`/api/calls/${call.id}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          call = { ...call, ...result.data };
+        }
+      }
+    } catch {
+      // use call as-is
+    }
+    populateEditFormFromCall(call);
     setTimelineGroup(group);
     setShowTimelineDrawer(true);
   };

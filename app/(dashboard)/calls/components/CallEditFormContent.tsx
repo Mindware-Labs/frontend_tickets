@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { CallRecordingPlayer } from "@/components/calls/CallRecordingPlayer";
+import { useAircall } from "@/components/providers/AircallProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ import {
   StickyNote,
   Calendar as CalendarIcon,
   Headphones,
+  PhoneOutgoing,
 } from "lucide-react";
 import {
   AgentOption,
@@ -124,6 +126,22 @@ export function CallEditFormContent({
   const [yardOpen, setYardOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
+
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const dialPhone =
+    formData.customerPhone ||
+    (ticket.customer as any)?.phone ||
+    (ticket as any).customerPhone ||
+    "";
+  const handleCall = () => {
+    if (!dialPhone) return;
+    dial(dialPhone, ticket.id);
+  };
 
   const selectedCampaign = useMemo(() => {
     if (!formData.campaignId) return null;
@@ -747,6 +765,21 @@ export function CallEditFormContent({
       {/* Footer actions (visible only when not using withScroll sticky footer) */}
       {!withScroll && (
         <div className="flex justify-end gap-3 pt-2 border-t">
+          <Button
+            variant="outline"
+            onClick={handleCall}
+            disabled={!dialPhone || !canDial}
+            title={
+              !dialPhone
+                ? "No phone number on file"
+                : !canDial
+                  ? "Aircall is not connected"
+                  : `Call ${dialPhone}`
+            }
+          >
+            <PhoneOutgoing className="h-4 w-4 mr-2" />
+            Call
+          </Button>
           <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
             Cancel
           </Button>
@@ -764,6 +797,21 @@ export function CallEditFormContent({
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto">{formBody}</div>
       <div className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 flex justify-end gap-3 shrink-0">
+        <Button
+          variant="outline"
+          onClick={handleCall}
+          disabled={!dialPhone || !canDial}
+          title={
+            !dialPhone
+              ? "No phone number on file"
+              : !canDial
+                ? "Aircall is not connected"
+                : `Call ${dialPhone}`
+          }
+        >
+          <PhoneOutgoing className="h-4 w-4 mr-2" />
+          Call
+        </Button>
         <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
           Cancel
         </Button>

@@ -34,6 +34,7 @@ export interface AircallAgent {
 }
 
 export type AircallStatus = "loading" | "ready" | "error";
+export type AircallMountMode = "dock" | "fullscreen";
 
 export interface IncomingCallState {
   from: string;
@@ -49,6 +50,11 @@ interface AircallContextValue {
   agent: AircallAgent | null;
   errorMessage: string | null;
   dockOpen: boolean;
+  /** Current rendering mode: floating dock or full-screen panel. */
+  mountMode: AircallMountMode;
+  setMountMode: (mode: AircallMountMode) => void;
+  /** Register a DOM node where the fullscreen panel should be portaled into. */
+  setFullscreenContainer: (node: HTMLElement | null) => void;
   /** Fill the Aircall dialer with a phone number. Optionally associates a ticketId. */
   dial: (phoneNumber: string, ticketId?: number | string) => boolean;
   openDock: () => void;
@@ -82,7 +88,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
   const listenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
   const pendingDialRef = useRef<{
     phone: string;
-    ticketId?: number;
+    ticketId?: number | string;
     at: number;
   } | null>(null);
 
@@ -91,6 +97,9 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [agent, setAgent] = useState<AircallAgent | null>(null);
   const [dockOpen, setDockOpen] = useState(false);
+  const [mountMode, setMountMode] = useState<AircallMountMode>("dock");
+  const [fullscreenContainer, setFullscreenContainer] =
+    useState<HTMLElement | null>(null);
   const [lastIncomingCall, setLastIncomingCall] =
     useState<IncomingCallState | null>(null);
 
@@ -168,10 +177,11 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
 
         workspaceRef.current = workspace;
 
-        // Initial login probe
-        workspace.isLoggedIn((logged) => {
-          if (!cancelled) setIsLoggedIn(logged);
-        });
+        // NOTE: we intentionally do NOT call workspace.isLoggedIn() here.
+        // The SDK's `send` transport is not ready until the `onLogin`
+        // callback fires, so calling it eagerly spams the console with
+        // "Aircall Workspace has not been identified yet" warnings.
+        // The onLogin/onLogout handlers above keep `isLoggedIn` in sync.
 
         // Wire the SDK events into our pub/sub + built-in reactions
         const forward = (event: string) => {
@@ -320,6 +330,9 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       agent,
       errorMessage,
       dockOpen,
+      mountMode,
+      setMountMode,
+      setFullscreenContainer,
       dial,
       openDock,
       closeDock,
@@ -333,6 +346,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       agent,
       errorMessage,
       dockOpen,
+      mountMode,
       dial,
       openDock,
       closeDock,
@@ -351,6 +365,8 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn={isLoggedIn}
         agent={agent}
         open={dockOpen}
+        mountMode={mountMode}
+        fullscreenContainer={fullscreenContainer}
         onToggle={toggleDock}
         onClose={closeDock}
         lastIncomingCall={lastIncomingCall}
@@ -368,6 +384,8 @@ interface AircallDockProps {
   isLoggedIn: boolean;
   agent: AircallAgent | null;
   open: boolean;
+  mountMode: AircallMountMode;
+  fullscreenContainer: HTMLElement | null;
   onToggle: () => void;
   onClose: () => void;
   lastIncomingCall: IncomingCallState | null;
@@ -379,24 +397,61 @@ function AircallDock({
   isLoggedIn,
   agent,
   open,
+  mountMode,
+  fullscreenContainer,
   onToggle,
   onClose,
   lastIncomingCall,
 }: AircallDockProps) {
-  // The iframe container MUST always exist in the DOM so the SDK keeps working
-  // when the dock is minimized. We just hide it visually.
+  const isFullscreen = mountMode === "fullscreen";
+  // In fullscreen mode the panel is always "open" (fills the route).
+  const panelVisible = isFullscreen || open;
+
+  // The panel owns the SDK iframe. We never re-create it (portaling would
+  // destroy the iframe the SDK appended). Instead we physically move the
+  // panel DOM node between its default "dock" parent and the page-provided
+  // fullscreen container using appendChild, which preserves child nodes.
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const dockParentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    const dockParent = dockParentRef.current;
+    if (!panel || !dockParent) return;
+    const target =
+      isFullscreen && fullscreenContainer ? fullscreenContainer : dockParent;
+    if (panel.parentElement !== target) {
+      target.appendChild(panel);
+    }
+    return () => {
+      // On cleanup (mode change), restore to dock parent if the panel is still
+      // attached somewhere else so it stays mounted for the next render.
+      if (
+        panel.parentElement !== dockParentRef.current &&
+        dockParentRef.current
+      ) {
+        dockParentRef.current.appendChild(panel);
+      }
+    };
+  }, [isFullscreen, fullscreenContainer]);
+
+  // Positioning: absolute (fills parent) when physically moved to the page
+  // container; fixed bottom-right otherwise.
+  const movedToContainer = isFullscreen && !!fullscreenContainer;
+
   return (
     <>
-      {/* Floating toggle button (always visible on dashboard pages) */}
+      {/* Floating toggle button (hidden in fullscreen mode) */}
       <button
         type="button"
         onClick={onToggle}
         aria-label={open ? "Hide Aircall phone" : "Show Aircall phone"}
         className={cn(
-          "fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg",
+          "fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full shadow-lg",
           "flex items-center justify-center transition-all",
           "bg-primary text-primary-foreground hover:bg-primary/90",
           open && "scale-90",
+          isFullscreen && "hidden",
         )}
       >
         {lastIncomingCall &&
@@ -416,86 +471,102 @@ function AircallDock({
         )}
       </button>
 
-      {/* Dock panel */}
-      <div
-        className={cn(
-          "fixed bottom-24 right-6 z-40 w-95 max-w-[92vw]",
-          "rounded-xl shadow-2xl border bg-background overflow-hidden",
-          "transition-all duration-200 origin-bottom-right",
-          open
-            ? "opacity-100 scale-100 pointer-events-auto"
-            : "opacity-0 scale-95 pointer-events-none",
-        )}
-        style={{ height: "600px", maxHeight: "calc(100vh - 140px)" }}
-        aria-hidden={!open}
-      >
-        {/* Dock header */}
-        <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/40">
-          <div className="flex items-center gap-2 min-w-0">
-            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium truncate">
-              {agent
-                ? `${agent.firstName} ${agent.lastName}`.trim() || agent.email
-                : "Aircall"}
-            </span>
-            {status === "ready" && (
-              <span
-                className={cn(
-                  "text-[10px] uppercase px-1.5 py-0.5 rounded",
-                  isLoggedIn
-                    ? "bg-green-500/10 text-green-700 dark:text-green-400"
-                    : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                )}
-              >
-                {isLoggedIn ? "Online" : "Sign in"}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onClose}
-              aria-label="Minimize"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Status overlays */}
-        {status === "loading" && (
-          <div className="absolute inset-x-0 top-11 bottom-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <p className="text-sm text-muted-foreground">Loading Aircall…</p>
-          </div>
-        )}
-        {status === "error" && (
-          <div className="absolute inset-x-0 top-11 bottom-0 flex flex-col items-center justify-center gap-2 p-4 bg-background">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-            <p className="text-sm font-medium text-destructive">
-              Failed to load Aircall
-            </p>
-            <p className="text-xs text-muted-foreground text-center">
-              {errorMessage}
-            </p>
-          </div>
-        )}
-
-        {/* SDK iframe container — always mounted */}
+      {/* Host that owns the panel in dock mode. Panel is moved out when
+          fullscreen is requested; this wrapper stays empty in that case. */}
+      <div ref={dockParentRef}>
         <div
-          id={DOM_CONTAINER_ID}
-          className="w-full h-[calc(100%-2.75rem)] [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0 [&>iframe]:block"
-        />
+          ref={panelRef}
+          className={cn(
+            "border bg-background overflow-hidden transition-all duration-200",
+            movedToContainer
+              ? "absolute inset-0 rounded-none shadow-none opacity-100 scale-100 pointer-events-auto"
+              : cn(
+                  "fixed bottom-24 right-6 z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl origin-bottom-right",
+                  open
+                    ? "opacity-100 scale-100 pointer-events-auto"
+                    : "opacity-0 scale-95 pointer-events-none",
+                ),
+          )}
+          style={
+            movedToContainer
+              ? undefined
+              : { height: "600px", maxHeight: "calc(100vh - 140px)" }
+          }
+          aria-hidden={!panelVisible}
+        >
+          {/* Dock header */}
+          <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/40">
+            <div className="flex items-center gap-2 min-w-0">
+              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium truncate">
+                {agent
+                  ? `${agent.firstName} ${agent.lastName}`.trim() || agent.email
+                  : "Aircall"}
+              </span>
+              {status === "ready" && (
+                <span
+                  className={cn(
+                    "text-[10px] uppercase px-1.5 py-0.5 rounded",
+                    isLoggedIn
+                      ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                      : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                  )}
+                >
+                  {isLoggedIn ? "Online" : "Sign in"}
+                </span>
+              )}
+            </div>
+            <div
+              className={cn(
+                "flex items-center gap-1",
+                movedToContainer && "hidden",
+              )}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onClose}
+                aria-label="Minimize"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Status overlays */}
+          {status === "loading" && (
+            <div className="absolute inset-x-0 top-11 bottom-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+              <p className="text-sm text-muted-foreground">Loading Aircall…</p>
+            </div>
+          )}
+          {status === "error" && (
+            <div className="absolute inset-x-0 top-11 bottom-0 flex flex-col items-center justify-center gap-2 p-4 bg-background">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+              <p className="text-sm font-medium text-destructive">
+                Failed to load Aircall
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                {errorMessage}
+              </p>
+            </div>
+          )}
+
+          {/* SDK iframe container — always mounted */}
+          <div
+            id={DOM_CONTAINER_ID}
+            className="w-full h-[calc(100%-2.75rem)] [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0 [&>iframe]:block"
+          />
+        </div>
       </div>
     </>
   );

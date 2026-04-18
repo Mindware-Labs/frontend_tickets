@@ -59,6 +59,7 @@ import {
   Check,
   StickyNote,
   Calendar as CalendarIcon,
+  PhoneOutgoing,
 } from "lucide-react";
 import {
   AgentOption,
@@ -74,6 +75,7 @@ import {
 } from "../types";
 import { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useAircall } from "@/components/providers/AircallProvider";
 
 interface EditTicketFormData {
   customerId: string;
@@ -149,6 +151,22 @@ export function EditCallModal({
   const [yardOpen, setYardOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
+
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const dialPhone =
+    editFormData.customerPhone ||
+    (ticket as any)?.customer?.phone ||
+    (ticket as any)?.customerPhone ||
+    "";
+  const handleCall = () => {
+    if (!dialPhone || !ticket) return;
+    dial(dialPhone, ticket.id);
+  };
 
   const formatEnumLabel = (value: string) => {
     if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
@@ -836,6 +854,21 @@ export function EditCallModal({
 
         {/* STICKY FOOTER */}
         <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <Button
+            variant="outline"
+            onClick={handleCall}
+            disabled={!dialPhone || !canDial}
+            title={
+              !dialPhone
+                ? "No phone number on file"
+                : !canDial
+                  ? "Aircall is not connected"
+                  : `Call ${dialPhone}`
+            }
+          >
+            <PhoneOutgoing className="h-4 w-4 mr-2" />
+            Call
+          </Button>
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}

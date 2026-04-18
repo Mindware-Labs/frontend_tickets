@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   PhoneCall,
   PhoneIncoming,
@@ -8,12 +8,27 @@ import {
   PhoneMissed,
   Voicemail,
   Circle,
+  StickyNote,
+  Loader2,
 } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import type { Call } from "@/lib/mock-data";
 import type { AgentOption } from "../types";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { getTicketAssignee, getAssigneeName } from "../utils/call-helpers";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useAircall } from "@/components/providers/AircallProvider";
+import { useToast } from "@/hooks/use-toast";
+import { fetchFromBackend } from "@/lib/api-client";
 
 interface InlineCallTimelineProps {
   group: CustomerCallGroup;
@@ -79,6 +94,14 @@ function resolveAgentName(call: Call, agents: AgentOption[]): string {
 }
 
 export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
+  const { dial, status, isLoggedIn } = useAircall();
+  const { toast } = useToast();
+  const canDial = status === "ready" && isLoggedIn;
+
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+
   const sortedCalls = useMemo(() => {
     return [...group.calls].sort((a, b) => {
       const ad = new Date(a.callDate || a.createdAt || 0).getTime();
@@ -94,6 +117,41 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
     if (isNaN(d.getTime())) return null;
     return formatDistanceToNow(d, { addSuffix: true });
   }, [sortedCalls]);
+
+  const latestCallId = sortedCalls[0]?.id;
+  const hasPhone = !!group.customerPhone && group.customerPhone !== "unknown";
+  const canAddNote = !!group.customerId;
+
+  const handleCallBack = () => {
+    if (!hasPhone) return;
+    dial(group.customerPhone, latestCallId);
+  };
+
+  const handleSaveNote = async () => {
+    const content = noteContent.trim();
+    if (!content || !group.customerId) return;
+    setNoteSaving(true);
+    try {
+      await fetchFromBackend(`/customers/${group.customerId}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      });
+      toast({
+        title: "Note added",
+        description: `Saved to ${group.customerName || "customer"}.`,
+      });
+      setNoteContent("");
+      setNoteOpen(false);
+    } catch (err: any) {
+      toast({
+        title: "Failed to add note",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setNoteSaving(false);
+    }
+  };
 
   return (
     <div className="px-6 py-5">
@@ -148,6 +206,87 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
           );
         })}
       </ol>
+
+      {/* Actions */}
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleCallBack}
+          disabled={!hasPhone || !canDial}
+          title={
+            !hasPhone
+              ? "No phone number on file"
+              : !canDial
+                ? "Aircall is not connected"
+                : `Call ${group.customerPhone}`
+          }
+        >
+          <PhoneOutgoing className="h-4 w-4 mr-2" />
+          Call back
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setNoteOpen(true)}
+          disabled={!canAddNote}
+          title={
+            canAddNote
+              ? "Add a note to this customer"
+              : "Customer not linked yet"
+          }
+        >
+          <StickyNote className="h-4 w-4 mr-2" />
+          Add note
+        </Button>
+      </div>
+
+      {/* Add note dialog */}
+      <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add note</DialogTitle>
+            <DialogDescription>
+              {group.customerName
+                ? `Saved on ${group.customerName}'s profile.`
+                : "Saved on this customer's profile."}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            autoFocus
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="Type your note…"
+            rows={5}
+            disabled={noteSaving}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setNoteOpen(false)}
+              disabled={noteSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveNote}
+              disabled={!noteContent.trim() || noteSaving}
+            >
+              {noteSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save note"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
