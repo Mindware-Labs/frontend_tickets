@@ -89,6 +89,7 @@ interface CallEditFormContentProps {
   isUpdating: boolean;
   onSubmit: () => void;
   onCancel: () => void;
+  onCreateTicket?: () => void;
   getAttachmentLabel: (value: string) => string;
   getAttachmentUrl: (value: string) => string;
   /** When true, wraps content in a ScrollArea and shows save/cancel footer */
@@ -118,6 +119,7 @@ export function CallEditFormContent({
   isUpdating,
   onSubmit,
   onCancel,
+  onCreateTicket,
   getAttachmentLabel,
   getAttachmentUrl,
   withScroll = true,
@@ -780,6 +782,12 @@ export function CallEditFormContent({
             <PhoneOutgoing className="h-4 w-4 mr-2" />
             Call
           </Button>
+          {onCreateTicket && (
+            <Button variant="outline" onClick={onCreateTicket}>
+              <FileText className="h-4 w-4 mr-2" />
+              Create Ticket
+            </Button>
+          )}
           <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
             Cancel
           </Button>
@@ -812,6 +820,12 @@ export function CallEditFormContent({
           <PhoneOutgoing className="h-4 w-4 mr-2" />
           Call
         </Button>
+        {onCreateTicket && (
+          <Button variant="outline" onClick={onCreateTicket}>
+            <FileText className="h-4 w-4 mr-2" />
+            Create Ticket
+          </Button>
+        )}
         <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
           Cancel
         </Button>

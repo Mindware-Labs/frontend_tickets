@@ -116,6 +116,7 @@ interface EditCallModalProps {
   savedAttachments: string[];
   isUpdating: boolean;
   onSubmit: () => void;
+  onCreateTicket?: () => void;
   getAttachmentLabel: (value: string) => string;
   getAttachmentUrl: (value: string) => string;
 }
@@ -143,6 +144,7 @@ export function EditCallModal({
   savedAttachments,
   isUpdating,
   onSubmit,
+  onCreateTicket,
   getAttachmentLabel,
   getAttachmentUrl,
 }: EditCallModalProps) {
@@ -869,6 +871,12 @@ export function EditCallModal({
             <PhoneOutgoing className="h-4 w-4 mr-2" />
             Call
           </Button>
+          {onCreateTicket && (
+            <Button variant="outline" onClick={onCreateTicket}>
+              <FileText className="h-4 w-4 mr-2" />
+              Create Ticket
+            </Button>
+          )}
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}

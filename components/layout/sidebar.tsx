@@ -70,7 +70,7 @@ const data = {
       items: [],
     },
     {
-      title: "Calls",
+      title: "Calls & Tickets",
       url: "/calls",
       icon: PhoneCall,
       items: [],

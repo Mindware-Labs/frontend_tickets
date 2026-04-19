@@ -213,3 +213,83 @@ declare module "@/lib/mock-data" {
 
 export const TicketDisposition = CallDisposition;
 export const TicketStatus = CallStatus;
+
+// ── Ticket-specific enums/types (backend /tickets entity) ─────────────
+
+export enum SupportTicketStatus {
+  OPEN = "OPEN",
+  IN_PROGRESS = "IN_PROGRESS",
+  PENDING_FOLLOWUP = "PENDING_FOLLOWUP",
+  OVERDUE = "OVERDUE",
+  RESOLVED = "RESOLVED",
+  CLOSED = "CLOSED",
+}
+
+export enum SupportTicketPriority {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  EMERGENCY = "EMERGENCY",
+}
+
+export enum SupportTicketType {
+  BOOKING = "BOOKING",
+  GENERAL_INFO = "GENERAL_INFO",
+  COMPLAINT = "COMPLAINT",
+  SUPPORT = "SUPPORT",
+  BILLING = "BILLING",
+  TECHNICAL_ISSUE = "TECHNICAL_ISSUE",
+  NEW_LEAD = "NEW_LEAD",
+  SPAM = "SPAM",
+}
+
+export interface SupportTicketRecord {
+  id: number;
+  customerId: number;
+  customer?: {
+    id?: number;
+    name: string;
+    phone?: string;
+    email?: string;
+    note?: string;
+    notes?: { id: number; content: string; createdAt: string }[];
+  };
+  callId?: number | null;
+  yardId?: number | null;
+  yard?: YardOption | null;
+  campaignId?: number | null;
+  campaign?: CampaignOption | null;
+  agentId?: number | null;
+  assignedTo?: AgentOption | null;
+  phoneLineId?: number | null;
+  phoneLine?: { id: number; label: string | null; phoneNumber: string } | null;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  ticketType?: SupportTicketType | null;
+  campaignOption?: string | null;
+  issueDetail?: string | null;
+  attachments?: string[] | null;
+  followUpDueDate?: string | null;
+  followUpAssignedToId?: number | null;
+  followUpAssignedTo?: AgentOption | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateSupportTicketFormData {
+  customerId: string;
+  yardId: string;
+  campaignId: string;
+  campaignOption: string;
+  agentId: string;
+  phoneLineId: string;
+  callId: string;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  ticketType: string;
+  issueDetail: string;
+  followUpDueDate: string;
+  followUpAssignedToId: string;
+}
+
+export type UpdateSupportTicketFormData = Partial<CreateSupportTicketFormData>;

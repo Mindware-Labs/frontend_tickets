@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Check, CheckCheck, Clock, AlertTriangle } from "lucide-react";
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  Clock,
+  AlertTriangle,
+  Ticket,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -23,7 +30,11 @@ export function NotificationBell() {
 
   const handleClick = (notif: NotificationItem) => {
     markRead(notif.id);
-    router.push(`/tickets?id=${notif.callId}`);
+    if (notif.ticketId) {
+      router.push(`/tickets?id=${notif.ticketId}`);
+    } else if (notif.callId) {
+      router.push(`/tickets?id=${notif.callId}`);
+    }
   };
 
   return (
@@ -83,6 +94,8 @@ export function NotificationBell() {
                   <div className="mt-0.5 shrink-0">
                     {notif.type === "CALLBACK_OVERDUE" ? (
                       <AlertTriangle className="h-4 w-4 text-destructive" />
+                    ) : notif.type === "TICKET_FOLLOWUP_OVERDUE" ? (
+                      <Ticket className="h-4 w-4 text-destructive" />
                     ) : (
                       <Clock className="h-4 w-4 text-warning" />
                     )}

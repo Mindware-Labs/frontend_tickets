@@ -78,6 +78,8 @@ interface CustomerTimelineDrawerProps {
   campaigns: CampaignOption[];
   getAttachmentLabel: (value: string) => string;
   getAttachmentUrl: (value: string) => string;
+  /** Called when user wants to create a support ticket from this call */
+  onCreateTicket?: () => void;
   /** Active filters from the main page — used to scope the history fetch */
   activeFilters?: Filters;
 }
@@ -217,6 +219,7 @@ export function CustomerTimelineDrawer({
   campaigns,
   getAttachmentLabel,
   getAttachmentUrl,
+  onCreateTicket,
   activeFilters,
 }: CustomerTimelineDrawerProps) {
   // Fetch complete call history for the customer when drawer opens
@@ -438,6 +441,7 @@ export function CustomerTimelineDrawer({
                   isUpdating={isUpdating}
                   onSubmit={onUpdate}
                   onCancel={onClose}
+                  onCreateTicket={onCreateTicket}
                   getAttachmentLabel={getAttachmentLabel}
                   getAttachmentUrl={getAttachmentUrl}
                   withScroll={true}

@@ -133,6 +133,43 @@ export function useCallSocket() {
       },
     );
 
+    // Listen for overdue ticket follow-up notifications
+    socket.on(
+      "ticketFollowUpDue",
+      (data: {
+        id: number;
+        type: string;
+        message: string;
+        ticketId: number;
+        agentId: number | null;
+        createdAt: string;
+      }) => {
+        try {
+          const audio = new Audio("/sounds/notification.mp3");
+          audio.play().catch(() => {});
+        } catch (e) {}
+
+        toast({
+          title: "⏰ Ticket Follow-up Overdue",
+          description: data.message,
+          duration: 10000,
+          className: "bg-slate-900 border-l-4 border-l-orange-500 text-white",
+          action: (
+            <ToastAction
+              altText="View"
+              onClick={() => router.push(`/tickets?id=${data.ticketId}`)}
+              className="text-orange-200 hover:text-white border-orange-200 hover:border-white"
+            >
+              View Ticket
+            </ToastAction>
+          ),
+        });
+
+        revalidateNotifications();
+        revalidateCallCaches();
+      },
+    );
+
     return () => {
       if (revalidateDebounceRef.current)
         clearTimeout(revalidateDebounceRef.current);

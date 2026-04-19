@@ -8,9 +8,14 @@ import { useCallback } from "react";
 // ---------------------------------------------------------------------------
 export interface NotificationItem {
   id: number;
-  type: "CALLBACK_OVERDUE" | "CALLBACK_REMINDER" | "TICKET_ASSIGNED";
+  type:
+    | "CALLBACK_OVERDUE"
+    | "CALLBACK_REMINDER"
+    | "TICKET_ASSIGNED"
+    | "TICKET_FOLLOWUP_OVERDUE";
   message: string;
-  callId: number;
+  callId: number | null;
+  ticketId: number | null;
   agentId: number | null;
   read: boolean;
   createdAt: string;
@@ -18,6 +23,10 @@ export interface NotificationItem {
     id: number;
     customer?: { id: number; name: string; phone?: string } | null;
     followUpAssignedTo?: { id: number; name: string } | null;
+  };
+  ticket?: {
+    id: number;
+    customer?: { id: number; name: string; phone?: string } | null;
   };
 }
 

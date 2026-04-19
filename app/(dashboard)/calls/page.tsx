@@ -5,6 +5,7 @@ import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
@@ -33,6 +34,10 @@ const CustomerTimelineDrawer = dynamic(
 import { useReferenceData } from "./hooks/useReferenceData";
 import { useCallFilters } from "./hooks/useCallFilters";
 import { OverdueCallsBanner } from "./components/OverdueCallsBanner";
+const TicketsTab = dynamic(
+  () => import("./components/TicketsTab").then((m) => m.TicketsTab),
+  { ssr: false },
+);
 import {
   formatEnumLabel,
   getStatusBadgeColor,
@@ -272,6 +277,13 @@ export default function TicketsPage() {
     totalMatchingTickets,
     refData.isTicketAssignedToCurrentUser,
   ]);
+
+  // ---- Tab state ----
+  const [activeTab, setActiveTab] = useState("calls");
+  const [ticketCreateData, setTicketCreateData] = useState<Record<
+    string,
+    string
+  > | null>(null);
 
   // ---- Modal state ----
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -935,159 +947,206 @@ export default function TicketsPage() {
     }
   };
 
+  // ---- Create ticket from call ----
+  const handleCreateTicketFromCall = () => {
+    if (!selectedTicket) return;
+    const data: Record<string, string> = {};
+    if (selectedTicket.id) data.callId = String(selectedTicket.id);
+    if (editFormData.customerId)
+      data.customerId = String(editFormData.customerId);
+    if (editFormData.yardId) data.yardId = String(editFormData.yardId);
+    if (editFormData.campaignId)
+      data.campaignId = String(editFormData.campaignId);
+    if (editFormData.campaignOption)
+      data.campaignOption = editFormData.campaignOption;
+    if (editFormData.agentId) data.agentId = String(editFormData.agentId);
+    if (editFormData.phoneLineId)
+      data.phoneLineId = String(editFormData.phoneLineId);
+    setShowEditModal(false);
+    setShowTimelineDrawer(false);
+    setTicketCreateData(data);
+    setActiveTab("tickets");
+  };
+
   // ---- Computed ----
   const savedAttachments = selectedTicket?.attachments || [];
 
   // ---- Render ----
   return (
-    <div className="h-screen flex flex-col gap-6 p-4">
-      <OverdueCallsBanner />
+    <div className="h-screen flex flex-col gap-4 p-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col"
+      >
+        <TabsList className="w-fit">
+          <TabsTrigger value="calls">Calls</TabsTrigger>
+          <TabsTrigger value="tickets">Tickets</TabsTrigger>
+        </TabsList>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Call Management</h2>
-        <Button onClick={() => setShowCreateModal(true)} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Call
-        </Button>
-      </div>
+        <TabsContent value="calls" className="flex-1 flex flex-col gap-6 mt-2">
+          <OverdueCallsBanner />
 
-      <GroupedCallsTable
-        tickets={tickets}
-        isLoading={isLoading}
-        search={ticketFilters.search}
-        onSearchChange={ticketFilters.setSearch}
-        dateRange={ticketFilters.dateRange}
-        onDateRangeChange={ticketFilters.setDateRange}
-        filters={ticketFilters.filters}
-        onFilterChange={ticketFilters.setFilter}
-        yards={refData.yards}
-        campaigns={refData.campaigns}
-        agents={refData.agents}
-        phoneLines={refData.phoneLines}
-        onOpenTimeline={handleOpenTimeline}
-        currentPage={ticketFilters.currentPage}
-        onPageChange={ticketFilters.setCurrentPage}
-        itemsPerPage={ticketFilters.itemsPerPage}
-        onItemsPerPageChange={ticketFilters.setItemsPerPage}
-        totalCount={
-          typeof ticketsPageData?.totalCalls === "number"
-            ? ticketsPageData.totalCalls
-            : totalMatchingTickets
-        }
-        totalCustomers={totalMatchingTickets}
-        totalPages={
-          ticketsPageData?.totalPages ??
-          Math.max(
-            1,
-            Math.ceil(totalMatchingTickets / ticketFilters.itemsPerPage),
-          )
-        }
-      />
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Call Management</h2>
+          </div>
 
-      <CreateCallModal
-        open={showCreateModal}
-        onOpenChange={(open) => {
-          setShowCreateModal(open);
-          if (!open) resetCreateForm();
-        }}
-        customers={refData.customers}
-        yards={refData.yards}
-        agents={refData.agents}
-        campaigns={refData.campaigns}
-        createFormData={createFormData}
-        setCreateFormData={setCreateFormData}
-        createValidationErrors={createValidationErrors}
-        setCreateValidationErrors={setCreateValidationErrors}
-        customerSearchCreate={customerSearchCreate}
-        setCustomerSearchCreate={setCustomerSearchCreate}
-        yardSearchCreate={yardSearchCreate}
-        setYardSearchCreate={setYardSearchCreate}
-        agentSearchCreate={agentSearchCreate}
-        setAgentSearchCreate={setAgentSearchCreate}
-        campaignSearchCreate={campaignSearchCreate}
-        setCampaignSearchCreate={setCampaignSearchCreate}
-        newAttachment={newAttachment}
-        setNewAttachment={setNewAttachment}
-        attachmentFiles={createAttachmentFiles}
-        setAttachmentFiles={setCreateAttachmentFiles}
-        isCreating={isCreating}
-        onSubmit={handleCreateTicket}
-      />
+          <GroupedCallsTable
+            tickets={tickets}
+            isLoading={isLoading}
+            search={ticketFilters.search}
+            onSearchChange={ticketFilters.setSearch}
+            dateRange={ticketFilters.dateRange}
+            onDateRangeChange={ticketFilters.setDateRange}
+            filters={ticketFilters.filters}
+            onFilterChange={ticketFilters.setFilter}
+            yards={refData.yards}
+            campaigns={refData.campaigns}
+            agents={refData.agents}
+            phoneLines={refData.phoneLines}
+            onOpenTimeline={handleOpenTimeline}
+            currentPage={ticketFilters.currentPage}
+            onPageChange={ticketFilters.setCurrentPage}
+            itemsPerPage={ticketFilters.itemsPerPage}
+            onItemsPerPageChange={ticketFilters.setItemsPerPage}
+            totalCount={
+              typeof ticketsPageData?.totalCalls === "number"
+                ? ticketsPageData.totalCalls
+                : totalMatchingTickets
+            }
+            totalCustomers={totalMatchingTickets}
+            totalPages={
+              ticketsPageData?.totalPages ??
+              Math.max(
+                1,
+                Math.ceil(totalMatchingTickets / ticketFilters.itemsPerPage),
+              )
+            }
+          />
 
-      <ViewCallModal
-        open={showViewModal}
-        onOpenChange={setShowViewModal}
-        ticket={selectedTicket}
-        savedAttachments={savedAttachments}
-        onEdit={() => {
-          setShowViewModal(false);
-          setShowEditModal(true);
-        }}
-        formatEnumLabel={formatEnumLabel}
-        getStatusBadgeColor={getStatusBadgeColor}
-        getPriorityColor={getPriorityColor}
-        getDirectionIcon={getDirectionIcon}
-        getDirectionText={getDirectionText}
-        getCampaign={(t: Call) => getCampaign(t, refData.campaigns)}
-        getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
-        getAttachmentLabel={getAttachmentLabel}
-        getClientName={getClientName}
-        getClientPhone={getClientPhone}
-        getYardDisplayName={(t: Call) => getYardDisplayName(t, refData.yards)}
-      />
+          <CreateCallModal
+            open={showCreateModal}
+            onOpenChange={(open) => {
+              setShowCreateModal(open);
+              if (!open) resetCreateForm();
+            }}
+            customers={refData.customers}
+            yards={refData.yards}
+            agents={refData.agents}
+            campaigns={refData.campaigns}
+            createFormData={createFormData}
+            setCreateFormData={setCreateFormData}
+            createValidationErrors={createValidationErrors}
+            setCreateValidationErrors={setCreateValidationErrors}
+            customerSearchCreate={customerSearchCreate}
+            setCustomerSearchCreate={setCustomerSearchCreate}
+            yardSearchCreate={yardSearchCreate}
+            setYardSearchCreate={setYardSearchCreate}
+            agentSearchCreate={agentSearchCreate}
+            setAgentSearchCreate={setAgentSearchCreate}
+            campaignSearchCreate={campaignSearchCreate}
+            setCampaignSearchCreate={setCampaignSearchCreate}
+            newAttachment={newAttachment}
+            setNewAttachment={setNewAttachment}
+            attachmentFiles={createAttachmentFiles}
+            setAttachmentFiles={setCreateAttachmentFiles}
+            isCreating={isCreating}
+            onSubmit={handleCreateTicket}
+          />
 
-      <EditCallModal
-        open={showEditModal}
-        onOpenChange={setShowEditModal}
-        ticket={selectedTicket}
-        customers={refData.customers}
-        yards={refData.yards}
-        agents={refData.agents}
-        campaigns={refData.campaigns}
-        editFormData={editFormData}
-        setEditFormData={(next) =>
-          setEditFormData((prev) => ({ ...prev, ...next }))
-        }
-        customerSearchEdit={customerSearchEdit}
-        setCustomerSearchEdit={setCustomerSearchEdit}
-        yardSearchEdit={yardSearchEdit}
-        setYardSearchEdit={setYardSearchEdit}
-        agentSearchEdit={agentSearchEdit}
-        setAgentSearchEdit={setAgentSearchEdit}
-        campaignSearchEdit={campaignSearchEdit}
-        setCampaignSearchEdit={setCampaignSearchEdit}
-        attachmentFiles={attachmentFiles}
-        setAttachmentFiles={setAttachmentFiles}
-        savedAttachments={savedAttachments}
-        isUpdating={isUpdating}
-        onSubmit={handleUpdateTicketFromModal}
-        getAttachmentLabel={getAttachmentLabel}
-        getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
-      />
+          <ViewCallModal
+            open={showViewModal}
+            onOpenChange={setShowViewModal}
+            ticket={selectedTicket}
+            savedAttachments={savedAttachments}
+            onEdit={() => {
+              setShowViewModal(false);
+              setShowEditModal(true);
+            }}
+            formatEnumLabel={formatEnumLabel}
+            getStatusBadgeColor={getStatusBadgeColor}
+            getPriorityColor={getPriorityColor}
+            getDirectionIcon={getDirectionIcon}
+            getDirectionText={getDirectionText}
+            getCampaign={(t: Call) => getCampaign(t, refData.campaigns)}
+            getAttachmentUrl={(v: string) =>
+              getAttachmentUrl(v, refData.apiBase)
+            }
+            getAttachmentLabel={getAttachmentLabel}
+            getClientName={getClientName}
+            getClientPhone={getClientPhone}
+            getYardDisplayName={(t: Call) =>
+              getYardDisplayName(t, refData.yards)
+            }
+          />
 
-      <CustomerTimelineDrawer
-        open={showTimelineDrawer}
-        onClose={() => setShowTimelineDrawer(false)}
-        group={timelineGroup}
-        activeFilters={ticketFilters.filters}
-        selectedCall={selectedTicket}
-        onSelectCall={handleSelectCallInTimeline}
-        editFormData={editFormData}
-        setEditFormData={(next) =>
-          setEditFormData((prev) => ({ ...prev, ...next }))
-        }
-        attachmentFiles={attachmentFiles}
-        setAttachmentFiles={setAttachmentFiles}
-        savedAttachments={savedAttachments}
-        isUpdating={isUpdating}
-        onUpdate={handleUpdateTicketFromModal}
-        customers={refData.customers}
-        yards={refData.yards}
-        agents={refData.agents}
-        campaigns={refData.campaigns}
-        getAttachmentLabel={getAttachmentLabel}
-        getAttachmentUrl={(v: string) => getAttachmentUrl(v, refData.apiBase)}
-      />
+          <EditCallModal
+            open={showEditModal}
+            onOpenChange={setShowEditModal}
+            ticket={selectedTicket}
+            customers={refData.customers}
+            yards={refData.yards}
+            agents={refData.agents}
+            campaigns={refData.campaigns}
+            editFormData={editFormData}
+            setEditFormData={(next) =>
+              setEditFormData((prev) => ({ ...prev, ...next }))
+            }
+            customerSearchEdit={customerSearchEdit}
+            setCustomerSearchEdit={setCustomerSearchEdit}
+            yardSearchEdit={yardSearchEdit}
+            setYardSearchEdit={setYardSearchEdit}
+            agentSearchEdit={agentSearchEdit}
+            setAgentSearchEdit={setAgentSearchEdit}
+            campaignSearchEdit={campaignSearchEdit}
+            setCampaignSearchEdit={setCampaignSearchEdit}
+            attachmentFiles={attachmentFiles}
+            setAttachmentFiles={setAttachmentFiles}
+            savedAttachments={savedAttachments}
+            isUpdating={isUpdating}
+            onSubmit={handleUpdateTicketFromModal}
+            getAttachmentLabel={getAttachmentLabel}
+            getAttachmentUrl={(v: string) =>
+              getAttachmentUrl(v, refData.apiBase)
+            }
+            onCreateTicket={handleCreateTicketFromCall}
+          />
+
+          <CustomerTimelineDrawer
+            open={showTimelineDrawer}
+            onClose={() => setShowTimelineDrawer(false)}
+            group={timelineGroup}
+            activeFilters={ticketFilters.filters}
+            selectedCall={selectedTicket}
+            onSelectCall={handleSelectCallInTimeline}
+            editFormData={editFormData}
+            setEditFormData={(next) =>
+              setEditFormData((prev) => ({ ...prev, ...next }))
+            }
+            attachmentFiles={attachmentFiles}
+            setAttachmentFiles={setAttachmentFiles}
+            savedAttachments={savedAttachments}
+            isUpdating={isUpdating}
+            onUpdate={handleUpdateTicketFromModal}
+            customers={refData.customers}
+            yards={refData.yards}
+            agents={refData.agents}
+            campaigns={refData.campaigns}
+            getAttachmentLabel={getAttachmentLabel}
+            getAttachmentUrl={(v: string) =>
+              getAttachmentUrl(v, refData.apiBase)
+            }
+            onCreateTicket={handleCreateTicketFromCall}
+          />
+        </TabsContent>
+
+        <TabsContent value="tickets" className="flex-1 mt-2">
+          <TicketsTab
+            initialCreateData={ticketCreateData}
+            onConsumeCreateData={() => setTicketCreateData(null)}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
