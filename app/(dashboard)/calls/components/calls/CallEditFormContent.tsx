@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import { CallRecordingPlayer } from "./CallRecordingPlayer";
+import { useMemo, useState } from "react";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,10 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
 import {
-  X,
   User,
   Phone,
   MapPin,
@@ -44,17 +40,18 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
-  FileText,
-  UploadCloud,
-  Paperclip,
-  ExternalLink,
-  Download,
   ChevronsUpDown,
   Check,
   StickyNote,
   Calendar as CalendarIcon,
   Headphones,
   PhoneOutgoing,
+  PhoneIncoming,
+  PhoneMissed,
+  Voicemail,
+  Clock,
+  Ticket,
+  X,
 } from "lucide-react";
 import {
   AgentOption,
@@ -70,59 +67,219 @@ import {
   TicketStatus,
   YardOption,
 } from "../../types";
-import type { Ticket } from "@/lib/mock-data";
+import type { Ticket as TicketType } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { CallRecordingPlayer } from "./CallRecordingPlayer";
 
-/** Re-export so callers can reference the form type */
 export type CallEditFormData = CreateTicketFormData;
 
 interface CallEditFormContentProps {
-  ticket: Ticket;
+  ticket: TicketType;
+  customerCalls?: TicketType[];
+  onSelectCall?: (call: TicketType) => void;
   customers: CustomerOption[];
   yards: YardOption[];
   agents: AgentOption[];
   campaigns: CampaignOption[];
   formData: CreateTicketFormData;
   setFormData: (next: CreateTicketFormData) => void;
-  attachmentFiles: File[];
-  setAttachmentFiles: (next: File[]) => void;
-  savedAttachments: string[];
+  attachmentFiles?: File[];
+  setAttachmentFiles?: (next: File[]) => void;
+  savedAttachments?: string[];
   isUpdating: boolean;
   onSubmit: () => void;
   onCancel: () => void;
   onCreateTicket?: () => void;
-  getAttachmentLabel: (value: string) => string;
-  getAttachmentUrl: (value: string) => string;
-  /** When true, wraps content in a ScrollArea and shows save/cancel footer */
+  getAttachmentLabel?: (value: string) => string;
+  getAttachmentUrl?: (value: string) => string;
   withScroll?: boolean;
 }
+
+/* ─── helpers ────────────────────────────────────────────── */
 
 const formatEnumLabel = (value: string) => {
   if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
   return value
-    .toString()
     .replace(/_/g, " ")
     .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 };
+
+function formatDuration(seconds?: number | null): string {
+  if (!seconds) return "--:--";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function formatCallDate(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isToday)
+    return `Today ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function DirectionIcon({ direction }: { direction?: string | null }) {
+  switch (direction?.toUpperCase()) {
+    case CallDirection.INBOUND:
+      return <PhoneIncoming className="h-3.5 w-3.5 text-emerald-500" />;
+    case CallDirection.OUTBOUND:
+      return <PhoneOutgoing className="h-3.5 w-3.5 text-blue-500" />;
+    case CallDirection.MISSED:
+      return <PhoneMissed className="h-3.5 w-3.5 text-red-500" />;
+    case CallDirection.VOICEMAIL:
+      return <Voicemail className="h-3.5 w-3.5 text-purple-500" />;
+    default:
+      return <Phone className="h-3.5 w-3.5 text-slate-400" />;
+  }
+}
+
+/* ─── Field label ────────────────────────────────────────── */
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+      {children}
+    </p>
+  );
+}
+
+/* ─── Section heading ────────────────────────────────────── */
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 pt-1">
+      {children}
+    </p>
+  );
+}
+
+/* ─── Shared input className ─────────────────────────────── */
+const inputCls =
+  "border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto";
+
+/* ─── Left panel: call history ───────────────────────────── */
+
+function CallHistoryPanel({
+  calls,
+  activeCallId,
+  onSelect,
+}: {
+  calls: TicketType[];
+  activeCallId: number | string;
+  onSelect?: (call: TicketType) => void;
+}) {
+  const customerName =
+    (calls[0] as any)?.customer?.name ||
+    (calls[0] as any)?.clientName ||
+    "Unknown";
+  const phone =
+    (calls[0] as any)?.customer?.phone ||
+    (calls[0] as any)?.customerPhone ||
+    "";
+
+  const sortedCalls = useMemo(() => {
+    return [...calls].sort((a, b) => {
+      const ad = new Date(a.callDate || a.createdAt || 0).getTime();
+      const bd = new Date(b.callDate || b.createdAt || 0).getTime();
+      return bd - ad;
+    });
+  }, [calls]);
+
+  return (
+    <div className="w-64 shrink-0 flex flex-col border-r border-slate-100 bg-slate-50/60">
+      <div className="px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <User className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800 truncate">
+              {customerName}
+            </p>
+            {phone && (
+              <p className="text-xs text-slate-400 truncate">{phone}</p>
+            )}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-2 font-medium">
+          {calls.length} call{calls.length !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-2 space-y-0.5">
+          {sortedCalls.map((call) => {
+            const isActive = call.id === activeCallId;
+            const date = formatCallDate(call.callDate || call.createdAt);
+            const duration = formatDuration(call.duration);
+
+            return (
+              <button
+                key={call.id}
+                onClick={() => onSelect?.(call)}
+                className={cn(
+                  "w-full text-left px-3 py-2.5 rounded-lg transition-colors",
+                  isActive
+                    ? "bg-blue-50 border-l-2 border-l-blue-500"
+                    : "hover:bg-slate-100 border-l-2 border-l-transparent",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <DirectionIcon direction={call.direction} />
+                  <span className="text-xs font-mono text-slate-400">
+                    #{call.id}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                  <Clock className="h-3 w-3" />
+                  <span>{date}</span>
+                  {call.duration && (
+                    <>
+                      <span>·</span>
+                      <span>{duration}</span>
+                    </>
+                  )}
+                </div>
+                {call.status && (
+                  <Badge
+                    variant="outline"
+                    className="mt-1.5 text-[10px] px-1.5 py-0 h-4 border-slate-200 text-slate-500"
+                  >
+                    {formatEnumLabel(call.status)}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────── */
 
 export function CallEditFormContent({
   ticket,
+  customerCalls,
+  onSelectCall,
   customers,
   yards,
   agents,
   campaigns,
   formData,
   setFormData,
-  attachmentFiles,
-  setAttachmentFiles,
-  savedAttachments,
   isUpdating,
   onSubmit,
   onCancel,
   onCreateTicket,
-  getAttachmentLabel,
-  getAttachmentUrl,
   withScroll = true,
 }: CallEditFormContentProps) {
   const [campaignOpen, setCampaignOpen] = useState(false);
@@ -133,7 +290,23 @@ export function CallEditFormContent({
     count: number;
     statuses: string[];
   } | null>(null);
-  const [checkingTickets, setCheckingTickets] = useState(false);
+
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const dialPhone =
+    formData.customerPhone ||
+    (ticket.customer as any)?.phone ||
+    (ticket as any).customerPhone ||
+    "";
+
+  const handleCall = () => {
+    if (!dialPhone || !canDial) return;
+    dial(dialPhone, ticket.id);
+  };
 
   const handleCreateTicketClick = async () => {
     if (!formData.customerId) {
@@ -141,7 +314,6 @@ export function CallEditFormContent({
       return;
     }
     try {
-      setCheckingTickets(true);
       const res = await fetch(
         `/api/tickets?mode=page&customerId=${formData.customerId}&limit=50`,
       );
@@ -170,158 +342,146 @@ export function CallEditFormContent({
       }
     } catch {
       onCreateTicket?.();
-    } finally {
-      setCheckingTickets(false);
     }
   };
 
-  const {
-    dial,
-    status: aircallStatus,
-    isLoggedIn: aircallLoggedIn,
-  } = useAircall();
-  const canDial = aircallStatus === "ready" && aircallLoggedIn;
-  const dialPhone =
-    formData.customerPhone ||
-    (ticket.customer as any)?.phone ||
-    (ticket as any).customerPhone ||
-    "";
-  const handleCall = () => {
-    if (!dialPhone) return;
-    dial(dialPhone, ticket.id);
-  };
+  const selectedCampaign = useMemo(
+    () =>
+      formData.campaignId
+        ? (campaigns.find((c) => c.id.toString() === formData.campaignId) ??
+          null)
+        : null,
+    [campaigns, formData.campaignId],
+  );
 
-  const selectedCampaign = useMemo(() => {
-    if (!formData.campaignId) return null;
-    return campaigns.find((c) => c.id.toString() === formData.campaignId);
-  }, [campaigns, formData.campaignId]);
+  const campaignType = selectedCampaign?.tipo?.toString().toUpperCase();
+  const campaignOptionValues =
+    campaignType === ManagementType.ONBOARDING
+      ? Object.values(OnboardingOption)
+      : campaignType === ManagementType.AR
+        ? Object.values(ArOption)
+        : [];
 
-  const selectedCampaignType = selectedCampaign?.tipo?.toString().toUpperCase();
-  const isOnboardingCampaign =
-    selectedCampaignType === ManagementType.ONBOARDING;
-  const isArCampaign = selectedCampaignType === ManagementType.AR;
-  const campaignOptionValues = isOnboardingCampaign
-    ? Object.values(OnboardingOption)
-    : isArCampaign
-      ? Object.values(ArOption)
-      : [];
+  const callList = useMemo(() => {
+    if (customerCalls && customerCalls.length > 0) return customerCalls;
+    return [ticket];
+  }, [customerCalls, ticket]);
 
+  const hasHistory = callList.length > 1;
+
+  /* ── form body ── */
   const formBody = (
-    <div className="p-6 space-y-8">
-      {/* Customer Notes */}
+    <div className="p-6 space-y-6">
+      {/* Customer Notes banner */}
       {((ticket.customer?.notes && ticket.customer.notes.length > 0) ||
         ticket.customer?.note) && (
-        <div className="border-b pb-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="w-full flex items-center gap-3 p-3.5 rounded-lg border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/15 transition-colors cursor-pointer text-left shadow-sm">
-                <div className="h-9 w-9 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
-                  <StickyNote className="h-4 w-4 text-amber-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                    Customer Notes
-                  </p>
-                  <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">
-                    {ticket.customer?.notes && ticket.customer.notes.length > 0
-                      ? `${ticket.customer.notes.length} note${ticket.customer.notes.length !== 1 ? "s" : ""}`
-                      : "1 note"}
-                  </p>
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] font-mono bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20"
-                >
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100/70 transition-colors cursor-pointer text-left">
+              <div className="h-8 w-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                <StickyNote className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800">
+                  Customer Notes
+                </p>
+                <p className="text-[10px] text-amber-600/70 mt-0.5">
                   {ticket.customer?.notes && ticket.customer.notes.length > 0
-                    ? ticket.customer.notes.length
-                    : 1}
-                </Badge>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-80 p-0">
-              <div className="px-4 py-3 border-b border-border/50">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <StickyNote className="h-4 w-4 text-amber-500" />
-                  Notes
-                </h4>
+                    ? `${ticket.customer.notes.length} note${ticket.customer.notes.length !== 1 ? "s" : ""}`
+                    : "1 note"}{" "}
+                  · Click to view
+                </p>
               </div>
-              <div className="max-h-70 overflow-y-auto p-2 space-y-2">
-                {ticket.customer?.notes && ticket.customer.notes.length > 0 ? (
-                  ticket.customer.notes.map((n: any) => (
-                    <div
-                      key={n.id}
-                      className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm"
-                    >
-                      <p className="text-foreground/90 whitespace-pre-wrap wrap-break-word leading-relaxed">
-                        {n.content}
-                      </p>
-                      {n.createdAt && (
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          {n.createdBy && (
-                            <span className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-wider truncate">
-                              {n.createdBy}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ml-auto">
-                            <CalendarIcon className="h-3 w-3 opacity-70" />
-                            {new Date(n.createdAt).toLocaleDateString(
-                              undefined,
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              },
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm">
-                    <p className="text-foreground/90 whitespace-pre-wrap wrap-break-word leading-relaxed">
-                      {ticket.customer!.note}
+              <Badge className="text-[10px] font-mono bg-amber-200 text-amber-800 border-0">
+                {ticket.customer?.notes && ticket.customer.notes.length > 0
+                  ? ticket.customer.notes.length
+                  : 1}
+              </Badge>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="w-80 p-0 shadow-xl border-slate-200"
+          >
+            <div className="px-4 py-3 border-b border-slate-100">
+              <h4 className="text-sm font-semibold flex items-center gap-2 text-slate-800">
+                <StickyNote className="h-4 w-4 text-amber-500" /> Notes
+              </h4>
+            </div>
+            <div className="max-h-[280px] overflow-y-auto p-2 space-y-2">
+              {ticket.customer?.notes && ticket.customer.notes.length > 0 ? (
+                ticket.customer.notes.map((n: any) => (
+                  <div
+                    key={n.id}
+                    className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm"
+                  >
+                    <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
+                      {n.content}
                     </p>
+                    {n.createdAt && (
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        {n.createdBy && (
+                          <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider truncate">
+                            {n.createdBy}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 ml-auto">
+                          <CalendarIcon className="h-3 w-3" />
+                          {new Date(n.createdAt).toLocaleDateString(undefined, {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+                ))
+              ) : (
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm">
+                  <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
+                    {ticket.customer!.note}
+                  </p>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
       )}
 
-      {/* SECTION 1: CAMPAIGN & YARD */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Megaphone className="w-4 h-4" /> Campaign & Location
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* ── SECTION 1: CAMPAIGN & LOCATION ── */}
+      <div>
+        <SectionHeading>Campaign &amp; Location</SectionHeading>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
           {/* Campaign */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Megaphone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-              Campaign
-            </Label>
+          <div>
+            <FieldLabel>Campaign</FieldLabel>
             <Popover open={campaignOpen} onOpenChange={setCampaignOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-full justify-between"
+                  className={cn("w-full justify-between font-normal", inputCls)}
                 >
-                  {formData.campaignId
-                    ? campaigns.find(
-                        (c) => c.id.toString() === formData.campaignId,
-                      )?.nombre || formData.campaignId
-                    : "Select campaign..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span className="truncate">
+                    {formData.campaignId
+                      ? (campaigns.find(
+                          (c) => c.id.toString() === formData.campaignId,
+                        )?.nombre ?? formData.campaignId)
+                      : "Select campaign..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent
+                className="w-72 p-0 shadow-xl border-slate-200"
+                align="start"
+              >
                 <Command>
-                  <CommandInput placeholder="Search campaign..." />
+                  <CommandInput
+                    placeholder="Search campaign..."
+                    className="text-sm"
+                  />
                   <CommandList>
                     <CommandEmpty>No campaign found.</CommandEmpty>
                     <CommandGroup>
@@ -382,27 +542,33 @@ export function CallEditFormContent({
           </div>
 
           {/* Yard */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-muted-foreground" /> Yard
-            </Label>
+          <div>
+            <FieldLabel>Yard</FieldLabel>
             <Popover open={yardOpen} onOpenChange={setYardOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-full justify-between"
+                  className={cn("w-full justify-between font-normal", inputCls)}
                 >
-                  {formData.yardId
-                    ? yards.find((y) => y.id.toString() === formData.yardId)
-                        ?.name || formData.yardId
-                    : "Select yard..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span className="truncate">
+                    {formData.yardId
+                      ? (yards.find((y) => y.id.toString() === formData.yardId)
+                          ?.name ?? formData.yardId)
+                      : "Select yard..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent
+                className="w-72 p-0 shadow-xl border-slate-200"
+                align="start"
+              >
                 <Command>
-                  <CommandInput placeholder="Search yard..." />
+                  <CommandInput
+                    placeholder="Search yard..."
+                    className="text-sm"
+                  />
                   <CommandList>
                     <CommandEmpty>No yard found.</CommandEmpty>
                     <CommandGroup>
@@ -452,10 +618,10 @@ export function CallEditFormContent({
           </div>
 
           {campaignOptionValues.length > 0 && (
-            <div className="md:col-span-2 space-y-2 animate-in fade-in slide-in-from-left-2">
-              <Label className="text-xs font-semibold">Campaign Option</Label>
+            <div className="col-span-2 animate-in fade-in slide-in-from-left-2">
+              <FieldLabel>Campaign Option</FieldLabel>
               <Select
-                value={formData.campaignOption}
+                value={formData.campaignOption || "none"}
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
@@ -463,7 +629,7 @@ export function CallEditFormContent({
                   })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className={inputCls}>
                   <SelectValue placeholder="Select option" />
                 </SelectTrigger>
                 <SelectContent>
@@ -480,48 +646,53 @@ export function CallEditFormContent({
         </div>
       </div>
 
-      <Separator />
-
-      {/* SECTION 2: CUSTOMER */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <User className="w-4 h-4" /> Customer Information
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold">
-              Customer Name <span className="text-red-500">*</span>
-            </Label>
+      {/* ── SECTION 2: CUSTOMER INFORMATION ── */}
+      <div>
+        <SectionHeading>Customer Information</SectionHeading>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          {/* Customer Name */}
+          <div>
+            <FieldLabel>
+              Customer Name <span className="text-red-400">*</span>
+            </FieldLabel>
             <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-full justify-between"
+                  className={cn("w-full justify-between font-normal", inputCls)}
                 >
-                  {formData.customerId
-                    ? customers.find(
-                        (c) => c.id.toString() === formData.customerId,
-                      )?.name || formData.customerId
-                    : "Select customer..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span className="truncate">
+                    {formData.customerId
+                      ? (customers.find(
+                          (c) => c.id.toString() === formData.customerId,
+                        )?.name ?? formData.customerId)
+                      : "Select customer..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent
+                className="w-72 p-0 shadow-xl border-slate-200"
+                align="start"
+              >
                 <Command>
-                  <CommandInput placeholder="Search customer..." />
+                  <CommandInput
+                    placeholder="Search customer..."
+                    className="text-sm"
+                  />
                   <CommandList>
                     <CommandEmpty>No customer found.</CommandEmpty>
                     <CommandGroup>
                       {customers.map((c) => (
                         <CommandItem
                           key={c.id}
-                          value={`${c.id} ${c.name} ${c.phone || ""}`}
+                          value={`${c.id} ${c.name} ${c.phone ?? ""}`}
                           onSelect={() => {
                             setFormData({
                               ...formData,
                               customerId: c.id.toString(),
-                              customerPhone: c.phone || "",
+                              customerPhone: c.phone ?? "",
                             });
                             setCustomerOpen(false);
                           }}
@@ -535,9 +706,9 @@ export function CallEditFormContent({
                             )}
                           />
                           <div className="flex flex-col">
-                            <span>{c.name}</span>
+                            <span className="text-sm">{c.name}</span>
                             {c.phone && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-slate-400">
                                 {c.phone}
                               </span>
                             )}
@@ -551,49 +722,70 @@ export function CallEditFormContent({
             </Popover>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Phone
-            </Label>
+          {/* Phone — read-only */}
+          <div>
+            <FieldLabel>Phone</FieldLabel>
             <Input
-              value={formData.customerPhone}
+              value={formData.customerPhone || ""}
               readOnly
-              placeholder="Auto-filled"
-              className="bg-muted/40 border-dashed text-muted-foreground focus-visible:ring-0 cursor-not-allowed"
+              placeholder="Auto-filled from customer"
               tabIndex={-1}
+              className={cn(
+                inputCls,
+                "bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed focus:ring-0 focus:border-slate-200",
+              )}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Briefcase className="w-3.5 h-3.5 text-muted-foreground" /> Assign
-              Agent
-            </Label>
+          {/* Assign Agent — spans full row */}
+          <div className="col-span-2">
+            <FieldLabel>Assign Agent</FieldLabel>
             <Popover open={agentOpen} onOpenChange={setAgentOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-full justify-between"
+                  className={cn("w-full justify-between font-normal", inputCls)}
                 >
-                  {formData.agentId
-                    ? agents.find((a) => a.id.toString() === formData.agentId)
-                        ?.name ||
-                      (ticket as any)?.agent?.name ||
-                      (typeof (ticket as any)?.assignedTo === "object"
-                        ? (ticket as any)?.assignedTo?.name
-                        : undefined) ||
-                      "Unassigned"
-                    : "Unassigned"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span className="truncate">
+                    {formData.agentId
+                      ? (agents.find(
+                          (a) => a.id.toString() === formData.agentId,
+                        )?.name ??
+                        (ticket as any)?.agent?.name ??
+                        "Unassigned")
+                      : "Unassigned"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent
+                className="w-full p-0 shadow-xl border-slate-200"
+                align="start"
+              >
                 <Command>
-                  <CommandInput placeholder="Search agent..." />
+                  <CommandInput
+                    placeholder="Search agent..."
+                    className="text-sm"
+                  />
                   <CommandList>
                     <CommandEmpty>No agent found.</CommandEmpty>
                     <CommandGroup>
+                      <CommandItem
+                        value="unassigned"
+                        onSelect={() => {
+                          setFormData({ ...formData, agentId: "" });
+                          setAgentOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            !formData.agentId ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        Unassigned
+                      </CommandItem>
                       {agents.map((a) => (
                         <CommandItem
                           key={a.id}
@@ -626,26 +818,20 @@ export function CallEditFormContent({
         </div>
       </div>
 
-      <Separator />
-
-      {/* SECTION 3: CALL DETAILS */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Activity className="w-4 h-4" /> Call Details
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-              Direction <span className="text-red-500">*</span>
-            </Label>
+      {/* ── SECTION 3: CALL DETAILS ── */}
+      <div>
+        <SectionHeading>Call Details</SectionHeading>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          {/* Direction */}
+          <div>
+            <FieldLabel>Direction</FieldLabel>
             <Select
               value={formData.direction}
               onValueChange={(value) =>
                 setFormData({ ...formData, direction: value as CallDirection })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className={inputCls}>
                 <SelectValue placeholder="Select direction" />
               </SelectTrigger>
               <SelectContent>
@@ -658,17 +844,16 @@ export function CallEditFormContent({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-muted-foreground" /> Status
-            </Label>
+          {/* Status */}
+          <div>
+            <FieldLabel>Status</FieldLabel>
             <Select
               value={formData.status}
               onValueChange={(value) =>
                 setFormData({ ...formData, status: value as CallStatus })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className={inputCls}>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
@@ -681,15 +866,13 @@ export function CallEditFormContent({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date &
-              Time
-            </Label>
+          {/* Date & Time */}
+          <div className="col-span-2">
+            <FieldLabel>Date &amp; Time</FieldLabel>
             <Input
               type="datetime-local"
-              className="block w-full"
-              value={formData.startedAt}
+              className={cn("w-full", inputCls)}
+              value={formData.startedAt || ""}
               onChange={(e) =>
                 setFormData({ ...formData, startedAt: e.target.value })
               }
@@ -698,36 +881,25 @@ export function CallEditFormContent({
         </div>
       </div>
 
-      <Separator />
-
-      {/* RECORDING PLAYER */}
+      {/* ── CALL RECORDING ── */}
       {(ticket as any).recordingUrl && (ticket as any).id && (
-        <>
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Headphones className="w-4 h-4" /> Call Recording
-            </h3>
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <CallRecordingPlayer callId={(ticket as any).id} />
-            </div>
+        <div>
+          <SectionHeading>Call Recording</SectionHeading>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <CallRecordingPlayer callId={(ticket as any).id} />
           </div>
-          <Separator />
-        </>
+        </div>
       )}
 
-      {/* SECTION 4: DISPOSITION & NOTES */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" /> Details & Resolution
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-              Disposition
-            </Label>
+      {/* ── SECTION 4: DETAILS & RESOLUTION ── */}
+      <div>
+        <SectionHeading>Details &amp; Resolution</SectionHeading>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          {/* Disposition */}
+          <div className="col-span-2">
+            <FieldLabel>Disposition</FieldLabel>
             <Select
-              value={formData.disposition}
+              value={formData.disposition || "none"}
               onValueChange={(value) =>
                 setFormData({
                   ...formData,
@@ -735,8 +907,8 @@ export function CallEditFormContent({
                 })
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select disposition" />
+              <SelectTrigger className={inputCls}>
+                <SelectValue placeholder="Select disposition..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No disposition</SelectItem>
@@ -748,150 +920,79 @@ export function CallEditFormContent({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Follow-up fields */}
+          {(formData.disposition === TicketDisposition.CALLBACK_REQUIRED ||
+            formData.disposition === TicketDisposition.CALLBACK_SCHEDULED) && (
+            <>
+              <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <FieldLabel>Follow-up Date</FieldLabel>
+                <Input
+                  type="datetime-local"
+                  className={inputCls}
+                  value={formData.followUpDueDate || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      followUpDueDate: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <FieldLabel>Follow-up Assigned To</FieldLabel>
+                <Select
+                  value={formData.followUpAssignedToId || "none"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      followUpAssignedToId: value === "none" ? "" : value,
+                    })
+                  }
+                >
+                  <SelectTrigger className={inputCls}>
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not assigned</SelectItem>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id.toString()}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Callback Required / Scheduled – follow-up fields */}
-        {(formData.disposition === TicketDisposition.CALLBACK_REQUIRED ||
-          formData.disposition === TicketDisposition.CALLBACK_SCHEDULED) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold flex items-center gap-1.5">
-                <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                Follow-up Date
-              </Label>
-              <Input
-                type="datetime-local"
-                value={formData.followUpDueDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, followUpDueDate: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-muted-foreground" /> Follow-up
-                Assigned To
-              </Label>
-              <Select
-                value={formData.followUpAssignedToId || "none"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    followUpAssignedToId: value === "none" ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not assigned</SelectItem>
-                  {agents.map((a) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2 pt-2">
-          <Label className="text-xs font-semibold">Notes</Label>
+        <div className="mt-5">
+          <FieldLabel>Notes</FieldLabel>
           <Textarea
             placeholder="Enter call notes..."
-            value={formData.notes}
+            value={formData.notes || ""}
             onChange={(e) =>
               setFormData({ ...formData, notes: e.target.value })
             }
-            className="min-h-30 resize-y"
+            className={cn(
+              "min-h-[110px] resize-y border-slate-200 rounded-lg text-sm p-2.5",
+              "focus:ring-2 focus:ring-blue-100 focus:border-blue-500 shadow-inner",
+            )}
           />
         </div>
       </div>
-
-      {/* Footer actions (visible only when not using withScroll sticky footer) */}
-      {!withScroll && (
-        <div className="flex justify-end gap-3 pt-2 border-t">
-          <Button
-            variant="outline"
-            onClick={handleCall}
-            disabled={!dialPhone || !canDial}
-            title={
-              !dialPhone
-                ? "No phone number on file"
-                : !canDial
-                  ? "Aircall is not connected"
-                  : `Call ${dialPhone}`
-            }
-          >
-            <PhoneOutgoing className="h-4 w-4 mr-2" />
-            Call
-          </Button>
-          {onCreateTicket && (
-            <Button
-              variant="outline"
-              onClick={handleCreateTicketClick}
-              disabled={checkingTickets}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {checkingTickets ? "Checking..." : "Create Ticket"}
-            </Button>
-          )}
-          <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
-            Cancel
-          </Button>
-          <Button onClick={onSubmit} disabled={isUpdating} className="px-8">
-            {isUpdating ? "Updating..." : "Save Changes"}
-          </Button>
-        </div>
-      )}
-      {activeTicketWarning && (
-        <div className="mx-4 mb-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium">
-              This customer already has {activeTicketWarning.count} active{" "}
-              {activeTicketWarning.count === 1 ? "ticket" : "tickets"}
-            </p>
-            <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400">
-              Status: {activeTicketWarning.statuses.join(", ")}
-            </p>
-            <div className="mt-2 flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs border-amber-400 hover:bg-amber-100 dark:border-amber-600 dark:hover:bg-amber-900"
-                onClick={() => {
-                  setActiveTicketWarning(null);
-                  onCreateTicket?.();
-                }}
-              >
-                Create Anyway
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => setActiveTicketWarning(null)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
-  if (!withScroll) return formBody;
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-y-auto">{formBody}</div>
-      <div className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 flex justify-end gap-3 shrink-0">
+  /* ─── Footer ─────────────────────────────────────────────── */
+  const footer = (
+    <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 rounded-b-2xl flex items-center justify-between shrink-0">
+      {/* Left: secondary actions */}
+      <div className="flex items-center gap-2">
         <Button
-          variant="outline"
+          variant="ghost"
+          size="sm"
           onClick={handleCall}
           disabled={!dialPhone || !canDial}
           title={
@@ -901,62 +1002,112 @@ export function CallEditFormContent({
                 ? "Aircall is not connected"
                 : `Call ${dialPhone}`
           }
+          className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 gap-1.5"
         >
-          <PhoneOutgoing className="h-4 w-4 mr-2" />
+          <PhoneOutgoing className="h-4 w-4" />
           Call
         </Button>
-        {onCreateTicket && (
-          <Button
-            variant="outline"
-            onClick={handleCreateTicketClick}
-            disabled={checkingTickets}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {checkingTickets ? "Checking..." : "Create Ticket"}
-          </Button>
-        )}
-        <Button variant="ghost" onClick={onCancel} disabled={isUpdating}>
-          Cancel
-        </Button>
-        <Button onClick={onSubmit} disabled={isUpdating} className="px-8">
-          {isUpdating ? "Updating..." : "Save Changes"}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCreateTicketClick}
+          className="border-slate-300 bg-white text-slate-700 hover:bg-slate-50 gap-1.5"
+        >
+          <Ticket className="h-4 w-4" />
+          Create Ticket
         </Button>
       </div>
-      {activeTicketWarning && (
-        <div className="mx-4 mb-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium">
-              This customer already has {activeTicketWarning.count} active{" "}
-              {activeTicketWarning.count === 1 ? "ticket" : "tickets"}
-            </p>
-            <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400">
-              Status: {activeTicketWarning.statuses.join(", ")}
-            </p>
-            <div className="mt-2 flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs border-amber-400 hover:bg-amber-100 dark:border-amber-600 dark:hover:bg-amber-900"
-                onClick={() => {
-                  setActiveTicketWarning(null);
-                  onCreateTicket?.();
-                }}
-              >
-                Create Anyway
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => setActiveTicketWarning(null)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
+
+      {/* Right: primary actions */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onCancel}
+          disabled={isUpdating}
+          className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <Button
+          onClick={onSubmit}
+          disabled={isUpdating}
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-2 font-medium text-sm"
+        >
+          {isUpdating ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  /* ─── Warning banner ─────────────────────────────────────── */
+  const warningBanner = activeTicketWarning && (
+    <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      <div className="flex-1">
+        <p className="font-medium">
+          This customer already has {activeTicketWarning.count} active{" "}
+          {activeTicketWarning.count === 1 ? "ticket" : "tickets"}
+        </p>
+        <p className="text-xs mt-0.5 text-amber-700">
+          Status: {activeTicketWarning.statuses.join(", ")}
+        </p>
+        <div className="mt-2 flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-amber-300 hover:bg-amber-100"
+            onClick={() => {
+              setActiveTicketWarning(null);
+              onCreateTicket?.();
+            }}
+          >
+            Create Anyway
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-slate-600"
+            onClick={() => setActiveTicketWarning(null)}
+          >
+            Dismiss
+          </Button>
         </div>
+      </div>
+      <button
+        onClick={() => setActiveTicketWarning(null)}
+        className="text-amber-400 hover:text-amber-600"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  /* ─── withScroll = false ─────────────────────────────────── */
+  if (!withScroll) {
+    return (
+      <>
+        {formBody}
+        {warningBanner}
+        {footer}
+      </>
+    );
+  }
+
+  /* ─── withScroll = true: split-panel layout ─────────────── */
+  return (
+    <div className="flex h-full">
+      {hasHistory && (
+        <CallHistoryPanel
+          calls={callList}
+          activeCallId={ticket.id}
+          onSelect={onSelectCall}
+        />
       )}
+
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <ScrollArea className="flex-1">{formBody}</ScrollArea>
+        {warningBanner}
+        {footer}
+      </div>
     </div>
   );
 }
