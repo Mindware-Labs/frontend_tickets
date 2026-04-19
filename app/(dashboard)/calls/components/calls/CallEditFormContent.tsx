@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CallRecordingPlayer } from "@/components/calls/CallRecordingPlayer";
+import { CallRecordingPlayer } from "./CallRecordingPlayer";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ import {
   TicketDisposition,
   TicketStatus,
   YardOption,
-} from "../types";
+} from "../../types";
 import type { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 

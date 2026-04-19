@@ -68,7 +68,7 @@ import {
   TicketStatus,
   CallStatus,
   YardOption,
-} from "../types";
+} from "../../types";
 import { cn } from "@/lib/utils"; // Utilidad estándar de shadcn
 
 interface CreateCallModalProps {

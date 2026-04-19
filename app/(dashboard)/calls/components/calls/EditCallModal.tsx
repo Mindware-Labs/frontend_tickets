@@ -73,7 +73,7 @@ import {
   TicketDisposition,
   CallStatus,
   YardOption,
-} from "../types";
+} from "../../types";
 import { Ticket } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";

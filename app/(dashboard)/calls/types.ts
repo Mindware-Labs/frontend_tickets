@@ -293,3 +293,32 @@ export interface CreateSupportTicketFormData {
 }
 
 export type UpdateSupportTicketFormData = Partial<CreateSupportTicketFormData>;
+
+// ── Manual Records ─────────────────────────────────────────────────────────
+
+export interface ManualRecord {
+  id: number;
+  customerId: number;
+  customer?: { id?: number; name: string; phone?: string };
+  yardId?: number | null;
+  yard?: YardOption | null;
+  campaignId?: number | null;
+  campaign?: CampaignOption | null;
+  campaignOption?: string | null;
+  disposition?: CallDisposition | string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateManualRecordFormData {
+  customerId: string;
+  yardId: string;
+  campaignId: string;
+  campaignOption: string;
+  disposition: string;
+  notes: string;
+}
+
+export type UpdateManualRecordFormData = Partial<CreateManualRecordFormData>;
+

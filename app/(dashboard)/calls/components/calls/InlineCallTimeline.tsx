@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import type { Call } from "@/lib/mock-data";
-import type { AgentOption } from "../types";
+import type { AgentOption } from "../../types";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
-import { getTicketAssignee, getAssigneeName } from "../utils/call-helpers";
+import { getTicketAssignee, getAssigneeName } from "../../utils/call-helpers";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {

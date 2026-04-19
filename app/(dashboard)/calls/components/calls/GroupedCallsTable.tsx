@@ -43,8 +43,8 @@ import { useAircall } from "@/components/providers/AircallProvider";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import type { Call } from "@/lib/mock-data";
-import type { AgentOption, CampaignOption, YardOption } from "../types";
-import type { Filters, FilterKey } from "../hooks/useCallFilters";
+import type { AgentOption, CampaignOption, YardOption } from "../../types";
+import type { Filters, FilterKey } from "../../hooks/useCallFilters";
 import { CallFiltersBar } from "./CallFiltersBar";
 import {
   getClientName,
@@ -61,7 +61,7 @@ import {
   getYardDisplayName,
   getCampaign,
   formatEnumLabel,
-} from "../utils/call-helpers";
+} from "../../utils/call-helpers";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { InlineCallTimeline } from "./InlineCallTimeline";
 

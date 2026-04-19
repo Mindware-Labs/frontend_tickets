@@ -58,7 +58,7 @@ import {
   ArOption,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
-} from "../types";
+} from "../../types";
 import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";
 

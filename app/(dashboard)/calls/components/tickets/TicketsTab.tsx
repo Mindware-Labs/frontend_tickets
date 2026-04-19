@@ -55,15 +55,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { useTicketFilters } from "../hooks/useTicketFilters";
+import { useTicketFilters } from "../../hooks/useTicketFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
-import { useReferenceData } from "../hooks/useReferenceData";
+import { useReferenceData } from "../../hooks/useReferenceData";
 import {
   InlineTicketTimeline,
   type CustomerTicketGroup,
 } from "./InlineTicketTimeline";
 import { EditTicketModal } from "./EditTicketModal";
-import { CustomerTicketDrawer } from "./CustomerTicketDrawer";
+import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
 import {
   SupportTicketStatus,
   SupportTicketPriority,
@@ -75,7 +75,7 @@ import {
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
   type CampaignOption,
-} from "../types";
+} from "../../types";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";

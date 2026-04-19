@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { PhoneOutgoing, StickyNote, Loader2, Circle } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
-import type { AgentOption, SupportTicketRecord } from "../types";
+import type { AgentOption, SupportTicketRecord } from "../../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";

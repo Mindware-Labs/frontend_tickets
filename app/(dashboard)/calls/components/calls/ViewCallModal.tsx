@@ -1,7 +1,7 @@
 "use client";
 
 import { JSX, useEffect, useRef } from "react";
-import { CallRecordingPlayer } from "@/components/calls/CallRecordingPlayer";
+import { CallRecordingPlayer } from "./CallRecordingPlayer";
 import {
   Dialog,
   DialogContent,

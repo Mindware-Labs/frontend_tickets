@@ -58,8 +58,8 @@ import {
   ArOption,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
-} from "../types";
-import type { CustomerTicketGroup } from "./InlineTicketTimeline";
+} from "../../types";
+import type { CustomerTicketGroup } from "../tickets/InlineTicketTimeline";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

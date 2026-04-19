@@ -11,31 +11,38 @@ import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
 import { CreateCallFormData, CallStatus, CallDirection } from "./types";
 const CreateCallModal = dynamic(
-  () => import("./components/CreateCallModal").then((m) => m.CreateCallModal),
+  () => import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
   { ssr: false },
 );
 const EditCallModal = dynamic(
-  () => import("./components/EditCallModal").then((m) => m.EditCallModal),
+  () => import("./components/calls/EditCallModal").then((m) => m.EditCallModal),
   { ssr: false },
 );
 const ViewCallModal = dynamic(
-  () => import("./components/ViewCallModal").then((m) => m.ViewCallModal),
+  () => import("./components/calls/ViewCallModal").then((m) => m.ViewCallModal),
   { ssr: false },
 );
-import { GroupedCallsTable } from "./components/GroupedCallsTable";
-import type { CustomerCallGroup } from "./components/CustomerTimelineDrawer";
+import { GroupedCallsTable } from "./components/calls/GroupedCallsTable";
+import type { CustomerCallGroup } from "./components/calls/CustomerTimelineDrawer";
 const CustomerTimelineDrawer = dynamic(
   () =>
-    import("./components/CustomerTimelineDrawer").then(
+    import("./components/calls/CustomerTimelineDrawer").then(
       (m) => m.CustomerTimelineDrawer,
     ),
   { ssr: false },
 );
 import { useReferenceData } from "./hooks/useReferenceData";
 import { useCallFilters } from "./hooks/useCallFilters";
-import { OverdueCallsBanner } from "./components/OverdueCallsBanner";
+import { OverdueCallsBanner } from "./components/calls/OverdueCallsBanner";
 const TicketsTab = dynamic(
-  () => import("./components/TicketsTab").then((m) => m.TicketsTab),
+  () => import("./components/tickets/TicketsTab").then((m) => m.TicketsTab),
+  { ssr: false },
+);
+const ManualRecordsTab = dynamic(
+  () =>
+    import("./components/manual-records/ManualRecordsTab").then(
+      (m) => m.ManualRecordsTab,
+    ),
   { ssr: false },
 );
 import {
@@ -982,6 +989,7 @@ export default function TicketsPage() {
         <TabsList className="w-fit">
           <TabsTrigger value="calls">Calls</TabsTrigger>
           <TabsTrigger value="tickets">Tickets</TabsTrigger>
+          <TabsTrigger value="manual-records">Manual Records</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calls" className="flex-1 flex flex-col gap-6 mt-2">
@@ -1145,6 +1153,10 @@ export default function TicketsPage() {
             initialCreateData={ticketCreateData}
             onConsumeCreateData={() => setTicketCreateData(null)}
           />
+        </TabsContent>
+
+        <TabsContent value="manual-records" className="flex-1 mt-2">
+          <ManualRecordsTab />
         </TabsContent>
       </Tabs>
     </div>
