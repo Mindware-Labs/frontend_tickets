@@ -49,17 +49,23 @@ export function getClientInitials(ticket: any): string {
 }
 
 export function getStatusBadgeColor(status: string): string {
-  switch (status) {
-    case "Open":
+  const s = status?.toString().toUpperCase().replace(/\s+/g, "_");
+  switch (s) {
+    case "ACTIVE":
     case "OPEN":
-      return "border-emerald-500/20 bg-emerald-500/5 text-emerald-600";
-    case "In Progress":
     case "IN_PROGRESS":
-      return "border-amber-500/20 bg-amber-500/5 text-amber-600";
-    case "Closed":
+      return "status-pill-active";
+    case "PENDING_FOLLOWUP":
+    case "PENDING":
+      return "status-pill-pending";
+    case "OVERDUE":
+      return "status-pill-overdue";
+    case "COMPLETED":
     case "CLOSED":
+    case "RESOLVED":
+      return "status-pill-closed";
     default:
-      return "";
+      return "status-pill-closed";
   }
 }
 
@@ -81,16 +87,31 @@ export function getPriorityColor(priority?: string): string {
 export function getDirectionIcon(direction: string) {
   const d = direction?.toString().toLowerCase();
   if (d === "missed") {
-    return <AlertTriangle className="h-3 w-3 text-rose-500" />;
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-50 dark:bg-red-500/10">
+        <AlertTriangle className="h-[13px] w-[13px] text-red-500" />
+      </span>
+    );
   }
   if (d === "voicemail") {
-    return <PhoneIncoming className="h-3 w-3 text-slate-500" />;
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-50 dark:bg-slate-500/10">
+        <PhoneIncoming className="h-[13px] w-[13px] text-slate-500" />
+      </span>
+    );
   }
   if (d === "outbound") {
-    return <PhoneOutgoing className="h-3 w-3 text-blue-500" />;
-  } else {
-    return <PhoneIncoming className="h-3 w-3 text-emerald-500" />;
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-500/10">
+        <PhoneOutgoing className="h-[13px] w-[13px] text-blue-500" />
+      </span>
+    );
   }
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-500/10">
+      <PhoneIncoming className="h-[13px] w-[13px] text-emerald-500" />
+    </span>
+  );
 }
 
 export function getDirectionText(

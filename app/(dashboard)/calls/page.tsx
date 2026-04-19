@@ -980,23 +980,94 @@ export default function TicketsPage() {
 
   // ---- Render ----
   return (
-    <div className="h-screen flex flex-col gap-4 p-4">
+    <div className="h-screen flex flex-col px-4 pb-4 gap-4">
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col"
       >
-        <TabsList className="w-fit">
-          <TabsTrigger value="calls">Calls</TabsTrigger>
-          <TabsTrigger value="tickets">Tickets</TabsTrigger>
-          <TabsTrigger value="manual-records">Manual Records</TabsTrigger>
-        </TabsList>
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full border-b border-border pb-2 px-0.5 gap-2">
+          <div className="min-w-0">
+            <h2 className="text-[20px] font-bold tracking-tight text-foreground leading-tight">
+              {activeTab === "calls"
+                ? "Call Management"
+                : activeTab === "tickets"
+                  ? "Tickets"
+                  : "Manual Records"}
+            </h2>
+            <p className="text-[12px] text-muted-foreground mt-0.5 capitalize">
+              {activeTab === "calls"
+                ? `${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')} · ${refData.agents?.length || 14} active agents`
+                : activeTab === "tickets"
+                  ? "Manage support tickets and escalations"
+                  : "Track manual records and entries"}
+            </p>
+          </div>
 
-        <TabsContent value="calls" className="flex-1 flex flex-col gap-6 mt-2">
+          {/* Custom Tab Switcher */}
+          <div className="inline-flex items-center rounded-lg bg-slate-100/80 dark:bg-slate-800/60 p-[3px] border border-slate-200/80 dark:border-slate-700/50 shadow-sm">
+            {[
+              { value: "calls", label: "Calls", icon: "📞" },
+              { value: "tickets", label: "Tickets", icon: "🎫" },
+              { value: "manual-records", label: "Manual Records", icon: "📋" },
+            ].map((tab) => {
+              const isActive = activeTab === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`relative inline-flex items-center gap-1.5 px-3.5 py-[5px] rounded-md text-[12.5px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                    isActive
+                      ? "bg-white dark:bg-slate-900 text-[#008f68] shadow-sm border border-[#d1e7dd] dark:border-[#008f68]/30"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <span className="text-[12px] leading-none">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <TabsContent value="calls" className="flex-1 flex flex-col gap-0 mt-0">
           <OverdueCallsBanner />
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Call Management</h2>
+          
+          <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
+            {[
+              { id: 'all', label: 'All Calls', count: getFilteredCountForView('all') || 0 },
+              { id: 'active', label: 'Active', count: getFilteredCountForView('active') || 0 },
+              { id: 'pending_followup', label: 'Pending Follow-up', count: getFilteredCountForView('pending_followup') || 0 },
+              { id: 'overdue', label: 'Overdue', count: getFilteredCountForView('overdue') || 0, isOverdue: true },
+            ].map(tab => {
+              const isActive = ticketFilters.activeView === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => ticketFilters.handleViewChange(tab.id)}
+                  className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
+                    isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                      isActive
+                        ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                        : "bg-muted/40 text-muted-foreground font-medium border-border"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                  {tab.isOverdue && tab.count > 0 && (
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <GroupedCallsTable

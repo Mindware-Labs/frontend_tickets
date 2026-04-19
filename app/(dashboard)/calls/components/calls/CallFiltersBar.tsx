@@ -99,10 +99,10 @@ export function CallFiltersBar({
         <Button
           variant={open || activeCount > 0 ? "secondary" : "outline"}
           size="sm"
-          className="h-8 text-xs"
+          className="h-[30px] rounded-full px-3 text-[12.5px] font-medium border-border shadow-none"
           onClick={() => setOpen(!open)}
         >
-          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+          <SlidersHorizontal className="mr-1.5 h-[14px] w-[14px]" />
           Filters
           {activeCount > 0 && (
             <Badge
@@ -117,10 +117,10 @@ export function CallFiltersBar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-xs text-muted-foreground"
+            className="h-[30px] rounded-full px-3 text-[12.5px] font-medium text-muted-foreground hover:bg-muted/50"
             onClick={clearAll}
           >
-            <X className="mr-1 h-3 w-3" />
+            <X className="mr-1.5 h-[14px] w-[14px]" />
             Clear all
           </Button>
         )}

@@ -134,7 +134,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 bg-background/50 backdrop-blur-xl px-6 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-16 border-b border-border/40 mb-6">
+      <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-2 bg-background/50 backdrop-blur-xl px-6 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-14 border-b border-border/40 mb-2">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />

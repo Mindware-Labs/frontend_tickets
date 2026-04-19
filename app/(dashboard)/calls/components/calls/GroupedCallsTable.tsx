@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
@@ -35,7 +34,7 @@ import {
   PhoneCall,
   Phone,
   PhoneOutgoing,
-  Clock,
+  PhoneIncoming,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -64,6 +63,173 @@ import {
 } from "../../utils/call-helpers";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { InlineCallTimeline } from "./InlineCallTimeline";
+
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    dotColor: string;
+    bgColor: string;
+    textColor: string;
+    borderColor: string;
+  }
+> = {
+  ACTIVE: {
+    label: "Active",
+    dotColor: "bg-[#22c55e]",
+    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
+    textColor: "text-[#15803d] dark:text-emerald-400",
+    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
+  },
+  OPEN: {
+    label: "Active",
+    dotColor: "bg-[#22c55e]",
+    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
+    textColor: "text-[#15803d] dark:text-emerald-400",
+    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
+  },
+  IN_PROGRESS: {
+    label: "Active",
+    dotColor: "bg-[#22c55e]",
+    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
+    textColor: "text-[#15803d] dark:text-emerald-400",
+    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
+  },
+  PENDING_FOLLOWUP: {
+    label: "Pending",
+    dotColor: "bg-[#f59e0b]",
+    bgColor: "bg-[#fef3c7] dark:bg-amber-500/15",
+    textColor: "text-[#b45309] dark:text-amber-400",
+    borderColor: "border-[#fde68a] dark:border-amber-500/30",
+  },
+  PENDING: {
+    label: "Pending",
+    dotColor: "bg-[#f59e0b]",
+    bgColor: "bg-[#fef3c7] dark:bg-amber-500/15",
+    textColor: "text-[#b45309] dark:text-amber-400",
+    borderColor: "border-[#fde68a] dark:border-amber-500/30",
+  },
+  OVERDUE: {
+    label: "Overdue",
+    dotColor: "bg-[#ef4444]",
+    bgColor: "bg-[#fee2e2] dark:bg-red-500/15",
+    textColor: "text-[#b91c1c] dark:text-red-400",
+    borderColor: "border-[#fecaca] dark:border-red-500/30",
+  },
+  COMPLETED: {
+    label: "Closed",
+    dotColor: "bg-[#94a3b8]",
+    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
+    textColor: "text-[#475569] dark:text-slate-400",
+    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
+  },
+  CLOSED: {
+    label: "Closed",
+    dotColor: "bg-[#94a3b8]",
+    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
+    textColor: "text-[#475569] dark:text-slate-400",
+    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
+  },
+  RESOLVED: {
+    label: "Closed",
+    dotColor: "bg-[#94a3b8]",
+    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
+    textColor: "text-[#475569] dark:text-slate-400",
+    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
+  },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const key = status?.toString().toUpperCase().replace(/\s+/g, "_") || "ACTIVE";
+  const cfg = STATUS_CONFIG[key] || STATUS_CONFIG.CLOSED;
+  return (
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-[5px] rounded-full text-[12.5px] font-bold leading-none border ${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor}`}
+    >
+      <span
+        className={`w-[7px] h-[7px] rounded-full ${cfg.dotColor} shrink-0`}
+      />
+      {cfg.label}
+    </span>
+  );
+}
+
+/* ── Direction Chip (matches mockup design) ────────────────────────────── */
+const DIRECTION_CONFIG: Record<
+  string,
+  {
+    label: string;
+    iconColor: string;
+    textColor: string;
+    bgColor: string;
+    Icon: React.ElementType;
+  }
+> = {
+  inbound: {
+    label: "Inbound",
+    iconColor: "text-emerald-500",
+    textColor: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-50 dark:bg-emerald-500/10",
+    Icon: PhoneIncoming,
+  },
+  outbound: {
+    label: "Outbound",
+    iconColor: "text-blue-500",
+    textColor: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-50 dark:bg-blue-500/10",
+    Icon: PhoneOutgoing,
+  },
+  missed: {
+    label: "Missed",
+    iconColor: "text-red-500",
+    textColor: "text-red-600 dark:text-red-400",
+    bgColor: "bg-red-50 dark:bg-red-500/10",
+    Icon: AlertTriangle,
+  },
+  voicemail: {
+    label: "Voicemail",
+    iconColor: "text-slate-500",
+    textColor: "text-slate-600 dark:text-slate-400",
+    bgColor: "bg-slate-50 dark:bg-slate-500/10",
+    Icon: PhoneIncoming,
+  },
+};
+
+function DirectionChip({
+  direction,
+  originalDirection,
+  agentId,
+}: {
+  direction: string;
+  originalDirection?: string;
+  agentId?: number | string;
+}) {
+  const d = direction?.toString().toLowerCase() || "inbound";
+  const cfg = DIRECTION_CONFIG[d] || DIRECTION_CONFIG.inbound;
+  const { Icon } = cfg;
+
+  // Build label with original direction context for missed calls
+  let label = cfg.label;
+  if (d === "missed" && originalDirection) {
+    const formatted =
+      originalDirection.charAt(0).toUpperCase() +
+      originalDirection.slice(1).toLowerCase();
+    label = `Missed`;
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 font-medium ${cfg.textColor}`}
+    >
+      <span
+        className={`inline-flex items-center justify-center w-5 h-5 rounded-md ${cfg.bgColor}`}
+      >
+        <Icon className={`h-[13px] w-[13px] ${cfg.iconColor}`} />
+      </span>
+      <span className="text-[13px]">{label}</span>
+    </span>
+  );
+}
 
 interface GroupedCallsTableProps {
   tickets: Call[];
@@ -182,98 +348,122 @@ export function GroupedCallsTable({
 
   return (
     <div className="flex-1 flex flex-col gap-4">
-      {/* Search + Date ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-2 mt-4">
+        <div className="relative flex-1 max-w-[320px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input
-            placeholder="Search calls..."
-            className="pl-9"
+            placeholder="Search calls, numbers, or contacts..."
+            className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
+          <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+            /
+          </div>
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={`justify-start text-left font-normal h-9 px-3 text-sm whitespace-nowrap ${
-                !dateRange?.from ? "text-muted-foreground" : ""
-              }`}
-            >
-              <Calendar className="mr-2 h-4 w-4 shrink-0" />
-              {dateRange?.from ? (
-                dateRange.to ? (
-                  <span className="truncate">
-                    {format(dateRange.from, "MMM d")} –{" "}
-                    {format(dateRange.to, "MMM d, yyyy")}
-                  </span>
+
+        <div className="flex items-center gap-3">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`flex items-center h-[30px] rounded-full px-3 text-[12.5px] font-medium border-border shadow-none ${
+                  !dateRange?.from ? "text-muted-foreground" : ""
+                }`}
+              >
+                <Calendar className="mr-2 h-[14px] w-[14px] shrink-0" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <span className="truncate">
+                      {format(dateRange.from, "MMM d")} –{" "}
+                      {format(dateRange.to, "MMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span>{format(dateRange.from, "MMM d, yyyy")}</span>
+                  )
                 ) : (
-                  <span>{format(dateRange.from, "MMM d, yyyy")}</span>
-                )
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <div className="p-3 space-y-3">
-              <CalendarWidget
-                mode="range"
-                selected={dateRange}
-                onSelect={onDateRangeChange}
-                numberOfMonths={1}
-                disabled={{ after: new Date() }}
-                className="rounded-md"
-              />
-              {dateRange?.from && (
-                <div className="flex justify-end px-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => onDateRangeChange(undefined)}
-                  >
-                    <X className="mr-1 h-3 w-3" />
-                    Clear dates
-                  </Button>
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
+                  <span>Select dates</span>
+                )}
+                <ChevronDown className="ml-2 h-3 w-3 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 space-y-3">
+                <CalendarWidget
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={onDateRangeChange}
+                  numberOfMonths={1}
+                  disabled={{ after: new Date() }}
+                  className="rounded-md"
+                />
+                {dateRange?.from && (
+                  <div className="flex justify-end px-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => onDateRangeChange(undefined)}
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Clear dates
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Filters ──────────────────────────────────────────────────────────── */}
+          <CallFiltersBar
+            filters={filters}
+            onFilterChange={onFilterChange}
+            agents={agents}
+            campaigns={campaigns}
+            yards={yards}
+            phoneLines={phoneLines}
+          />
+        </div>
       </div>
 
-      {/* Filters ──────────────────────────────────────────────────────────── */}
-      <CallFiltersBar
-        filters={filters}
-        onFilterChange={onFilterChange}
-        agents={agents}
-        campaigns={campaigns}
-        yards={yards}
-        phoneLines={phoneLines}
-      />
-
       {/* Table ─────────────────────────────────────────────────────────────── */}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">Call ID</TableHead>
-                <TableHead className="w-28">Aircall ID</TableHead>
-                <TableHead className="w-52">Customer</TableHead>
-                <TableHead className="w-36">Phone</TableHead>
-                <TableHead className="w-20 text-center">Calls</TableHead>
-                <TableHead className="w-40">Yard</TableHead>
-                <TableHead className="w-36">Campaign</TableHead>
-                <TableHead className="w-36">Assignee</TableHead>
-                <TableHead className="w-28">Status</TableHead>
-                <TableHead className="w-36">Line</TableHead>
-                <TableHead className="w-24">Duration</TableHead>
-                <TableHead className="w-36">Disposition</TableHead>
-                <TableHead className="w-36">Last Call</TableHead>
-                <TableHead className="w-28">Direction</TableHead>
+          <Table className="relative">
+            <TableHeader className="bg-[#f0faf5] sticky top-0 z-10 before:absolute before:inset-0 before:border-b-2 before:border-[#d1e7dd] dark:bg-muted/40">
+              <TableRow className="border-none hover:bg-transparent">
+                <TableHead className="w-[240px] pl-4 font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Customer
+                </TableHead>
+                <TableHead className="w-[170px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Number
+                </TableHead>
+                <TableHead className="w-[80px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Calls
+                </TableHead>
+                <TableHead className="w-[150px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Line
+                </TableHead>
+                <TableHead className="w-[130px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Yard
+                </TableHead>
+                <TableHead className="w-[170px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Campaign
+                </TableHead>
+                <TableHead className="w-[110px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Status
+                </TableHead>
+                <TableHead className="w-[100px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Duration
+                </TableHead>
+                <TableHead className="w-[130px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Direction
+                </TableHead>
+                <TableHead className="w-[140px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                  Date
+                </TableHead>
+                <TableHead className="w-[44px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -296,7 +486,7 @@ export function GroupedCallsTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedGroups.map((group) => {
+                paginatedGroups.map((group, i) => {
                   const t = group.latestCall;
                   const yardDisplayName = getYardDisplayName(t, yards);
                   let yardType = (t as any).yardType;
@@ -308,35 +498,38 @@ export function GroupedCallsTable({
                   }
 
                   const latestDate = new Date(t.callDate || t.createdAt || "");
+                  const isToday =
+                    latestDate.toDateString() === new Date().toDateString();
+                  const timeStr = latestDate.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
                   const dateLabel = isNaN(latestDate.getTime())
                     ? "-"
-                    : latestDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      });
+                    : isToday
+                      ? timeStr
+                      : latestDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        }) +
+                        ", " +
+                        timeStr;
 
                   return (
                     <React.Fragment key={group.key}>
                       <TableRow
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150 ${
+                          i % 2 === 1
+                            ? "bg-slate-50/60 dark:bg-muted/20"
+                            : "bg-white dark:bg-card"
+                        }`}
                         onClick={() => onOpenTimeline(group)}
                       >
-                        {/* Call ID */}
-                        <TableCell className="text-sm font-mono text-muted-foreground">
-                          #{t.id}
-                        </TableCell>
-
-                        {/* Aircall ID */}
-                        <TableCell className="text-sm font-mono text-muted-foreground">
-                          {(t as any).aircallId || "-"}
-                        </TableCell>
-
                         {/* Customer */}
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 shrink-0">
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                        <TableCell className="w-[240px] pl-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 shrink-0 rounded-lg shadow-sm">
+                              <AvatarFallback className="text-[13px] bg-[#dcfce7] text-[#15803d] font-bold rounded-lg border border-[#bbf7d0]">
                                 {group.customerName
                                   ? group.customerName
                                       .substring(0, 2)
@@ -344,45 +537,24 @@ export function GroupedCallsTable({
                                   : "?"}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm truncate max-w-36">
-                              {group.customerName}
-                            </span>
+                            <div className="min-w-0">
+                              <div className="font-bold text-[14px] leading-tight truncate text-foreground">
+                                {group.customerName}
+                              </div>
+                              <div className="text-[11.5px] text-muted-foreground mt-[2px] truncate">
+                                last {dateLabel}
+                              </div>
+                            </div>
                           </div>
                         </TableCell>
 
-                        {/* Phone */}
-                        <TableCell className="text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <span className="truncate">
-                              {group.customerPhone}
-                            </span>
-                            {group.customerPhone &&
-                              group.customerPhone !== "unknown" && (
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    dial(group.customerPhone, t.id);
-                                  }}
-                                  disabled={!canDial}
-                                  title={
-                                    canDial
-                                      ? `Call ${group.customerPhone}`
-                                      : "Aircall is not connected"
-                                  }
-                                  aria-label={`Call ${group.customerPhone}`}
-                                >
-                                  <PhoneOutgoing className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                          </div>
+                        {/* Number */}
+                        <TableCell className="w-[170px] py-3 font-mono text-[13.5px] text-slate-600 dark:text-slate-300 font-medium">
+                          {group.customerPhone}
                         </TableCell>
 
-                        {/* Call count — click to toggle inline timeline */}
-                        <TableCell className="text-center">
+                        {/* Calls chip */}
+                        <TableCell className="w-[80px] py-3">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -391,204 +563,104 @@ export function GroupedCallsTable({
                                 prev === group.key ? null : group.key,
                               );
                             }}
-                            className="inline-flex items-center gap-1 rounded-md hover:bg-muted transition-colors"
+                            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all duration-150 shadow-sm ${
+                              expandedKey === group.key
+                                ? "bg-[#dcfce7] text-[#15803d] border-[#86efac] shadow-[#86efac]/20"
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-[#dcfce7] hover:text-[#15803d] hover:border-[#86efac] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600"
+                            }`}
                             aria-label="Toggle call timeline"
-                            aria-expanded={expandedKey === group.key}
+                            title="View call timeline"
                           >
-                            {expandedKey === group.key ? (
-                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                            )}
-                            <Badge
-                              variant="secondary"
-                              className="gap-1 font-mono text-xs px-2"
-                            >
-                              <PhoneCall className="h-3 w-3" />
+                            <Phone className="h-[12px] w-[12px]" />
+                            <span className="font-mono">
                               {group.calls.length}
-                            </Badge>
+                            </span>
                           </button>
                         </TableCell>
 
+                        {/* Line */}
+                        <TableCell className="w-[150px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          {(t as any).phoneLine?.label ||
+                            (t as any).phoneLine?.phoneNumber ||
+                            "-"}
+                        </TableCell>
+
                         {/* Yard */}
-                        <TableCell>
+                        <TableCell className="w-[130px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
                           {yardDisplayName ? (
-                            <Badge
-                              variant="outline"
-                              className={getYardTypeColor(yardType)}
-                            >
-                              <div className="flex items-center gap-1">
-                                {getYardTypeIcon(yardType)}
-                                <span className="truncate max-w-28">
-                                  {yardDisplayName}
-                                </span>
-                              </div>
-                            </Badge>
+                            yardDisplayName.split(" — ")[0]
                           ) : (
-                            <div className="group relative inline-block">
-                              <Badge
-                                variant="outline"
-                                className="border-amber-500/20 bg-amber-500/5 text-amber-600 animate-pulse"
-                              >
-                                <AlertTriangle className="mr-1 h-3 w-3" />
-                                Pending
-                              </Badge>
-                              <div className="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-900 text-xs text-amber-700 dark:text-amber-300 border border-amber-400 rounded px-2 py-1 shadow-lg left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap">
-                                Yard pending assignment
-                              </div>
-                            </div>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[12px] font-bold border border-amber-200">
+                              <span className="w-[5px] h-[5px] rounded-full bg-amber-500 animate-pulse" />
+                              Pending
+                            </span>
                           )}
                         </TableCell>
 
                         {/* Campaign */}
-                        <TableCell>
-                          {getCampaign(t, campaigns) ? (
-                            <Badge variant="outline">
-                              {getCampaign(t, campaigns)}
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-amber-500/20 bg-amber-500/5 text-amber-600 animate-pulse"
-                            >
-                              <AlertTriangle className="mr-1 h-3 w-3" />
+                        <TableCell className="w-[170px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          {getCampaign(t, campaigns) || (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[12px] font-bold border border-amber-200">
+                              <span className="w-[5px] h-[5px] rounded-full bg-amber-500 animate-pulse" />
                               Pending
-                            </Badge>
+                            </span>
                           )}
-                        </TableCell>
-
-                        {/* Assignee */}
-                        <TableCell>
-                          {(() => {
-                            // Prefer embedded assignee objects from backend
-                            const assignee = getTicketAssignee(t);
-                            // Fallback: resolve from agents list by agentId
-                            const agentId = (t as any).agentId;
-                            const agentObj =
-                              !assignee && agentId
-                                ? agents.find(
-                                    (a) =>
-                                      a.id.toString() === agentId.toString(),
-                                  )
-                                : undefined;
-                            if (assignee) {
-                              return (
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarFallback className="text-xs">
-                                      {getAssigneeInitials(assignee)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm">
-                                    {getAssigneeName(assignee)}
-                                  </span>
-                                </div>
-                              );
-                            } else if (agentObj) {
-                              return (
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarFallback className="text-xs">
-                                      {agentObj.name
-                                        .substring(0, 2)
-                                        .toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm">
-                                    {agentObj.name}
-                                  </span>
-                                </div>
-                              );
-                            } else {
-                              return (
-                                <span className="text-sm text-muted-foreground">
-                                  Unassigned
-                                </span>
-                              );
-                            }
-                          })()}
                         </TableCell>
 
                         {/* Status */}
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={getStatusBadgeColor(t.status)}
-                          >
-                            {formatEnumLabel(t.status)}
-                          </Badge>
-                        </TableCell>
-
-                        {/* Line */}
-                        <TableCell>
-                          {(t as any).phoneLine ? (
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="text-sm truncate max-w-32">
-                                {(t as any).phoneLine.label ||
-                                  (t as any).phoneLine.phoneNumber}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              -
-                            </span>
-                          )}
+                        <TableCell className="w-[120px] py-3">
+                          <StatusPill status={t.status} />
                         </TableCell>
 
                         {/* Duration */}
-                        <TableCell>
-                          {t.duration ? (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="text-sm">
-                                {Math.floor(t.duration / 60)}:
-                                {String(t.duration % 60).padStart(2, "0")}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              -
+                        <TableCell className="w-[100px] py-3 text-[13.5px] font-mono text-foreground font-semibold">
+                          {t.duration != null ? (
+                            <span className="tabular-nums bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[13px]">
+                              {String(Math.floor(t.duration / 60)).padStart(
+                                2,
+                                "0",
+                              )}
+                              :{String(t.duration % 60).padStart(2, "0")}
                             </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-
-                        {/* Disposition */}
-                        <TableCell>
-                          {t.disposition ? (
-                            <Badge variant="outline" className="text-xs">
-                              {formatEnumLabel(String(t.disposition))}
-                            </Badge>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-
-                        {/* Last Call */}
-                        <TableCell className="text-sm">{dateLabel}</TableCell>
 
                         {/* Direction */}
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {getDirectionIcon(t.direction || "inbound")}
-                            <span className="text-xs">
-                              {getDirectionText(
-                                t.direction || "inbound",
-                                (t as any).originalDirection,
-                                (t as any).agentId,
-                              )}
-                            </span>
+                        <TableCell className="w-[130px] py-3">
+                          <DirectionChip
+                            direction={t.direction || "inbound"}
+                            originalDirection={(t as any).originalDirection}
+                            agentId={(t as any).agentId}
+                          />
+                        </TableCell>
+
+                        {/* Date */}
+                        <TableCell className="w-[140px] py-3 font-mono text-[13px] text-slate-500 dark:text-slate-400 font-medium">
+                          {dateLabel}
+                        </TableCell>
+
+                        {/* Hover Actions */}
+                        <TableCell className="w-[44px] p-0 align-middle">
+                          <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-[30px] w-[30px] text-muted-foreground bg-muted/50 border-border"
+                              title="Open details"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                       {expandedKey === group.key && (
                         <TableRow
                           key={`${group.key}-timeline`}
-                          className="bg-muted/30 hover:bg-muted/30"
+                          className="bg-accent/10 hover:bg-accent/10 border-b relative"
                         >
-                          <TableCell colSpan={14} className="p-0">
+                          <TableCell colSpan={14} className="p-0 border-t-0">
                             <InlineCallTimeline group={group} agents={agents} />
                           </TableCell>
                         </TableRow>
@@ -604,75 +676,72 @@ export function GroupedCallsTable({
 
       {/* Pagination ────────────────────────────────────────────────────────── */}
       {totalCount > 0 && (
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">
-              {totalCount} call{totalCount !== 1 ? "s" : ""} total
-              {typeof totalCustomers === "number"
-                ? ` · ${totalCustomers} customer${totalCustomers !== 1 ? "s" : ""} total`
-                : ""}{" "}
-              · {groups.length} customer{groups.length !== 1 ? "s" : ""} on this
-              page
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => {
-                onItemsPerPageChange(Number(value));
-                onPageChange(1);
-              }}
+        <div className="flex items-center justify-between pt-4 pb-2 px-1">
+          <Button
+            variant="outline"
+            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
+            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <svg
+              className="mr-2 h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <SelectTrigger className="h-8 w-25">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5 / page</SelectItem>
-                <SelectItem value="10">10 / page</SelectItem>
-                <SelectItem value="20">20 / page</SelectItem>
-                <SelectItem value="50">50 / page</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(1)}
-                disabled={currentPage === 1}
-              >
-                First
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm px-2">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  onPageChange(Math.min(currentPage + 1, totalPages))
-                }
-                disabled={currentPage >= totalPages}
-              >
-                Next
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(totalPages)}
-                disabled={currentPage >= totalPages}
-              >
-                Last
-              </Button>
-            </div>
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Previous
+          </Button>
+
+          <div className="hidden md:flex items-center justify-center gap-1.5">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum = i + 1;
+              if (totalPages > 5 && currentPage > 3) {
+                pageNum = currentPage - 2 + i;
+                if (pageNum > totalPages) pageNum = totalPages - 4 + i;
+              }
+              if (pageNum <= 0 || pageNum > totalPages) return null;
+
+              const active = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => onPageChange(pageNum)}
+                  className={`flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors ${
+                    active
+                      ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
+                      : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
           </div>
+
+          <Button
+            variant="outline"
+            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
+            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+            <svg
+              className="ml-2 h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Button>
         </div>
       )}
     </div>
