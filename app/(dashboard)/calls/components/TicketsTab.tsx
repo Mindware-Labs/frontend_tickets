@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,8 +41,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Eye,
-  Pencil,
   Paperclip,
   Upload,
   X,
@@ -51,11 +49,21 @@ import {
   Check,
   CalendarIcon,
   SlidersHorizontal,
+  PhoneOutgoing,
+  ChevronDown,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useTicketFilters } from "../hooks/useTicketFilters";
+import { useAircall } from "@/components/providers/AircallProvider";
 import { useReferenceData } from "../hooks/useReferenceData";
+import {
+  InlineTicketTimeline,
+  type CustomerTicketGroup,
+} from "./InlineTicketTimeline";
+import { EditTicketModal } from "./EditTicketModal";
+import { CustomerTicketDrawer } from "./CustomerTicketDrawer";
 import {
   SupportTicketStatus,
   SupportTicketPriority,
@@ -139,6 +147,12 @@ export function TicketsTab({
   onConsumeCreateData,
 }: TicketsTabProps) {
   const refData = useReferenceData();
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
   const ticketFilters = useTicketFilters({
     currentAgentId: refData.currentAgent?.id,
   });
@@ -201,10 +215,86 @@ export function TicketsTab({
     pageData?.totalPages ??
     Math.max(1, Math.ceil(totalCount / ticketFilters.itemsPerPage));
 
+  const viewCounts = pageData?.viewCounts as Record<string, number> | undefined;
+
+  // ---- Status options filtered by active tab ----
+  const ACTIVE_STATUSES = [
+    SupportTicketStatus.OPEN,
+    SupportTicketStatus.IN_PROGRESS,
+    SupportTicketStatus.PENDING_FOLLOWUP,
+    SupportTicketStatus.OVERDUE,
+  ];
+  const CLOSED_STATUSES = [
+    SupportTicketStatus.RESOLVED,
+    SupportTicketStatus.CLOSED,
+  ];
+
+  const filteredStatusOptions = useMemo(() => {
+    const view = ticketFilters.activeView;
+    if (view === "active") return ACTIVE_STATUSES;
+    if (view === "inactive") return CLOSED_STATUSES;
+    return Object.values(SupportTicketStatus);
+  }, [ticketFilters.activeView]);
+
+  // ---- Group tickets by customer ----
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  const ticketGroups = useMemo<CustomerTicketGroup[]>(() => {
+    const map = new Map<
+      string,
+      {
+        key: string;
+        customerId?: number;
+        customerName: string;
+        customerPhone: string;
+        tickets: SupportTicketRecord[];
+        latestTicket: SupportTicketRecord;
+      }
+    >();
+
+    for (const t of tickets) {
+      const cid = t.customerId != null ? Number(t.customerId) : undefined;
+      const phone = t.customer?.phone || "unknown";
+      const name = t.customer?.name || (cid ? `Customer #${cid}` : "Unknown");
+      const groupKey = cid != null ? `cid:${cid}` : `phone:${phone}`;
+
+      const existing = map.get(groupKey);
+      if (!existing) {
+        map.set(groupKey, {
+          key: groupKey,
+          customerId: cid,
+          customerName: name,
+          customerPhone: phone,
+          tickets: [t],
+          latestTicket: t,
+        });
+      } else {
+        existing.tickets.push(t);
+        const existingDate = new Date(
+          existing.latestTicket.createdAt || 0,
+        ).getTime();
+        const thisDate = new Date(t.createdAt || 0).getTime();
+        if (thisDate > existingDate) {
+          existing.latestTicket = t;
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort(
+      (a, b) =>
+        new Date(b.latestTicket.createdAt || 0).getTime() -
+        new Date(a.latestTicket.createdAt || 0).getTime(),
+    );
+  }, [tickets]);
+
   // ---- Modal state ----
   const [showCreate, setShowCreate] = useState(false);
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [drawerGroup, setDrawerGroup] = useState<CustomerTicketGroup | null>(
+    null,
+  );
   const [selected, setSelected] = useState<SupportTicketRecord | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<CreateSupportTicketFormData>({
@@ -233,8 +323,53 @@ export function TicketsTab({
   };
 
   const openView = (t: SupportTicketRecord) => {
+    // Find the group this ticket belongs to
+    const group =
+      ticketGroups.find((g) => g.tickets.some((tk) => tk.id === t.id)) ?? null;
     setSelected(t);
-    setShowView(true);
+    setDrawerGroup(group);
+    // Populate form for editing inline in drawer
+    setForm({
+      customerId: t.customerId?.toString() || "",
+      yardId: t.yardId?.toString() || "",
+      campaignId: t.campaignId?.toString() || "",
+      campaignOption: t.campaignOption || "",
+      agentId: t.agentId?.toString() || "",
+      phoneLineId: t.phoneLineId?.toString() || "",
+      callId: t.callId?.toString() || "",
+      status: t.status,
+      priority: t.priority,
+      ticketType: t.ticketType || "",
+      issueDetail: t.issueDetail || "",
+      followUpDueDate: t.followUpDueDate
+        ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
+        : "",
+      followUpAssignedToId: t.followUpAssignedToId?.toString() || "",
+    });
+    setPendingFiles([]);
+    setShowDrawer(true);
+  };
+
+  const handleSelectTicketInDrawer = (t: SupportTicketRecord) => {
+    setSelected(t);
+    setForm({
+      customerId: t.customerId?.toString() || "",
+      yardId: t.yardId?.toString() || "",
+      campaignId: t.campaignId?.toString() || "",
+      campaignOption: t.campaignOption || "",
+      agentId: t.agentId?.toString() || "",
+      phoneLineId: t.phoneLineId?.toString() || "",
+      callId: t.callId?.toString() || "",
+      status: t.status,
+      priority: t.priority,
+      ticketType: t.ticketType || "",
+      issueDetail: t.issueDetail || "",
+      followUpDueDate: t.followUpDueDate
+        ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
+        : "",
+      followUpAssignedToId: t.followUpAssignedToId?.toString() || "",
+    });
+    setPendingFiles([]);
   };
 
   const openEdit = (t: SupportTicketRecord) => {
@@ -414,6 +549,7 @@ export function TicketsTab({
         }
         toast({ title: "Ticket updated" });
         setShowEdit(false);
+        setShowDrawer(false);
         resetForm();
         await mutate();
       } else {
@@ -460,6 +596,50 @@ export function TicketsTab({
         </Button>
       </div>
 
+      {/* View Tabs */}
+      <div className="flex items-center gap-1 border-b">
+        {[
+          { key: "active", label: "Active", countKey: "active" },
+          { key: "inactive", label: "Closed", countKey: "inactive" },
+          { key: "all", label: "All", countKey: "all" },
+        ].map((tab) => {
+          const isActive = ticketFilters.activeView === tab.key;
+          const count = viewCounts?.[tab.countKey];
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                ticketFilters.handleViewChange(tab.key);
+                // Reset status filter when switching tabs
+                ticketFilters.setFilter("status", "all");
+              }}
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium transition-colors",
+                "hover:text-foreground",
+                isActive ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {tab.label}
+              {count != null && (
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "ml-1.5 h-5 min-w-5 px-1.5 text-[11px] font-mono",
+                    isActive && "bg-primary/10 text-primary",
+                  )}
+                >
+                  {count}
+                </Badge>
+              )}
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters row */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -477,12 +657,12 @@ export function TicketsTab({
             value={ticketFilters.filters.status}
             onValueChange={(v) => ticketFilters.setFilter("status", v)}
           >
-            <SelectTrigger className="w-[150px] h-9">
+            <SelectTrigger className="w-37.5 h-9">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              {Object.values(SupportTicketStatus).map((s) => (
+              {filteredStatusOptions.map((s) => (
                 <SelectItem key={s} value={s}>
                   {formatLabel(s)}
                 </SelectItem>
@@ -494,7 +674,7 @@ export function TicketsTab({
             value={ticketFilters.filters.priority}
             onValueChange={(v) => ticketFilters.setFilter("priority", v)}
           >
-            <SelectTrigger className="w-[140px] h-9">
+            <SelectTrigger className="w-35 h-9">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -511,7 +691,7 @@ export function TicketsTab({
             value={ticketFilters.filters.ticketType}
             onValueChange={(v) => ticketFilters.setFilter("ticketType", v)}
           >
-            <SelectTrigger className="w-[160px] h-9">
+            <SelectTrigger className="w-40 h-9">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -561,7 +741,7 @@ export function TicketsTab({
         {filtersOpen && (
           <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
             {/* Yard */}
-            <div className="min-w-[140px] space-y-1">
+            <div className="min-w-35 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Yard
               </span>
@@ -584,7 +764,7 @@ export function TicketsTab({
             </div>
 
             {/* Agent */}
-            <div className="min-w-[140px] space-y-1">
+            <div className="min-w-35 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Agent
               </span>
@@ -607,7 +787,7 @@ export function TicketsTab({
             </div>
 
             {/* Campaign */}
-            <div className="min-w-[160px] space-y-1">
+            <div className="min-w-40 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Campaign
               </span>
@@ -660,7 +840,7 @@ export function TicketsTab({
             </div>
 
             {/* Campaign Option */}
-            <div className="min-w-[160px] space-y-1">
+            <div className="min-w-40 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Campaign Option
               </span>
@@ -692,7 +872,7 @@ export function TicketsTab({
             </div>
 
             {/* Phone Line */}
-            <div className="min-w-[140px] space-y-1">
+            <div className="min-w-35 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Phone Line
               </span>
@@ -715,7 +895,7 @@ export function TicketsTab({
             </div>
 
             {/* Date Range */}
-            <div className="min-w-[220px] space-y-1">
+            <div className="min-w-55 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
                 Date Range
               </span>
@@ -776,16 +956,16 @@ export function TicketsTab({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[60px]">#</TableHead>
+              <TableHead className="w-15">#</TableHead>
               <TableHead>Customer</TableHead>
+              <TableHead className="w-20 text-center">Tickets</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead>Yard</TableHead>
               <TableHead>Campaign</TableHead>
-              <TableHead className="w-[100px]">Created</TableHead>
-              <TableHead className="w-[80px] text-right">Actions</TableHead>
+              <TableHead className="w-25">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -795,7 +975,7 @@ export function TicketsTab({
                   <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
                 </TableCell>
               </TableRow>
-            ) : tickets.length === 0 ? (
+            ) : ticketGroups.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={10}
@@ -805,116 +985,172 @@ export function TicketsTab({
                 </TableCell>
               </TableRow>
             ) : (
-              tickets.map((t) => (
-                <TableRow
-                  key={t.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => openView(t)}
-                >
-                  <TableCell className="font-medium">{t.id}</TableCell>
-                  <TableCell>
-                    <div>
-                      <span className="font-medium">{customerName(t)}</span>
-                      {t.customer?.phone && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {t.customer.phone}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={statusColors[t.status] || ""}
+              ticketGroups.map((group) => {
+                const t = group.latestTicket;
+                return (
+                  <React.Fragment key={group.key}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => openView(t)}
                     >
-                      {formatLabel(t.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={priorityColors[t.priority] || ""}
-                    >
-                      {formatLabel(t.priority)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {t.ticketType ? formatLabel(t.ticketType) : "—"}
-                  </TableCell>
-                  <TableCell>{agentName(t)}</TableCell>
-                  <TableCell>{yardName(t)}</TableCell>
-                  <TableCell>{t.campaign?.nombre || "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {t.createdAt
-                      ? format(new Date(t.createdAt), "MMM d, yyyy")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openView(t);
-                        }}
+                      <TableCell className="font-medium">{t.id}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{customerName(t)}</span>
+                          {t.customer?.phone && (
+                            <>
+                              <span className="text-xs text-muted-foreground">
+                                {t.customer.phone}
+                              </span>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  dial(t.customer!.phone!, t.id);
+                                }}
+                                disabled={!canDial}
+                                title={
+                                  canDial
+                                    ? `Call ${t.customer.phone}`
+                                    : "Aircall is not connected"
+                                }
+                              >
+                                <PhoneOutgoing className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      {/* Ticket count — toggle inline timeline */}
+                      <TableCell className="text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedKey((prev) =>
+                              prev === group.key ? null : group.key,
+                            );
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md hover:bg-muted px-1 py-0.5 transition-colors"
+                          aria-label="Toggle ticket timeline"
+                          aria-expanded={expandedKey === group.key}
+                        >
+                          <ChevronRight
+                            className={cn(
+                              "h-3 w-3 text-muted-foreground transition-transform",
+                              expandedKey === group.key && "rotate-90",
+                            )}
+                          />
+                          <Badge
+                            variant="secondary"
+                            className="gap-1 font-mono text-xs px-2"
+                          >
+                            <Ticket className="h-3 w-3" />
+                            {group.tickets.length}
+                          </Badge>
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={statusColors[t.status] || ""}
+                        >
+                          {formatLabel(t.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={priorityColors[t.priority] || ""}
+                        >
+                          {formatLabel(t.priority)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {t.ticketType ? formatLabel(t.ticketType) : "—"}
+                      </TableCell>
+                      <TableCell>{agentName(t)}</TableCell>
+                      <TableCell>{yardName(t)}</TableCell>
+                      <TableCell>{t.campaign?.nombre || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {t.createdAt
+                          ? format(new Date(t.createdAt), "MMM d, yyyy")
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                    {expandedKey === group.key && (
+                      <TableRow
+                        key={`${group.key}-timeline`}
+                        className="bg-muted/30 hover:bg-muted/30"
                       >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEdit(t);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        <TableCell colSpan={10} className="p-0">
+                          <InlineTicketTimeline
+                            group={group}
+                            agents={refData.agents}
+                            onOpenView={openView}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
             Page {ticketFilters.currentPage} of {totalPages} ({totalCount}{" "}
-            tickets)
+            {totalCount === 1 ? "ticket" : "tickets"})
           </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              disabled={ticketFilters.currentPage <= 1}
-              onClick={() =>
-                ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)
-              }
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              disabled={ticketFilters.currentPage >= totalPages}
-              onClick={() =>
-                ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)
-              }
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Select
+            value={String(ticketFilters.itemsPerPage)}
+            onValueChange={(v) => ticketFilters.setItemsPerPage(Number(v))}
+          >
+            <SelectTrigger className="h-8 w-20 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 25, 50, 100].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n} / page
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            disabled={ticketFilters.currentPage <= 1}
+            onClick={() =>
+              ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)
+            }
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            disabled={ticketFilters.currentPage >= totalPages}
+            onClick={() =>
+              ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)
+            }
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       {/* ── Create Modal ─────────────────────────────────────────────── */}
       <Dialog
@@ -964,7 +1200,33 @@ export function TicketsTab({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-muted-foreground">Customer</span>
-                  <p className="font-medium">{customerName(selected)}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium">{customerName(selected)}</p>
+                    {selected.customer?.phone && (
+                      <>
+                        <span className="text-xs text-muted-foreground">
+                          {selected.customer.phone}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={() =>
+                            dial(selected.customer!.phone!, selected.id)
+                          }
+                          disabled={!canDial}
+                          title={
+                            canDial
+                              ? `Call ${selected.customer.phone}`
+                              : "Aircall is not connected"
+                          }
+                        >
+                          <PhoneOutgoing className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Agent</span>
@@ -1026,11 +1288,32 @@ export function TicketsTab({
               </div>
               <div>
                 <span className="text-muted-foreground">Phone Line</span>
-                <p className="font-medium">
-                  {selected.phoneLine
-                    ? `${selected.phoneLine.label || ""} ${selected.phoneLine.phoneNumber}`.trim()
-                    : "—"}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-medium">
+                    {selected.phoneLine
+                      ? `${selected.phoneLine.label || ""} ${selected.phoneLine.phoneNumber}`.trim()
+                      : "—"}
+                  </p>
+                  {selected.phoneLine?.phoneNumber && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={() =>
+                        dial(selected.phoneLine!.phoneNumber, selected.id)
+                      }
+                      disabled={!canDial}
+                      title={
+                        canDial
+                          ? `Call ${selected.phoneLine.phoneNumber}`
+                          : "Aircall is not connected"
+                      }
+                    >
+                      <PhoneOutgoing className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
               {selected.issueDetail && (
                 <div>
@@ -1051,7 +1334,7 @@ export function TicketsTab({
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline truncate max-w-[300px]"
+                          className="text-blue-600 hover:underline truncate max-w-75"
                         >
                           {url.split("/").pop() || `Attachment ${i + 1}`}
                         </a>
@@ -1104,36 +1387,46 @@ export function TicketsTab({
       </Dialog>
 
       {/* ── Edit Modal ───────────────────────────────────────────────── */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Ticket #{selected?.id}</DialogTitle>
-          </DialogHeader>
-          <TicketForm
-            form={form}
-            setForm={setForm}
-            customers={refData.customers}
-            yards={refData.yards}
-            agents={refData.agents}
-            campaigns={refData.campaigns}
-            phoneLines={refData.phoneLines}
-            pendingFiles={pendingFiles}
-            onFilesChange={setPendingFiles}
-            existingAttachments={selected?.attachments}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditTicketModal
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        ticket={selected}
+        form={form}
+        setForm={setForm}
+        customers={refData.customers}
+        yards={refData.yards}
+        agents={refData.agents}
+        campaigns={refData.campaigns}
+        phoneLines={refData.phoneLines}
+        pendingFiles={pendingFiles}
+        onFilesChange={setPendingFiles}
+        isSubmitting={isSubmitting}
+        onSubmit={handleUpdate}
+        onClose={() => setShowEdit(false)}
+      />
+
+      {/* ── Ticket Drawer (history + edit) ───────────────────────────── */}
+      <CustomerTicketDrawer
+        open={showDrawer}
+        onClose={() => {
+          setShowDrawer(false);
+          resetForm();
+        }}
+        group={drawerGroup}
+        selectedTicket={selected}
+        onSelectTicket={handleSelectTicketInDrawer}
+        editFormData={form}
+        setEditFormData={setForm}
+        pendingFiles={pendingFiles}
+        onFilesChange={setPendingFiles}
+        isUpdating={isSubmitting}
+        onUpdate={handleUpdate}
+        customers={refData.customers}
+        yards={refData.yards}
+        agents={refData.agents}
+        campaigns={refData.campaigns}
+        phoneLines={refData.phoneLines}
+      />
     </div>
   );
 }
@@ -1558,7 +1851,7 @@ function TicketForm({
                 className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded"
               >
                 <FileIcon className="h-3 w-3" />
-                <span className="max-w-[150px] truncate">{file.name}</span>
+                <span className="max-w-37.5 truncate">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => removePendingFile(i)}

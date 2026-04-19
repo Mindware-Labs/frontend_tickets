@@ -60,6 +60,7 @@ import {
   StickyNote,
   Calendar as CalendarIcon,
   PhoneOutgoing,
+  AlertTriangle,
 } from "lucide-react";
 import {
   AgentOption,
@@ -153,6 +154,51 @@ export function EditCallModal({
   const [yardOpen, setYardOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
+  const [activeTicketWarning, setActiveTicketWarning] = useState<{
+    count: number;
+    statuses: string[];
+  } | null>(null);
+  const [checkingTickets, setCheckingTickets] = useState(false);
+
+  const handleCreateTicketClick = async () => {
+    if (!editFormData.customerId) {
+      onCreateTicket?.();
+      return;
+    }
+    try {
+      setCheckingTickets(true);
+      const res = await fetch(
+        `/api/tickets?mode=page&customerId=${editFormData.customerId}&limit=50`,
+      );
+      const result = await res.json();
+      const raw = result.data;
+      const data = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : [];
+      const active = data.filter(
+        (t: any) => t.status !== "CLOSED" && t.status !== "RESOLVED",
+      );
+      if (active.length > 0) {
+        const fmtLabel = (v: string) =>
+          v
+            .replace(/_/g, " ")
+            .toLowerCase()
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+        const statuses = [
+          ...new Set(active.map((t: any) => fmtLabel(t.status))),
+        ] as string[];
+        setActiveTicketWarning({ count: active.length, statuses });
+      } else {
+        onCreateTicket?.();
+      }
+    } catch {
+      onCreateTicket?.();
+    } finally {
+      setCheckingTickets(false);
+    }
+  };
 
   const {
     dial,
@@ -199,8 +245,13 @@ export function EditCallModal({
 
   if (!ticket) return null;
 
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setActiveTicketWarning(null);
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0">
         {/* HEADER */}
         <DialogHeader className="px-6 py-4 border-b bg-muted/20">
@@ -854,6 +905,43 @@ export function EditCallModal({
           </div>
         </ScrollArea>
 
+        {/* Active ticket warning */}
+        {activeTicketWarning && (
+          <div className="mx-6 mb-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">
+                This customer already has {activeTicketWarning.count} active{" "}
+                {activeTicketWarning.count === 1 ? "ticket" : "tickets"}
+              </p>
+              <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400">
+                Status: {activeTicketWarning.statuses.join(", ")}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-amber-400 hover:bg-amber-100 dark:border-amber-600 dark:hover:bg-amber-900"
+                  onClick={() => {
+                    setActiveTicketWarning(null);
+                    onCreateTicket?.();
+                  }}
+                >
+                  Create Anyway
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setActiveTicketWarning(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* STICKY FOOTER */}
         <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Button
@@ -872,9 +960,13 @@ export function EditCallModal({
             Call
           </Button>
           {onCreateTicket && (
-            <Button variant="outline" onClick={onCreateTicket}>
+            <Button
+              variant="outline"
+              onClick={handleCreateTicketClick}
+              disabled={checkingTickets}
+            >
               <FileText className="h-4 w-4 mr-2" />
-              Create Ticket
+              {checkingTickets ? "Checking..." : "Create Ticket"}
             </Button>
           )}
           <Button
