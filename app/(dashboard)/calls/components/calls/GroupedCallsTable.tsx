@@ -461,6 +461,9 @@ export function GroupedCallsTable({
                   Direction
                 </TableHead>
                 <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Agent
+                </TableHead>
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Date
                 </TableHead>
                 <TableHead className="w-[44px]"></TableHead>
@@ -469,7 +472,7 @@ export function GroupedCallsTable({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={14} className="h-24 text-center">
+                  <TableCell colSpan={15} className="h-24 text-center">
                     <div className="flex items-center justify-center">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
                       Loading calls...
@@ -479,7 +482,7 @@ export function GroupedCallsTable({
               ) : groups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={14}
+                    colSpan={15}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No calls found.
@@ -529,7 +532,14 @@ export function GroupedCallsTable({
                         <TableCell className="w-[240px] pl-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <Avatar className="h-8 w-8 shrink-0 rounded-full">
-                              <AvatarFallback className="text-[12px] font-bold rounded-full" style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}>
+                              <AvatarFallback
+                                className="text-[12px] font-bold rounded-full"
+                                style={{
+                                  background: "transparent",
+                                  border: "1px solid #d1d5db",
+                                  color: "#111827",
+                                }}
+                              >
                                 {group.customerName
                                   ? group.customerName
                                       .substring(0, 2)
@@ -634,6 +644,17 @@ export function GroupedCallsTable({
                             originalDirection={(t as any).originalDirection}
                             agentId={(t as any).agentId}
                           />
+                        </TableCell>
+
+                        {/* Agent */}
+                        <TableCell className="w-[140px] py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">
+                          {(t as any).agent?.name ? (
+                            <span className="font-medium">
+                              {(t as any).agent.name}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
 
                         {/* Date */}

@@ -28,8 +28,16 @@ import {
   Hash,
   ArrowDownLeft,
   Mic,
+  Phone,
+  Timer,
 } from "lucide-react";
-import { SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Ticket } from "@/lib/mock-data";
 import {
   AgentOption,
@@ -122,6 +130,32 @@ const STATUS_COLORS: Record<
   COMPLETED: { text: "#64748b", bg: "#f1f5f9", label: "Done" },
   PENDING_FOLLOWUP: { text: "#c47a00", bg: "#fef3d6", label: "Pending" },
   OVERDUE: { text: "#c0392b", bg: "#fde8e6", label: "Overdue" },
+};
+
+// ── Disposition map ──────────────────────────────────────────────────────────
+
+const DISPOSITION_COLORS: Record<
+  string,
+  { text: string; bg: string; label: string }
+> = {
+  RESOLVED: { text: "#008f68", bg: "#e6f5f0", label: "Resolved" },
+  CALLBACK_REQUIRED: {
+    text: "#c47a00",
+    bg: "#fef3d6",
+    label: "Callback Required",
+  },
+  CALLBACK_SCHEDULED: {
+    text: "#d97706",
+    bg: "#fffbeb",
+    label: "Callback Scheduled",
+  },
+  VOICEMAIL_LEFT: { text: "#2563eb", bg: "#eff6ff", label: "Voicemail Left" },
+  NO_ANSWER: { text: "#c0392b", bg: "#fde8e6", label: "No Answer" },
+  PROMISE_TO_PAY: { text: "#0891b2", bg: "#ecfeff", label: "Promise to Pay" },
+  DISPUTE: { text: "#dc2626", bg: "#fef2f2", label: "Dispute" },
+  WRONG_NUMBER: { text: "#64748b", bg: "#f1f5f9", label: "Wrong Number" },
+  ENROLLED: { text: "#7c3aed", bg: "#f5f3ff", label: "Enrolled" },
+  ESCALATED: { text: "#9b1c1c", bg: "#fef2f2", label: "Escalated" },
 };
 
 // ── Direction ─────────────────────────────────────────────────────────────────
@@ -261,6 +295,8 @@ export function CustomerTimelineDrawer({
   activeFilters,
 }: CustomerTimelineDrawerProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [timeHourInput, setTimeHourInput] = useState("12");
+  const [timeMinuteInput, setTimeMinuteInput] = useState("00");
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -282,6 +318,23 @@ export function CustomerTimelineDrawer({
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
+  }, [selectedCall?.id]);
+
+  // Sync time inputs when switching to a different call
+  useEffect(() => {
+    const d = editFormData.followUpDueDate
+      ? new Date(editFormData.followUpDueDate)
+      : null;
+    if (d) {
+      const h24 = d.getHours();
+      const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+      setTimeHourInput(String(h12).padStart(2, "0"));
+      setTimeMinuteInput(String(d.getMinutes()).padStart(2, "0"));
+    } else {
+      setTimeHourInput("12");
+      setTimeMinuteInput("00");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCall?.id]);
 
   // Fetch recording via backend proxy (avoids CORS on direct Aircall URL)
@@ -396,13 +449,31 @@ export function CustomerTimelineDrawer({
     return [];
   }, [campaigns, editFormData.campaignId]);
 
-  const followUpDateDisplay = useMemo(
-    () =>
-      editFormData.followUpDueDate
-        ? fmtDate(editFormData.followUpDueDate)
-        : null,
-    [editFormData.followUpDueDate],
-  );
+  const followUpDateDisplay = useMemo(() => {
+    if (!editFormData.followUpDueDate) return null;
+    try {
+      const d = new Date(editFormData.followUpDueDate);
+      if (isNaN(d.getTime())) return null;
+      const datePart = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const h = d.getHours();
+      const m = d.getMinutes();
+      const timePart =
+        h > 0 || m > 0
+          ? ` ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+          : "";
+      return datePart + timePart;
+    } catch {
+      return null;
+    }
+  }, [editFormData.followUpDueDate]);
+
+  const isCallbackDisposition =
+    editFormData.disposition === CallDisposition.CALLBACK_REQUIRED ||
+    editFormData.disposition === CallDisposition.CALLBACK_SCHEDULED;
 
   const raw = selectedCall as any;
   const durationSec =
@@ -470,9 +541,9 @@ export function CustomerTimelineDrawer({
 
         {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
         <div className="shrink-0 bg-white border-b border-slate-100">
-          {/* Row 1: avatar · name · phone · count · actions */}
+          {/* Row 1: avatar · name+phone · note-trigger · call-count · actions */}
           <div className="flex items-center gap-3 px-4 py-3">
-            {/* Avatar */}
+            {/* 1. Avatar */}
             <div
               className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
               style={{
@@ -482,25 +553,106 @@ export function CustomerTimelineDrawer({
               {customerName ? customerName.substring(0, 2).toUpperCase() : "?"}
             </div>
 
-            {/* Name + phone */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[15px] font-bold text-slate-900 leading-none truncate">
-                  {customerName || "Unknown"}
-                </p>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] bg-[#008f68]/8 px-2 py-0.5 rounded-full">
-                  <PhoneCall className="w-2.5 h-2.5" />
-                  {isLoadingHistory ? (
-                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                  ) : (
-                    `${callCount} call${callCount !== 1 ? "s" : ""}`
-                  )}
-                </span>
-              </div>
+            {/* 2. Text block: name (top) + phone (bottom) */}
+            <div className="min-w-0 shrink">
+              <p className="text-[15px] font-bold text-slate-900 leading-none truncate">
+                {customerName || "Unknown"}
+              </p>
               <p className="text-[11.5px] text-slate-400 font-mono mt-0.5 leading-none">
                 {customerPhone}
               </p>
             </div>
+
+            {/* Context indicators: note trigger + call count */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Note trigger — only when notes exist */}
+              {(() => {
+                const structuredNotes = selectedCall?.customer?.notes ?? [];
+                const legacyNote = selectedCall?.customer?.note;
+                const notes =
+                  structuredNotes.length > 0
+                    ? structuredNotes
+                    : legacyNote
+                      ? [
+                          {
+                            id: 0,
+                            content: legacyNote,
+                            createdAt: undefined as string | undefined,
+                            createdBy: undefined as string | undefined,
+                          },
+                        ]
+                      : [];
+                if (notes.length === 0) return null;
+                return (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Ver notas del cliente"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <StickyNote className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest leading-none whitespace-nowrap">
+                          {notes.length === 1
+                            ? "Customer Note"
+                            : `${notes.length} Notes`}
+                        </span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="bottom"
+                      align="start"
+                      sideOffset={8}
+                      className="w-80 p-0 shadow-xl rounded-2xl border border-amber-200 overflow-hidden z-50 bg-white"
+                    >
+                      <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-amber-100 bg-amber-50">
+                        <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                          {notes.length === 1
+                            ? "Customer Note"
+                            : `Customer Notes (${notes.length})`}
+                        </p>
+                      </div>
+                      <div className="divide-y divide-amber-50 max-h-72 overflow-y-auto">
+                        {notes.map((note, i) => {
+                          const meta = [
+                            note.createdBy ? `— ${note.createdBy}` : null,
+                            note.createdAt ? fmtDate(note.createdAt) : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ");
+                          return (
+                            <div key={note.id ?? i} className="px-4 py-3">
+                              <p className="text-[13px] text-gray-800 leading-relaxed">
+                                {note.content}
+                              </p>
+                              {meta && (
+                                <p className="text-[10px] text-amber-400 font-mono mt-1.5">
+                                  {meta}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })()}
+
+              {/* Call count badge */}
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] bg-[#008f68]/8 px-2 py-0.5 rounded-full">
+                <PhoneCall className="w-2.5 h-2.5" />
+                {isLoadingHistory ? (
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                ) : (
+                  `${callCount} call${callCount !== 1 ? "s" : ""}`
+                )}
+              </span>
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
 
             {/* Action buttons */}
             <div className="flex items-center gap-1.5 shrink-0">
@@ -525,49 +677,138 @@ export function CustomerTimelineDrawer({
                   <span className="hidden sm:inline">Escalate</span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
-          {/* Row 2: Metadata chips */}
-          {selectedCall && (
-            <div className="flex items-center gap-1.5 px-4 pb-3 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
-                <Hash className="w-3 h-3 text-slate-400" />
-                Call ID #{selectedCall.id}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
-                <Clock className="w-3 h-3 text-slate-400" />
-                {fmtDate(selectedCall.callDate || selectedCall.createdAt)}
-              </span>
-              {durationSec != null && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
-                  <Mic className="w-3 h-3 text-slate-400" />
-                  {fmtTime(durationSec)}
-                </span>
-              )}
-              {selectedDir && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
-                  style={{
-                    color: selectedDir.color,
-                    background: selectedDir.color + "12",
-                    borderColor: selectedDir.color + "30",
-                  }}
-                >
-                  <ArrowDownLeft className="w-3 h-3" />
-                  {selectedDir.label}
-                </span>
-              )}
-            </div>
-          )}
+          {/* Row 2: Unified metadata bar — badges + technical details */}
+          {selectedCall &&
+            (() => {
+              const startTime = raw?.startedAt || editFormData.startedAt;
+              const answeredTime = raw?.answeredAt || editFormData.answeredAt;
+              let ringDisplay: string | null = null;
+              if (startTime && answeredTime) {
+                const secs = Math.round(
+                  (new Date(answeredTime).getTime() -
+                    new Date(startTime).getTime()) /
+                    1000,
+                );
+                if (secs > 0)
+                  ringDisplay =
+                    secs < 60
+                      ? `${secs}s`
+                      : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+              }
+
+              const techItems: Array<{
+                key: string;
+                icon: React.ReactNode;
+                label: string;
+                value: string;
+                mono?: boolean;
+              }> = [
+                ...(raw?.aircallId
+                  ? [
+                      {
+                        key: "aircall",
+                        icon: (
+                          <Hash className="w-3 h-3 text-gray-400 shrink-0" />
+                        ),
+                        label: "Aircall ID",
+                        value: String(raw.aircallId),
+                        mono: true,
+                      },
+                    ]
+                  : []),
+                ...(phoneLine !== "—"
+                  ? [
+                      {
+                        key: "line",
+                        icon: (
+                          <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                        ),
+                        label: "Line",
+                        value: phoneLine,
+                        mono: false,
+                      },
+                    ]
+                  : []),
+                ...(ringDisplay
+                  ? [
+                      {
+                        key: "ring",
+                        icon: (
+                          <Timer className="w-3 h-3 text-gray-400 shrink-0" />
+                        ),
+                        label: "Ring Time",
+                        value: ringDisplay,
+                        mono: true,
+                      },
+                    ]
+                  : []),
+              ];
+
+              return (
+                <div className="flex items-center gap-1.5 px-4 pb-3 flex-wrap">
+                  {/* — Badges group — */}
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                    <Hash className="w-3 h-3 text-slate-400" />
+                    Call ID #{selectedCall.id}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    {fmtDateTime(
+                      selectedCall.callDate || selectedCall.createdAt,
+                    )}
+                  </span>
+                  {durationSec != null && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                      <Mic className="w-3 h-3 text-slate-400" />
+                      {fmtTime(durationSec)}
+                    </span>
+                  )}
+                  {selectedDir && (
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
+                      style={{
+                        color: selectedDir.color,
+                        background: selectedDir.color + "12",
+                        borderColor: selectedDir.color + "30",
+                      }}
+                    >
+                      <ArrowDownLeft className="w-3 h-3" />
+                      {selectedDir.label}
+                    </span>
+                  )}
+
+                  {/* — Separator — */}
+                  {techItems.length > 0 && (
+                    <span className="border-l border-slate-200 h-4 mx-1 shrink-0" />
+                  )}
+
+                  {/* — Technical details group — */}
+                  {techItems.map((item, i) => (
+                    <span key={item.key} className="inline-flex items-center">
+                      {i > 0 && (
+                        <span className="border-l border-gray-200 h-3.5 mx-2 shrink-0" />
+                      )}
+                      <span className="flex items-center gap-1">
+                        {item.icon}
+                        <span className="text-[11px] font-medium text-gray-400">
+                          {item.label}:
+                        </span>
+                        <span
+                          className={`text-[11px] text-gray-600 ${
+                            item.mono ? "font-mono" : ""
+                          }`}
+                        >
+                          {item.value}
+                        </span>
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
         </div>
 
         {/* ══ BODY ════════════════════════════════════════════════════════════ */}
@@ -585,10 +826,10 @@ export function CustomerTimelineDrawer({
                   </div>
                 </div>
               ) : (
-                <div className="p-5 space-y-4">
+                <div className="pt-1 px-4 pb-4 space-y-3">
                   {/* ── Combined Call Details & Properties card ── */}
                   <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-                    <div className="flex items-center gap-2 px-5 pt-4 pb-4 border-b border-slate-50">
+                    <div className="flex items-center gap-2 px-5 pt-3 pb-3 border-b border-slate-50">
                       <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                         <Hash className="w-3 h-3 text-slate-500" />
                       </div>
@@ -597,72 +838,9 @@ export function CustomerTimelineDrawer({
                       </span>
                     </div>
 
-                    <div className="p-5">
-                      {/* Properties grid: editable fields */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4 mb-5">
-                        {/* Status */}
-                        <div>
-                          <InspLabel>Status</InspLabel>
-                          <InspectorSelect
-                            value={editFormData.status || ""}
-                            onChange={(v) =>
-                              setEditFormData({
-                                ...editFormData,
-                                status: v as CallStatus,
-                              })
-                            }
-                            placeholder="Status"
-                          >
-                            <SelectItem value="none">—</SelectItem>
-                            {Object.values(CallStatus).map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {formatEnumLabel(s)}
-                              </SelectItem>
-                            ))}
-                          </InspectorSelect>
-                        </div>
-
-                        {/* Disposition */}
-                        <div>
-                          <InspLabel>Disposition</InspLabel>
-                          <InspectorSelect
-                            value={editFormData.disposition || ""}
-                            onChange={(v) =>
-                              setEditFormData({
-                                ...editFormData,
-                                disposition: v,
-                              })
-                            }
-                            placeholder="Disposition"
-                          >
-                            <SelectItem value="none">None</SelectItem>
-                            {Object.values(CallDisposition).map((d) => (
-                              <SelectItem key={d} value={d}>
-                                {formatEnumLabel(d)}
-                              </SelectItem>
-                            ))}
-                          </InspectorSelect>
-                        </div>
-
-                        {/* Yard */}
-                        <div>
-                          <InspLabel>Yard</InspLabel>
-                          <InspectorSelect
-                            value={editFormData.yardId || ""}
-                            onChange={(v) =>
-                              setEditFormData({ ...editFormData, yardId: v })
-                            }
-                            placeholder="Yard"
-                          >
-                            <SelectItem value="none">None</SelectItem>
-                            {yards.map((y) => (
-                              <SelectItem key={y.id} value={y.id.toString()}>
-                                {y.name}
-                              </SelectItem>
-                            ))}
-                          </InspectorSelect>
-                        </div>
-
+                    <div className="p-4">
+                      {/* Row 1: Campaign + Yard — priority controls */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
                         {/* Campaign */}
                         <div>
                           <InspLabel>Campaign</InspLabel>
@@ -691,178 +869,539 @@ export function CustomerTimelineDrawer({
                           </InspectorSelect>
                         </div>
 
-                        {/* Campaign Option (conditional) */}
-                        {campaignOptionValues.length > 0 && (
-                          <div>
-                            <InspLabel>Campaign Option</InspLabel>
-                            <InspectorSelect
-                              value={editFormData.campaignOption || ""}
-                              onChange={(v) =>
-                                setEditFormData({
-                                  ...editFormData,
-                                  campaignOption: v,
-                                })
-                              }
-                              placeholder="Option"
-                            >
-                              <SelectItem value="none">None</SelectItem>
-                              {campaignOptionValues.map((v) => (
-                                <SelectItem key={v} value={v}>
-                                  {formatEnumLabel(v)}
-                                </SelectItem>
-                              ))}
-                            </InspectorSelect>
-                          </div>
-                        )}
-
-                        {/* Follow-up Date */}
+                        {/* Yard */}
                         <div>
-                          <InspLabel>Follow-up Date</InspLabel>
-                          <Popover
-                            open={calendarOpen}
-                            onOpenChange={setCalendarOpen}
-                          >
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="w-full h-8 flex items-center gap-2 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-200 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 rounded-lg transition-colors text-left"
-                              >
-                                <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span
-                                  className={
-                                    followUpDateDisplay
-                                      ? "text-slate-800 font-semibold text-xs"
-                                      : "text-slate-400 text-xs"
-                                  }
-                                >
-                                  {followUpDateDisplay || "Pick date…"}
-                                </span>
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0 shadow-xl border-slate-200"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  editFormData.followUpDueDate
-                                    ? new Date(editFormData.followUpDueDate)
-                                    : undefined
-                                }
-                                onSelect={(date) => {
-                                  setEditFormData({
-                                    ...editFormData,
-                                    followUpDueDate: date
-                                      ? date.toISOString()
-                                      : "",
-                                  });
-                                  setCalendarOpen(false);
-                                }}
-                                disabled={{ before: new Date() }}
-                                initialFocus
-                              />
-                              {editFormData.followUpDueDate && (
-                                <div className="px-3 pb-3 flex justify-end">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditFormData({
-                                        ...editFormData,
-                                        followUpDueDate: "",
-                                      });
-                                      setCalendarOpen(false);
-                                    }}
-                                    className="text-xs text-red-500 hover:text-red-600"
-                                  >
-                                    Clear
-                                  </button>
-                                </div>
-                              )}
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-
-                        {/* Assignee */}
-                        <div>
-                          <InspLabel>Assignee</InspLabel>
+                          <InspLabel>Yard</InspLabel>
                           <InspectorSelect
-                            value={editFormData.followUpAssignedToId || ""}
+                            value={editFormData.yardId || ""}
                             onChange={(v) =>
-                              setEditFormData({
-                                ...editFormData,
-                                followUpAssignedToId: v,
-                              })
+                              setEditFormData({ ...editFormData, yardId: v })
                             }
-                            placeholder="Assign…"
+                            placeholder="Yard"
                           >
-                            <SelectItem value="none">Unassigned</SelectItem>
-                            {agents.map((a) => (
-                              <SelectItem key={a.id} value={a.id.toString()}>
-                                {a.name}
+                            <SelectItem value="none">None</SelectItem>
+                            {yards.map((y) => (
+                              <SelectItem key={y.id} value={y.id.toString()}>
+                                {y.name}
                               </SelectItem>
                             ))}
                           </InspectorSelect>
                         </div>
+                      </div>
 
-                        {/* Read-only: Aircall ID */}
-                        <div>
-                          <InspLabel>Aircall ID</InspLabel>
-                          <div className="h-8 flex items-center px-2.5 bg-slate-50 rounded-lg">
-                            <span className="text-[12px] font-mono text-slate-600 truncate">
-                              {raw?.aircallId || "—"}
-                            </span>
-                          </div>
+                      {/* Campaign Option (conditional) */}
+                      {campaignOptionValues.length > 0 && (
+                        <div className="mb-3">
+                          <InspLabel>Campaign Option</InspLabel>
+                          <InspectorSelect
+                            value={editFormData.campaignOption || ""}
+                            onChange={(v) =>
+                              setEditFormData({
+                                ...editFormData,
+                                campaignOption: v,
+                              })
+                            }
+                            placeholder="Option"
+                          >
+                            <SelectItem value="none">None</SelectItem>
+                            {campaignOptionValues.map((v) => (
+                              <SelectItem key={v} value={v}>
+                                {formatEnumLabel(v)}
+                              </SelectItem>
+                            ))}
+                          </InspectorSelect>
                         </div>
+                      )}
 
-                        {/* Read-only: Phone Line */}
-                        <div>
-                          <InspLabel>Phone Line</InspLabel>
-                          <div className="h-8 flex items-center px-2.5 bg-slate-50 rounded-lg">
-                            <span className="text-[12px] text-slate-600 truncate">
-                              {phoneLine}
-                            </span>
-                          </div>
+                      {/* Disposition — BEFORE Status, colored pill trigger */}
+                      <div className="mb-3">
+                        <InspLabel>Disposition</InspLabel>
+                        {(() => {
+                          const dispKey = (editFormData.disposition || "")
+                            .toString()
+                            .toUpperCase();
+                          const dispCfg = DISPOSITION_COLORS[dispKey] ?? null;
+                          return (
+                            <Select
+                              value={editFormData.disposition || "none"}
+                              onValueChange={(v) =>
+                                setEditFormData({
+                                  ...editFormData,
+                                  disposition: v === "none" ? "" : v,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-7 bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
+                                {dispCfg ? (
+                                  <span
+                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold"
+                                    style={{
+                                      background: dispCfg.bg,
+                                      color: dispCfg.text,
+                                    }}
+                                  >
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                                      style={{ background: dispCfg.text }}
+                                    />
+                                    {dispCfg.label}
+                                  </span>
+                                ) : (
+                                  <SelectValue placeholder="Disposition" />
+                                )}
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {Object.entries(DISPOSITION_COLORS).map(
+                                  ([key, cfg]) => (
+                                    <SelectItem key={key} value={key}>
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span
+                                          className="w-2 h-2 rounded-full shrink-0"
+                                          style={{ background: cfg.text }}
+                                        />
+                                        {cfg.label}
+                                      </span>
+                                    </SelectItem>
+                                  ),
+                                )}
+                              </SelectContent>
+                            </Select>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Status — toggle pill group */}
+                      <div className="mb-3">
+                        <InspLabel>Status</InspLabel>
+                        <div className="grid grid-cols-4 gap-1.5 mt-1">
+                          {Object.entries(STATUS_COLORS).map(([key, cfg]) => {
+                            const isActive =
+                              (editFormData.status || "")
+                                .toString()
+                                .toUpperCase() === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() =>
+                                  setEditFormData({
+                                    ...editFormData,
+                                    status: key as CallStatus,
+                                  })
+                                }
+                                className={`h-8 text-[11px] font-semibold rounded-lg border transition-all ${
+                                  isActive
+                                    ? "shadow-sm"
+                                    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                }`}
+                                style={
+                                  isActive
+                                    ? {
+                                        background: cfg.bg,
+                                        color: cfg.text,
+                                        borderColor: cfg.text + "40",
+                                      }
+                                    : {}
+                                }
+                              >
+                                {cfg.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
-                      {/* Timestamps */}
-                      <div className="border-t border-slate-100 pt-4">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
-                          Timestamps
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-3">
-                          {[
-                            {
-                              label: "Started",
-                              value: fmtDateTime(
-                                raw?.startedAt || editFormData.startedAt,
-                              ),
-                            },
-                            {
-                              label: "Answered",
-                              value: fmtDateTime(
-                                raw?.answeredAt || editFormData.answeredAt,
-                              ),
-                            },
-                            {
-                              label: "Ended",
-                              value: fmtDateTime(
-                                raw?.endedAt || editFormData.endedAt,
-                              ),
-                            },
-                          ].map((item) => (
-                            <div key={item.label}>
-                              <p className="text-[10px] text-slate-400 font-medium mb-1">
-                                {item.label}
-                              </p>
-                              <p className="text-[12px] font-semibold text-slate-700 font-mono">
-                                {item.value}
-                              </p>
+                      {/* Follow-up Date + Assignee — only visible when disposition = callback */}
+                      {isCallbackDisposition && (
+                        <div className="grid grid-cols-2 gap-3 mb-3 rounded-xl p-3 bg-amber-50 border border-amber-200/70">
+                          {/* Follow-up Date */}
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <InspLabel>Follow-up Date</InspLabel>
+                              <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                                Callback
+                              </span>
                             </div>
-                          ))}
+                            <Popover
+                              open={calendarOpen}
+                              onOpenChange={setCalendarOpen}
+                            >
+                              <PopoverTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="w-full h-8 flex items-center gap-2 px-2.5 text-xs rounded-lg transition-colors text-left border bg-white border-amber-300 hover:border-amber-400 focus:ring-2 focus:ring-amber-300/30"
+                                >
+                                  <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                                  <span
+                                    className={
+                                      followUpDateDisplay
+                                        ? "text-slate-800 font-semibold text-xs"
+                                        : "text-amber-400 text-xs"
+                                    }
+                                  >
+                                    {followUpDateDisplay || "Pick date…"}
+                                  </span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-auto p-0 shadow-xl border-slate-200"
+                                align="start"
+                              >
+                                <Calendar
+                                  mode="single"
+                                  selected={
+                                    editFormData.followUpDueDate
+                                      ? new Date(editFormData.followUpDueDate)
+                                      : undefined
+                                  }
+                                  onSelect={(date) => {
+                                    if (!date) return;
+                                    const existing =
+                                      editFormData.followUpDueDate
+                                        ? new Date(editFormData.followUpDueDate)
+                                        : null;
+                                    date.setHours(existing?.getHours() ?? 0);
+                                    date.setMinutes(
+                                      existing?.getMinutes() ?? 0,
+                                    );
+                                    setEditFormData({
+                                      ...editFormData,
+                                      followUpDueDate: date.toISOString(),
+                                    });
+                                  }}
+                                  disabled={{ before: new Date() }}
+                                  initialFocus
+                                />
+                                {/* Time picker — premium UI with 12-hour format + AM/PM toggle */}
+                                {(() => {
+                                  const date = editFormData.followUpDueDate
+                                    ? new Date(editFormData.followUpDueDate)
+                                    : new Date();
+                                  const hours24 = date.getHours();
+                                  const minutes = date.getMinutes();
+                                  const isPM = hours24 >= 12;
+                                  const hours12 =
+                                    hours24 === 0
+                                      ? 12
+                                      : hours24 > 12
+                                        ? hours24 - 12
+                                        : hours24;
+
+                                  return (
+                                    <>
+                                      {/* Divider */}
+                                      <div className="border-t border-slate-100" />
+
+                                      {/* Time control panel */}
+                                      <div className="p-4 space-y-4">
+                                        {/* Time inputs row with AM/PM */}
+                                        <div className="flex items-center gap-3 justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+
+                                            {/* Hour input */}
+                                            <input
+                                              type="text"
+                                              inputMode="numeric"
+                                              maxLength={2}
+                                              value={timeHourInput}
+                                              onFocus={(e) => e.target.select()}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!/^\d*$/.test(val)) return;
+                                                setTimeHourInput(
+                                                  val.slice(0, 2),
+                                                );
+                                              }}
+                                              onBlur={() => {
+                                                let h12 =
+                                                  parseInt(timeHourInput) || 12;
+                                                h12 = Math.min(
+                                                  12,
+                                                  Math.max(1, h12),
+                                                );
+                                                setTimeHourInput(
+                                                  String(h12).padStart(2, "0"),
+                                                );
+                                                const h24 =
+                                                  h12 === 12
+                                                    ? isPM
+                                                      ? 12
+                                                      : 0
+                                                    : isPM
+                                                      ? h12 + 12
+                                                      : h12;
+                                                const base =
+                                                  editFormData.followUpDueDate
+                                                    ? new Date(
+                                                        editFormData.followUpDueDate,
+                                                      )
+                                                    : new Date();
+                                                base.setHours(h24);
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  followUpDueDate:
+                                                    base.toISOString(),
+                                                });
+                                              }}
+                                              placeholder="12"
+                                              className="w-12 h-10 text-center text-sm font-medium border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-slate-400 focus:border-slate-400 transition-colors"
+                                            />
+
+                                            {/* Colon separator */}
+                                            <span className="text-slate-700 text-lg font-bold px-0.5">
+                                              :
+                                            </span>
+
+                                            {/* Minute input */}
+                                            <input
+                                              type="text"
+                                              inputMode="numeric"
+                                              maxLength={2}
+                                              value={timeMinuteInput}
+                                              onFocus={(e) => e.target.select()}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!/^\d*$/.test(val)) return;
+                                                setTimeMinuteInput(
+                                                  val.slice(0, 2),
+                                                );
+                                              }}
+                                              onBlur={() => {
+                                                const m = Math.min(
+                                                  59,
+                                                  Math.max(
+                                                    0,
+                                                    parseInt(timeMinuteInput) ||
+                                                      0,
+                                                  ),
+                                                );
+                                                setTimeMinuteInput(
+                                                  String(m).padStart(2, "0"),
+                                                );
+                                                const base =
+                                                  editFormData.followUpDueDate
+                                                    ? new Date(
+                                                        editFormData.followUpDueDate,
+                                                      )
+                                                    : new Date();
+                                                base.setMinutes(m);
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  followUpDueDate:
+                                                    base.toISOString(),
+                                                });
+                                              }}
+                                              placeholder="00"
+                                              className="w-12 h-10 text-center text-sm font-medium border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-slate-400 focus:border-slate-400 transition-colors"
+                                            />
+                                          </div>
+
+                                          {/* AM/PM toggle — refined segmented control */}
+                                          <div className="flex gap-1 bg-gray-100 p-1 rounded-md">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const base =
+                                                  editFormData.followUpDueDate
+                                                    ? new Date(
+                                                        editFormData.followUpDueDate,
+                                                      )
+                                                    : new Date();
+                                                const h24 = base.getHours();
+                                                if (h24 >= 12) {
+                                                  base.setHours(h24 - 12);
+                                                }
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  followUpDueDate:
+                                                    base.toISOString(),
+                                                });
+                                              }}
+                                              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                                                !isPM
+                                                  ? "bg-white text-slate-800 shadow-sm"
+                                                  : "bg-transparent text-slate-500 hover:text-slate-600"
+                                              }`}
+                                            >
+                                              AM
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const base =
+                                                  editFormData.followUpDueDate
+                                                    ? new Date(
+                                                        editFormData.followUpDueDate,
+                                                      )
+                                                    : new Date();
+                                                const h24 = base.getHours();
+                                                if (h24 < 12) {
+                                                  base.setHours(h24 + 12);
+                                                }
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  followUpDueDate:
+                                                    base.toISOString(),
+                                                });
+                                              }}
+                                              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                                                isPM
+                                                  ? "bg-white text-slate-800 shadow-sm"
+                                                  : "bg-transparent text-slate-500 hover:text-slate-600"
+                                              }`}
+                                            >
+                                              PM
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        {editFormData.followUpDueDate && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditFormData({
+                                                ...editFormData,
+                                                followUpDueDate: "",
+                                              });
+                                            }}
+                                            className="w-full h-8 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                          >
+                                            Clear Date
+                                          </button>
+                                        )}
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setCalendarOpen(false)}
+                                          className="w-full h-10 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold rounded-md transition-colors"
+                                        >
+                                          Done
+                                        </button>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* Assignee */}
+                          <div>
+                            <InspLabel>Assignee</InspLabel>
+                            <InspectorSelect
+                              value={
+                                editFormData.followUpAssignedToId != null &&
+                                editFormData.followUpAssignedToId !== ""
+                                  ? String(editFormData.followUpAssignedToId)
+                                  : ""
+                              }
+                              onChange={(v) =>
+                                setEditFormData({
+                                  ...editFormData,
+                                  followUpAssignedToId: v,
+                                })
+                              }
+                              placeholder="Assign…"
+                            >
+                              <SelectItem value="none">Unassigned</SelectItem>
+                              {(() => {
+                                const curId =
+                                  editFormData.followUpAssignedToId != null &&
+                                  editFormData.followUpAssignedToId !== ""
+                                    ? String(editFormData.followUpAssignedToId)
+                                    : "";
+                                const inList = agents.some(
+                                  (a) => a.id.toString() === curId,
+                                );
+                                const ghost =
+                                  !inList &&
+                                  curId &&
+                                  (selectedCall as any)?.followUpAssignedTo
+                                    ? (selectedCall as any).followUpAssignedTo
+                                    : null;
+                                return (
+                                  <>
+                                    {ghost && (
+                                      <SelectItem
+                                        key={ghost.id}
+                                        value={ghost.id.toString()}
+                                      >
+                                        {ghost.name}
+                                      </SelectItem>
+                                    )}
+                                    {agents.map((a) => (
+                                      <SelectItem
+                                        key={a.id}
+                                        value={a.id.toString()}
+                                      >
+                                        {a.name}
+                                      </SelectItem>
+                                    ))}
+                                  </>
+                                );
+                              })()}
+                            </InspectorSelect>
+                          </div>
                         </div>
+                      )}
+
+                      {/* Agent */}
+                      <div>
+                        <InspLabel>Agent</InspLabel>
+                        <InspectorSelect
+                          value={
+                            editFormData.agentId != null &&
+                            editFormData.agentId !== ""
+                              ? String(editFormData.agentId)
+                              : ""
+                          }
+                          onChange={(v) =>
+                            setEditFormData({
+                              ...editFormData,
+                              agentId: v,
+                            })
+                          }
+                          placeholder="Unassigned"
+                        >
+                          <SelectItem value="none">Unassigned</SelectItem>
+                          {(() => {
+                            const curId =
+                              editFormData.agentId != null &&
+                              editFormData.agentId !== ""
+                                ? String(editFormData.agentId)
+                                : "";
+                            const inList = agents.some(
+                              (a) => a.id.toString() === curId,
+                            );
+                            const ghost =
+                              !inList && curId && (selectedCall as any)?.agent
+                                ? (selectedCall as any).agent
+                                : null;
+                            return (
+                              <>
+                                {ghost && (
+                                  <SelectItem
+                                    key={ghost.id}
+                                    value={ghost.id.toString()}
+                                  >
+                                    {ghost.name}
+                                  </SelectItem>
+                                )}
+                                {agents.map((a) => (
+                                  <SelectItem
+                                    key={a.id}
+                                    value={a.id.toString()}
+                                  >
+                                    {a.name}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            );
+                          })()}
+                        </InspectorSelect>
                       </div>
                     </div>
                   </section>
@@ -1049,24 +1588,6 @@ export function CustomerTimelineDrawer({
                       className="hidden"
                     />
                   </section>
-
-                  {/* ── Customer note banner ── */}
-                  {((selectedCall.customer?.notes &&
-                    selectedCall.customer.notes.length > 0) ||
-                    selectedCall.customer?.note) && (
-                    <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200/60 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                      <StickyNote className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">
-                          Customer Note
-                        </p>
-                        <p className="text-[12px] text-amber-800 leading-relaxed">
-                          {selectedCall.customer?.notes?.[0]?.content ||
-                            selectedCall.customer?.note}
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                   {/* ── Internal Note card ── */}
                   <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">

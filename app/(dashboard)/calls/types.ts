@@ -177,7 +177,12 @@ declare module "@/lib/mock-data" {
       email?: string;
       id?: number;
       note?: string;
-      notes?: { id: number; content: string; createdAt: string }[];
+      notes?: {
+        id: number;
+        content: string;
+        createdAt: string;
+        createdBy?: string;
+      }[];
     };
     customerPhone?: string;
     phoneLineId?: number | string;
@@ -321,4 +326,3 @@ export interface CreateManualRecordFormData {
 }
 
 export type UpdateManualRecordFormData = Partial<CreateManualRecordFormData>;
-
