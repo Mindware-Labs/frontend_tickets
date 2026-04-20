@@ -6,9 +6,34 @@ import {
   Sparkles,
   Building,
 } from "lucide-react";
+import { format } from "date-fns";
 import type { Ticket } from "@/lib/mock-data";
 import type { CampaignOption, YardOption } from "../types";
 import { OnboardingOption } from "../types";
+
+export function fmtDate(iso?: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return format(d, "MMM d, yyyy");
+  } catch {
+    return "—";
+  }
+}
+
+export function fmtRelative(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0)
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diffDays < 7)
+    return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
 
 export function getTicketAssignee(ticket: any): any {
   if (!ticket) return null;

@@ -5,23 +5,15 @@ import useSWR from "swr";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SelectItem } from "@/components/ui/select";
 import {
   X,
-  Phone,
   PhoneOutgoing,
   Loader2,
   StickyNote,
@@ -48,55 +40,18 @@ import {
   type CreateSupportTicketFormData,
 } from "../../types";
 import type { CustomerTicketGroup } from "../tickets/InlineTicketTimeline";
+import { formatEnumLabel, fmtDate, fmtRelative } from "../../utils/call-helpers";
+import { InspLabel, InspectorSelect } from "../shared/InspectorHelpers";
 import { useAircall } from "@/components/providers/AircallProvider";
-import { format } from "date-fns";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const fmtLabel = (v: string) =>
-  v
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-
-const fmtEnumLabel = (value: string) => {
-  if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
-  return fmtLabel(value);
-};
-
-const fmtDate = (iso?: string | null) => {
-  if (!iso) return "—";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
-    return format(d, "MMM d, yyyy");
-  } catch {
-    return "—";
-  }
-};
-
-const fmtRelative = (iso?: string | null): string => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (diffDays === 0)
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  if (diffDays < 7)
-    return d.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  return d.toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
+// Pure phone helpers — module-level to avoid recreation on each render
+const normalizePhone = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
+const stripUsCode = (d: string) =>
+  d.length > 10 && d.startsWith("1") ? d.slice(1) : d;
 
 // ── Pill maps ─────────────────────────────────────────────────────────────────
 
@@ -136,40 +91,6 @@ const PRIORITY_PILL: Record<
     label: "Emergency",
   },
 };
-
-// ── Inspector helpers ─────────────────────────────────────────────────────────
-
-function InspLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
-      {children}
-    </p>
-  );
-}
-
-function InspectorSelect({
-  value,
-  onChange,
-  placeholder,
-  children,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Select
-      value={value || "none"}
-      onValueChange={(v) => onChange(v === "none" ? "" : v)}
-    >
-      <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>{children}</SelectContent>
-    </Select>
-  );
-}
 
 // ── Mock timeline entries ─────────────────────────────────────────────────────
 
@@ -238,7 +159,7 @@ function TicketCard({
       </div>
       {ticket.ticketType && (
         <p className="text-[11px] text-slate-500 mb-1.5 truncate">
-          {fmtLabel(ticket.ticketType)}
+          {formatEnumLabel(ticket.ticketType)}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-1">
@@ -364,30 +285,23 @@ export function CustomerTicketDrawer({
     group?.customerPhone ?? selectedTicket?.customer?.phone ?? "";
   const ticketCount = allTickets.length || group?.tickets.length || 0;
 
-  // Campaign logic
-  const selectedCampaign = useMemo(() => {
-    if (!editFormData.campaignId) return null;
-    return campaigns.find(
+  // Campaign options derived in one memo
+  const campaignOptionValues = useMemo(() => {
+    if (!editFormData.campaignId) return [];
+    const camp = campaigns.find(
       (c: any) => c.id.toString() === editFormData.campaignId,
     );
+    const type = camp?.tipo?.toString().toUpperCase();
+    if (type === ManagementType.ONBOARDING) return Object.values(OnboardingOption);
+    if (type === ManagementType.AR) return Object.values(ArOption);
+    return [];
   }, [campaigns, editFormData.campaignId]);
-  const selectedCampaignType = selectedCampaign?.tipo?.toString().toUpperCase();
-  const isOnboarding = selectedCampaignType === ManagementType.ONBOARDING;
-  const isAr = selectedCampaignType === ManagementType.AR;
-  const campaignOptionValues = isOnboarding
-    ? Object.values(OnboardingOption)
-    : isAr
-      ? Object.values(ArOption)
-      : [];
 
-  const followUpDateDisplay = editFormData.followUpDueDate
-    ? fmtDate(editFormData.followUpDueDate)
-    : null;
+  const followUpDateDisplay = useMemo(
+    () => (editFormData.followUpDueDate ? fmtDate(editFormData.followUpDueDate) : null),
+    [editFormData.followUpDueDate],
+  );
 
-  // Customer search
-  const normalizePhone = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
-  const stripUsCode = (d: string) =>
-    d.length > 10 && d.startsWith("1") ? d.slice(1) : d;
   const filteredCustomers = useMemo(() => {
     if (!customerSearch.trim()) return customers;
     const s = customerSearch.toLowerCase();
@@ -412,6 +326,10 @@ export function CustomerTicketDrawer({
     });
   }, [customers, customerSearch]);
 
+  // Status/priority pills for selected ticket
+  const sp = STATUS_PILL[selectedTicket?.status || ""] || null;
+  const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
+
   // File handling
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -421,10 +339,6 @@ export function CustomerTicketDrawer({
   };
   const removePendingFile = (i: number) =>
     onFilesChange(pendingFiles.filter((_, idx) => idx !== i));
-
-  // Metadata from selected ticket
-  const sp = STATUS_PILL[selectedTicket?.status || ""] || null;
-  const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -592,7 +506,7 @@ export function CustomerTicketDrawer({
                     {
                       label: "Type",
                       value: selectedTicket.ticketType
-                        ? fmtLabel(selectedTicket.ticketType)
+                        ? formatEnumLabel(selectedTicket.ticketType)
                         : "—",
                     },
                   ].map((item, i) => (
@@ -833,7 +747,7 @@ export function CustomerTicketDrawer({
                       <SelectItem value="none">—</SelectItem>
                       {Object.values(SupportTicketStatus).map((s) => (
                         <SelectItem key={s} value={s}>
-                          {fmtLabel(s)}
+                          {formatEnumLabel(s)}
                         </SelectItem>
                       ))}
                     </InspectorSelect>
@@ -853,7 +767,7 @@ export function CustomerTicketDrawer({
                       <SelectItem value="none">—</SelectItem>
                       {Object.values(SupportTicketPriority).map((p) => (
                         <SelectItem key={p} value={p}>
-                          {fmtLabel(p)}
+                          {formatEnumLabel(p)}
                         </SelectItem>
                       ))}
                     </InspectorSelect>
@@ -873,7 +787,7 @@ export function CustomerTicketDrawer({
                       <SelectItem value="none">None</SelectItem>
                       {Object.values(SupportTicketType).map((t) => (
                         <SelectItem key={t} value={t}>
-                          {fmtLabel(t)}
+                          {formatEnumLabel(t)}
                         </SelectItem>
                       ))}
                     </InspectorSelect>
@@ -934,7 +848,7 @@ export function CustomerTicketDrawer({
                         <SelectItem value="none">None</SelectItem>
                         {campaignOptionValues.map((v) => (
                           <SelectItem key={v} value={v}>
-                            {fmtEnumLabel(v)}
+                            {formatEnumLabel(v)}
                           </SelectItem>
                         ))}
                       </InspectorSelect>
@@ -957,7 +871,6 @@ export function CustomerTicketDrawer({
                       ))}
                     </InspectorSelect>
                   </div>
-
                 </div>
               </div>
 
