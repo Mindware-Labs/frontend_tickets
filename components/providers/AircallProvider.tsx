@@ -404,15 +404,72 @@ function AircallDock({
   lastIncomingCall,
 }: AircallDockProps) {
   const isFullscreen = mountMode === "fullscreen";
-  // In fullscreen mode the panel is always "open" (fills the route).
   const panelVisible = isFullscreen || open;
 
-  // The panel owns the SDK iframe. We never re-create it (portaling would
-  // destroy the iframe the SDK appended). Instead we physically move the
-  // panel DOM node between its default "dock" parent and the page-provided
-  // fullscreen container using appendChild, which preserves child nodes.
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dockParentRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Drag state ────────────────────────────────────────────────────────────
+  // null = default CSS position (bottom-right). Set after first drag.
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+
+  const BTN_SIZE = 56; // h-14 w-14
+  const PANEL_W = 380;
+  const PANEL_H = 600;
+
+  const clamp = (v: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, v));
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (isFullscreen) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: rect.left,
+      originY: rect.top,
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    drag.moved = true;
+    const newX = clamp(drag.originX + dx, 0, window.innerWidth - BTN_SIZE);
+    const newY = clamp(drag.originY + dy, 0, window.innerHeight - BTN_SIZE);
+    setPos({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag?.moved) onToggle(); // pure click
+  };
+
+  // Panel position: appear above/beside the button, clamped to viewport
+  const panelStyle = (): React.CSSProperties => {
+    if (!pos) return { height: `${PANEL_H}px`, maxHeight: "calc(100vh - 140px)" };
+    const gap = 12;
+    let left = pos.x + BTN_SIZE / 2 - PANEL_W / 2;
+    let top = pos.y - PANEL_H - gap;
+    // flip below if not enough space above
+    if (top < 8) top = pos.y + BTN_SIZE + gap;
+    left = clamp(left, 8, window.innerWidth - PANEL_W - 8);
+    top = clamp(top, 8, window.innerHeight - PANEL_H - 8);
+    return { left, top, height: `${PANEL_H}px`, maxHeight: "calc(100vh - 140px)" };
+  };
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -424,8 +481,6 @@ function AircallDock({
       target.appendChild(panel);
     }
     return () => {
-      // On cleanup (mode change), restore to dock parent if the panel is still
-      // attached somewhere else so it stays mounted for the next render.
       if (
         panel.parentElement !== dockParentRef.current &&
         dockParentRef.current
@@ -435,24 +490,30 @@ function AircallDock({
     };
   }, [isFullscreen, fullscreenContainer]);
 
-  // Positioning: absolute (fills parent) when physically moved to the page
-  // container; fixed bottom-right otherwise.
   const movedToContainer = isFullscreen && !!fullscreenContainer;
 
   return (
     <>
-      {/* Floating toggle button (hidden in fullscreen mode) */}
+      {/* Floating toggle button — draggable */}
       <button
         type="button"
-        onClick={onToggle}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         aria-label={open ? "Hide Aircall phone" : "Show Aircall phone"}
         className={cn(
-          "fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full shadow-lg",
-          "flex items-center justify-center transition-all",
+          "fixed z-[60] h-14 w-14 rounded-full shadow-lg select-none",
+          "flex items-center justify-center",
           "bg-primary text-primary-foreground hover:bg-primary/90",
-          open && "scale-90",
+          open && !dragRef.current?.moved && "scale-90",
           isFullscreen && "hidden",
+          !pos && "bottom-6 right-6",
         )}
+        style={
+          pos
+            ? { left: pos.x, top: pos.y, cursor: "grab" }
+            : { cursor: "grab" }
+        }
       >
         {lastIncomingCall &&
         Date.now() - lastIncomingCall.receivedAt < 30_000 ? (
@@ -471,8 +532,6 @@ function AircallDock({
         )}
       </button>
 
-      {/* Host that owns the panel in dock mode. Panel is moved out when
-          fullscreen is requested; this wrapper stays empty in that case. */}
       <div ref={dockParentRef}>
         <div
           ref={panelRef}
@@ -481,17 +540,14 @@ function AircallDock({
             movedToContainer
               ? "absolute inset-0 rounded-none shadow-none opacity-100 scale-100 pointer-events-auto"
               : cn(
-                  "fixed bottom-24 right-6 z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl origin-bottom-right",
+                  "z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl",
+                  pos ? "fixed origin-bottom" : "fixed bottom-24 right-6 origin-bottom-right",
                   open
                     ? "opacity-100 scale-100 pointer-events-auto"
                     : "opacity-0 scale-95 pointer-events-none",
                 ),
           )}
-          style={
-            movedToContainer
-              ? undefined
-              : { height: "600px", maxHeight: "calc(100vh - 140px)" }
-          }
+          style={movedToContainer ? undefined : panelStyle()}
           aria-hidden={!panelVisible}
         >
           {/* Dock header */}

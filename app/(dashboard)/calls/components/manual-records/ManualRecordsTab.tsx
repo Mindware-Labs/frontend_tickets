@@ -83,23 +83,17 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const dispositionColors: Record<string, string> = {
-  RESOLVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CALLBACK_REQUIRED:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-  CALLBACK_SCHEDULED:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  NO_ANSWER: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  VOICEMAIL_LEFT:
-    "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  PROMISE_TO_PAY:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-  DISPUTE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  WRONG_NUMBER:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  ENROLLED:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  ESCALATED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+const DISP_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
+  RESOLVED:          { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50" },
+  CALLBACK_REQUIRED: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309" },
+  CALLBACK_SCHEDULED:{ dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8" },
+  NO_ANSWER:         { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
+  VOICEMAIL_LEFT:    { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },
+  PROMISE_TO_PAY:    { dot: "#7c3aed", bg: "#ede9fe", fg: "#6d28d9" },
+  DISPUTE:           { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
+  WRONG_NUMBER:      { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
+  ENROLLED:          { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50" },
+  ESCALATED:         { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
 };
 
 const emptyForm: CreateManualRecordFormData = {
@@ -502,17 +496,21 @@ export function ManualRecordsTab() {
 
   // ---- Render ----
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-muted-foreground" />
-          Manual Records
-        </h2>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
+      <div className="flex items-center justify-between pb-2 border-b border-border">
+        <div />
+        <button
+          type="button"
+          onClick={openCreate}
+          className="flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-lg transition-colors"
+          style={{ background: "#008f68" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
+        >
+          <Plus className="w-3.5 h-3.5" />
           New Record
-        </Button>
+        </button>
       </div>
 
       {/* Filters row */}
@@ -637,165 +635,133 @@ export function ManualRecordsTab() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Yard</TableHead>
-              <TableHead>Campaign</TableHead>
-              <TableHead>Campaign Option</TableHead>
-              <TableHead>Disposition</TableHead>
-              <TableHead>Notes</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="w-20 text-right">Actions</TableHead>
+            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">ID</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Customer</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Yard</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign Option</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Disposition</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</TableHead>
+              <TableHead className="w-20 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={9} className="h-32 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                 </TableCell>
               </TableRow>
             ) : records.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="h-32 text-center text-muted-foreground"
-                >
+                <TableCell colSpan={9} className="h-32 text-center text-slate-400 text-sm">
                   No records found
                 </TableCell>
               </TableRow>
             ) : (
-              records.map((record) => (
-                <TableRow key={record.id} className="group">
-                  <TableCell className="text-xs text-muted-foreground font-mono">
-                    #{record.id}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div>{record.customer?.name || `#${record.customerId}`}</div>
-                    {record.customer?.phone && (
-                      <div className="text-xs text-muted-foreground">
-                        {record.customer.phone}
+              records.map((record) => {
+                const initials = (record.customer?.name || "?").substring(0, 2).toUpperCase();
+                const dp = record.disposition ? (DISP_PILL[record.disposition] || { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" }) : null;
+                return (
+                  <TableRow key={record.id} className="group border-b border-slate-100 last:border-0 hover:bg-[#f8fafc]">
+                    <TableCell className="text-[11px] font-mono text-slate-400">#{record.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                          style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}
+                        >
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-slate-800 truncate">{record.customer?.name || `#${record.customerId}`}</p>
+                          {record.customer?.phone && (
+                            <p className="text-[11px] text-slate-400 font-mono">{record.customer.phone}</p>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {record.yard?.name || (record.yardId ? `#${record.yardId}` : "—")}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {record.campaign
-                      ? (record.campaign as any).nombre || `#${record.campaignId}`
-                      : record.campaignId
-                        ? `#${record.campaignId}`
-                        : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {record.campaignOption ? formatLabel(record.campaignOption) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {record.disposition ? (
-                      <Badge
-                        className={cn(
-                          "text-xs font-medium",
-                          dispositionColors[record.disposition] ||
-                            "bg-gray-100 text-gray-700",
-                        )}
-                      >
-                        {formatLabel(record.disposition)}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="max-w-48 truncate text-sm text-muted-foreground">
-                    {record.notes || "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {record.createdAt
-                      ? new Date(record.createdAt).toLocaleDateString()
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => openEdit(record)}
-                        title="Edit"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => openDelete(record)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell className="text-[12px] text-slate-600">
+                      {record.yard?.name || (record.yardId ? `#${record.yardId}` : "—")}
+                    </TableCell>
+                    <TableCell className="text-[12px] text-slate-600">
+                      {record.campaign ? (record.campaign as any).nombre || `#${record.campaignId}` : record.campaignId ? `#${record.campaignId}` : "—"}
+                    </TableCell>
+                    <TableCell className="text-[12px] text-slate-600">
+                      {record.campaignOption ? formatLabel(record.campaignOption) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {dp ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
+                          style={{ color: dp.fg, background: dp.bg, borderColor: dp.bg }}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dp.dot }} />
+                          {formatLabel(record.disposition!)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-48 truncate text-[12px] text-slate-500">{record.notes || "—"}</TableCell>
+                    <TableCell className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
+                      {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => openEdit(record)} title="Edit"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button type="button" onClick={() => openDelete(record)} title="Delete"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {totalCount} record{totalCount !== 1 ? "s" : ""}
-          </span>
-          <div className="flex items-center gap-3">
-            <Select
-              value={String(filters.itemsPerPage)}
-              onValueChange={(v) => filters.setItemsPerPage(Number(v))}
-            >
-              <SelectTrigger className="h-8 w-20 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 25, 50, 100].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n} / page
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                disabled={filters.currentPage <= 1}
-                onClick={() => filters.setCurrentPage((p) => p - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="px-2 text-xs text-muted-foreground">
-                {filters.currentPage} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                disabled={filters.currentPage >= totalPages}
-                onClick={() => filters.setCurrentPage((p) => p + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+      <div className="flex items-center justify-between px-1">
+        <span className="text-[11px] text-slate-500">
+          Page <span className="font-semibold text-slate-700">{filters.currentPage}</span> of {totalPages} · {totalCount} record{totalCount !== 1 ? "s" : ""}
+        </span>
+        <div className="flex items-center gap-2">
+          <Select value={String(filters.itemsPerPage)} onValueChange={(v) => filters.setItemsPerPage(Number(v))}>
+            <SelectTrigger className="h-7 w-20 text-[11px] border-slate-200 rounded-lg">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[8, 10, 25, 50].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1">
+            <button type="button"
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+              disabled={filters.currentPage <= 1}
+              onClick={() => filters.setCurrentPage((p) => p - 1)}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button type="button"
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+              disabled={filters.currentPage >= totalPages}
+              onClick={() => filters.setCurrentPage((p) => p + 1)}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* ── Create Dialog ── */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

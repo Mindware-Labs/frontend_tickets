@@ -90,23 +90,37 @@ const fetcher = async (url: string) => {
   return result.data;
 };
 
-const priorityColors: Record<string, string> = {
-  LOW: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  MEDIUM:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  HIGH: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  EMERGENCY: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+const STATUS_PILL: Record<string, { dot: string; bg: string; fg: string; label: string }> = {
+  OPEN:             { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Open" },
+  IN_PROGRESS:      { dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8", label: "In Progress" },
+  PENDING_FOLLOWUP: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309", label: "Follow-up" },
+  OVERDUE:          { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
+  RESOLVED:         { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
+  CLOSED:           { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
 };
 
+const PRIORITY_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
+  LOW:       { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
+  MEDIUM:    { dot: "#f59e0b", bg: "#fef3c7", fg: "#b45309" },
+  HIGH:      { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
+  EMERGENCY: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
+};
+
+// Map status/priority to Tailwind classes for Badge styling
 const statusColors: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  IN_PROGRESS:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-  PENDING_FOLLOWUP:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-  OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  RESOLVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  OPEN:             "bg-green-100 text-green-800 hover:bg-green-100",
+  IN_PROGRESS:      "bg-blue-100 text-blue-800 hover:bg-blue-100",
+  PENDING_FOLLOWUP: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  OVERDUE:          "bg-red-100 text-red-800 hover:bg-red-100",
+  RESOLVED:         "bg-green-100 text-green-800 hover:bg-green-100",
+  CLOSED:           "bg-gray-100 text-gray-800 hover:bg-gray-100",
+};
+
+const priorityColors: Record<string, string> = {
+  LOW:       "bg-slate-100 text-slate-800 hover:bg-slate-100",
+  MEDIUM:    "bg-amber-100 text-amber-800 hover:bg-amber-100",
+  HIGH:      "bg-orange-100 text-orange-800 hover:bg-orange-100",
+  EMERGENCY: "bg-red-100 text-red-800 hover:bg-red-100",
 };
 
 const formatLabel = (v: string) =>
@@ -586,22 +600,13 @@ export function TicketsTab({
 
   // ---- Render ----
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Support Tickets</h2>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Ticket
-        </Button>
-      </div>
-
+    <div className="flex flex-col gap-3">
       {/* View Tabs */}
-      <div className="flex items-center gap-1 border-b">
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
         {[
-          { key: "active", label: "Active", countKey: "active" },
-          { key: "inactive", label: "Closed", countKey: "inactive" },
-          { key: "all", label: "All", countKey: "all" },
+          { key: "active",   label: "Active",  countKey: "active" },
+          { key: "inactive", label: "Closed",  countKey: "inactive" },
+          { key: "all",      label: "All",     countKey: "all" },
         ].map((tab) => {
           const isActive = ticketFilters.activeView === tab.key;
           const count = viewCounts?.[tab.countKey];
@@ -609,35 +614,34 @@ export function TicketsTab({
             <button
               key={tab.key}
               type="button"
-              onClick={() => {
-                ticketFilters.handleViewChange(tab.key);
-                // Reset status filter when switching tabs
-                ticketFilters.setFilter("status", "all");
-              }}
-              className={cn(
-                "relative px-4 py-2 text-sm font-medium transition-colors",
-                "hover:text-foreground",
-                isActive ? "text-foreground" : "text-muted-foreground",
-              )}
+              onClick={() => { ticketFilters.handleViewChange(tab.key); ticketFilters.setFilter("status", "all"); }}
+              className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
+                isActive ? "border-[#008f68] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
               {tab.label}
               {count != null && (
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "ml-1.5 h-5 min-w-5 px-1.5 text-[11px] font-mono",
-                    isActive && "bg-primary/10 text-primary",
-                  )}
-                >
+                <span className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                  isActive ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]" : "bg-muted/40 text-muted-foreground font-medium border-border"
+                }`}>
                   {count}
-                </Badge>
-              )}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t" />
+                </span>
               )}
             </button>
           );
         })}
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={openCreate}
+          className="mb-1 flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-lg transition-colors self-center"
+          style={{ background: "#008f68" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          New Ticket
+        </button>
       </div>
 
       {/* Filters row */}
@@ -952,146 +956,113 @@ export function TicketsTab({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-15">#</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead className="w-20 text-center">Tickets</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Agent</TableHead>
-              <TableHead>Yard</TableHead>
-              <TableHead>Campaign</TableHead>
-              <TableHead className="w-25">Created</TableHead>
+            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-15">ID</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Customer</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-20 text-center">Tickets</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Priority</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Type</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Agent</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Yard</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-25">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={10} className="h-24 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                 </TableCell>
               </TableRow>
             ) : ticketGroups.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={10}
-                  className="h-24 text-center text-muted-foreground"
-                >
+                <TableCell colSpan={10} className="h-24 text-center text-slate-400 text-sm">
                   No tickets found
                 </TableCell>
               </TableRow>
             ) : (
               ticketGroups.map((group) => {
                 const t = group.latestTicket;
+                const initials = (t.customer?.name || "?").substring(0, 2).toUpperCase();
+                const sp = STATUS_PILL[t.status] || STATUS_PILL.CLOSED;
+                const pp = PRIORITY_PILL[t.priority] || PRIORITY_PILL.LOW;
                 return (
                   <React.Fragment key={group.key}>
                     <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-[#f8fafc] border-b border-slate-100 last:border-0"
                       onClick={() => openView(t)}
                     >
-                      <TableCell className="font-medium">{t.id}</TableCell>
+                      <TableCell className="text-[12px] font-mono text-slate-400">#{t.id}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium">{customerName(t)}</span>
-                          {t.customer?.phone && (
-                            <>
-                              <span className="text-xs text-muted-foreground">
-                                {t.customer.phone}
-                              </span>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  dial(t.customer!.phone!, t.id);
-                                }}
-                                disabled={!canDial}
-                                title={
-                                  canDial
-                                    ? `Call ${t.customer.phone}`
-                                    : "Aircall is not connected"
-                                }
-                              >
-                                <PhoneOutgoing className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                            style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}
+                          >
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-semibold text-slate-800 truncate">{customerName(t)}</p>
+                            {t.customer?.phone && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[11px] text-slate-400 font-mono">{t.customer.phone}</span>
+                                <button
+                                  type="button"
+                                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#e6f5f0] transition-colors"
+                                  style={{ color: "#008f68" }}
+                                  onClick={(e) => { e.stopPropagation(); dial(t.customer!.phone!, t.id); }}
+                                  disabled={!canDial}
+                                >
+                                  <PhoneOutgoing className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
-                      {/* Ticket count — toggle inline timeline */}
                       <TableCell className="text-center">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedKey((prev) =>
-                              prev === group.key ? null : group.key,
-                            );
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md hover:bg-muted px-1 py-0.5 transition-colors"
-                          aria-label="Toggle ticket timeline"
-                          aria-expanded={expandedKey === group.key}
+                          onClick={(e) => { e.stopPropagation(); setExpandedKey((prev) => prev === group.key ? null : group.key); }}
+                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11px] font-semibold transition-colors hover:bg-slate-100"
+                          style={{ background: "#f1f5f9", color: "#475569" }}
                         >
-                          <ChevronRight
-                            className={cn(
-                              "h-3 w-3 text-muted-foreground transition-transform",
-                              expandedKey === group.key && "rotate-90",
-                            )}
-                          />
-                          <Badge
-                            variant="secondary"
-                            className="gap-1 font-mono text-xs px-2"
-                          >
-                            <Ticket className="h-3 w-3" />
-                            {group.tickets.length}
-                          </Badge>
+                          <ChevronRight className={cn("h-3 w-3 transition-transform", expandedKey === group.key && "rotate-90")} />
+                          <Ticket className="h-3 w-3" />
+                          {group.tickets.length}
                         </button>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={statusColors[t.status] || ""}
-                        >
-                          {formatLabel(t.status)}
-                        </Badge>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
+                          style={{ color: sp.fg, background: sp.bg, borderColor: sp.bg }}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sp.dot }} />
+                          {sp.label}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={priorityColors[t.priority] || ""}
-                        >
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
+                          style={{ color: pp.fg, background: pp.bg, borderColor: pp.bg }}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: pp.dot }} />
                           {formatLabel(t.priority)}
-                        </Badge>
+                        </span>
                       </TableCell>
-                      <TableCell>
-                        {t.ticketType ? formatLabel(t.ticketType) : "—"}
-                      </TableCell>
-                      <TableCell>{agentName(t)}</TableCell>
-                      <TableCell>{yardName(t)}</TableCell>
-                      <TableCell>{t.campaign?.nombre || "—"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {t.createdAt
-                          ? format(new Date(t.createdAt), "MMM d, yyyy")
-                          : "—"}
+                      <TableCell className="text-[12px] text-slate-600">{t.ticketType ? formatLabel(t.ticketType) : "—"}</TableCell>
+                      <TableCell className="text-[12px] text-slate-600">{agentName(t)}</TableCell>
+                      <TableCell className="text-[12px] text-slate-600">{yardName(t)}</TableCell>
+                      <TableCell className="text-[12px] text-slate-600">{t.campaign?.nombre || "—"}</TableCell>
+                      <TableCell className="text-[11px] text-slate-400 font-mono">
+                        {t.createdAt ? format(new Date(t.createdAt), "MMM d, yyyy") : "—"}
                       </TableCell>
                     </TableRow>
                     {expandedKey === group.key && (
-                      <TableRow
-                        key={`${group.key}-timeline`}
-                        className="bg-muted/30 hover:bg-muted/30"
-                      >
+                      <TableRow key={`${group.key}-timeline`} className="bg-slate-50/50 hover:bg-slate-50/50">
                         <TableCell colSpan={10} className="p-0">
-                          <InlineTicketTimeline
-                            group={group}
-                            agents={refData.agents}
-                            onOpenView={openView}
-                          />
+                          <InlineTicketTimeline group={group} agents={refData.agents} onOpenView={openView} />
                         </TableCell>
                       </TableRow>
                     )}
@@ -1104,51 +1075,39 @@ export function TicketsTab({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            Page {ticketFilters.currentPage} of {totalPages} ({totalCount}{" "}
-            {totalCount === 1 ? "ticket" : "tickets"})
+          <span className="text-[11px] text-slate-500">
+            Page <span className="font-semibold text-slate-700">{ticketFilters.currentPage}</span> of {totalPages} · {totalCount} {totalCount === 1 ? "ticket" : "tickets"}
           </span>
-          <Select
-            value={String(ticketFilters.itemsPerPage)}
-            onValueChange={(v) => ticketFilters.setItemsPerPage(Number(v))}
-          >
-            <SelectTrigger className="h-8 w-20 text-xs">
+          <Select value={String(ticketFilters.itemsPerPage)} onValueChange={(v) => ticketFilters.setItemsPerPage(Number(v))}>
+            <SelectTrigger className="h-7 w-20 text-[11px] border-slate-200 rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[10, 25, 50, 100].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n} / page
-                </SelectItem>
+              {[8, 10, 25, 50].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
+          <button
+            type="button"
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
             disabled={ticketFilters.currentPage <= 1}
-            onClick={() =>
-              ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)
-            }
+            onClick={() => ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
             disabled={ticketFilters.currentPage >= totalPages}
-            onClick={() =>
-              ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)
-            }
+            onClick={() => ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 

@@ -987,7 +987,7 @@ export default function TicketsPage() {
         className="flex-1 flex flex-col"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full border-b border-border pb-2 px-0.5 gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-2 px-0.5 gap-2">
           <div className="min-w-0">
             <h2 className="text-[20px] font-bold tracking-tight text-foreground leading-tight">
               {activeTab === "calls"
@@ -998,7 +998,7 @@ export default function TicketsPage() {
             </h2>
             <p className="text-[12px] text-muted-foreground mt-0.5 capitalize">
               {activeTab === "calls"
-                ? `${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')} · ${refData.agents?.length || 14} active agents`
+                ? `${new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')} · ${refData.agents?.length || 14} active agents`
                 : activeTab === "tickets"
                   ? "Manage support tickets and escalations"
                   : "Track manual records and entries"}
@@ -1008,9 +1008,9 @@ export default function TicketsPage() {
           {/* Custom Tab Switcher */}
           <div className="inline-flex items-center rounded-lg bg-slate-100/80 dark:bg-slate-800/60 p-[3px] border border-slate-200/80 dark:border-slate-700/50 shadow-sm">
             {[
-              { value: "calls", label: "Calls", icon: "📞" },
-              { value: "tickets", label: "Tickets", icon: "🎫" },
-              { value: "manual-records", label: "Manual Records", icon: "📋" },
+              { value: "calls", label: "Calls" },
+              { value: "tickets", label: "Tickets" },
+              { value: "manual-records", label: "Manual Records"},
             ].map((tab) => {
               const isActive = activeTab === tab.value;
               return (
@@ -1023,7 +1023,6 @@ export default function TicketsPage() {
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
-                  <span className="text-[12px] leading-none">{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               );

@@ -16,6 +16,7 @@ import {
   UserCircle,
   Building,
   Phone,
+  ChevronsUpDown,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
@@ -47,12 +48,6 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-// User Mock Data
-const user = {
-  name: "Gerald Luciano",
-  email: "gerald@example.com",
-  avatar: "/avatars/shadcn.jpg",
-};
 
 // Navigation Data
 const data = {
@@ -75,25 +70,13 @@ const data = {
       icon: PhoneCall,
       items: [],
     },
-    /*{
-      title: "Aircall",
-      url: "/aircall-test",
-      icon: PhoneCall,
-      items: [],
-    },*/
     {
       title: "Yards",
       url: "/yards",
       icon: Building,
       items: [
-        {
-          title: "All Yards",
-          url: "/yards",
-        },
-        {
-          title: "Reports",
-          url: "/reports/yards",
-        },
+        { title: "All Yards", url: "/yards" },
+        { title: "Reports", url: "/reports/yards" },
       ],
     },
     {
@@ -101,14 +84,8 @@ const data = {
       url: "/landlords",
       icon: User,
       items: [
-        {
-          title: "All Landlords",
-          url: "/landlords",
-        },
-        {
-          title: "Reports",
-          url: "/reports/landlords",
-        },
+        { title: "All Landlords", url: "/landlords" },
+        { title: "Reports", url: "/reports/landlords" },
       ],
     },
     {
@@ -116,14 +93,8 @@ const data = {
       url: "/campaigns",
       icon: Megaphone,
       items: [
-        {
-          title: "All Campaigns",
-          url: "/campaigns",
-        },
-        {
-          title: "Reports",
-          url: "/reports/campaigns",
-        },
+        { title: "All Campaigns", url: "/campaigns" },
+        { title: "Reports", url: "/reports/campaigns" },
       ],
     },
     {
@@ -131,14 +102,8 @@ const data = {
       url: "/knowledge",
       icon: BookOpen,
       items: [
-        {
-          title: "Rig Hut Policies",
-          url: "/Knowledge/policies",
-        },
-        {
-          title: "Guides",
-          url: "/Knowledge/Guides",
-        },
+        { title: "Rig Hut Policies", url: "/Knowledge/policies" },
+        { title: "Guides", url: "/Knowledge/Guides" },
       ],
     },
     {
@@ -146,40 +111,18 @@ const data = {
       url: "/reports",
       icon: BarChart3,
       items: [
-        {
-          title: "Performance",
-          url: "/reports/performance",
-        },
-        {
-          title: "Agent Stats",
-          url: "/reports/agents",
-        },
+        { title: "Performance", url: "/reports/performance" },
+        { title: "Agent Stats", url: "/reports/agents" },
       ],
     },
   ],
   navSecondary: [
-    {
-      title: "Support",
-      url: "/support",
-      icon: LifeBuoy,
-    },
+    { title: "Support", url: "/support", icon: LifeBuoy },
   ],
   projects: [
-    {
-      name: "Call Center",
-      url: "#",
-      icon: PhoneCall,
-    },
-    {
-      name: "Sales Team",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Support Team",
-      url: "#",
-      icon: Map,
-    },
+    { name: "Call Center", url: "#", icon: PhoneCall },
+    { name: "Sales Team", url: "#", icon: PieChart },
+    { name: "Support Team", url: "#", icon: Map },
   ],
 };
 
@@ -194,133 +137,97 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setMounted(true);
   }, []);
 
-  // Detectar tema actual - defaults to "dark" on SSR
-  const currentTheme = mounted ? resolvedTheme || theme || "dark" : "dark";
-  const isDarkMode = currentTheme === "dark";
+  const currentTheme = mounted ? resolvedTheme || theme || "light" : "light";
+  const isDark = currentTheme === "dark";
 
-  // Filtrar navegación para agentes
+  // Filtrar navegación para agentes — sin cambios funcionales
   const normalizedRole = role?.toString().toLowerCase();
   const filteredNavMain =
     normalizedRole === "agent"
       ? data.navMain
           .filter((item) => item.title !== "Reports")
           .map((item) => {
-            if (item.title === "Dashboard") {
-              return { ...item, url: "/agent-dashboard" };
-            }
-            if (
-              item.title === "Landlords" ||
-              item.title === "Campaigns" ||
-              item.title === "Yards"
-            ) {
+            if (item.title === "Dashboard") return { ...item, url: "/agent-dashboard" };
+            if (["Landlords", "Campaigns", "Yards"].includes(item.title))
               return { ...item, items: [] };
-            }
             return item;
           })
       : data.navMain;
 
-  // Helper to check if a group is active
   const isGroupActive = (item: any) => {
     if (pathname === item.url) return true;
-    if (
-      item.items?.some(
-        (sub: any) => pathname === sub.url || pathname.startsWith(sub.url),
-      )
-    )
+    if (item.items?.some((sub: any) => pathname === sub.url || pathname.startsWith(sub.url)))
       return true;
     return false;
   };
 
-  // Funciones para obtener colores dinámicos
-  const getSidebarBg = () => {
-    return isDarkMode
-      ? "bg-gray-900" // Dark mode
-      : "bg-white"; // Light mode
+  // ── Design tokens (light / dark)
+  const t = {
+    sidebar:     isDark ? "bg-gray-950 border-gray-800" : "bg-white border-slate-200",
+    header:      isDark ? "border-gray-800" : "border-slate-100",
+    brand:       isDark ? "text-white" : "text-slate-900",
+    sectionLbl:  isDark ? "text-gray-500" : "text-slate-400",
+    link:        isDark ? "text-gray-300 hover:bg-gray-800 hover:text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+    linkActive:  isDark ? "bg-blue-500/15 text-blue-400 font-semibold" : "bg-blue-50 text-blue-700 font-semibold",
+    icon:        isDark ? "text-gray-500" : "text-slate-400",
+    iconActive:  isDark ? "text-blue-400" : "text-blue-600",
+    sub:         isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+    subActive:   isDark ? "text-blue-400 font-medium" : "text-blue-700 font-medium",
+    dot:         isDark ? "bg-emerald-400" : "bg-emerald-500",
+    footer:      isDark ? "border-gray-800 bg-gray-950" : "border-slate-100 bg-white",
+    footerBtn:   isDark ? "hover:bg-gray-800" : "hover:bg-slate-50",
+    footerName:  isDark ? "text-gray-200" : "text-slate-800",
+    footerEmail: isDark ? "text-gray-500" : "text-slate-500",
+    separator:   isDark ? "bg-gray-800" : "bg-slate-100",
+    support:     isDark ? "text-gray-400 hover:bg-gray-800 hover:text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700",
+    copyright:   isDark ? "text-gray-600" : "text-slate-400",
   };
 
-  const getTextColor = () => {
-    return isDarkMode ? "text-gray-100" : "text-gray-900";
-  };
+  // ── Shared link class builder
+  const linkCls = (active: boolean) =>
+    `mx-3 px-3 py-2 flex items-center gap-3 rounded-lg mb-0.5 text-[13px] transition-colors duration-150 cursor-pointer w-[calc(100%-24px)] ${
+      active ? t.linkActive : t.link
+    }`;
 
-  const getMutedTextColor = () => {
-    return isDarkMode ? "text-gray-400" : "text-gray-600";
-  };
-
-  const getBorderColor = () => {
-    return isDarkMode ? "border-gray-800" : "border-gray-200";
-  };
-
-  const getHoverColor = () => {
-    return isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100";
-  };
-
-  const getIconColor = () => {
-    return isDarkMode ? "text-gray-300" : "text-gray-700";
-  };
-
-  const getSeparatorColor = () => {
-    return isDarkMode ? "bg-gray-800" : "bg-gray-200";
-  };
+  const iconCls = (active: boolean) =>
+    `w-4 h-4 flex-shrink-0 ${active ? t.iconActive : t.icon}`;
 
   return (
     <Sidebar
       collapsible="icon"
-      className={`${getSidebarBg()} ${getTextColor()} border-r ${getBorderColor()} transition-colors duration-300`}
+      className={`border-r transition-colors duration-300 ${t.sidebar}`}
       {...props}
     >
-      <SidebarHeader>
+      {/* ── HEADER ── */}
+      <SidebarHeader className={`px-5 py-5 border-b ${t.header}`}>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" className="relative overflow-hidden">
-                {/* Subtle background effect */}
-                <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                {/* Image logo */}
-                <div
-                  className={`flex aspect-square size-12 items-center justify-center rounded-lg border backdrop-blur-sm overflow-hidden ${
-                    isDarkMode
-                      ? "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20"
-                      : "bg-linear-to-br from-primary/10 to-primary/5 border-primary/10"
-                  }`}
-                >
+            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent active:bg-transparent p-0 h-auto">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                {/* Logo mark */}
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden border border-slate-200/60 dark:border-gray-700">
                   <div className="relative w-full h-full">
                     <Image
                       src="/images/LOGO CQ-10.png"
                       alt="Center Quest Logo"
                       fill
-                      className="object-contain scale-210"
-                      sizes="40px"
+                      className="object-contain scale-125"
+                      sizes="32px"
                       priority
                     />
                   </div>
                 </div>
 
-                {state === "collapsed" ? (
-                  <div className="flex flex-1 items-center justify-start relative z-10">
-                    <Image
-                      src="/images/LOGO CQ-10.png"
-                      alt="Center Quest"
-                      width={110}
-                      height={28}
-                      className="object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="grid flex-1 text-left text-sm leading-tight relative z-10">
+                {/* Brand name — hidden when collapsed */}
+                {state !== "collapsed" && (
+                  <div className="flex flex-col leading-tight">
                     <div className="flex items-center gap-2">
-                      <span className={`truncate font-bold ${getTextColor()}`}>
+                      <span className={`text-sm font-bold ${t.brand}`}>
                         Center Quest
                       </span>
-                      <div
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          isDarkMode ? "bg-green-400" : "bg-green-600"
-                        } animate-pulse`}
-                      />
+                      <span className={`w-1.5 h-1.5 rounded-full ${t.dot} animate-pulse`} />
                     </div>
-                    <span
-                      className={`truncate text-xs ${getMutedTextColor()} mt-0.5`}
-                    >
+                    <span className={`text-[11px] ${t.sectionLbl}`}>
                       Tickets System
                     </span>
                   </div>
@@ -330,101 +237,84 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        {/* Main Navigation */}
-        <SidebarGroup>
-          <SidebarMenu>
+
+      {/* ── CONTENT ── */}
+      <SidebarContent className="flex flex-col overflow-y-auto overflow-x-hidden py-3">
+
+        {/* ── MAIN NAV ── */}
+        <SidebarGroup className="p-0">
+          <SidebarMenu className="p-0">
             {filteredNavMain.map((item) => {
-              if (!item.items?.length) {
-                const active = pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={active}
-                      className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
-                    >
-                      <Link href={item.url}>
-                        {active && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                        )}
-                        {item.icon && (
-                          <item.icon className={`${getIconColor()} stroke-2`} />
-                        )}
-                        <span className={getTextColor()}>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }
-              if (item.title === "Dashboard") {
-                const active = pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={active}
-                      className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
-                    >
-                      <Link href={item.url}>
-                        {active && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                        )}
-                        {item.icon && (
-                          <item.icon className={`${getIconColor()} stroke-2`} />
-                        )}
-                        <span className={getTextColor()}>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }
-              // Everything else (collapsible)
               const active = isGroupActive(item);
+
+              // No children → simple link
+              if (!item.items?.length) {
+                return (
+                  <SidebarMenuItem key={item.title} className="p-0">
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      isActive={active}
+                      className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
+                    >
+                      <Link href={item.url} className={linkCls(active)}>
+                        {item.icon && (
+                          <item.icon className={iconCls(active)} strokeWidth={active ? 2.2 : 1.8} />
+                        )}
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              }
+
+              // Has children → collapsible
               return (
                 <Collapsible
                   key={item.title}
                   asChild
+                  defaultOpen={active}
                   className="group/collapsible"
                 >
-                  <SidebarMenuItem>
+                  <SidebarMenuItem className="p-0">
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        tooltip={item.title}
-                        isActive={active}
-                        className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative overflow-hidden transition-all duration-200`}
-                      >
-                        {active && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                        )}
-                        {item.icon && (
-                          <item.icon className={`${getIconColor()} stroke-2`} />
-                        )}
-                        <span className={getTextColor()}>{item.title}</span>
+                      <button className={`${linkCls(active)} justify-between`}>
+                        <span className="flex items-center gap-3">
+                          {item.icon && (
+                            <item.icon className={iconCls(active)} strokeWidth={active ? 2.2 : 1.8} />
+                          )}
+                          <span className="font-medium">{item.title}</span>
+                        </span>
                         <ChevronRight
-                          className={`ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 ${getIconColor()} stroke-2`}
+                          className={`w-3.5 h-3.5 opacity-50 flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 ${
+                            active ? t.iconActive : t.icon
+                          }`}
                         />
-                      </SidebarMenuButton>
+                      </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items?.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={pathname === subItem.url}
-                              className={`data-[active=true]:text-primary ${getHoverColor()}`}
-                            >
-                              <Link href={subItem.url}>
-                                <span className={getTextColor()}>
-                                  {subItem.title}
-                                </span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
+                      <SidebarMenuSub className="ml-[2.35rem] mr-3 border-l border-slate-200/70 dark:border-gray-700/70 pl-3 py-0.5 my-0.5">
+                        {item.items?.map((sub) => {
+                          const subActive = pathname === sub.url;
+                          return (
+                            <SidebarMenuSubItem key={sub.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={subActive}
+                                className="p-0 h-auto hover:bg-transparent"
+                              >
+                                <Link
+                                  href={sub.url}
+                                  className={`flex items-center px-2 py-1.5 rounded-md text-[12.5px] transition-colors mb-0.5 ${
+                                    subActive ? t.subActive : t.sub
+                                  }`}
+                                >
+                                  {sub.title}
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -434,122 +324,140 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Core Sections (Management) */}
-        <SidebarGroup>
-          <SidebarGroupLabel className={getMutedTextColor()}>
-            Management
-          </SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                tooltip="Customers"
-                isActive={pathname.startsWith("/customers")}
-                className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
-              >
-                <Link href="/customers">
-                  {pathname.startsWith("/customers") && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                  )}
-                  <Users className={`${getIconColor()} stroke-2`} />
-                  <span className={getTextColor()}>Customer Management</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {normalizedRole !== "agent" && (
-              <SidebarMenuItem>
+        {/* ── MANAGEMENT SECTION ── */}
+        <SidebarGroup className="p-0 mt-2">
+          {state !== "collapsed" && (
+            <SidebarGroupLabel
+              className={`px-6 mt-4 mb-1 text-[10px] font-bold uppercase tracking-widest ${t.sectionLbl}`}
+            >
+              Management
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu className="p-0">
+
+              <SidebarMenuItem className="p-0">
                 <SidebarMenuButton
                   asChild
-                  tooltip="Users"
-                  isActive={pathname.startsWith("/users")}
-                  className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
+                  tooltip="Customers"
+                  isActive={pathname.startsWith("/customers")}
+                  className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
                 >
-                  <Link href="/users">
-                    {pathname.startsWith("/users") && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                    )}
-                    <Users className={`${getIconColor()} stroke-2`} />
-                    <span className={getTextColor()}>User Management</span>
+                  <Link
+                    href="/customers"
+                    className={linkCls(pathname.startsWith("/customers"))}
+                  >
+                    <Users
+                      className={iconCls(pathname.startsWith("/customers"))}
+                      strokeWidth={pathname.startsWith("/customers") ? 2.2 : 1.8}
+                    />
+                    <span className="font-medium">Customer Management</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )}
-            {normalizedRole !== "agent" && (
-              <SidebarMenuItem>
+
+              {normalizedRole !== "agent" && (
+                <SidebarMenuItem className="p-0">
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Users"
+                    isActive={pathname.startsWith("/users")}
+                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
+                  >
+                    <Link
+                      href="/users"
+                      className={linkCls(pathname.startsWith("/users"))}
+                    >
+                      <Users
+                        className={iconCls(pathname.startsWith("/users"))}
+                        strokeWidth={pathname.startsWith("/users") ? 2.2 : 1.8}
+                      />
+                      <span className="font-medium">User Management</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {normalizedRole !== "agent" && (
+                <SidebarMenuItem className="p-0">
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Phone Lines"
+                    isActive={pathname.startsWith("/phone-lines")}
+                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
+                  >
+                    <Link
+                      href="/phone-lines"
+                      className={linkCls(pathname.startsWith("/phone-lines"))}
+                    >
+                      <Phone
+                        className={iconCls(pathname.startsWith("/phone-lines"))}
+                        strokeWidth={pathname.startsWith("/phone-lines") ? 2.2 : 1.8}
+                      />
+                      <span className="font-medium">Phone Lines</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              <SidebarMenuItem className="p-0">
                 <SidebarMenuButton
                   asChild
-                  tooltip="Phone Lines"
-                  isActive={pathname.startsWith("/phone-lines")}
-                  className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
+                  tooltip="Profile"
+                  isActive={pathname.startsWith("/profile")}
+                  className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
                 >
-                  <Link href="/phone-lines">
-                    {pathname.startsWith("/phone-lines") && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                    )}
-                    <Phone className={`${getIconColor()} stroke-2`} />
-                    <span className={getTextColor()}>Phone Lines</span>
+                  <Link
+                    href="/profile"
+                    className={linkCls(pathname.startsWith("/profile"))}
+                  >
+                    <UserCircle
+                      className={iconCls(pathname.startsWith("/profile"))}
+                      strokeWidth={pathname.startsWith("/profile") ? 2.2 : 1.8}
+                    />
+                    <span className="font-medium">Profile</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                tooltip="Profile"
-                isActive={pathname.startsWith("/profile")}
-                className={`data-[active=true]:bg-primary/10 data-[active=true]:text-primary ${getHoverColor()} relative`}
-              >
-                <Link href="/profile">
-                  {pathname.startsWith("/profile") && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                  )}
-                  <UserCircle className={`${getIconColor()} stroke-2`} />
-                  <span className={getTextColor()}>Profile</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Secondary (Support) */}
-        <SidebarGroup className="mt-auto">
+        {/* ── SUPPORT ── */}
+        <SidebarGroup className="p-0 mt-auto pb-1">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="p-0">
               {data.navSecondary.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="p-0">
                   <SidebarMenuButton
                     asChild
                     size="sm"
-                    className={getHoverColor()}
+                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
                   >
-                    <Link href={item.url}>
-                      <item.icon className={`${getIconColor()} stroke-2`} />
-                      <span className={getTextColor()}>{item.title}</span>
+                    <Link
+                      href={item.url}
+                      className={`mx-3 px-3 py-2 flex items-center gap-3 rounded-lg text-[13px] transition-colors ${t.support}`}
+                    >
+                      <item.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+                      <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
 
-              {/* Separator - only show when expanded */}
+              {/* Copyright — collapsed-safe */}
               {state === "expanded" && (
-                <>
-                  <SidebarSeparator className={`my-2 ${getSeparatorColor()}`} />
-
-                  {/* Copyright footer - only show when expanded */}
-                  <div className="px-2 py-3">
-                    <footer
-                      className={`text-xs text-center space-y-1 ${getMutedTextColor()}`}
-                    >
-                      <div>© {new Date().getFullYear()} Mindware Labs.</div>
-                      <div>All Rights Reserved</div>
-                    </footer>
-                  </div>
-                </>
+                <div className={`mx-3 px-3 pt-1 pb-2 text-[11px] text-center ${t.copyright}`}>
+                  © {new Date().getFullYear()} Mindware Labs. All rights reserved.
+                </div>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
+
 
       <SidebarRail />
     </Sidebar>

@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -19,35 +16,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  ArrowLeft,
+  X,
   Phone,
-  User,
-  Calendar,
-  Loader2,
-  Ticket,
-  Activity,
-  AlertCircle,
-  Megaphone,
-  MapPin,
-  Briefcase,
-  ChevronsUpDown,
-  Check,
-  StickyNote,
   PhoneOutgoing,
-  Upload,
+  Loader2,
+  StickyNote,
+  Activity,
+  CalendarIcon,
+  CheckCircle2,
+  Pencil,
+  Link2,
+  Ticket as TicketIcon,
   Paperclip,
   FileIcon,
-  X,
+  Upload,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   SupportTicketStatus,
@@ -61,44 +49,157 @@ import {
 } from "../../types";
 import type { CustomerTicketGroup } from "../tickets/InlineTicketTimeline";
 import { useAircall } from "@/components/providers/AircallProvider";
+import { format } from "date-fns";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const formatLabel = (v: string) =>
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const fmtLabel = (v: string) =>
   v
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const formatEnumLabel = (value: string) => {
+const fmtEnumLabel = (value: string) => {
   if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
-  return formatLabel(value);
+  return fmtLabel(value);
 };
 
-const priorityColors: Record<string, string> = {
-  LOW: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  MEDIUM:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  HIGH: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  EMERGENCY: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return format(d, "MMM d, yyyy");
+  } catch {
+    return "—";
+  }
 };
 
-const statusColors: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  IN_PROGRESS:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-  PENDING_FOLLOWUP:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-  OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  RESOLVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+const fmtRelative = (iso?: string | null): string => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0)
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diffDays < 7)
+    return d.toLocaleDateString([], {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  return d.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+// ── Pill maps ─────────────────────────────────────────────────────────────────
 
-// ── Ticket History Item ────────────────────────────────────────────────────────
+const STATUS_PILL: Record<
+  string,
+  { dot: string; bg: string; fg: string; label: string }
+> = {
+  OPEN: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Open" },
+  IN_PROGRESS: {
+    dot: "#2563eb",
+    bg: "#eff6ff",
+    fg: "#1d4ed8",
+    label: "In Progress",
+  },
+  PENDING_FOLLOWUP: {
+    dot: "#d97706",
+    bg: "#fef3c7",
+    fg: "#b45309",
+    label: "Follow-up",
+  },
+  OVERDUE: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
+  RESOLVED: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
+  CLOSED: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
+};
 
-function TicketHistoryItem({
+const PRIORITY_PILL: Record<
+  string,
+  { dot: string; bg: string; fg: string; label: string }
+> = {
+  LOW: { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569", label: "Low" },
+  MEDIUM: { dot: "#f59e0b", bg: "#fef3c7", fg: "#b45309", label: "Medium" },
+  HIGH: { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c", label: "High" },
+  EMERGENCY: {
+    dot: "#dc2626",
+    bg: "#fee2e2",
+    fg: "#b91c1c",
+    label: "Emergency",
+  },
+};
+
+// ── Inspector helpers ─────────────────────────────────────────────────────────
+
+function InspLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
+      {children}
+    </p>
+  );
+}
+
+function InspectorSelect({
+  value,
+  onChange,
+  placeholder,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Select
+      value={value || "none"}
+      onValueChange={(v) => onChange(v === "none" ? "" : v)}
+    >
+      <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
+  );
+}
+
+// ── Mock timeline entries ─────────────────────────────────────────────────────
+
+const MOCK_TIMELINE = [
+  {
+    id: 1,
+    icon: TicketIcon,
+    color: "#008f68",
+    title: "Ticket created",
+    time: "Auto-generated",
+  },
+  {
+    id: 2,
+    icon: StickyNote,
+    color: "#c47a00",
+    title: "Note added",
+    time: "by Agent",
+  },
+  {
+    id: 3,
+    icon: Activity,
+    color: "#7c3aed",
+    title: "Status updated",
+    time: "via form",
+  },
+];
+
+// ── Ticket Card (COL1) ────────────────────────────────────────────────────────
+
+function TicketCard({
   ticket,
   isActive,
   onClick,
@@ -108,96 +209,59 @@ function TicketHistoryItem({
   onClick: () => void;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
-
   useEffect(() => {
-    if (isActive) {
+    if (isActive)
       ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
   }, [isActive]);
 
-  const dateLabel = useMemo(() => {
-    const d = new Date(ticket.createdAt || "");
-    if (isNaN(d.getTime())) return "-";
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) {
-      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    }
-    if (diffDays < 7) {
-      return d.toLocaleDateString([], {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
-    }
-    return d.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }, [ticket.createdAt]);
+  const dateLabel = fmtRelative(ticket.createdAt);
+  const sp = STATUS_PILL[ticket.status || ""] || STATUS_PILL.CLOSED;
+  const pp = PRIORITY_PILL[ticket.priority || ""] || PRIORITY_PILL.LOW;
 
   return (
     <button
       ref={ref}
+      type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-left px-3 py-3 border-b border-border/40 hover:bg-muted/60 transition-colors focus:outline-none",
+        "w-full text-left px-3 py-3 border-b border-slate-100 transition-all last:border-0",
         isActive
-          ? "bg-primary/8 border-l-2 border-l-primary pl-2.5"
-          : "border-l-2 border-l-transparent",
+          ? "bg-white border-l-[4px] border-l-[#008f68] shadow-sm pl-2.5"
+          : "border-l-[4px] border-l-transparent hover:bg-slate-100",
       )}
     >
-      <div className="flex items-start gap-2.5">
-        <div
-          className={cn(
-            "mt-0.5 h-6 w-6 rounded-full flex items-center justify-center shrink-0",
-            ticket.status === "OPEN" || ticket.status === "IN_PROGRESS"
-              ? "bg-blue-500/10"
-              : ticket.status === "OVERDUE"
-                ? "bg-rose-500/10"
-                : "bg-muted",
-          )}
+      <div className="flex items-center justify-between gap-1 mb-1">
+        <span className="text-[11px] font-bold text-slate-700 font-mono">
+          #{ticket.id}
+        </span>
+        <span className="text-[11px] text-slate-400">{dateLabel}</span>
+      </div>
+      {ticket.ticketType && (
+        <p className="text-[11px] text-slate-500 mb-1.5 truncate">
+          {fmtLabel(ticket.ticketType)}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-1">
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+          style={{ color: sp.fg, background: sp.bg }}
         >
-          <Ticket className="h-3 w-3" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-semibold truncate">#{ticket.id}</span>
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              {dateLabel}
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-            {ticket.ticketType ? formatLabel(ticket.ticketType) : "Ticket"}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-            {ticket.status && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[9px] font-medium px-1.5 py-0 h-4",
-                  statusColors[ticket.status] || "",
-                )}
-              >
-                {formatLabel(ticket.status)}
-              </Badge>
-            )}
-            {ticket.priority && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[9px] font-medium px-1.5 py-0 h-4",
-                  priorityColors[ticket.priority] || "",
-                )}
-              >
-                {formatLabel(ticket.priority)}
-              </Badge>
-            )}
-          </div>
-        </div>
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ background: sp.dot }}
+          />
+          {sp.label}
+        </span>
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+          style={{ color: pp.fg, background: pp.bg }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ background: pp.dot }}
+          />
+          {pp.label}
+        </span>
       </div>
     </button>
   );
@@ -246,7 +310,20 @@ export function CustomerTicketDrawer({
   campaigns,
   phoneLines,
 }: CustomerTicketDrawerProps) {
-  // Fetch complete ticket history for the customer
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+  } = useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const dialPhone = selectedTicket?.customer?.phone || group?.customerPhone || "";
+
+  // Fetch full ticket history
   const historyUrl = useMemo(() => {
     if (!open || !group?.customerId) return null;
     const params = new URLSearchParams();
@@ -287,42 +364,30 @@ export function CustomerTicketDrawer({
     group?.customerPhone ?? selectedTicket?.customer?.phone ?? "";
   const ticketCount = allTickets.length || group?.tickets.length || 0;
 
-  // ---- Form states ----
-  const [customerOpen, setCustomerOpen] = useState(false);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const {
-    dial,
-    status: aircallStatus,
-    isLoggedIn: aircallLoggedIn,
-  } = useAircall();
-  const canDial = aircallStatus === "ready" && aircallLoggedIn;
-  const dialPhone = selectedTicket?.customer?.phone || customerPhone || "";
-
-  // ---- Campaign logic ----
+  // Campaign logic
   const selectedCampaign = useMemo(() => {
     if (!editFormData.campaignId) return null;
     return campaigns.find(
       (c: any) => c.id.toString() === editFormData.campaignId,
     );
   }, [campaigns, editFormData.campaignId]);
-
   const selectedCampaignType = selectedCampaign?.tipo?.toString().toUpperCase();
-  const isOnboardingCampaign =
-    selectedCampaignType === ManagementType.ONBOARDING;
-  const isArCampaign = selectedCampaignType === ManagementType.AR;
-  const campaignOptionValues = isOnboardingCampaign
+  const isOnboarding = selectedCampaignType === ManagementType.ONBOARDING;
+  const isAr = selectedCampaignType === ManagementType.AR;
+  const campaignOptionValues = isOnboarding
     ? Object.values(OnboardingOption)
-    : isArCampaign
+    : isAr
       ? Object.values(ArOption)
       : [];
 
-  // ---- Customer search ----
+  const followUpDateDisplay = editFormData.followUpDueDate
+    ? fmtDate(editFormData.followUpDueDate)
+    : null;
+
+  // Customer search
   const normalizePhone = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
   const stripUsCode = (d: string) =>
     d.length > 10 && d.startsWith("1") ? d.slice(1) : d;
-
   const filteredCustomers = useMemo(() => {
     if (!customerSearch.trim()) return customers;
     const s = customerSearch.toLowerCase();
@@ -347,7 +412,7 @@ export function CustomerTicketDrawer({
     });
   }, [customers, customerSearch]);
 
-  // ---- File handling ----
+  // File handling
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -357,45 +422,53 @@ export function CustomerTicketDrawer({
   const removePendingFile = (i: number) =>
     onFilesChange(pendingFiles.filter((_, idx) => idx !== i));
 
+  // Metadata from selected ticket
+  const sp = STATUS_PILL[selectedTicket?.status || ""] || null;
+  const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
+
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-[85vw]! max-w-[85vw]! sm:max-w-[85vw]! p-0 flex flex-col [&>button.absolute]:hidden"
+        className="w-[55vw]! max-w-[55vw]! sm:max-w-[55vw]! p-0 flex flex-col bg-slate-50 [&>button.absolute]:hidden overflow-hidden"
       >
         <SheetTitle className="sr-only">
-          {customerName ? `Ticket History — ${customerName}` : "Ticket History"}
+          {customerName
+            ? `Ticket Command Center — ${customerName}`
+            : "Ticket Command Center"}
         </SheetTitle>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <SheetHeader className="px-4 py-3 border-b bg-muted/30 flex-row items-center gap-3 shrink-0 space-y-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={onClose}
+        {/* ── Top Bar ── */}
+        <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={{
+              background: `hsl(${(customerName?.charCodeAt(0) ?? 200) % 360} 50% 46%)`,
+            }}
           >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-
-          <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 border border-primary/20">
-            <User className="h-4 w-4 text-primary" />
+            {customerName ? customerName.substring(0, 2).toUpperCase() : "?"}
           </div>
-
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-sm leading-tight truncate">
-              {customerName}
-            </h2>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[13px] font-bold text-slate-900 leading-tight truncate">
+                {customerName}
+              </p>
+              <button
+                type="button"
+                title="Edit contact"
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Phone className="h-3 w-3" />
+              <span className="text-xs text-slate-500 font-mono">
                 {customerPhone || "—"}
               </span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Ticket className="h-3 w-3" />
+              <span className="text-slate-300">·</span>
+              <span className="text-xs text-slate-500 flex items-center gap-1">
                 {isLoadingHistory ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
                   <>
                     {ticketCount} ticket{ticketCount !== 1 ? "s" : ""}
@@ -404,33 +477,55 @@ export function CustomerTicketDrawer({
               </span>
             </div>
           </div>
-        </SheetHeader>
+          <button
+            type="button"
+            onClick={() => {
+              if (dialPhone && canDial) dial(dialPhone, selectedTicket?.id);
+            }}
+            disabled={!dialPhone || !canDial}
+            className="flex items-center gap-1.5 h-8 px-3.5 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
+            style={{ background: "#008f68" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "#007a5a")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "#008f68")
+            }
+          >
+            <PhoneOutgoing className="w-3.5 h-3.5" />
+            Call
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        {/* ── Body ───────────────────────────────────────────────────────── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* LEFT: Ticket history sidebar */}
-          <div className="w-65 shrink-0 flex flex-col border-r bg-muted/10 overflow-hidden">
-            <div className="px-3 py-2 border-b bg-background/50">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Calendar className="h-3 w-3" />
+        {/* ── 3-Column Body ── */}
+        <div className="flex-1 flex flex-row overflow-hidden min-h-0">
+          {/* ═══ COL 1 (18%): Ticket Feed ═══ */}
+          <div className="w-[18%] shrink-0 flex flex-col border-r border-slate-200 bg-slate-50 overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-slate-200 shrink-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                 Ticket History
               </p>
             </div>
-
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
               {isLoadingHistory && allTickets.length === 0 ? (
-                <div className="flex items-center justify-center py-10 gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Loading...</span>
+                <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 </div>
               ) : allTickets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
-                  <Ticket className="h-5 w-5 opacity-40" />
-                  <span className="text-sm">No tickets found</span>
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
+                  <TicketIcon className="w-5 h-5 opacity-40" />
+                  <span className="text-xs">No tickets</span>
                 </div>
               ) : (
                 allTickets.map((t) => (
-                  <TicketHistoryItem
+                  <TicketCard
                     key={t.id}
                     ticket={t}
                     isActive={t.id === activeTicketId}
@@ -438,707 +533,671 @@ export function CustomerTicketDrawer({
                   />
                 ))
               )}
-            </ScrollArea>
+            </div>
           </div>
 
-          {/* RIGHT: Edit form for selected ticket */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
-            {selectedTicket ? (
-              <>
-                {/* Ticket identifier bar */}
-                <div className="px-6 py-3 border-b bg-muted/20 flex items-center gap-3 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Ticket className="h-4 w-4" />
-                    <span className="text-sm font-semibold">
-                      Ticket #{selectedTicket.id}
-                    </span>
-                  </div>
-                  {selectedTicket.status && (
-                    <>
-                      <span className="text-muted-foreground/40">·</span>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] font-medium",
-                          statusColors[selectedTicket.status] || "",
-                        )}
-                      >
-                        {formatLabel(selectedTicket.status)}
-                      </Badge>
-                    </>
-                  )}
-                  {selectedTicket.priority && (
-                    <>
-                      <span className="text-muted-foreground/40">·</span>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] font-medium",
-                          priorityColors[selectedTicket.priority] || "",
-                        )}
-                      >
-                        {formatLabel(selectedTicket.priority)}
-                      </Badge>
-                    </>
-                  )}
-                  {selectedTicket.ticketType && (
-                    <>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatLabel(selectedTicket.ticketType)}
+          {/* ═══ COL 2 (flex): Hub ═══ */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+            {!selectedTicket ? (
+              <div className="flex-1 flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <TicketIcon className="w-8 h-8 opacity-30 mx-auto mb-2" />
+                  <p className="text-sm">Select a ticket to inspect</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                {/* ── Metadata Strip ── */}
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex justify-between items-center gap-2">
+                  {[
+                    { label: "ID", value: `#${selectedTicket.id}` },
+                    {
+                      label: "Created",
+                      value: fmtDate(selectedTicket.createdAt),
+                    },
+                    {
+                      label: "Status",
+                      value: sp ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ color: sp.fg, background: sp.bg }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: sp.dot }}
+                          />
+                          {sp.label}
+                        </span>
+                      ) : (
+                        "—"
+                      ),
+                    },
+                    {
+                      label: "Priority",
+                      value: pp ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ color: pp.fg, background: pp.bg }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: pp.dot }}
+                          />
+                          {pp.label}
+                        </span>
+                      ) : (
+                        "—"
+                      ),
+                    },
+                    {
+                      label: "Type",
+                      value: selectedTicket.ticketType
+                        ? fmtLabel(selectedTicket.ticketType)
+                        : "—",
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-col gap-0.5 ${i > 0 ? "border-l border-slate-200 pl-3" : ""}`}
+                    >
+                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                        {item.label}
                       </span>
-                    </>
-                  )}
+                      {typeof item.value === "string" ? (
+                        <span className="text-[12px] font-bold text-slate-800 font-mono">
+                          {item.value}
+                        </span>
+                      ) : (
+                        item.value
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Customer Notes Popover */}
+                {/* ── Issue Detail ── */}
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    Issue Detail
+                  </p>
+                  <div className="space-y-1.5">
+                    <textarea
+                      rows={4}
+                      value={editFormData.issueDetail || ""}
+                      onChange={(e) =>
+                        setEditFormData((f) => ({
+                          ...f,
+                          issueDetail: e.target.value,
+                        }))
+                      }
+                      placeholder="Describe the issue…"
+                      className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed shadow-sm"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={onUpdate}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        style={{ background: "#008f68" }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "#007a5a")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "#008f68")
+                        }
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3 h-3" />
+                        )}
+                        {isUpdating ? "Saving…" : "Save Note"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Activity Timeline ── */}
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                    Activity Timeline
+                  </p>
+                  <div className="relative space-y-0">
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-100 -z-0" />
+                    {MOCK_TIMELINE.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={item.id} className="flex gap-2.5 relative">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 bg-white border border-slate-200 shadow-sm mt-1">
+                            <Icon
+                              className="w-3 h-3"
+                              style={{ color: item.color }}
+                            />
+                          </div>
+                          <div className="pb-2 flex-1 min-w-0">
+                            <div className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[12px] font-semibold text-slate-800">
+                                  {item.title}
+                                </span>
+                                <span className="text-[11px] text-slate-400 shrink-0">
+                                  {item.time}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Attachments ── */}
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    Attachments
+                  </p>
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 text-[11px] font-semibold hover:bg-slate-50 transition-colors"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Add Files
+                    </button>
+
+                    {selectedTicket.attachments &&
+                      selectedTicket.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTicket.attachments.map(
+                            (url: string, i: number) => (
+                              <a
+                                key={i}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors"
+                              >
+                                <Paperclip className="w-3 h-3" />
+                                {url.split("/").pop()}
+                              </a>
+                            ),
+                          )}
+                        </div>
+                      )}
+
+                    {pendingFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {pendingFiles.map((file, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-1 text-[11px] bg-white border border-slate-200 px-2 py-1 rounded-lg"
+                          >
+                            <FileIcon className="w-3 h-3 text-slate-400" />
+                            <span className="max-w-[120px] truncate text-slate-700">
+                              {file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removePendingFile(i)}
+                              className="ml-1 text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Customer Notes banner ── */}
                 {((selectedTicket.customer?.notes &&
                   selectedTicket.customer.notes.length > 0) ||
                   selectedTicket.customer?.note) && (
-                  <div className="px-6 py-3 border-b shrink-0">
-                    <Popover>
+                  <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <StickyNote className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">
+                        Customer Notes
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                        {selectedTicket.customer?.notes?.[0]?.content ||
+                          selectedTicket.customer?.note}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Timestamps grid ── */}
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                    Timestamps
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Created", value: fmtDate(selectedTicket.createdAt) },
+                      { label: "Updated", value: fmtDate((selectedTicket as any).updatedAt) },
+                      { label: "Follow-up", value: fmtDate(editFormData.followUpDueDate) },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
+                          {item.label}
+                        </p>
+                        <p className="text-[12px] font-semibold text-slate-700 font-mono">
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ═══ COL 3 (22%): Entity Inspector ═══ */}
+          <div className="w-[22%] shrink-0 flex flex-col border-l border-slate-200 bg-slate-50/50 overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-slate-200 shrink-0 bg-white">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                Entity Inspector
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-2.5 pb-3 pt-2.5 space-y-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+              {/* ── CARD: CLASSIFICATION ── */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Classification
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <InspLabel>Status</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.status || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({
+                          ...f,
+                          status: v as SupportTicketStatus,
+                        }))
+                      }
+                      placeholder="Status"
+                    >
+                      <SelectItem value="none">—</SelectItem>
+                      {Object.values(SupportTicketStatus).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {fmtLabel(s)}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                  <div>
+                    <InspLabel>Priority</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.priority || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({
+                          ...f,
+                          priority: v as SupportTicketPriority,
+                        }))
+                      }
+                      placeholder="Priority"
+                    >
+                      <SelectItem value="none">—</SelectItem>
+                      {Object.values(SupportTicketPriority).map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {fmtLabel(p)}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                  <div>
+                    <InspLabel>Type</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.ticketType || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({
+                          ...f,
+                          ticketType: v,
+                        }))
+                      }
+                      placeholder="Type"
+                    >
+                      <SelectItem value="none">None</SelectItem>
+                      {Object.values(SupportTicketType).map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {fmtLabel(t)}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                  <div>
+                    <InspLabel>Yard</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.yardId || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({ ...f, yardId: v }))
+                      }
+                      placeholder="Yard"
+                    >
+                      <SelectItem value="none">None</SelectItem>
+                      {yards.map((y: any) => (
+                        <SelectItem key={y.id} value={y.id.toString()}>
+                          {y.name}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                  <div>
+                    <InspLabel>Campaign</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.campaignId || ""}
+                      onChange={(v) => {
+                        const camp = campaigns.find(
+                          (c: any) => c.id.toString() === v,
+                        );
+                        setEditFormData((f) => ({
+                          ...f,
+                          campaignId: v,
+                          ...(camp?.yardaId
+                            ? { yardId: camp.yardaId.toString() }
+                            : {}),
+                        }));
+                      }}
+                      placeholder="Campaign"
+                    >
+                      <SelectItem value="none">None</SelectItem>
+                      {campaigns.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                  {campaignOptionValues.length > 0 && (
+                    <div>
+                      <InspLabel>Campaign Option</InspLabel>
+                      <InspectorSelect
+                        value={editFormData.campaignOption || ""}
+                        onChange={(v) =>
+                          setEditFormData((f) => ({ ...f, campaignOption: v }))
+                        }
+                        placeholder="Option"
+                      >
+                        <SelectItem value="none">None</SelectItem>
+                        {campaignOptionValues.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {fmtEnumLabel(v)}
+                          </SelectItem>
+                        ))}
+                      </InspectorSelect>
+                    </div>
+                  )}
+                  <div>
+                    <InspLabel>Agent</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.agentId || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({ ...f, agentId: v }))
+                      }
+                      placeholder="Unassigned"
+                    >
+                      <SelectItem value="none">Unassigned</SelectItem>
+                      {agents.map((a: any) => (
+                        <SelectItem key={a.id} value={a.id.toString()}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── CARD: FOLLOW-UP ── */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Follow-up
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <InspLabel>Due Date</InspLabel>
+                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
-                        <button className="w-full flex items-center gap-3 p-3.5 rounded-lg border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/15 transition-colors cursor-pointer text-left shadow-sm">
-                          <div className="h-9 w-9 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
-                            <StickyNote className="h-4 w-4 text-amber-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                              Customer Notes
-                            </p>
-                            <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">
-                              {selectedTicket.customer?.notes &&
-                              selectedTicket.customer.notes.length > 0
-                                ? `${selectedTicket.customer.notes.length} note${selectedTicket.customer.notes.length !== 1 ? "s" : ""}`
-                                : "1 note"}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] font-mono bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                        <button
+                          type="button"
+                          className="w-full h-7 flex items-center gap-2 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 rounded-lg transition-colors text-left"
+                        >
+                          <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span
+                            className={
+                              followUpDateDisplay
+                                ? "text-slate-800 font-semibold"
+                                : "text-slate-400 font-normal"
+                            }
                           >
-                            {selectedTicket.customer?.notes &&
-                            selectedTicket.customer.notes.length > 0
-                              ? selectedTicket.customer.notes.length
-                              : 1}
-                          </Badge>
+                            {followUpDateDisplay || "Pick date…"}
+                          </span>
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" className="w-80 p-0">
-                        <div className="px-4 py-3 border-b border-border/50">
-                          <h4 className="text-sm font-semibold flex items-center gap-2">
-                            <StickyNote className="h-4 w-4 text-amber-500" />
-                            Notes
-                          </h4>
-                        </div>
-                        <div className="max-h-70 overflow-y-auto p-2 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/50">
-                          {selectedTicket.customer?.notes &&
-                          selectedTicket.customer.notes.length > 0 ? (
-                            selectedTicket.customer.notes.map((n: any) => (
-                              <div
-                                key={n.id}
-                                className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm"
-                              >
-                                <p className="text-foreground/90 whitespace-pre-wrap wrap-break-word leading-relaxed">
-                                  {n.content}
-                                </p>
-                                {n.createdAt && (
-                                  <div className="mt-2 flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ml-auto">
-                                      <Calendar className="h-3 w-3 opacity-70" />
-                                      {new Date(n.createdAt).toLocaleDateString(
-                                        undefined,
-                                        {
-                                          day: "2-digit",
-                                          month: "short",
-                                          year: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        },
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                      <PopoverContent
+                        className="w-auto p-0 shadow-xl border-slate-200"
+                        align="end"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={
+                            editFormData.followUpDueDate
+                              ? new Date(editFormData.followUpDueDate)
+                              : undefined
+                          }
+                          onSelect={(date) => {
+                            setEditFormData((f) => ({
+                              ...f,
+                              followUpDueDate: date ? date.toISOString() : "",
+                            }));
+                            setCalendarOpen(false);
+                          }}
+                          disabled={{ before: new Date() }}
+                          initialFocus
+                        />
+                        {editFormData.followUpDueDate && (
+                          <div className="px-3 pb-3 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditFormData((f) => ({
+                                  ...f,
+                                  followUpDueDate: "",
+                                }));
+                                setCalendarOpen(false);
+                              }}
+                              className="text-xs text-red-500 hover:text-red-600"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <InspLabel>Assignee</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.followUpAssignedToId || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({
+                          ...f,
+                          followUpAssignedToId: v,
+                        }))
+                      }
+                      placeholder="Assign…"
+                    >
+                      <SelectItem value="none">Not assigned</SelectItem>
+                      {agents.map((a: any) => (
+                        <SelectItem key={a.id} value={a.id.toString()}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── CARD: CUSTOMER ── */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Customer
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <InspLabel>
+                      Name <span className="text-red-400 normal-case">*</span>
+                    </InspLabel>
+                    <Popover
+                      open={customerOpen}
+                      onOpenChange={(isOpen) => {
+                        setCustomerOpen(isOpen);
+                        if (!isOpen) setCustomerSearch("");
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="w-full h-7 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 rounded-lg transition-colors text-left"
+                        >
+                          <span className="truncate text-slate-800 font-medium">
+                            {editFormData.customerId
+                              ? customers.find(
+                                  (c: any) =>
+                                    c.id.toString() === editFormData.customerId,
+                                )?.name || editFormData.customerId
+                              : "Select customer…"}
+                          </span>
+                          <ChevronsUpDown className="w-3 h-3 text-slate-400 shrink-0" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-0" align="end">
+                        <div className="flex flex-col">
+                          <div className="px-3 py-2 border-b">
+                            <Input
+                              placeholder="Search customer…"
+                              value={customerSearch}
+                              onChange={(e) =>
+                                setCustomerSearch(e.target.value)
+                              }
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto p-1">
+                            {filteredCustomers.length === 0 ? (
+                              <div className="py-4 text-center text-xs text-slate-400">
+                                No customer found.
                               </div>
-                            ))
-                          ) : (
-                            <div className="bg-muted/30 border border-border/50 rounded-lg p-3 text-sm">
-                              <p className="text-foreground/90 whitespace-pre-wrap wrap-break-word leading-relaxed">
-                                {selectedTicket.customer!.note}
-                              </p>
-                            </div>
-                          )}
+                            ) : (
+                              filteredCustomers.map((c: any) => (
+                                <div
+                                  key={c.id}
+                                  className={cn(
+                                    "flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-slate-100",
+                                    editFormData.customerId === c.id.toString() &&
+                                      "bg-slate-100",
+                                  )}
+                                  onClick={() => {
+                                    setEditFormData((f) => ({
+                                      ...f,
+                                      customerId: c.id.toString(),
+                                    }));
+                                    setCustomerSearch("");
+                                    setCustomerOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "w-3.5 h-3.5 shrink-0",
+                                      editFormData.customerId === c.id.toString()
+                                        ? "opacity-100 text-[#008f68]"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium truncate">
+                                      {c.name}
+                                    </p>
+                                    {c.phone && (
+                                      <p className="text-slate-400 truncate">
+                                        {c.phone}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
                         </div>
                       </PopoverContent>
                     </Popover>
                   </div>
-                )}
-
-                {/* Scrollable edit form */}
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <div className="p-6 space-y-8">
-                    {/* SECTION 1: CAMPAIGN & LOCATION */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Megaphone className="w-4 h-4" /> Campaign & Location
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Megaphone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Campaign
-                          </Label>
-                          <Select
-                            value={editFormData.campaignId || "none"}
-                            onValueChange={(v) => {
-                              const id = v === "none" ? "" : v;
-                              const camp = campaigns.find(
-                                (c: any) => c.id.toString() === id,
-                              );
-                              setEditFormData((f) => ({
-                                ...f,
-                                campaignId: id,
-                                ...(camp?.yardaId
-                                  ? { yardId: camp.yardaId.toString() }
-                                  : {}),
-                              }));
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select campaign..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Campaign</SelectItem>
-                              {campaigns.map((c: any) => (
-                                <SelectItem key={c.id} value={c.id.toString()}>
-                                  {c.nombre}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Yard
-                          </Label>
-                          <Select
-                            value={editFormData.yardId || "none"}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                yardId: v === "none" ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select yard..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Yard</SelectItem>
-                              {yards.map((y: any) => (
-                                <SelectItem key={y.id} value={y.id.toString()}>
-                                  {y.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {campaignOptionValues.length > 0 && (
-                          <div className="md:col-span-2 space-y-2 animate-in fade-in slide-in-from-left-2">
-                            <Label className="text-xs font-semibold">
-                              Campaign Option
-                            </Label>
-                            <Select
-                              value={editFormData.campaignOption || "none"}
-                              onValueChange={(v) =>
-                                setEditFormData((f) => ({
-                                  ...f,
-                                  campaignOption: v === "none" ? "" : v,
-                                }))
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select option" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No option</SelectItem>
-                                {campaignOptionValues.map((v) => (
-                                  <SelectItem key={v} value={v}>
-                                    {formatEnumLabel(v)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* SECTION 2: CUSTOMER INFORMATION */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <User className="w-4 h-4" /> Customer Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold">
-                            Customer Name{" "}
-                            <span className="text-red-500">*</span>
-                          </Label>
-                          <Popover
-                            open={customerOpen}
-                            onOpenChange={(isOpen) => {
-                              setCustomerOpen(isOpen);
-                              if (!isOpen) setCustomerSearch("");
-                            }}
-                          >
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={customerOpen}
-                                className="w-full justify-between"
-                              >
-                                {editFormData.customerId
-                                  ? customers.find(
-                                      (c: any) =>
-                                        c.id.toString() ===
-                                        editFormData.customerId,
-                                    )?.name || editFormData.customerId
-                                  : "Select customer..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-full p-0"
-                              align="start"
-                            >
-                              <div className="flex flex-col">
-                                <div className="px-3 py-2 border-b">
-                                  <Input
-                                    placeholder="Search customer..."
-                                    value={customerSearch}
-                                    onChange={(e) =>
-                                      setCustomerSearch(e.target.value)
-                                    }
-                                    className="h-9"
-                                  />
-                                </div>
-                                <ScrollArea className="h-75">
-                                  <div className="p-1">
-                                    {filteredCustomers.length === 0 ? (
-                                      <div className="py-6 text-center text-sm text-muted-foreground">
-                                        No customer found.
-                                      </div>
-                                    ) : (
-                                      filteredCustomers.map((c: any) => (
-                                        <div
-                                          key={c.id}
-                                          className={cn(
-                                            "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                                            editFormData.customerId ===
-                                              c.id.toString() && "bg-accent",
-                                          )}
-                                          onClick={() => {
-                                            setEditFormData((f) => ({
-                                              ...f,
-                                              customerId: c.id.toString(),
-                                            }));
-                                            setCustomerSearch("");
-                                            setCustomerOpen(false);
-                                          }}
-                                        >
-                                          <Check
-                                            className={cn(
-                                              "mr-2 h-4 w-4",
-                                              editFormData.customerId ===
-                                                c.id.toString()
-                                                ? "opacity-100"
-                                                : "opacity-0",
-                                            )}
-                                          />
-                                          <div className="flex flex-col flex-1">
-                                            <span>{c.name}</span>
-                                            {c.phone && (
-                                              <span className="text-xs text-muted-foreground">
-                                                {c.phone}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                </ScrollArea>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Phone
-                          </Label>
-                          <Input
-                            value={
-                              customers.find(
-                                (c: any) =>
-                                  c.id.toString() === editFormData.customerId,
-                              )?.phone || ""
-                            }
-                            readOnly
-                            placeholder="Auto-filled"
-                            className="bg-muted/40 border-dashed text-muted-foreground focus-visible:ring-0 cursor-not-allowed"
-                            tabIndex={-1}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Assigned Agent
-                          </Label>
-                          <Select
-                            value={editFormData.agentId || "none"}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                agentId: v === "none" ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Unassigned" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Unassigned</SelectItem>
-                              {agents.map((a: any) => (
-                                <SelectItem key={a.id} value={a.id.toString()}>
-                                  {a.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Phone Line
-                          </Label>
-                          <Select
-                            value={editFormData.phoneLineId || "none"}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                phoneLineId: v === "none" ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select phone line" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              {phoneLines.map((pl) => (
-                                <SelectItem
-                                  key={pl.id}
-                                  value={pl.id.toString()}
-                                >
-                                  {pl.label
-                                    ? `${pl.label} (${pl.phoneNumber})`
-                                    : pl.phoneNumber}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* SECTION 3: TICKET DETAILS */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Activity className="w-4 h-4" /> Ticket Details
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Activity className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Status
-                          </Label>
-                          <Select
-                            value={editFormData.status}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                status: v as SupportTicketStatus,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.values(SupportTicketStatus).map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {formatLabel(s)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Priority
-                          </Label>
-                          <Select
-                            value={editFormData.priority}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                priority: v as SupportTicketPriority,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.values(SupportTicketPriority).map((p) => (
-                                <SelectItem key={p} value={p}>
-                                  {formatLabel(p)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold">
-                            Ticket Type
-                          </Label>
-                          <Select
-                            value={editFormData.ticketType || "none"}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                ticketType: v === "none" ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              {Object.values(SupportTicketType).map((t) => (
-                                <SelectItem key={t} value={t}>
-                                  {formatLabel(t)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* SECTION 4: DETAILS & FOLLOW-UP */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" /> Details & Follow-up
-                      </h3>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold">
-                          Issue Detail
-                        </Label>
-                        <Textarea
-                          placeholder="Describe the issue..."
-                          value={editFormData.issueDetail}
-                          onChange={(e) =>
-                            setEditFormData((f) => ({
-                              ...f,
-                              issueDetail: e.target.value,
-                            }))
-                          }
-                          className="min-h-30 resize-y"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Follow-up Due
-                          </Label>
-                          <Input
-                            type="datetime-local"
-                            value={editFormData.followUpDueDate}
-                            onChange={(e) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpDueDate: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                            Follow-up Assigned To
-                          </Label>
-                          <Select
-                            value={editFormData.followUpAssignedToId || "none"}
-                            onValueChange={(v) =>
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpAssignedToId: v === "none" ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select agent" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Not assigned</SelectItem>
-                              {agents.map((a: any) => (
-                                <SelectItem key={a.id} value={a.id.toString()}>
-                                  {a.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {/* Attachments */}
-                      <div className="space-y-2 pt-2">
-                        <Label className="text-xs font-semibold flex items-center gap-1.5">
-                          <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-                          Attachments
-                        </Label>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          multiple
-                          className="hidden"
-                          onChange={handleFileSelect}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-fit"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Add Files
-                        </Button>
-
-                        {selectedTicket.attachments &&
-                          selectedTicket.attachments.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {selectedTicket.attachments.map(
-                                (url: string, i: number) => (
-                                  <a
-                                    key={i}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded"
-                                  >
-                                    <Paperclip className="h-3 w-3" />
-                                    {url.split("/").pop()}
-                                  </a>
-                                ),
-                              )}
-                            </div>
-                          )}
-
-                        {pendingFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {pendingFiles.map((file, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded"
-                              >
-                                <FileIcon className="h-3 w-3" />
-                                <span className="max-w-37.5 truncate">
-                                  {file.name}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => removePendingFile(i)}
-                                  className="ml-1 hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                  <div>
+                    <InspLabel>Phone</InspLabel>
+                    <div className="h-7 flex items-center px-2.5 text-xs bg-slate-50 rounded-lg text-slate-500 font-mono">
+                      {customers.find(
+                        (c: any) =>
+                          c.id.toString() === editFormData.customerId,
+                      )?.phone || "Auto-filled"}
                     </div>
                   </div>
+                  <div>
+                    <InspLabel>Phone Line</InspLabel>
+                    <InspectorSelect
+                      value={editFormData.phoneLineId || ""}
+                      onChange={(v) =>
+                        setEditFormData((f) => ({ ...f, phoneLineId: v }))
+                      }
+                      placeholder="Select line"
+                    >
+                      <SelectItem value="none">None</SelectItem>
+                      {phoneLines.map((pl) => (
+                        <SelectItem key={pl.id} value={pl.id.toString()}>
+                          {pl.label
+                            ? `${pl.label} (${pl.phoneNumber})`
+                            : pl.phoneNumber}
+                        </SelectItem>
+                      ))}
+                    </InspectorSelect>
+                  </div>
                 </div>
-
-                {/* Sticky footer */}
-                <div className="px-6 py-4 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 flex items-center justify-end gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (dialPhone) dial(dialPhone, selectedTicket.id);
-                    }}
-                    disabled={!dialPhone || !canDial}
-                    title={
-                      !dialPhone
-                        ? "No phone number on file"
-                        : !canDial
-                          ? "Aircall is not connected"
-                          : `Call ${dialPhone}`
-                    }
-                  >
-                    <PhoneOutgoing className="h-4 w-4 mr-2" />
-                    Call
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={onClose}
-                    disabled={isUpdating}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={onUpdate}
-                    disabled={isUpdating}
-                    className="px-8"
-                  >
-                    {isUpdating && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isUpdating ? "Updating..." : "Update Ticket"}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                <Ticket className="h-8 w-8 opacity-30" />
-                <p className="text-sm">Select a ticket from the history</p>
               </div>
-            )}
+
+              {/* ── Save Button ── */}
+              <button
+                type="button"
+                onClick={onUpdate}
+                disabled={isUpdating}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+                style={{ background: "#008f68" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#007a5a")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#008f68")
+                }
+              >
+                {isUpdating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                {isUpdating ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       </SheetContent>

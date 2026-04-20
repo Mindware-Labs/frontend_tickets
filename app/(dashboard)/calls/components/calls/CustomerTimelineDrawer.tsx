@@ -30,6 +30,10 @@ import {
   CheckCircle2,
   Plus,
   Clock,
+  Pencil,
+  Tag,
+  Link2,
+  Ticket as TicketIcon,
 } from "lucide-react";
 import type { Ticket } from "@/lib/mock-data";
 import {
@@ -168,14 +172,14 @@ const STATUS_COLORS: Record<string, { dot: string; text: string; bg: string }> =
 
 function InspLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
+    <p className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
       {children}
     </p>
   );
 }
 
 function InspVal({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-semibold text-slate-800">{children}</p>;
+  return <p className="text-[12px] font-semibold text-slate-800">{children}</p>;
 }
 
 // Compact select for the inspector
@@ -195,7 +199,7 @@ function InspectorSelect({
       value={value || "none"}
       onValueChange={(v) => onChange(v === "none" ? "" : v)}
     >
-      <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-lg w-full transition-colors">
+      <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>{children}</SelectContent>
@@ -224,7 +228,7 @@ function InteractionCard({
   const dir = (call.direction || "inbound").toString().toLowerCase();
   const isMissed = dir === "missed" || !!(call as any).missedCallReason;
   const isOut = dir === "outbound";
-  const dirColor = isMissed ? "#c0392b" : isOut ? "#2563eb" : "#008f68";
+  const dirColor = isMissed ? "#c0392b" : isOut ? "#008f68" : "#007a5a";
   const dirLabel = isMissed ? "Missed" : isOut ? "Outbound" : "Inbound";
   const statusKey = (call.status || "")
     .toString()
@@ -240,7 +244,7 @@ function InteractionCard({
       className={cn(
         "w-full text-left px-3 py-3 border-b border-slate-100 transition-all last:border-0",
         isActive
-          ? "bg-white border-l-[4px] border-l-blue-600 shadow-sm pl-2.5"
+          ? "bg-white border-l-[4px] border-l-[#008f68] shadow-sm pl-2.5"
           : "border-l-[4px] border-l-transparent hover:bg-slate-100",
       )}
     >
@@ -248,17 +252,17 @@ function InteractionCard({
         <span className="text-[11px] font-bold text-slate-700 font-mono">
           #{call.id}
         </span>
-        <span className="text-[10px] text-slate-400">{dateLabel}</span>
+        <span className="text-[11px] text-slate-400">{dateLabel}</span>
       </div>
       <div className="flex flex-wrap items-center gap-1">
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
           style={{ color: dirColor, background: dirColor + "18" }}
         >
           {dirLabel}
         </span>
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
           style={{ color: sc.text, background: sc.bg }}
         >
           {statusKey === "ACTIVE"
@@ -271,7 +275,7 @@ function InteractionCard({
         </span>
       </div>
       {call.duration != null && (
-        <p className="text-[10px] text-slate-400 mt-1 font-mono">
+        <p className="text-[11px] text-slate-400 mt-1 font-mono">
           {Math.floor(call.duration / 60)}:
           {String(call.duration % 60).padStart(2, "0")}
         </p>
@@ -287,7 +291,7 @@ const MOCK_TIMELINE = [
     id: 1,
     type: "system",
     icon: PhoneCall,
-    color: "#2563eb",
+    color: "#008f68",
     title: "Call logged",
     time: "Auto-generated",
   },
@@ -334,6 +338,20 @@ export function CustomerTimelineDrawer({
   activeFilters,
 }: CustomerTimelineDrawerProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setAudioCurrentTime(0);
+    setAudioDuration(null);
+  }, [selectedCall?.id]);
 
   const {
     dial,
@@ -448,7 +466,22 @@ export function CustomerTimelineDrawer({
       Math.sin(i * 2.7 + waveformSeed * 0.03) * 0.2;
     return Math.max(0.08, Math.min(1, Math.abs(n)));
   });
-  const PLAYED = 0.38;
+  const effectiveDuration = audioDuration ?? durationSec ?? null;
+  const played = effectiveDuration && effectiveDuration > 0 ? audioCurrentTime / effectiveDuration : 0;
+  const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio || !recordingUrl) return;
+    if (isPlaying) { audio.pause(); } else { audio.play().catch(() => {}); }
+  };
+
+  const seekTo = (ratio: number) => {
+    const audio = audioRef.current;
+    if (!audio || !effectiveDuration) return;
+    audio.currentTime = ratio * effectiveDuration;
+    setAudioCurrentTime(audio.currentTime);
+  };
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -473,9 +506,18 @@ export function CustomerTimelineDrawer({
             {customerName ? customerName.substring(0, 2).toUpperCase() : "?"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 leading-tight truncate">
-              {customerName}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[13px] font-bold text-slate-900 leading-tight truncate">
+                {customerName}
+              </p>
+              <button
+                type="button"
+                title="Edit contact"
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-slate-500 font-mono">
                 {customerPhone}
@@ -498,7 +540,10 @@ export function CustomerTimelineDrawer({
               if (dialPhone && canDial) dial(dialPhone, selectedCall?.id);
             }}
             disabled={!dialPhone || !canDial}
-            className="flex items-center gap-1.5 h-8 px-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3.5 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
+            style={{ background: "#008f68" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
           >
             <PhoneOutgoing className="w-3.5 h-3.5" />
             Call
@@ -527,7 +572,7 @@ export function CustomerTimelineDrawer({
           {/* ═══ COL 1 (18%): Interaction Feed ═══ */}
           <div className="w-[18%] shrink-0 flex flex-col border-r border-slate-200 bg-slate-50 overflow-hidden">
             <div className="px-3 py-2.5 border-b border-slate-200 shrink-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                 Interactions
               </p>
             </div>
@@ -597,10 +642,10 @@ export function CustomerTimelineDrawer({
                         key={i}
                         className={`flex flex-col gap-0.5 ${i > 0 ? "border-l border-slate-200 pl-3" : ""}`}
                       >
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                           {item.label}
                         </span>
-                        <span className="text-xs font-bold text-slate-800 font-mono">
+                        <span className="text-[12px] font-bold text-slate-800 font-mono">
                           {item.value}
                         </span>
                       </div>
@@ -609,92 +654,111 @@ export function CustomerTimelineDrawer({
 
                   {/* ── Recording Player ── */}
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                       Recording
                     </p>
-                    <div className="bg-slate-900 rounded-xl p-2.5 flex items-center gap-3 shadow-md">
-                      <button
-                        type="button"
-                        className={cn(
-                          "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                          recordingUrl
-                            ? "bg-blue-600 hover:bg-blue-500"
-                            : "bg-slate-700 cursor-default",
-                        )}
-                      >
-                        {recordingUrl ? (
+                    {recordingUrl ? (
+                      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                        {/* Waveform area */}
+                        <div className="px-3 pt-3 pb-1">
                           <svg
-                            className="w-4 h-4 text-white ml-0.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
+                            className="w-full cursor-pointer"
+                            height="36"
+                            preserveAspectRatio="none"
+                            viewBox={`0 0 ${waveHeights.length * 3.5} 36`}
+                            xmlns="http://www.w3.org/2000/svg"
+                            onClick={(e) => {
+                              const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+                              seekTo((e.clientX - rect.left) / rect.width);
+                            }}
                           >
-                            <path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z" />
+                            {waveHeights.map((amp, i) => {
+                              const x = i * 3.5 + 0.75;
+                              const barH = Math.max(2, amp * 30);
+                              const y = (36 - barH) / 2;
+                              const isPlayed = i / waveHeights.length < played;
+                              return (
+                                <rect
+                                  key={i}
+                                  x={x}
+                                  y={y}
+                                  width={1.5}
+                                  height={barH}
+                                  rx={1}
+                                  fill={isPlayed ? "#008f68" : "#e2e8f0"}
+                                />
+                              );
+                            })}
                           </svg>
-                        ) : (
-                          <svg
-                            className="w-4 h-4 text-slate-500"
-                            fill="none"
-                            viewBox="0 0 20 20"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                          >
-                            <path d="M9 4a1 1 0 0 1 2 0v6a1 1 0 0 1-2 0V4ZM5.5 9a4.5 4.5 0 0 0 9 0M10 15v2" />
-                          </svg>
-                        )}
-                      </button>
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <svg
-                          className="w-full"
-                          height="28"
-                          preserveAspectRatio="none"
-                          viewBox={`0 0 ${waveHeights.length * 3.5} 28`}
-                          xmlns="http://www.w3.org/2000/svg"
+                        </div>
+                        {/* Seek bar */}
+                        <div
+                          className="mx-3 mb-2 h-[3px] bg-slate-100 rounded-full overflow-hidden cursor-pointer"
+                          onClick={(e) => {
+                            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                            seekTo((e.clientX - rect.left) / rect.width);
+                          }}
                         >
-                          {waveHeights.map((amp, i) => {
-                            const x = i * 3.5 + 0.75;
-                            const barH = Math.max(2, amp * 24);
-                            const y = (28 - barH) / 2;
-                            const played = i / waveHeights.length < PLAYED;
-                            return (
-                              <rect
-                                key={i}
-                                x={x}
-                                y={y}
-                                width={1.5}
-                                height={barH}
-                                rx={1}
-                                fill={played ? "#60a5fa" : "#374151"}
-                              />
-                            );
-                          })}
-                        </svg>
-                        <div className="relative h-[3px] bg-slate-700 rounded-full overflow-hidden">
                           <div
-                            className="absolute inset-y-0 left-0 bg-blue-500 rounded-full"
-                            style={{ width: `${PLAYED * 100}%` }}
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${played * 100}%`, background: "#008f68" }}
                           />
                         </div>
+                        {/* Controls row */}
+                        <div className="flex items-center gap-2.5 px-3 pb-3">
+                          <button
+                            type="button"
+                            onClick={togglePlay}
+                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-sm text-white"
+                            style={{ background: "#008f68" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
+                          >
+                            {isPlaying
+                              ? <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75A.75.75 0 0 0 7.25 3h-1.5ZM12.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-1.5Z"/></svg>
+                              : <svg className="w-3.5 h-3.5 ml-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.841A1.5 1.5 0 0 0 4 4.11V15.89a1.5 1.5 0 0 0 2.3 1.269l9.344-5.89a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/></svg>
+                            }
+                          </button>
+                          <span className="text-[11px] font-mono tabular-nums text-slate-500 flex-1">
+                            {fmtTime(audioCurrentTime)}
+                            <span className="text-slate-300 mx-0.5">/</span>
+                            {effectiveDuration != null ? fmtTime(effectiveDuration) : "—:--"}
+                          </span>
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: "#008f68", background: "#e6f5f0" }}>
+                            {isPlaying ? "Playing" : "Paused"}
+                          </span>
+                        </div>
+                        <audio
+                          ref={audioRef}
+                          src={recordingUrl}
+                          onPlay={() => setIsPlaying(true)}
+                          onPause={() => setIsPlaying(false)}
+                          onEnded={() => { setIsPlaying(false); setAudioCurrentTime(0); }}
+                          onTimeUpdate={(e) => setAudioCurrentTime((e.currentTarget as HTMLAudioElement).currentTime)}
+                          onLoadedMetadata={(e) => setAudioDuration((e.currentTarget as HTMLAudioElement).duration)}
+                          className="hidden"
+                        />
                       </div>
-                      <span className="text-[11px] text-slate-400 font-mono shrink-0 tabular-nums">
-                        {durationSec != null
-                          ? `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}`
-                          : recordingUrl
-                            ? "—:--"
-                            : "No rec."}
-                      </span>
-                    </div>
-                    {recordingUrl && (
-                      <audio
-                        src={recordingUrl}
-                        className="hidden"
-                        id="ctd-audio"
-                      />
+                    ) : (
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                          <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M9 4a1 1 0 0 1 2 0v6a1 1 0 0 1-2 0V4ZM5.5 9a4.5 4.5 0 0 0 9 0M10 15v2" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500">No recording available</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {durationSec != null ? `Duration: ${fmtTime(durationSec)}` : "This call was not recorded"}
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
 
                   {/* ── Activity Timeline ── */}
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                       Activity Timeline
                     </p>
                     <div className="relative space-y-0">
@@ -712,10 +776,10 @@ export function CustomerTimelineDrawer({
                             <div className="pb-2 flex-1 min-w-0">
                               <div className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-xs font-semibold text-slate-800">
+                                  <span className="text-[12px] font-semibold text-slate-800">
                                     {item.title}
                                   </span>
-                                  <span className="text-[10px] text-slate-400 shrink-0">
+                                  <span className="text-[11px] text-slate-400 shrink-0">
                                     {item.time}
                                   </span>
                                 </div>
@@ -741,14 +805,17 @@ export function CustomerTimelineDrawer({
                               })
                             }
                             placeholder="Add an internal note…"
-                            className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 leading-relaxed shadow-sm"
+                            className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed shadow-sm"
                           />
                           <div className="flex justify-end">
                             <button
                               type="button"
                               onClick={onUpdate}
                               disabled={isUpdating}
-                              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1.5 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                              style={{ background: "#008f68" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
                             >
                               {isUpdating ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -766,7 +833,7 @@ export function CustomerTimelineDrawer({
                   {/* ── Technical Metadata + Timestamps (2-col) ── */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">
                         Technical
                       </p>
                       <div className="space-y-2">
@@ -786,10 +853,10 @@ export function CustomerTimelineDrawer({
                           },
                         ].map((item) => (
                           <div key={item.label}>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
+                            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
                               {item.label}
                             </p>
-                            <p className="text-xs font-semibold text-slate-700 font-mono truncate">
+                            <p className="text-[12px] font-semibold text-slate-700 font-mono truncate">
                               {item.value}
                             </p>
                           </div>
@@ -797,7 +864,7 @@ export function CustomerTimelineDrawer({
                       </div>
                     </div>
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-2">
                         Timestamps
                       </p>
                       <div className="space-y-2">
@@ -822,10 +889,10 @@ export function CustomerTimelineDrawer({
                           },
                         ].map((item) => (
                           <div key={item.label}>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
+                            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
                               {item.label}
                             </p>
-                            <p className="text-xs font-semibold text-slate-700 font-mono">
+                            <p className="text-[12px] font-semibold text-slate-700 font-mono">
                               {item.value}
                             </p>
                           </div>
@@ -859,7 +926,7 @@ export function CustomerTimelineDrawer({
           {/* ═══ COL 3 (22%): Entity Inspector ═══ */}
           <div className="w-[22%] shrink-0 flex flex-col border-l border-slate-200 bg-slate-50/50 overflow-hidden">
             <div className="px-4 py-2.5 border-b border-slate-200 shrink-0 bg-white">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                 Entity Inspector
               </p>
             </div>
@@ -867,7 +934,7 @@ export function CustomerTimelineDrawer({
             <div className="flex-1 overflow-y-auto px-2.5 pb-3 pt-2.5 space-y-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
               {/* ── CARD: CLASSIFICATION ── */}
               <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Classification
                 </p>
                 <div className="space-y-2">
@@ -973,12 +1040,13 @@ export function CustomerTimelineDrawer({
                       </InspectorSelect>
                     </div>
                   )}
+                  
                 </div>
               </div>
 
               {/* ── CARD: FOLLOW-UP ── */}
               <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Follow-up
                 </p>
                 <div className="space-y-2">
@@ -988,7 +1056,7 @@ export function CustomerTimelineDrawer({
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="w-full h-7 flex items-center gap-2 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-100 rounded-lg transition-colors text-left"
+                          className="w-full h-7 flex items-center gap-2 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 rounded-lg transition-colors text-left"
                         >
                           <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span
@@ -1066,12 +1134,45 @@ export function CustomerTimelineDrawer({
                 </div>
               </div>
 
+              {/* ── CARD: TICKET ASSOCIATION ── */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Ticket Association
+                </p>
+                {/* Unlinked state */}
+                <div className="flex items-center gap-2 py-1.5 mb-2.5">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <TicketIcon className="w-3 h-3 text-slate-400" />
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium">No ticket linked</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center gap-1.5 h-7 rounded-lg border border-slate-200 bg-white text-slate-600 text-[11px] font-semibold hover:bg-slate-50 transition-colors"
+                  >
+                    <Link2 className="w-3 h-3" />
+                    Link Existing
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center justify-center gap-1.5 h-7 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-semibold hover:bg-blue-100 transition-colors border border-blue-100"
+                  >
+                    <Plus className="w-3 h-3" />
+                    New Ticket
+                  </button>
+                </div>
+              </div>
+
               {/* ── Save Button ── */}
               <button
                 type="button"
                 onClick={onUpdate}
                 disabled={isUpdating}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+                style={{ background: "#008f68" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
               >
                 {isUpdating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

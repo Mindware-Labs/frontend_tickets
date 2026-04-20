@@ -431,36 +431,36 @@ export function GroupedCallsTable({
       <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative">
-            <TableHeader className="bg-[#f0faf5] sticky top-0 z-10 before:absolute before:inset-0 before:border-b-2 before:border-[#d1e7dd] dark:bg-muted/40">
+            <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[240px] pl-4 font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[240px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Customer
                 </TableHead>
-                <TableHead className="w-[170px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Number
                 </TableHead>
-                <TableHead className="w-[80px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[80px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Calls
                 </TableHead>
-                <TableHead className="w-[150px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[150px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Line
                 </TableHead>
-                <TableHead className="w-[130px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Yard
                 </TableHead>
-                <TableHead className="w-[170px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Campaign
                 </TableHead>
-                <TableHead className="w-[110px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[110px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Status
                 </TableHead>
-                <TableHead className="w-[100px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[100px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Duration
                 </TableHead>
-                <TableHead className="w-[130px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Direction
                 </TableHead>
-                <TableHead className="w-[140px] font-bold text-[11.5px] tracking-wider uppercase text-slate-600 dark:text-slate-300">
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Date
                 </TableHead>
                 <TableHead className="w-[44px]"></TableHead>
@@ -527,9 +527,9 @@ export function GroupedCallsTable({
                       >
                         {/* Customer */}
                         <TableCell className="w-[240px] pl-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 shrink-0 rounded-lg shadow-sm">
-                              <AvatarFallback className="text-[13px] bg-[#dcfce7] text-[#15803d] font-bold rounded-lg border border-[#bbf7d0]">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-8 w-8 shrink-0 rounded-full">
+                              <AvatarFallback className="text-[12px] font-bold rounded-full" style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}>
                                 {group.customerName
                                   ? group.customerName
                                       .substring(0, 2)
