@@ -349,7 +349,7 @@ export function GroupedCallsTable({
   return (
     <div className="flex-1 flex flex-col gap-4">
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-2 mt-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-2 mt-2.5">
         <div className="relative flex-1 max-w-[320px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input
@@ -451,11 +451,11 @@ export function GroupedCallsTable({
                 <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Campaign
                 </TableHead>
+                <TableHead className="w-[160px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Disposition
+                </TableHead>
                 <TableHead className="w-[110px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Status
-                </TableHead>
-                <TableHead className="w-[100px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                  Duration
                 </TableHead>
                 <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
                   Direction
@@ -472,7 +472,7 @@ export function GroupedCallsTable({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={15} className="h-24 text-center">
+                  <TableCell colSpan={14} className="h-24 text-center">
                     <div className="flex items-center justify-center">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
                       Loading calls...
@@ -482,7 +482,7 @@ export function GroupedCallsTable({
               ) : groups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={15}
+                    colSpan={14}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No calls found.
@@ -600,9 +600,8 @@ export function GroupedCallsTable({
                           {yardDisplayName ? (
                             yardDisplayName.split(" — ")[0]
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[12px] font-bold border border-amber-200">
-                              <span className="w-[5px] h-[5px] rounded-full bg-amber-500 animate-pulse" />
-                              Pending
+                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
+                              Unassigned
                             </span>
                           )}
                         </TableCell>
@@ -610,9 +609,21 @@ export function GroupedCallsTable({
                         {/* Campaign */}
                         <TableCell className="w-[170px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
                           {getCampaign(t, campaigns) || (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[12px] font-bold border border-amber-200">
-                              <span className="w-[5px] h-[5px] rounded-full bg-amber-500 animate-pulse" />
-                              Pending
+                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
+                              Unassigned
+                            </span>
+                          )}
+                        </TableCell>
+
+                        {/* Disposition */}
+                        <TableCell className="w-[160px] py-3">
+                          {t.disposition ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[12px] font-medium border border-slate-200 dark:border-slate-700 truncate max-w-[145px]">
+                              {formatEnumLabel(t.disposition)}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
+                              Unassigned
                             </span>
                           )}
                         </TableCell>
@@ -620,21 +631,6 @@ export function GroupedCallsTable({
                         {/* Status */}
                         <TableCell className="w-[120px] py-3">
                           <StatusPill status={t.status} />
-                        </TableCell>
-
-                        {/* Duration */}
-                        <TableCell className="w-[100px] py-3 text-[13.5px] font-mono text-foreground font-semibold">
-                          {t.duration != null ? (
-                            <span className="tabular-nums bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[13px]">
-                              {String(Math.floor(t.duration / 60)).padStart(
-                                2,
-                                "0",
-                              )}
-                              :{String(t.duration % 60).padStart(2, "0")}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
                         </TableCell>
 
                         {/* Direction */}
@@ -681,7 +677,7 @@ export function GroupedCallsTable({
                           key={`${group.key}-timeline`}
                           className="bg-accent/10 hover:bg-accent/10 border-b relative"
                         >
-                          <TableCell colSpan={14} className="p-0 border-t-0">
+                          <TableCell colSpan={13} className="p-0 border-t-0">
                             <InlineCallTimeline group={group} agents={agents} />
                           </TableCell>
                         </TableRow>

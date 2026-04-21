@@ -2,13 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
-  PhoneCall,
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
   Voicemail,
-  Circle,
-  StickyNote,
   Loader2,
 } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
@@ -38,7 +35,7 @@ interface InlineCallTimelineProps {
 function formatShortDate(date: Date): string {
   if (isToday(date)) return `Today ${format(date, "HH:mm")}`;
   if (isYesterday(date)) return `Yesterday ${format(date, "HH:mm")}`;
-  return format(date, "MMM d HH:mm");
+  return format(date, "MMM d, HH:mm");
 }
 
 function directionMeta(direction?: string) {
@@ -82,7 +79,7 @@ function formatDuration(seconds?: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function resolveAgentName(call: Call, agents: AgentOption[]): string {
+function resolveAgentName(call: Call, agents: AgentOption[]): string | null {
   const assignee = getTicketAssignee(call);
   if (assignee) return getAssigneeName(assignee);
   const agentId = (call as any).agentId;
@@ -90,7 +87,7 @@ function resolveAgentName(call: Call, agents: AgentOption[]): string {
     const found = agents.find((a) => a.id.toString() === agentId.toString());
     if (found) return found.name;
   }
-  return "System";
+  return null;
 }
 
 export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
@@ -154,64 +151,90 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
   };
 
   return (
-    <div className="px-6 py-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="px-4 py-3">
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+          <div className="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">
             Call Timeline · {sortedCalls.length}{" "}
             {sortedCalls.length === 1 ? "event" : "events"}
           </div>
-          {lastEventAgo ? (
-            <div className="text-xs text-muted-foreground mt-0.5">
+          {lastEventAgo && (
+            <div className="text-xs text-slate-400 mt-0.5">
               last {lastEventAgo}
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
-      {/* Timeline */}
-      <ol className="relative border-l border-muted-foreground/20 ml-2 space-y-4">
-        {sortedCalls.map((call) => {
-          const meta = directionMeta(call.direction);
-          const date = new Date(call.callDate || call.createdAt || 0);
-          const dateLabel = isNaN(date.getTime()) ? "—" : formatShortDate(date);
-          const duration = formatDuration(call.duration ?? undefined);
-          const agentName = resolveAgentName(call, agents);
-          const notes = (call as any).notes as string | undefined;
-          return (
-            <li key={call.id} className="ml-4">
-              <span
-                className={`absolute -left-1.75 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-background border-2 ${meta.ring}`}
-              >
-                <Circle className="h-1.5 w-1.5 opacity-0" />
-              </span>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <span className="text-muted-foreground font-mono text-xs">
-                  {dateLabel}
-                </span>
-                <span className={`font-medium ${meta.color}`}>
-                  {meta.label}
-                </span>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {duration}
-                </span>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-foreground">{agentName}</span>
-              </div>
-              {notes ? (
-                <p className="text-sm text-foreground/80 mt-1">{notes}</p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
+      {/* ── Timeline ────────────────────────────────────────────── */}
+      <div className="relative">
+        {/* Vertical guide line */}
+        <div className="absolute top-0 bottom-0 left-2.25 w-0.5 bg-gray-200" />
+        <ol className="space-y-3">
+          {sortedCalls.map((call) => {
+            const meta = directionMeta(call.direction);
+            const date = new Date(call.callDate || call.createdAt || 0);
+            const dateLabel = isNaN(date.getTime())
+              ? "—"
+              : formatShortDate(date);
+            const duration = formatDuration(call.duration ?? undefined);
+            const agentName = resolveAgentName(call, agents);
+            const notes =
+              (call.notes as string | undefined) ||
+              ((call as any).issueDetail as string | undefined);
+            const Icon = meta.Icon;
 
-      {/* Actions */}
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+            return (
+              <li key={call.id} className="relative pl-7">
+                {/* Circle */}
+                <span
+                  className={`absolute left-0 top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white border-2 ${meta.ring}`}
+                >
+                  <Icon className={`h-2.5 w-2.5 ${meta.color}`} />
+                </span>
+
+                {/* Metadata row */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  <span className="text-slate-500 text-xs font-normal tabular-nums">
+                    {dateLabel}
+                  </span>
+                  <span className={`font-semibold text-sm ${meta.color}`}>
+                    {meta.label}
+                  </span>
+                  {call.duration !== undefined &&
+                    call.duration !== null &&
+                    call.duration > 0 && (
+                      <span className="text-gray-400 text-xs tabular-nums">
+                        {duration}
+                      </span>
+                    )}
+                  {agentName && (
+                    <>
+                      <span className="text-gray-300 select-none">·</span>
+                      <span className="text-gray-700 text-xs">{agentName}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {notes && (
+                  <p className="mt-1 text-gray-600 text-xs leading-snug line-clamp-2 max-w-prose wrap-break-word">
+                    {notes}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* ── Actions ─────────────────────────────────────────────── */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button
           type="button"
           size="sm"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={handleCallBack}
           disabled={!hasPhone || !canDial}
           title={
@@ -229,6 +252,7 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
           type="button"
           size="sm"
           variant="outline"
+          className="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
           onClick={() => setNoteOpen(true)}
           disabled={!canAddNote}
           title={
@@ -237,12 +261,19 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
               : "Customer not linked yet"
           }
         >
-          <StickyNote className="h-4 w-4 mr-2" />
           Add note
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+        >
+          Reassign
         </Button>
       </div>
 
-      {/* Add note dialog */}
+      {/* ── Add note dialog ──────────────────────────────────────── */}
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>

@@ -11,7 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
 import { CreateCallFormData, CallStatus, CallDirection } from "./types";
 const CreateCallModal = dynamic(
-  () => import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
+  () =>
+    import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
   { ssr: false },
 );
 const EditCallModal = dynamic(
@@ -61,6 +62,7 @@ import {
   isMissedCall,
 } from "./utils/call-helpers";
 import { startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { useAircall } from "@/components/providers/AircallProvider";
 
 // ---------------------------------------------------------------------------
 // SWR fetcher
@@ -297,6 +299,12 @@ export default function TicketsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
+
+  // Move the floating Aircall FAB to the bottom edge when the drawer is open
+  const { setSheetOpen } = useAircall();
+  useEffect(() => {
+    setSheetOpen(showTimelineDrawer);
+  }, [showTimelineDrawer, setSheetOpen]);
   const [timelineGroup, setTimelineGroup] = useState<CustomerCallGroup | null>(
     null,
   );
@@ -987,65 +995,89 @@ export default function TicketsPage() {
         className="flex-1 flex flex-col"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3 px-0.5 gap-2 border-b border-border mb-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between w-full py-5 px-0.5 gap-3 border-b border-border">
           <div className="min-w-0">
-            <h2 className="text-[20px] font-bold tracking-tight text-foreground leading-tight">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
               {activeTab === "calls"
                 ? "Call Management"
                 : activeTab === "tickets"
                   ? "Tickets"
                   : "Manual Records"}
             </h2>
-            <p className="text-[12px] text-muted-foreground mt-0.5 capitalize">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               {activeTab === "calls"
-                ? `${new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')} · ${refData.agents?.length || 14} active agents`
+                ? `${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${refData.agents?.length || 14} Active Agents`
                 : activeTab === "tickets"
                   ? "Manage support tickets and escalations"
                   : "Track manual records and entries"}
             </p>
           </div>
 
-          {/* Custom Tab Switcher */}
-          <div className="inline-flex items-center rounded-lg bg-slate-100/80 dark:bg-slate-800/60 p-[3px] border border-slate-200/80 dark:border-slate-700/50 shadow-sm">
-            {[
-              { value: "calls", label: "Calls" },
-              { value: "tickets", label: "Tickets" },
-              { value: "manual-records", label: "Manual Records"},
-            ].map((tab) => {
-              const isActive = activeTab === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setActiveTab(tab.value)}
-                  className={`relative inline-flex items-center gap-1.5 px-3.5 py-[5px] rounded-md text-[12.5px] font-semibold transition-all duration-200 whitespace-nowrap ${
-                    isActive
-                      ? "bg-white dark:bg-slate-900 text-[#008f68] shadow-sm border border-[#d1e7dd] dark:border-[#008f68]/30"
-                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent"
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          {/* Segmented Control */}
+          <div className="w-full md:w-auto mt-1 md:mt-0">
+            <div className="flex items-center w-full md:w-auto rounded-lg bg-slate-100 dark:bg-slate-800/60 p-1 border border-slate-200/80 dark:border-slate-700/50 shadow-sm">
+              {[
+                { value: "calls", label: "Calls" },
+                { value: "tickets", label: "Tickets" },
+                { value: "manual-records", label: "Manual Records" },
+              ].map((tab) => {
+                const isActive = activeTab === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                    className={`flex-1 md:flex-none relative inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md text-[12.5px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                      isActive
+                        ? "bg-white dark:bg-slate-900 text-[#008f68] shadow-sm border border-[#d1e7dd] dark:border-[#008f68]/30"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         <TabsContent value="calls" className="flex-1 flex flex-col gap-0 mt-0">
           <OverdueCallsBanner />
-          
+
           <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
             {[
-              { id: 'all', label: 'All Calls', count: getFilteredCountForView('all') || 0 },
-              { id: 'active', label: 'Active', count: getFilteredCountForView('active') || 0 },
-              { id: 'pending_followup', label: 'Pending Follow-up', count: getFilteredCountForView('pending_followup') || 0 },
-              { id: 'overdue', label: 'Overdue', count: getFilteredCountForView('overdue') || 0, isOverdue: true },
-            ].map(tab => {
+              {
+                id: "all",
+                label: "All Calls",
+                count: getFilteredCountForView("all") || 0,
+              },
+              {
+                id: "active",
+                label: "Active",
+                count: getFilteredCountForView("active") || 0,
+              },
+              {
+                id: "pending_followup",
+                label: "Pending Follow-up",
+                count: getFilteredCountForView("pending_followup") || 0,
+              },
+              {
+                id: "overdue",
+                label: "Overdue",
+                count: getFilteredCountForView("overdue") || 0,
+                isOverdue: true,
+              },
+              {
+                id: "complete",
+                label: "Complete",
+                count: getFilteredCountForView("complete") || 0,
+              },
+            ].map((tab) => {
               const isActive = ticketFilters.activeView === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => ticketFilters.handleViewChange(tab.id)}
-                  className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
+                  className={`px-2 py-2.5 text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
                     isActive
                       ? "border-[#008f68] text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1053,7 +1085,7 @@ export default function TicketsPage() {
                 >
                   {tab.label}
                   <span
-                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                    className={`py-px px-1.5 rounded-full text-[11px] border ${
                       isActive
                         ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
                         : "bg-muted/40 text-muted-foreground font-medium border-border"

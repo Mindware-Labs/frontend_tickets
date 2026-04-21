@@ -900,12 +900,17 @@ export function CallEditFormContent({
             <FieldLabel>Disposition</FieldLabel>
             <Select
               value={formData.disposition || "none"}
-              onValueChange={(value) =>
+              onValueChange={(value) => {
+                const newDisposition = value === "none" ? "" : value;
+                const isCallback =
+                  newDisposition === "CALLBACK_REQUIRED" ||
+                  newDisposition === "CALLBACK_SCHEDULED";
                 setFormData({
                   ...formData,
-                  disposition: value === "none" ? "" : value,
-                })
-              }
+                  disposition: newDisposition,
+                  ...(isCallback && { status: CallStatus.PENDING_FOLLOWUP }),
+                });
+              }}
             >
               <SelectTrigger className={inputCls}>
                 <SelectValue placeholder="Select disposition..." />

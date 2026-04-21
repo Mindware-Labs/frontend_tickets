@@ -58,7 +58,11 @@ import {
   getClientName,
   getClientPhone,
 } from "../../utils/call-helpers";
-import { InspLabel, InspectorSelect } from "../shared/InspectorHelpers";
+import {
+  InspLabel,
+  InspectorSelect,
+  InspectorCombobox,
+} from "../shared/InspectorHelpers";
 import type { Filters } from "../../hooks/useCallFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
 
@@ -127,8 +131,12 @@ const STATUS_COLORS: Record<
   { text: string; bg: string; label: string }
 > = {
   ACTIVE: { text: "#008f68", bg: "#e6f5f0", label: "Active" },
-  COMPLETED: { text: "#64748b", bg: "#f1f5f9", label: "Done" },
-  PENDING_FOLLOWUP: { text: "#c47a00", bg: "#fef3d6", label: "Pending" },
+  COMPLETED: { text: "#64748b", bg: "#f1f5f9", label: "Completed" },
+  PENDING_FOLLOWUP: {
+    text: "#c47a00",
+    bg: "#fef3d6",
+    label: "Pending Followup",
+  },
   OVERDUE: { text: "#c0392b", bg: "#fde8e6", label: "Overdue" },
 };
 
@@ -197,6 +205,21 @@ function TimelineCard({
     .replace(/ /g, "_");
   const sc = STATUS_COLORS[statusKey] || STATUS_COLORS.COMPLETED;
   const dur = (call as any).duration;
+  const dispositionKey = ((call as any).disposition || "")
+    .toString()
+    .toUpperCase()
+    .replace(/ /g, "_");
+  const dc = dispositionKey ? DISPOSITION_COLORS[dispositionKey] : null;
+  const agentName =
+    (call as any).agent?.name ||
+    (call as any).agentName ||
+    (call as any).assignedTo ||
+    null;
+  const campaignOpt = (call as any).campaignOption
+    ? formatEnumLabel((call as any).campaignOption)
+    : null;
+  const noteText = (call as any).notes || (call as any).issueDetail || null;
+  const followUp = (call as any).followUpDueDate || null;
 
   return (
     <div className="relative flex gap-2 pl-3.5 pr-2.5">
@@ -243,7 +266,8 @@ function TimelineCard({
             {dateLabel}
           </span>
         </div>
-        {/* Direction + Status chips */}
+
+        {/* Direction + Status + Disposition chips */}
         <div className="flex items-center gap-1 flex-wrap mb-1.5">
           <span
             className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
@@ -257,14 +281,55 @@ function TimelineCard({
           >
             {sc.label}
           </span>
+          {dc && (
+            <span
+              className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
+              style={{ color: dc.text, background: dc.bg }}
+            >
+              {dc.label}
+            </span>
+          )}
         </div>
-        {/* Duration */}
-        {dur != null && (
-          <p className="flex items-center gap-1 text-[9.5px] text-slate-400 font-mono">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
-            {fmtTime(dur)}
+
+        {/* Agent + Campaign option */}
+        {(agentName || campaignOpt) && (
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            {agentName && (
+              <span className="text-[9.5px] text-slate-500 flex items-center gap-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />
+                {agentName}
+              </span>
+            )}
+            {campaignOpt && (
+              <span className="text-[9.5px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                {campaignOpt}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Notes preview */}
+        {noteText && (
+          <p className="text-[9.5px] text-slate-500 leading-tight line-clamp-2 mb-1.5 italic border-l border-slate-200 pl-1.5">
+            {noteText}
           </p>
         )}
+
+        {/* Duration + Follow-up */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {dur != null && (
+            <span className="flex items-center gap-1 text-[9.5px] text-slate-400 font-mono">
+              <Clock className="w-2.5 h-2.5 shrink-0" />
+              {fmtTime(dur)}
+            </span>
+          )}
+          {followUp && (
+            <span className="flex items-center gap-1 text-[9.5px] text-amber-600 font-medium">
+              <CalendarIcon className="w-2.5 h-2.5 shrink-0" />
+              {fmtDate(followUp)}
+            </span>
+          )}
+        </div>
       </button>
     </div>
   );
@@ -532,7 +597,7 @@ export function CustomerTimelineDrawer({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-svw sm:w-[92vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
+        className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
         style={{ maxWidth: "1100px" }}
       >
         <SheetTitle className="sr-only">
@@ -844,7 +909,7 @@ export function CustomerTimelineDrawer({
                         {/* Campaign */}
                         <div>
                           <InspLabel>Campaign</InspLabel>
-                          <InspectorSelect
+                          <InspectorCombobox
                             value={editFormData.campaignId || ""}
                             onChange={(v) => {
                               const camp = campaigns.find(
@@ -859,33 +924,31 @@ export function CustomerTimelineDrawer({
                               });
                             }}
                             placeholder="Campaign"
-                          >
-                            <SelectItem value="none">None</SelectItem>
-                            {campaigns.map((c) => (
-                              <SelectItem key={c.id} value={c.id.toString()}>
-                                {c.nombre}
-                              </SelectItem>
-                            ))}
-                          </InspectorSelect>
+                            searchPlaceholder="Search campaign…"
+                            noneLabel="None"
+                            items={campaigns.map((c) => ({
+                              value: c.id.toString(),
+                              label: c.nombre,
+                            }))}
+                          />
                         </div>
 
                         {/* Yard */}
                         <div>
                           <InspLabel>Yard</InspLabel>
-                          <InspectorSelect
+                          <InspectorCombobox
                             value={editFormData.yardId || ""}
                             onChange={(v) =>
                               setEditFormData({ ...editFormData, yardId: v })
                             }
                             placeholder="Yard"
-                          >
-                            <SelectItem value="none">None</SelectItem>
-                            {yards.map((y) => (
-                              <SelectItem key={y.id} value={y.id.toString()}>
-                                {y.name}
-                              </SelectItem>
-                            ))}
-                          </InspectorSelect>
+                            searchPlaceholder="Search yard…"
+                            noneLabel="None"
+                            items={yards.map((y) => ({
+                              value: y.id.toString(),
+                              label: y.name,
+                            }))}
+                          />
                         </div>
                       </div>
 
@@ -990,7 +1053,7 @@ export function CustomerTimelineDrawer({
                                     status: key as CallStatus,
                                   })
                                 }
-                                className={`h-8 text-[11px] font-semibold rounded-lg border transition-all ${
+                                className={`h-8 text-[10px] font-semibold rounded-lg border transition-all leading-tight px-1 ${
                                   isActive
                                     ? "shadow-sm"
                                     : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
@@ -1351,57 +1414,49 @@ export function CustomerTimelineDrawer({
                       {/* Agent */}
                       <div>
                         <InspLabel>Agent</InspLabel>
-                        <InspectorSelect
-                          value={
+                        {(() => {
+                          const curId =
                             editFormData.agentId != null &&
                             editFormData.agentId !== ""
                               ? String(editFormData.agentId)
-                              : ""
-                          }
-                          onChange={(v) =>
-                            setEditFormData({
-                              ...editFormData,
-                              agentId: v,
-                            })
-                          }
-                          placeholder="Unassigned"
-                        >
-                          <SelectItem value="none">Unassigned</SelectItem>
-                          {(() => {
-                            const curId =
-                              editFormData.agentId != null &&
-                              editFormData.agentId !== ""
-                                ? String(editFormData.agentId)
-                                : "";
-                            const inList = agents.some(
-                              (a) => a.id.toString() === curId,
-                            );
-                            const ghost =
-                              !inList && curId && (selectedCall as any)?.agent
-                                ? (selectedCall as any).agent
-                                : null;
-                            return (
-                              <>
-                                {ghost && (
-                                  <SelectItem
-                                    key={ghost.id}
-                                    value={ghost.id.toString()}
-                                  >
-                                    {ghost.name}
-                                  </SelectItem>
-                                )}
-                                {agents.map((a) => (
-                                  <SelectItem
-                                    key={a.id}
-                                    value={a.id.toString()}
-                                  >
-                                    {a.name}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            );
-                          })()}
-                        </InspectorSelect>
+                              : "";
+                          const inList = agents.some(
+                            (a) => a.id.toString() === curId,
+                          );
+                          const ghost =
+                            !inList && curId && (selectedCall as any)?.agent
+                              ? (selectedCall as any).agent
+                              : null;
+                          const agentItems = [
+                            ...(ghost
+                              ? [
+                                  {
+                                    value: ghost.id.toString(),
+                                    label: ghost.name,
+                                  },
+                                ]
+                              : []),
+                            ...agents.map((a) => ({
+                              value: a.id.toString(),
+                              label: a.name,
+                            })),
+                          ];
+                          return (
+                            <InspectorCombobox
+                              value={curId}
+                              onChange={(v) =>
+                                setEditFormData({
+                                  ...editFormData,
+                                  agentId: v,
+                                })
+                              }
+                              placeholder="Unassigned"
+                              searchPlaceholder="Search agent…"
+                              noneLabel="Unassigned"
+                              items={agentItems}
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
                   </section>

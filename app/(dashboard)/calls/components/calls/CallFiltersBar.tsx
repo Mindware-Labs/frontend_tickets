@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAircall } from "@/components/providers/AircallProvider";
 import {
   Select,
   SelectContent,
@@ -11,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
   CallStatus,
@@ -45,12 +53,49 @@ export function CallFiltersBar({
   phoneLines,
 }: CallFiltersBarProps) {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Filters>({ ...filters });
   const [campaignSearch, setCampaignSearch] = useState("");
   const [yardSearch, setYardSearch] = useState("");
 
-  const activeCount = useMemo(() => {
-    return Object.values(filters).filter((v) => v !== "all").length;
-  }, [filters]);
+  const { setSheetOpen } = useAircall();
+
+  // Sync draft when drawer opens
+  useEffect(() => {
+    if (open) setDraft({ ...filters });
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Notify AircallProvider so the FAB moves to the bottom edge
+  useEffect(() => {
+    setSheetOpen(open);
+  }, [open, setSheetOpen]);
+
+  const activeCount = useMemo(
+    () => Object.values(filters).filter((v) => v !== "all").length,
+    [filters],
+  );
+
+  const draftActiveCount = useMemo(
+    () => Object.values(draft).filter((v) => v !== "all").length,
+    [draft],
+  );
+
+  const setDraftKey = (key: FilterKey, value: string) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
+
+  const handleApply = () => {
+    (Object.keys(draft) as FilterKey[]).forEach((k) =>
+      onFilterChange(k, draft[k]),
+    );
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    const cleared = { ...draft };
+    (Object.keys(cleared) as FilterKey[]).forEach((k) => {
+      cleared[k] = "all";
+    });
+    setDraft(cleared);
+  };
 
   const clearAll = () => {
     const keys: FilterKey[] = [
@@ -71,19 +116,17 @@ export function CallFiltersBar({
     return campaigns.filter((c) => c.nombre.toLowerCase().includes(term));
   }, [campaigns, campaignSearch]);
 
-  // Derive the selected campaign's type to scope the Campaign Option dropdown
   const selectedCampaignTipo = useMemo(() => {
-    if (filters.campaign === "all") return null;
-    const found = campaigns.find((c) => c.id.toString() === filters.campaign);
+    if (draft.campaign === "all") return null;
+    const found = campaigns.find((c) => c.id.toString() === draft.campaign);
     return found?.tipo ?? null;
-  }, [filters.campaign, campaigns]);
+  }, [draft.campaign, campaigns]);
 
   const availableCampaignOptions: string[] = useMemo(() => {
     if (selectedCampaignTipo === ManagementType.ONBOARDING)
       return Object.values(OnboardingOption);
     if (selectedCampaignTipo === ManagementType.AR)
       return Object.values(ArOption);
-    // No campaign selected or OTHER → show all
     return Object.values(CampaignOptionEnum);
   }, [selectedCampaignTipo]);
 
@@ -92,17 +135,58 @@ export function CallFiltersBar({
     return yards.filter((y) => y.name.toLowerCase().includes(term));
   }, [yards, yardSearch]);
 
+  const activeChips = useMemo(() => {
+    const labelMap: Record<FilterKey, string> = {
+      status: "Status",
+      direction: "Direction",
+      disposition: "Disposition",
+      campaign: "Campaign",
+      campaignOption: "Campaign Option",
+      yard: "Yard",
+      agent: "Agent",
+      phoneLine: "Phone Line",
+    };
+    const chips: { key: FilterKey; label: string; value: string }[] = [];
+    (Object.entries(filters) as [FilterKey, string][]).forEach(([key, val]) => {
+      if (val === "all") return;
+      let displayValue = val;
+      if (key === "campaign") {
+        const found = campaigns.find((c) => c.id.toString() === val);
+        displayValue = found?.nombre ?? val;
+      } else if (key === "yard") {
+        const found = yards.find((y) => y.id.toString() === val);
+        displayValue = found?.name ?? val;
+      } else if (key === "agent") {
+        const found = agents.find((a) => a.id.toString() === val);
+        displayValue = found?.name ?? val;
+      } else if (key === "phoneLine") {
+        const found = phoneLines.find((l) => l.id.toString() === val);
+        displayValue = found ? found.label || found.phoneNumber : val;
+      } else {
+        displayValue = formatEnumLabel(val);
+      }
+      chips.push({ key, label: labelMap[key], value: displayValue });
+    });
+    return chips;
+  }, [filters, agents, campaigns, yards, phoneLines]);
+
+  const FilterLabel = ({ children }: { children: React.ReactNode }) => (
+    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+      {children}
+    </span>
+  );
+
   return (
-    <div className="space-y-2">
-      {/* Toggle button */}
-      <div className="flex items-center gap-2">
+    <>
+      {/* Trigger row + inline chips */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button
-          variant={open || activeCount > 0 ? "secondary" : "outline"}
+          variant={activeCount > 0 ? "secondary" : "outline"}
           size="sm"
-          className="h-[30px] rounded-full px-3 text-[12.5px] font-medium border-border shadow-none"
-          onClick={() => setOpen(!open)}
+          className="h-7.5 rounded-full px-3 text-[12.5px] font-medium border-border shadow-none"
+          onClick={() => setOpen(true)}
         >
-          <SlidersHorizontal className="mr-1.5 h-[14px] w-[14px]" />
+          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
           Filters
           {activeCount > 0 && (
             <Badge
@@ -113,251 +197,297 @@ export function CallFiltersBar({
             </Badge>
           )}
         </Button>
+
         {activeCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-[30px] rounded-full px-3 text-[12.5px] font-medium text-muted-foreground hover:bg-muted/50"
-            onClick={clearAll}
-          >
-            <X className="mr-1.5 h-[14px] w-[14px]" />
-            Clear all
-          </Button>
+          <>
+            <span className="h-4 w-px bg-border" aria-hidden />
+            {activeChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1 h-7.5 rounded-full border border-border bg-slate-50 dark:bg-slate-800 px-3 text-[12.5px]"
+              >
+                <span className="font-normal text-muted-foreground">
+                  {chip.label}:
+                </span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">
+                  {chip.value}
+                </span>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAll}
+              className="cursor-pointer text-[12.5px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Clear all
+            </button>
+          </>
         )}
       </div>
 
-      {/* Filter dropdowns row */}
-      {open && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
-          {/* Status */}
-          <div className="min-w-35 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Status
-            </span>
-            <Select
-              value={filters.status}
-              onValueChange={(v) => onFilterChange("status", v)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.values(CallStatus).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {formatEnumLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Right Side Drawer */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="right"
+          className="flex flex-col w-full sm:w-100 p-0 gap-0"
+        >
+          {/* Header */}
+          <SheetHeader className="flex flex-row items-center justify-between px-5 py-4 border-b shrink-0">
+            <SheetTitle className="text-sm font-semibold">Filters</SheetTitle>
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </SheetClose>
+          </SheetHeader>
 
-          {/* Direction */}
-          <div className="min-w-35 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Direction
-            </span>
-            <Select
-              value={filters.direction}
-              onValueChange={(v) => onFilterChange("direction", v)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Directions</SelectItem>
-                {Object.values(CallDirection).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {formatEnumLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Status */}
+              <div className="space-y-1.5">
+                <FilterLabel>Status</FilterLabel>
+                <Select
+                  value={draft.status}
+                  onValueChange={(v) => setDraftKey("status", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {Object.values(CallStatus).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {formatEnumLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Disposition */}
-          <div className="min-w-38 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Disposition
-            </span>
-            <Select
-              value={filters.disposition}
-              onValueChange={(v) => onFilterChange("disposition", v)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dispositions</SelectItem>
-                {Object.values(CallDisposition).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {formatEnumLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Direction */}
+              <div className="space-y-1.5">
+                <FilterLabel>Direction</FilterLabel>
+                <Select
+                  value={draft.direction}
+                  onValueChange={(v) => setDraftKey("direction", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Directions</SelectItem>
+                    {Object.values(CallDirection).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {formatEnumLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Agent */}
-          <div className="min-w-38 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Agent
-            </span>
-            <Select
-              value={filters.agent}
-              onValueChange={(v) => onFilterChange("agent", v)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Agents</SelectItem>
-                {agents.map((a) => (
-                  <SelectItem key={a.id} value={a.id.toString()}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Disposition */}
+              <div className="space-y-1.5">
+                <FilterLabel>Disposition</FilterLabel>
+                <Select
+                  value={draft.disposition}
+                  onValueChange={(v) => setDraftKey("disposition", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Dispositions</SelectItem>
+                    {Object.values(CallDisposition).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {formatEnumLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Campaign */}
-          <div className="min-w-40 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Campaign
-            </span>
-            <Select
-              value={filters.campaign}
-              onValueChange={(v) => {
-                onFilterChange("campaign", v);
-                // Reset campaign option when campaign changes
-                if (filters.campaignOption !== "all") {
-                  const newCampaign = campaigns.find(
-                    (c) => c.id.toString() === v,
-                  );
-                  const newTipo =
-                    v === "all" ? null : (newCampaign?.tipo ?? null);
-                  const newOptions: string[] =
-                    newTipo === ManagementType.ONBOARDING
-                      ? Object.values(OnboardingOption)
-                      : newTipo === ManagementType.AR
-                        ? Object.values(ArOption)
-                        : Object.values(CampaignOptionEnum);
-                  if (!newOptions.includes(filters.campaignOption)) {
-                    onFilterChange("campaignOption", "all");
+              {/* Agent */}
+              <div className="space-y-1.5">
+                <FilterLabel>Agent</FilterLabel>
+                <Select
+                  value={draft.agent}
+                  onValueChange={(v) => setDraftKey("agent", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Agents</SelectItem>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id.toString()}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Campaign */}
+              <div className="space-y-1.5">
+                <FilterLabel>Campaign</FilterLabel>
+                <Select
+                  value={draft.campaign}
+                  onValueChange={(v) => {
+                    setDraftKey("campaign", v);
+                    const newCampaign = campaigns.find(
+                      (c) => c.id.toString() === v,
+                    );
+                    const newTipo =
+                      v === "all" ? null : (newCampaign?.tipo ?? null);
+                    const newOptions: string[] =
+                      newTipo === ManagementType.ONBOARDING
+                        ? Object.values(OnboardingOption)
+                        : newTipo === ManagementType.AR
+                          ? Object.values(ArOption)
+                          : Object.values(CampaignOptionEnum);
+                    if (!newOptions.includes(draft.campaignOption)) {
+                      setDraftKey("campaignOption", "all");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search..."
+                        value={campaignSearch}
+                        onChange={(e) => setCampaignSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <SelectItem value="all">All Campaigns</SelectItem>
+                    {filteredCampaigns.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Campaign Option */}
+              <div className="space-y-1.5">
+                <FilterLabel>Campaign Option</FilterLabel>
+                <Select
+                  value={
+                    draft.campaignOption !== "all" &&
+                    !availableCampaignOptions.includes(draft.campaignOption)
+                      ? "all"
+                      : draft.campaignOption
                   }
-                }
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2">
-                  <Input
-                    placeholder="Search..."
-                    value={campaignSearch}
-                    onChange={(e) => setCampaignSearch(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <SelectItem value="all">All Campaigns</SelectItem>
-                {filteredCampaigns.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  onValueChange={(v) => setDraftKey("campaignOption", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Options</SelectItem>
+                    {availableCampaignOptions.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {formatEnumLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Yard */}
+              <div className="space-y-1.5">
+                <FilterLabel>Yard</FilterLabel>
+                <Select
+                  value={draft.yard}
+                  onValueChange={(v) => setDraftKey("yard", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search..."
+                        value={yardSearch}
+                        onChange={(e) => setYardSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <SelectItem value="all">All Yards</SelectItem>
+                    {filteredYards.map((y) => (
+                      <SelectItem key={y.id} value={y.id.toString()}>
+                        {y.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Phone Line */}
+              <div className="space-y-1.5">
+                <FilterLabel>Phone Line</FilterLabel>
+                <Select
+                  value={draft.phoneLine}
+                  onValueChange={(v) => setDraftKey("phoneLine", v)}
+                >
+                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Lines</SelectItem>
+                    {phoneLines.map((l) => (
+                      <SelectItem key={l.id} value={l.id.toString()}>
+                        {l.label || l.phoneNumber}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          {/* Campaign Option */}
-          <div className="min-w-40 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Campaign Option
-            </span>
-            <Select
-              value={
-                filters.campaignOption !== "all" &&
-                !availableCampaignOptions.includes(filters.campaignOption)
-                  ? "all"
-                  : filters.campaignOption
-              }
-              onValueChange={(v) => onFilterChange("campaignOption", v)}
+          {/* Sticky footer */}
+          <div className="shrink-0 border-t px-5 py-3 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full text-[12.5px] font-medium"
+              onClick={handleClear}
+              disabled={draftActiveCount === 0}
             >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Options</SelectItem>
-                {availableCampaignOptions.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {formatEnumLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Yard */}
-          <div className="min-w-40 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Yard
-            </span>
-            <Select
-              value={filters.yard}
-              onValueChange={(v) => onFilterChange("yard", v)}
+              Clear filters
+            </Button>
+            <Button
+              size="sm"
+              className="ml-auto rounded-full text-[12.5px] font-medium px-5 bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={handleApply}
             >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2">
-                  <Input
-                    placeholder="Search..."
-                    value={yardSearch}
-                    onChange={(e) => setYardSearch(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <SelectItem value="all">All Yards</SelectItem>
-                {filteredYards.map((y) => (
-                  <SelectItem key={y.id} value={y.id.toString()}>
-                    {y.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Apply
+              {draftActiveCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 h-4 min-w-4 px-1 text-[10px] leading-none bg-background/20 text-background"
+                >
+                  {draftActiveCount}
+                </Badge>
+              )}
+            </Button>
           </div>
-
-          {/* Phone Line */}
-          <div className="min-w-38 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Phone Line
-            </span>
-            <Select
-              value={filters.phoneLine}
-              onValueChange={(v) => onFilterChange("phoneLine", v)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Lines</SelectItem>
-                {phoneLines.map((l) => (
-                  <SelectItem key={l.id} value={l.id.toString()}>
-                    {l.label || l.phoneNumber}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-    </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

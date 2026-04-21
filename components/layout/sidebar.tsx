@@ -1,463 +1,366 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import {
   BookOpen,
-  LifeBuoy,
-  Map,
-  PieChart,
   LayoutDashboard,
   Megaphone,
   Users,
   BarChart3,
   PhoneCall,
-  ChevronRight,
   User,
   UserCircle,
   Building,
   Phone,
-  ChevronsUpDown,
+  Settings,
+  HelpCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  MessageSquare,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
-
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarRail,
-  SidebarSeparator,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { auth } from "@/lib/auth";
 
+// ── Navigation data ────────────────────────────────────────────────────────────
 
-// Navigation Data
-const data = {
-  navMain: [
-    {
-      title: "Aircall",
-      url: "/aircall",
-      icon: PhoneCall,
-      items: [],
-    },
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      items: [],
-    },
-    {
-      title: "Calls & Tickets",
-      url: "/calls",
-      icon: PhoneCall,
-      items: [],
-    },
-    {
-      title: "Yards",
-      url: "/yards",
-      icon: Building,
-      items: [
-        { title: "All Yards", url: "/yards" },
-        { title: "Reports", url: "/reports/yards" },
-      ],
-    },
-    {
-      title: "Landlords",
-      url: "/landlords",
-      icon: User,
-      items: [
-        { title: "All Landlords", url: "/landlords" },
-        { title: "Reports", url: "/reports/landlords" },
-      ],
-    },
-    {
-      title: "Campaigns",
-      url: "/campaigns",
-      icon: Megaphone,
-      items: [
-        { title: "All Campaigns", url: "/campaigns" },
-        { title: "Reports", url: "/reports/campaigns" },
-      ],
-    },
-    {
-      title: "Knowledge",
-      url: "/knowledge",
-      icon: BookOpen,
-      items: [
-        { title: "Rig Hut Policies", url: "/Knowledge/policies" },
-        { title: "Guides", url: "/Knowledge/Guides" },
-      ],
-    },
-    {
-      title: "Reports",
-      url: "/reports",
-      icon: BarChart3,
-      items: [
-        { title: "Performance", url: "/reports/performance" },
-        { title: "Agent Stats", url: "/reports/agents" },
-      ],
-    },
-  ],
-  navSecondary: [
-    { title: "Support", url: "/support", icon: LifeBuoy },
-  ],
-  projects: [
-    { name: "Call Center", url: "#", icon: PhoneCall },
-    { name: "Sales Team", url: "#", icon: PieChart },
-    { name: "Support Team", url: "#", icon: Map },
-  ],
-};
+const workspaceItems = [
+  { title: "Aircall", url: "/aircall", icon: MessageSquare },
+  { title: "Calls", url: "/calls", icon: PhoneCall },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+  { title: "Knowledge", url: "/knowledge", icon: BookOpen },
+  { title: "Reports", url: "/reports", icon: BarChart3, adminOnly: true },
+];
+
+const managementItems = [
+  { title: "Customers", url: "/customers", icon: Users },
+  { title: "Yards", url: "/yards", icon: Building },
+  { title: "Landlords", url: "/landlords", icon: User },
+  { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
+  { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
+  { title: "Profile", url: "/profile", icon: UserCircle },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((p) => p[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { role, setRole } = useRole();
-  const { state } = useSidebar();
+  const { role } = useRole();
+  const { state, toggleSidebar } = useSidebar();
   const { theme, resolvedTheme } = useTheme();
+
   const [mounted, setMounted] = useState(false);
+  const [currentUser, setCurrentUser] = useState({
+    name: "User",
+    initials: "U",
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const currentTheme = mounted ? resolvedTheme || theme || "light" : "light";
-  const isDark = currentTheme === "dark";
+  useEffect(() => {
+    const u = auth.getUser();
+    if (u) {
+      const full = [u.name, u.lastName].filter(Boolean).join(" ");
+      const display = full || u.email || "User";
+      setCurrentUser({ name: display, initials: getInitials(display) });
+    }
+  }, []);
 
-  // Filtrar navegación para agentes — sin cambios funcionales
+  const isCollapsed = state === "collapsed";
+  const isDark = mounted ? (resolvedTheme || theme) === "dark" : false;
   const normalizedRole = role?.toString().toLowerCase();
-  const filteredNavMain =
+
+  // ── Filter items by role
+  const visibleWorkspace = (
     normalizedRole === "agent"
-      ? data.navMain
-          .filter((item) => item.title !== "Reports")
-          .map((item) => {
-            if (item.title === "Dashboard") return { ...item, url: "/agent-dashboard" };
-            if (["Landlords", "Campaigns", "Yards"].includes(item.title))
-              return { ...item, items: [] };
-            return item;
-          })
-      : data.navMain;
+      ? workspaceItems
+          .filter((item) => !item.adminOnly)
+          .map((item) =>
+            item.title === "Dashboard"
+              ? { ...item, url: "/agent-dashboard" }
+              : item,
+          )
+      : workspaceItems
+  ) as Array<{ title: string; url: string; icon: React.ElementType }>;
 
-  const isGroupActive = (item: any) => {
-    if (pathname === item.url) return true;
-    if (item.items?.some((sub: any) => pathname === sub.url || pathname.startsWith(sub.url)))
-      return true;
-    return false;
+  const visibleManagement = managementItems.filter(
+    (item) => !(item.adminOnly && normalizedRole === "agent"),
+  ) as Array<{ title: string; url: string; icon: React.ElementType }>;
+
+  // ── Active check
+  const isActive = (url: string) =>
+    pathname === url || pathname.startsWith(url + "/");
+
+  // ── Design tokens
+  const tk = isDark
+    ? {
+        sidebar: "bg-[#111113] border-[#1e1e21]",
+        header: "border-[#1e1e21]",
+        brand: "text-white",
+        sectionLbl: "text-[#46464c]",
+        divider: "bg-[#1e1e21]",
+        itemInactive: "text-[#8e8e96] hover:bg-white/5 hover:text-[#e8e8e8]",
+        itemActive: "bg-white/10 text-white font-semibold",
+        iconInactive: "text-[#4d4d54]",
+        iconActive: "text-white",
+        toggleBtn: "text-[#4d4d54] hover:bg-white/5 hover:text-[#e8e8e8]",
+        logoRing: "border-[#2a2a2e]",
+        footerBorder: "border-[#1e1e21]",
+        footerName: "text-[#e8e8e8]",
+        footerSub: "text-[#46464c]",
+        avatarBg: "bg-[#2a2a2e] text-[#e8e8e8]",
+        statusBorder: "border-[#111113]",
+      }
+    : {
+        sidebar: "bg-white border-slate-200",
+        header: "border-slate-100",
+        brand: "text-slate-900",
+        sectionLbl: "text-slate-400",
+        divider: "bg-slate-100",
+        itemInactive: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+        itemActive: "bg-green-50 text-green-900 font-medium",
+        iconInactive: "text-slate-400",
+        iconActive: "text-green-700",
+        toggleBtn: "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
+        logoRing: "border-slate-200",
+        footerBorder: "border-slate-100",
+        footerName: "text-slate-800",
+        footerSub: "text-slate-400",
+        avatarBg: "bg-teal-500 text-white",
+        statusBorder: "border-white",
+      };
+
+  // ── Nav item component
+  const NavItem = ({
+    title,
+    url,
+    icon: Icon,
+  }: {
+    title: string;
+    url: string;
+    icon: React.ElementType;
+  }) => {
+    const active = isActive(url);
+    return (
+      <li>
+        <Link
+          href={url}
+          title={isCollapsed ? title : undefined}
+          className={[
+            "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+            isCollapsed ? "w-10 h-10 justify-center" : "gap-3 px-3 py-1.75",
+            active ? tk.itemActive : tk.itemInactive,
+          ].join(" ")}
+        >
+          <Icon
+            className={`w-5 h-5 shrink-0 ${active ? tk.iconActive : tk.iconInactive}`}
+            strokeWidth={active ? 2.2 : 1.8}
+          />
+          {!isCollapsed && <span className="leading-none">{title}</span>}
+        </Link>
+      </li>
+    );
   };
-
-  // ── Design tokens (light / dark)
-  const t = {
-    sidebar:     isDark ? "bg-gray-950 border-gray-800" : "bg-white border-slate-200",
-    header:      isDark ? "border-gray-800" : "border-slate-100",
-    brand:       isDark ? "text-white" : "text-slate-900",
-    sectionLbl:  isDark ? "text-gray-500" : "text-slate-400",
-    link:        isDark ? "text-gray-300 hover:bg-gray-800 hover:text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-    linkActive:  isDark ? "bg-blue-500/15 text-blue-400 font-semibold" : "bg-blue-50 text-blue-700 font-semibold",
-    icon:        isDark ? "text-gray-500" : "text-slate-400",
-    iconActive:  isDark ? "text-blue-400" : "text-blue-600",
-    sub:         isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
-    subActive:   isDark ? "text-blue-400 font-medium" : "text-blue-700 font-medium",
-    dot:         isDark ? "bg-emerald-400" : "bg-emerald-500",
-    footer:      isDark ? "border-gray-800 bg-gray-950" : "border-slate-100 bg-white",
-    footerBtn:   isDark ? "hover:bg-gray-800" : "hover:bg-slate-50",
-    footerName:  isDark ? "text-gray-200" : "text-slate-800",
-    footerEmail: isDark ? "text-gray-500" : "text-slate-500",
-    separator:   isDark ? "bg-gray-800" : "bg-slate-100",
-    support:     isDark ? "text-gray-400 hover:bg-gray-800 hover:text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700",
-    copyright:   isDark ? "text-gray-600" : "text-slate-400",
-  };
-
-  // ── Shared link class builder
-  const linkCls = (active: boolean) =>
-    `mx-3 px-3 py-2 flex items-center gap-3 rounded-lg mb-0.5 text-[13px] transition-colors duration-150 cursor-pointer w-[calc(100%-24px)] ${
-      active ? t.linkActive : t.link
-    }`;
-
-  const iconCls = (active: boolean) =>
-    `w-4 h-4 flex-shrink-0 ${active ? t.iconActive : t.icon}`;
 
   return (
     <Sidebar
       collapsible="icon"
-      className={`border-r transition-colors duration-300 ${t.sidebar}`}
+      className={`border-r transition-colors duration-200 ${tk.sidebar}`}
       {...props}
     >
-      {/* ── HEADER ── */}
-      <SidebarHeader className={`px-5 py-5 border-b ${t.header}`}>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent active:bg-transparent p-0 h-auto">
-              <Link href="/dashboard" className="flex items-center gap-3">
-                {/* Logo mark */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden border border-slate-200/60 dark:border-gray-700">
-                  <div className="relative w-full h-full">
-                    <Image
-                      src="/images/LOGO CQ-10.png"
-                      alt="Center Quest Logo"
-                      fill
-                      className="object-contain scale-125"
-                      sizes="32px"
-                      priority
-                    />
-                  </div>
-                </div>
-
-                {/* Brand name — hidden when collapsed */}
-                {state !== "collapsed" && (
-                  <div className="flex flex-col leading-tight">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${t.brand}`}>
-                        Center Quest
-                      </span>
-                      <span className={`w-1.5 h-1.5 rounded-full ${t.dot} animate-pulse`} />
-                    </div>
-                    <span className={`text-[11px] ${t.sectionLbl}`}>
-                      Tickets System
-                    </span>
-                  </div>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-
-      {/* ── CONTENT ── */}
-      <SidebarContent className="flex flex-col overflow-y-auto overflow-x-hidden py-3">
-
-        {/* ── MAIN NAV ── */}
-        <SidebarGroup className="p-0">
-          <SidebarMenu className="p-0">
-            {filteredNavMain.map((item) => {
-              const active = isGroupActive(item);
-
-              // No children → simple link
-              if (!item.items?.length) {
-                return (
-                  <SidebarMenuItem key={item.title} className="p-0">
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={active}
-                      className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                    >
-                      <Link href={item.url} className={linkCls(active)}>
-                        {item.icon && (
-                          <item.icon className={iconCls(active)} strokeWidth={active ? 2.2 : 1.8} />
-                        )}
-                        <span className="font-medium">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }
-
-              // Has children → collapsible
-              return (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={active}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem className="p-0">
-                    <CollapsibleTrigger asChild>
-                      <button className={`${linkCls(active)} justify-between`}>
-                        <span className="flex items-center gap-3">
-                          {item.icon && (
-                            <item.icon className={iconCls(active)} strokeWidth={active ? 2.2 : 1.8} />
-                          )}
-                          <span className="font-medium">{item.title}</span>
-                        </span>
-                        <ChevronRight
-                          className={`w-3.5 h-3.5 opacity-50 flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 ${
-                            active ? t.iconActive : t.icon
-                          }`}
-                        />
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub className="ml-[2.35rem] mr-3 border-l border-slate-200/70 dark:border-gray-700/70 pl-3 py-0.5 my-0.5">
-                        {item.items?.map((sub) => {
-                          const subActive = pathname === sub.url;
-                          return (
-                            <SidebarMenuSubItem key={sub.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={subActive}
-                                className="p-0 h-auto hover:bg-transparent"
-                              >
-                                <Link
-                                  href={sub.url}
-                                  className={`flex items-center px-2 py-1.5 rounded-md text-[12.5px] transition-colors mb-0.5 ${
-                                    subActive ? t.subActive : t.sub
-                                  }`}
-                                >
-                                  {sub.title}
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        {/* ── MANAGEMENT SECTION ── */}
-        <SidebarGroup className="p-0 mt-2">
-          {state !== "collapsed" && (
-            <SidebarGroupLabel
-              className={`px-6 mt-4 mb-1 text-[10px] font-bold uppercase tracking-widest ${t.sectionLbl}`}
+      <SidebarContent className="flex flex-col h-full overflow-hidden gap-0 p-0">
+        {/* ── HEADER ── */}
+        <div
+          className={[
+            "flex items-center h-14 border-b shrink-0 transition-all duration-300",
+            tk.header,
+            isCollapsed ? "justify-center px-3" : "justify-between px-4",
+          ].join(" ")}
+        >
+          {!isCollapsed && (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2.5 min-w-0"
             >
-              Management
-            </SidebarGroupLabel>
+              <div
+                className={`shrink-0 w-7 h-7 rounded-md overflow-hidden relative border ${tk.logoRing}`}
+              >
+                <Image
+                  src="/images/LOGO CQ-10.png"
+                  alt="Center Quest"
+                  fill
+                  className="object-contain scale-125"
+                  sizes="28px"
+                  priority
+                />
+              </div>
+              <span className={`text-[13px] font-bold truncate ${tk.brand}`}>
+                Center Quest
+              </span>
+            </Link>
           )}
-          <SidebarGroupContent>
-            <SidebarMenu className="p-0">
 
-              <SidebarMenuItem className="p-0">
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Customers"
-                  isActive={pathname.startsWith("/customers")}
-                  className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                >
-                  <Link
-                    href="/customers"
-                    className={linkCls(pathname.startsWith("/customers"))}
-                  >
-                    <Users
-                      className={iconCls(pathname.startsWith("/customers"))}
-                      strokeWidth={pathname.startsWith("/customers") ? 2.2 : 1.8}
-                    />
-                    <span className="font-medium">Customer Management</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+          <button
+            onClick={toggleSidebar}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shrink-0 ${tk.toggleBtn}`}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
+        </div>
 
-              {normalizedRole !== "agent" && (
-                <SidebarMenuItem className="p-0">
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Users"
-                    isActive={pathname.startsWith("/users")}
-                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                  >
-                    <Link
-                      href="/users"
-                      className={linkCls(pathname.startsWith("/users"))}
-                    >
-                      <Users
-                        className={iconCls(pathname.startsWith("/users"))}
-                        strokeWidth={pathname.startsWith("/users") ? 2.2 : 1.8}
-                      />
-                      <span className="font-medium">User Management</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {normalizedRole !== "agent" && (
-                <SidebarMenuItem className="p-0">
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Phone Lines"
-                    isActive={pathname.startsWith("/phone-lines")}
-                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                  >
-                    <Link
-                      href="/phone-lines"
-                      className={linkCls(pathname.startsWith("/phone-lines"))}
-                    >
-                      <Phone
-                        className={iconCls(pathname.startsWith("/phone-lines"))}
-                        strokeWidth={pathname.startsWith("/phone-lines") ? 2.2 : 1.8}
-                      />
-                      <span className="font-medium">Phone Lines</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              <SidebarMenuItem className="p-0">
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Profile"
-                  isActive={pathname.startsWith("/profile")}
-                  className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                >
-                  <Link
-                    href="/profile"
-                    className={linkCls(pathname.startsWith("/profile"))}
-                  >
-                    <UserCircle
-                      className={iconCls(pathname.startsWith("/profile"))}
-                      strokeWidth={pathname.startsWith("/profile") ? 2.2 : 1.8}
-                    />
-                    <span className="font-medium">Profile</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* ── SUPPORT ── */}
-        <SidebarGroup className="p-0 mt-auto pb-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="p-0">
-              {data.navSecondary.map((item) => (
-                <SidebarMenuItem key={item.title} className="p-0">
-                  <SidebarMenuButton
-                    asChild
-                    size="sm"
-                    className="p-0 h-auto hover:bg-transparent active:bg-transparent border-none shadow-none bg-transparent"
-                  >
-                    <Link
-                      href={item.url}
-                      className={`mx-3 px-3 py-2 flex items-center gap-3 rounded-lg text-[13px] transition-colors ${t.support}`}
-                    >
-                      <item.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden min-h-0">
+          {/* Inbox section */}
+          <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
+            {!isCollapsed && (
+              <p
+                className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-2 ${tk.sectionLbl}`}
+              >
+                Inbox
+              </p>
+            )}
+            {isCollapsed && <div className="h-2" />}
+            <ul className="space-y-0.5">
+              {visibleWorkspace.map((item) => (
+                <NavItem key={item.title} {...item} />
               ))}
+            </ul>
+          </nav>
 
-              {/* Copyright — collapsed-safe */}
-              {state === "expanded" && (
-                <div className={`mx-3 px-3 pt-1 pb-2 text-[11px] text-center ${t.copyright}`}>
-                  © {new Date().getFullYear()} Mindware Labs. All rights reserved.
+          <div className={`mx-3 h-px ${tk.divider}`} />
+
+          {/* Management section */}
+          <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
+            {!isCollapsed && (
+              <p
+                className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-2 ${tk.sectionLbl}`}
+              >
+                Contacts
+              </p>
+            )}
+            {isCollapsed && <div className="h-2" />}
+            <ul className="space-y-0.5">
+              {visibleManagement.map((item) => (
+                <NavItem key={item.title} {...item} />
+              ))}
+            </ul>
+          </nav>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* ── FOOTER ── */}
+          <div
+            className={[
+              "border-t pt-3 pb-3 space-y-0.5",
+              tk.footerBorder,
+              isCollapsed ? "px-1.5" : "px-2",
+            ].join(" ")}
+          >
+            {/* User card */}
+            <div
+              className={[
+                "flex items-center rounded-lg py-1.5",
+                isCollapsed ? "justify-center" : "gap-3 px-3",
+              ].join(" ")}
+            >
+              <div className="relative shrink-0">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${tk.avatarBg}`}
+                >
+                  {currentUser.initials}
+                </div>
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 ${tk.statusBorder}`}
+                />
+              </div>
+
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-[13px] font-medium truncate leading-tight ${tk.footerName}`}
+                  >
+                    {currentUser.name}
+                  </p>
+                  <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    Unavailable
+                  </span>
                 </div>
               )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+            </div>
 
+            {/* Settings — admin only */}
+            {normalizedRole !== "agent" && (
+              <Link
+                href="/settings"
+                title={isCollapsed ? "Settings" : undefined}
+                className={[
+                  "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                  isCollapsed
+                    ? "w-10 h-10 justify-center"
+                    : "gap-3 px-3 py-1.75",
+                  tk.itemInactive,
+                ].join(" ")}
+              >
+                <Settings
+                  className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
+                  strokeWidth={1.8}
+                />
+                {!isCollapsed && <span className="leading-none">Settings</span>}
+              </Link>
+            )}
+
+            {/* Help & Feedback */}
+            <Link
+              href="/support"
+              title={isCollapsed ? "Help and Feedback" : undefined}
+              className={[
+                "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                isCollapsed ? "w-10 h-10 justify-center" : "gap-3 px-3 py-1.75",
+                tk.itemInactive,
+              ].join(" ")}
+            >
+              <HelpCircle
+                className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
+                strokeWidth={1.8}
+              />
+              {!isCollapsed && (
+                <span className="leading-none">Help and Feedback</span>
+              )}
+            </Link>
+          </div>
+        </div>
       </SidebarContent>
-
 
       <SidebarRail />
     </Sidebar>

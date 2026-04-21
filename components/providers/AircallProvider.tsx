@@ -63,6 +63,9 @@ interface AircallContextValue {
   /** Subscribe to a raw SDK event. Returns unsubscribe. */
   on: <T = any>(event: string, handler: (data: T) => void) => () => void;
   lastIncomingCall: IncomingCallState | null;
+  /** True when a right-side sheet/drawer is open — moves the FAB to the bottom edge. */
+  sheetOpen: boolean;
+  setSheetOpen: (open: boolean) => void;
 }
 
 const AircallContext = createContext<AircallContextValue | null>(null);
@@ -102,6 +105,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
     useState<HTMLElement | null>(null);
   const [lastIncomingCall, setLastIncomingCall] =
     useState<IncomingCallState | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Stable pub/sub so consumers can subscribe once
   const dispatchEvent = useCallback((event: string, data: any) => {
@@ -339,6 +343,8 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       toggleDock,
       on,
       lastIncomingCall,
+      sheetOpen,
+      setSheetOpen,
     }),
     [
       status,
@@ -347,6 +353,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       errorMessage,
       dockOpen,
       mountMode,
+      sheetOpen,
       dial,
       openDock,
       closeDock,
@@ -370,6 +377,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
         onToggle={toggleDock}
         onClose={closeDock}
         lastIncomingCall={lastIncomingCall}
+        sheetOpen={sheetOpen}
       />
     </AircallContext.Provider>
   );
@@ -389,6 +397,7 @@ interface AircallDockProps {
   onToggle: () => void;
   onClose: () => void;
   lastIncomingCall: IncomingCallState | null;
+  sheetOpen: boolean;
 }
 
 function AircallDock({
@@ -402,6 +411,7 @@ function AircallDock({
   onToggle,
   onClose,
   lastIncomingCall,
+  sheetOpen,
 }: AircallDockProps) {
   const isFullscreen = mountMode === "fullscreen";
   const panelVisible = isFullscreen || open;
@@ -428,6 +438,10 @@ function AircallDock({
     Math.max(min, Math.min(max, v));
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Stop the native event from reaching Radix's document-level listener,
+    // which would otherwise treat this as an "outside click" and close any
+    // open Sheet/Dialog.
+    e.nativeEvent.stopImmediatePropagation();
     if (isFullscreen) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = e.currentTarget.getBoundingClientRect();
@@ -460,7 +474,8 @@ function AircallDock({
 
   // Panel position: appear above/beside the button, clamped to viewport
   const panelStyle = (): React.CSSProperties => {
-    if (!pos) return { height: `${PANEL_H}px`, maxHeight: "calc(100vh - 140px)" };
+    if (!pos)
+      return { height: `${PANEL_H}px`, maxHeight: "calc(100vh - 140px)" };
     const gap = 12;
     let left = pos.x + BTN_SIZE / 2 - PANEL_W / 2;
     let top = pos.y - PANEL_H - gap;
@@ -468,7 +483,12 @@ function AircallDock({
     if (top < 8) top = pos.y + BTN_SIZE + gap;
     left = clamp(left, 8, window.innerWidth - PANEL_W - 8);
     top = clamp(top, 8, window.innerHeight - PANEL_H - 8);
-    return { left, top, height: `${PANEL_H}px`, maxHeight: "calc(100vh - 140px)" };
+    return {
+      left,
+      top,
+      height: `${PANEL_H}px`,
+      maxHeight: "calc(100vh - 140px)",
+    };
   };
 
   useEffect(() => {
@@ -497,6 +517,7 @@ function AircallDock({
       {/* Floating toggle button — draggable */}
       <button
         type="button"
+        data-aircall-fab="true"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -504,15 +525,14 @@ function AircallDock({
         className={cn(
           "fixed z-[60] h-14 w-14 rounded-full shadow-lg select-none",
           "flex items-center justify-center",
+          "transition-[bottom,right,left] duration-300 ease-in-out",
           "bg-primary text-primary-foreground hover:bg-primary/90",
           open && !dragRef.current?.moved && "scale-90",
           isFullscreen && "hidden",
-          !pos && "bottom-6 right-6",
+          !pos && (sheetOpen ? "bottom-6 left-6" : "bottom-6 right-6"),
         )}
         style={
-          pos
-            ? { left: pos.x, top: pos.y, cursor: "grab" }
-            : { cursor: "grab" }
+          pos ? { left: pos.x, top: pos.y, cursor: "grab" } : { cursor: "grab" }
         }
       >
         {lastIncomingCall &&
@@ -541,7 +561,9 @@ function AircallDock({
               ? "absolute inset-0 rounded-none shadow-none opacity-100 scale-100 pointer-events-auto"
               : cn(
                   "z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl",
-                  pos ? "fixed origin-bottom" : "fixed bottom-24 right-6 origin-bottom-right",
+                  pos
+                    ? "fixed origin-bottom"
+                    : "fixed bottom-24 right-6 origin-bottom-right",
                   open
                     ? "opacity-100 scale-100 pointer-events-auto"
                     : "opacity-0 scale-95 pointer-events-none",

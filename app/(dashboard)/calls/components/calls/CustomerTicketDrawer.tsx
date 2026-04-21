@@ -40,8 +40,16 @@ import {
   type CreateSupportTicketFormData,
 } from "../../types";
 import type { CustomerTicketGroup } from "../tickets/InlineTicketTimeline";
-import { formatEnumLabel, fmtDate, fmtRelative } from "../../utils/call-helpers";
-import { InspLabel, InspectorSelect } from "../shared/InspectorHelpers";
+import {
+  formatEnumLabel,
+  fmtDate,
+  fmtRelative,
+} from "../../utils/call-helpers";
+import {
+  InspLabel,
+  InspectorSelect,
+  InspectorCombobox,
+} from "../shared/InspectorHelpers";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -242,7 +250,8 @@ export function CustomerTicketDrawer({
     isLoggedIn: aircallLoggedIn,
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
-  const dialPhone = selectedTicket?.customer?.phone || group?.customerPhone || "";
+  const dialPhone =
+    selectedTicket?.customer?.phone || group?.customerPhone || "";
 
   // Fetch full ticket history
   const historyUrl = useMemo(() => {
@@ -292,13 +301,17 @@ export function CustomerTicketDrawer({
       (c: any) => c.id.toString() === editFormData.campaignId,
     );
     const type = camp?.tipo?.toString().toUpperCase();
-    if (type === ManagementType.ONBOARDING) return Object.values(OnboardingOption);
+    if (type === ManagementType.ONBOARDING)
+      return Object.values(OnboardingOption);
     if (type === ManagementType.AR) return Object.values(ArOption);
     return [];
   }, [campaigns, editFormData.campaignId]);
 
   const followUpDateDisplay = useMemo(
-    () => (editFormData.followUpDueDate ? fmtDate(editFormData.followUpDueDate) : null),
+    () =>
+      editFormData.followUpDueDate
+        ? fmtDate(editFormData.followUpDueDate)
+        : null,
     [editFormData.followUpDueDate],
   );
 
@@ -399,12 +412,8 @@ export function CustomerTicketDrawer({
             disabled={!dialPhone || !canDial}
             className="flex items-center gap-1.5 h-8 px-3.5 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
             style={{ background: "#008f68" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "#007a5a")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "#008f68")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
           >
             <PhoneOutgoing className="w-3.5 h-3.5" />
             Call
@@ -698,9 +707,18 @@ export function CustomerTicketDrawer({
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: "Created", value: fmtDate(selectedTicket.createdAt) },
-                      { label: "Updated", value: fmtDate((selectedTicket as any).updatedAt) },
-                      { label: "Follow-up", value: fmtDate(editFormData.followUpDueDate) },
+                      {
+                        label: "Created",
+                        value: fmtDate(selectedTicket.createdAt),
+                      },
+                      {
+                        label: "Updated",
+                        value: fmtDate((selectedTicket as any).updatedAt),
+                      },
+                      {
+                        label: "Follow-up",
+                        value: fmtDate(editFormData.followUpDueDate),
+                      },
                     ].map((item) => (
                       <div key={item.label}>
                         <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">
@@ -794,24 +812,23 @@ export function CustomerTicketDrawer({
                   </div>
                   <div>
                     <InspLabel>Yard</InspLabel>
-                    <InspectorSelect
+                    <InspectorCombobox
                       value={editFormData.yardId || ""}
                       onChange={(v) =>
                         setEditFormData((f) => ({ ...f, yardId: v }))
                       }
                       placeholder="Yard"
-                    >
-                      <SelectItem value="none">None</SelectItem>
-                      {yards.map((y: any) => (
-                        <SelectItem key={y.id} value={y.id.toString()}>
-                          {y.name}
-                        </SelectItem>
-                      ))}
-                    </InspectorSelect>
+                      searchPlaceholder="Search yard…"
+                      noneLabel="None"
+                      items={yards.map((y: any) => ({
+                        value: y.id.toString(),
+                        label: y.name,
+                      }))}
+                    />
                   </div>
                   <div>
                     <InspLabel>Campaign</InspLabel>
-                    <InspectorSelect
+                    <InspectorCombobox
                       value={editFormData.campaignId || ""}
                       onChange={(v) => {
                         const camp = campaigns.find(
@@ -826,14 +843,13 @@ export function CustomerTicketDrawer({
                         }));
                       }}
                       placeholder="Campaign"
-                    >
-                      <SelectItem value="none">None</SelectItem>
-                      {campaigns.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.nombre}
-                        </SelectItem>
-                      ))}
-                    </InspectorSelect>
+                      searchPlaceholder="Search campaign…"
+                      noneLabel="None"
+                      items={campaigns.map((c: any) => ({
+                        value: c.id.toString(),
+                        label: c.nombre,
+                      }))}
+                    />
                   </div>
                   {campaignOptionValues.length > 0 && (
                     <div>
@@ -856,20 +872,19 @@ export function CustomerTicketDrawer({
                   )}
                   <div>
                     <InspLabel>Agent</InspLabel>
-                    <InspectorSelect
+                    <InspectorCombobox
                       value={editFormData.agentId || ""}
                       onChange={(v) =>
                         setEditFormData((f) => ({ ...f, agentId: v }))
                       }
                       placeholder="Unassigned"
-                    >
-                      <SelectItem value="none">Unassigned</SelectItem>
-                      {agents.map((a: any) => (
-                        <SelectItem key={a.id} value={a.id.toString()}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </InspectorSelect>
+                      searchPlaceholder="Search agent…"
+                      noneLabel="Unassigned"
+                      items={agents.map((a: any) => ({
+                        value: a.id.toString(),
+                        label: a.name,
+                      }))}
+                    />
                   </div>
                 </div>
               </div>
@@ -1020,8 +1035,8 @@ export function CustomerTicketDrawer({
                                   key={c.id}
                                   className={cn(
                                     "flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-slate-100",
-                                    editFormData.customerId === c.id.toString() &&
-                                      "bg-slate-100",
+                                    editFormData.customerId ===
+                                      c.id.toString() && "bg-slate-100",
                                   )}
                                   onClick={() => {
                                     setEditFormData((f) => ({
@@ -1035,7 +1050,8 @@ export function CustomerTicketDrawer({
                                   <Check
                                     className={cn(
                                       "w-3.5 h-3.5 shrink-0",
-                                      editFormData.customerId === c.id.toString()
+                                      editFormData.customerId ===
+                                        c.id.toString()
                                         ? "opacity-100 text-[#008f68]"
                                         : "opacity-0",
                                     )}
@@ -1062,8 +1078,7 @@ export function CustomerTicketDrawer({
                     <InspLabel>Phone</InspLabel>
                     <div className="h-7 flex items-center px-2.5 text-xs bg-slate-50 rounded-lg text-slate-500 font-mono">
                       {customers.find(
-                        (c: any) =>
-                          c.id.toString() === editFormData.customerId,
+                        (c: any) => c.id.toString() === editFormData.customerId,
                       )?.phone || "Auto-filled"}
                     </div>
                   </div>

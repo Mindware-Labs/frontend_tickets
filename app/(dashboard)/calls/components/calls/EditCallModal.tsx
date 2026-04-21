@@ -812,12 +812,19 @@ export function EditCallModal({
                   </Label>
                   <Select
                     value={editFormData.disposition}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
+                      const newDisposition = value === "none" ? "" : value;
+                      const isCallback =
+                        newDisposition === "CALLBACK_REQUIRED" ||
+                        newDisposition === "CALLBACK_SCHEDULED";
                       setEditFormData({
                         ...editFormData,
-                        disposition: value === "none" ? "" : value,
-                      })
-                    }
+                        disposition: newDisposition,
+                        ...(isCallback && {
+                          status: CallStatus.PENDING_FOLLOWUP,
+                        }),
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select disposition" />
