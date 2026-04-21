@@ -43,7 +43,12 @@ const workspaceItems = [
   // { title: "Reports", url: "/reports", icon: BarChart3, adminOnly: true },
 ];
 
-const managementItems = [
+const managementItems: {
+  title: string;
+  url: string;
+  icon: React.ComponentType;
+  adminOnly?: boolean;
+}[] = [
   // { title: "Customers", url: "/customers", icon: Users },
   // { title: "Yards", url: "/yards", icon: Building },
   // { title: "Landlords", url: "/landlords", icon: User },
