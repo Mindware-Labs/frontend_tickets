@@ -2420,9 +2420,7 @@ function PanelMkt({ data }: { data: DashboardLiveData }) {
                     dataKey="value"
                     paddingAngle={2}
                     onClick={(d) =>
-                      setFilterDisp(
-                        filterDisp === d.name ? null : d.name,
-                      )
+                      setFilterDisp(filterDisp === d.name ? null : d.name)
                     }
                     style={{ cursor: "pointer" }}
                   >
@@ -2432,9 +2430,7 @@ function PanelMkt({ data }: { data: DashboardLiveData }) {
                         fill={d.color}
                         stroke={C.card}
                         strokeWidth={2}
-                        opacity={
-                          filterDisp && d.name !== filterDisp ? 0.2 : 1
-                        }
+                        opacity={filterDisp && d.name !== filterDisp ? 0.2 : 1}
                       />
                     ))}
                   </Pie>
