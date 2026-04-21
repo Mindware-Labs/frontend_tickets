@@ -158,6 +158,7 @@ export interface CreateCallFormData {
   followUpDueDate: string;
   followUpAssignedToId: string;
   disposition: string;
+  relatedCallId?: string;
 }
 
 export type CreateTicketFormData = CreateCallFormData;

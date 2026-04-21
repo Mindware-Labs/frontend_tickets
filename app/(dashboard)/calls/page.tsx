@@ -378,6 +378,7 @@ export default function TicketsPage() {
     followUpDueDate: "",
     followUpAssignedToId: "",
     disposition: "",
+    relatedCallId: "",
   });
 
   // ---- Ticket notification ----
@@ -714,6 +715,9 @@ export default function TicketsPage() {
       followUpDueDate: formatDateLocal((ticket as any).followUpDueDate),
       followUpAssignedToId:
         (ticket as any).followUpAssignedToId?.toString() || "",
+      relatedCallId: (ticket as any).relatedCallId
+        ? String((ticket as any).relatedCallId)
+        : "",
     });
 
     setCampaignSearchEdit("");
@@ -759,10 +763,19 @@ export default function TicketsPage() {
     populateEditFormFromCall(call);
   };
 
-  const handleUpdateTicketFromModal = async () => {
+  const handleUpdateTicketFromModal = async (
+    overrideRelatedCallId?: string | null,
+  ) => {
     if (!selectedTicket) return;
     try {
       setIsUpdating(true);
+
+      // When called with an override (from link/unlink actions), use it directly
+      // to avoid stale closure issues with editFormData
+      const resolvedRelatedCallId =
+        overrideRelatedCallId !== undefined
+          ? overrideRelatedCallId
+          : editFormData.relatedCallId;
 
       const updatePayload: any = {
         customerId: editFormData.customerId
@@ -794,6 +807,10 @@ export default function TicketsPage() {
             ? Number(editFormData.followUpAssignedToId)
             : null,
         notes: editFormData.notes || null,
+        relatedCallId:
+          resolvedRelatedCallId && resolvedRelatedCallId !== ""
+            ? Number(resolvedRelatedCallId)
+            : null,
       };
 
       const response = await fetch(`/api/calls/${selectedTicket.id}`, {

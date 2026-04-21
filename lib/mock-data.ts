@@ -34,6 +34,15 @@ export interface Call {
   isLive?: boolean;
   callDate?: string;
   disposition?: string;
+  relatedCallId?: number | null;
+  relatedCall?: {
+    id: number;
+    direction?: string;
+    notes?: string;
+    disposition?: string;
+    startedAt?: string;
+    followUpDueDate?: string | null;
+  } | null;
   phoneLine?: {
     id: number;
     label: string | null;

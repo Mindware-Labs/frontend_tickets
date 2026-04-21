@@ -30,6 +30,9 @@ import {
   Mic,
   Phone,
   Timer,
+  Link2,
+  Check,
+  Pencil,
 } from "lucide-react";
 import {
   Select,
@@ -89,7 +92,7 @@ interface CustomerTimelineDrawerProps {
   setAttachmentFiles: (next: File[]) => void;
   savedAttachments: string[];
   isUpdating: boolean;
-  onUpdate: () => void;
+  onUpdate: (overrideRelatedCallId?: string | null) => void;
   customers: CustomerOption[];
   yards: YardOption[];
   agents: AgentOption[];
@@ -368,6 +371,18 @@ export function CustomerTimelineDrawer({
   const [audioError, setAudioError] = useState(false);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Call Linking states ───────────────────────────────────────────────────
+  const [showCallLinker, setShowCallLinker] = useState(false);
+  const [customerCallsCache, setCustomerCallsCache] = useState<Ticket[]>([]);
+  const [loadingCustomerCalls, setLoadingCustomerCalls] = useState(false);
+  const [selectedLinkCall, setSelectedLinkCall] = useState<Ticket | null>(null);
+  const [importChecklist, setImportChecklist] = useState({
+    notes: false,
+    campaign: false,
+    yard: false,
+  });
 
   useEffect(() => {
     if (audioRef.current) {
@@ -383,6 +398,11 @@ export function CustomerTimelineDrawer({
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
+    // Reset linker state and scroll to top when switching calls
+    setShowCallLinker(false);
+    setSelectedLinkCall(null);
+    setCustomerCallsCache([]);
+    scrollRef.current?.scrollTo({ top: 0 });
   }, [selectedCall?.id]);
 
   // Sync time inputs when switching to a different call
@@ -593,6 +613,51 @@ export function CustomerTimelineDrawer({
       )
     : null;
 
+  // ── Call Linking helpers ──────────────────────────────────────────────────
+  const handleOpenCallLinker = () => {
+    setShowCallLinker(true);
+    setSelectedLinkCall(null);
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    // Use already-loaded call history (from SWR or group.calls fallback)
+    setCustomerCallsCache(allCalls.filter((c) => c.id !== selectedCall?.id));
+  };
+
+  const handleRemoveLink = () => {
+    const orig = selectedCall as any;
+    setEditFormData({
+      ...editFormData,
+      relatedCallId: "",
+      notes: orig?.notes || "",
+      campaignId: orig?.campaignId ? String(orig.campaignId) : "",
+      campaignOption: orig?.campaignOption || "",
+      yardId: orig?.yardId ? String(orig.yardId) : "",
+    });
+    onUpdate("");
+  };
+
+  const handleLinkCall = () => {
+    if (!selectedLinkCall) return;
+    const target = selectedLinkCall as any;
+    setEditFormData({
+      ...editFormData,
+      relatedCallId: String(target.id),
+      ...(importChecklist.notes && target.notes ? { notes: target.notes } : {}),
+      ...(importChecklist.campaign && target.campaignId
+        ? {
+            campaignId: String(target.campaignId),
+            campaignOption: target.campaignOption || "",
+          }
+        : {}),
+      ...(importChecklist.yard && target.yardId
+        ? { yardId: String(target.yardId) }
+        : {}),
+    });
+    setShowCallLinker(false);
+    setSelectedLinkCall(null);
+    setImportChecklist({ notes: false, campaign: false, yard: false });
+    onUpdate(String(target.id));
+  };
+
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
@@ -742,6 +807,16 @@ export function CustomerTimelineDrawer({
                 <PhoneOutgoing className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Call</span>
               </button>
+              {selectedCall && (
+                <button
+                  type="button"
+                  onClick={handleOpenCallLinker}
+                  className="flex items-center gap-1.5 h-8 px-3.5 bg-white hover:bg-slate-50 active:scale-95 text-slate-600 hover:text-[#008f68] text-[12px] font-semibold rounded-xl border border-slate-200 hover:border-[#008f68]/40 transition-all shadow-sm"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Link</span>
+                </button>
+              )}
               {onCreateTicket && (
                 <button
                   type="button"
@@ -890,7 +965,10 @@ export function CustomerTimelineDrawer({
         <div className="flex-1 overflow-hidden min-h-0 flex">
           {/* ── MAIN AREA (~70%) ─────────────────────────────────────────────── */}
           <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+            >
               {!selectedCall ? (
                 <div className="flex items-center justify-center h-full text-slate-300">
                   <div className="text-center">
@@ -902,6 +980,198 @@ export function CustomerTimelineDrawer({
                 </div>
               ) : (
                 <div className="pt-1 px-4 pb-4 space-y-3">
+                  {/* ── Call Linker (inline panel) ── */}
+                  {showCallLinker && (
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-slate-100">
+                        <div className="w-6 h-6 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
+                          <Link2 className="w-3.5 h-3.5 text-[#008f68]" />
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex-1">
+                          Link Related Call
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCallLinker(false);
+                            setSelectedLinkCall(null);
+                          }}
+                          className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {isLoadingHistory ? (
+                          <div className="flex items-center justify-center py-6">
+                            <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                          </div>
+                        ) : customerCallsCache.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-6 gap-1.5 text-slate-300">
+                            <PhoneCall className="w-5 h-5" />
+                            <span className="text-[11px]">
+                              No other calls found
+                            </span>
+                          </div>
+                        ) : (
+                          customerCallsCache.map((call) => {
+                            const isSelected = selectedLinkCall?.id === call.id;
+                            const dir = dirStyle(
+                              (call.direction || "inbound").toString(),
+                              !!(call as any).missedCallReason,
+                            );
+                            return (
+                              <button
+                                key={call.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedLinkCall(isSelected ? null : call)
+                                }
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                  isSelected
+                                    ? "bg-[#008f68]/5 border-l-2 border-[#008f68]"
+                                    : "hover:bg-slate-50 border-l-2 border-transparent"
+                                }`}
+                              >
+                                <div
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                  style={{ background: dir.color + "15" }}
+                                >
+                                  {(call.direction || "inbound")
+                                    .toString()
+                                    .toLowerCase() === "outbound" ? (
+                                    <PhoneOutgoing
+                                      className="w-3.5 h-3.5"
+                                      style={{ color: dir.color }}
+                                    />
+                                  ) : (
+                                    <PhoneCall
+                                      className="w-3.5 h-3.5"
+                                      style={{ color: dir.color }}
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[12px] font-semibold text-slate-700 truncate">
+                                    Call #{call.id}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-mono">
+                                    {fmtDateTime(
+                                      call.callDate || call.createdAt,
+                                    )}
+                                  </p>
+                                </div>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-[#008f68] shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      {selectedLinkCall && (
+                        <div className="px-4 py-3 border-t border-slate-100 space-y-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Import from linked call
+                          </p>
+                          <div className="flex items-center gap-3">
+                            {(
+                              [
+                                { key: "notes" as const, label: "Notes" },
+                                { key: "campaign" as const, label: "Campaign" },
+                                { key: "yard" as const, label: "Yard" },
+                              ] as const
+                            ).map(({ key, label }) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() =>
+                                  setImportChecklist((p) => ({
+                                    ...p,
+                                    [key]: !p[key],
+                                  }))
+                                }
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                                  importChecklist[key]
+                                    ? "bg-[#008f68]/8 border-[#008f68]/30 text-[#008f68]"
+                                    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                }`}
+                              >
+                                <div
+                                  className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition-colors ${
+                                    importChecklist[key]
+                                      ? "bg-[#008f68] border-[#008f68]"
+                                      : "bg-white border-slate-300"
+                                  }`}
+                                >
+                                  {importChecklist[key] && (
+                                    <Check className="w-2.5 h-2.5 text-white" />
+                                  )}
+                                </div>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleLinkCall}
+                              className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-[#008f68] hover:bg-[#007a5a] text-white text-[12px] font-semibold rounded-xl transition-all active:scale-[0.98]"
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                              Import &amp; Link
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCallLinker(false);
+                                setSelectedLinkCall(null);
+                              }}
+                              className="h-8 px-4 flex items-center justify-center text-[12px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-[0.98]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Linked Call Card — shown when relatedCallId is set and linker closed */}
+                  {editFormData.relatedCallId && !showCallLinker && (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                      <div className="w-8 h-8 rounded-xl bg-[#008f68]/10 flex items-center justify-center shrink-0">
+                        <Link2 className="w-4 h-4 text-[#008f68]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">
+                          Linked Call
+                        </p>
+                        <p className="text-[12px] font-semibold text-slate-700">
+                          Call #{editFormData.relatedCallId}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleOpenCallLinker}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                          title="Change linked call"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveLink}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                          title="Remove link"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Combined Call Details & Properties card ── */}
                   <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                     <div className="flex items-center gap-2 px-5 pt-3 pb-3 border-b border-slate-50">
@@ -1693,7 +1963,7 @@ export function CustomerTimelineDrawer({
               <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
                 <button
                   type="button"
-                  onClick={onUpdate}
+                  onClick={() => onUpdate()}
                   disabled={isUpdating}
                   className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-[13px] font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 bg-[#008f68] hover:bg-[#007a5a] shadow-sm"
                 >
