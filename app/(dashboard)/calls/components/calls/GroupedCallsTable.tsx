@@ -347,9 +347,9 @@ export function GroupedCallsTable({
   const paginatedGroups = groups;
 
   return (
-    <div className="flex-1 flex flex-col gap-4">
+    <div className="flex-1 flex flex-col gap-1">
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-2 mt-2.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
         <div className="relative flex-1 max-w-[320px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input

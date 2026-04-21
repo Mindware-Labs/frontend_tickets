@@ -40,12 +40,12 @@ const workspaceItems: {
   icon: React.ComponentType;
   adminOnly?: boolean;
 }[] = [
-  // { title: "Aircall", url: "/aircall", icon: MessageSquare },
+  { title: "Aircall", url: "/aircall", icon: MessageSquare },
   { title: "Calls", url: "/calls", icon: PhoneCall },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  // { title: "Campaigns", url: "/campaigns", icon: Megaphone },
-  // { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-  // { title: "Reports", url: "/reports", icon: BarChart3, adminOnly: true },
+  { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+  { title: "Knowledge", url: "/knowledge", icon: BookOpen },
+  { title: "Reports", url: "/reports", icon: BarChart3, adminOnly: true },
 ];
 
 const managementItems: {
@@ -54,12 +54,12 @@ const managementItems: {
   icon: React.ComponentType;
   adminOnly?: boolean;
 }[] = [
-  // { title: "Customers", url: "/customers", icon: Users },
-  // { title: "Yards", url: "/yards", icon: Building },
-  // { title: "Landlords", url: "/landlords", icon: User },
-  // { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
-  // { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
-  // { title: "Profile", url: "/profile", icon: UserCircle },
+  { title: "Customers", url: "/customers", icon: Users },
+  { title: "Yards", url: "/yards", icon: Building },
+  { title: "Landlords", url: "/landlords", icon: User },
+  { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
+  { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
+  { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -269,7 +269,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <div className={`mx-3 h-px ${tk.divider}`} />
 
           {/* Management section */}
-          {/* <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
+          <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
             {!isCollapsed && (
               <p
                 className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-2 ${tk.sectionLbl}`}
@@ -283,7 +283,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <NavItem key={item.title} {...item} />
               ))}
             </ul>
-          </nav> */}
+          </nav>
 
           {/* Spacer */}
           <div className="flex-1" />
@@ -330,7 +330,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
 
             {/* Settings — admin only */}
-            {/* {normalizedRole !== "agent" && (
+            {normalizedRole !== "agent" && (
               <Link
                 href="/settings"
                 title={isCollapsed ? "Settings" : undefined}
@@ -348,10 +348,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 />
                 {!isCollapsed && <span className="leading-none">Settings</span>}
               </Link>
-            )} */}
+            )}
 
             {/* Help & Feedback */}
-            {/* <Link
+            <Link
               href="/support"
               title={isCollapsed ? "Help and Feedback" : undefined}
               className={[
@@ -367,7 +367,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {!isCollapsed && (
                 <span className="leading-none">Help and Feedback</span>
               )}
-            </Link> */}
+            </Link>
           </div>
         </div>
       </SidebarContent>
