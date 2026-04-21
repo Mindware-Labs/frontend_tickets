@@ -13,12 +13,13 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <CallSocketProvider />
-      <AppSidebar />
-      <SidebarInset>
-        <Topbar />
-        <main className="flex-1 px-6 lg:px-8 pb-6 lg:pb-8">{children}</main>
-      </SidebarInset>
+      <CallSocketProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <Topbar />
+          <main className="flex-1 px-6 lg:px-8 pb-6 lg:pb-8">{children}</main>
+        </SidebarInset>
+      </CallSocketProvider>
     </SidebarProvider>
   );
 }

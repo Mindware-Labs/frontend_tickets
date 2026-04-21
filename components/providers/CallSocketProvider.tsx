@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { io, Socket } from "socket.io-client";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -9,7 +15,26 @@ import { useSWRConfig } from "swr";
 import { auth } from "@/lib/auth";
 import { revalidateNotifications } from "@/hooks/use-notifications";
 
-export function useCallSocket() {
+// -- Live call context --------------------------------------------------------
+interface LiveCallsContextValue {
+  liveCallIds: Set<number>;
+}
+
+const LiveCallsContext = createContext<LiveCallsContextValue>({
+  liveCallIds: new Set(),
+});
+
+export function useLiveCalls() {
+  return useContext(LiveCallsContext);
+}
+
+// -- Provider -----------------------------------------------------------------
+export function CallSocketProvider({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
+  const [liveCallIds, setLiveCallIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -39,7 +64,7 @@ export function useCallSocket() {
 
     socketRef.current = socket;
 
-    // Debounced so that bursts of events (e.g. bulk updates) collapse into one re-fetch
+    // Debounced so that bursts of events collapse into one re-fetch
     const revalidateCallCaches = () => {
       if (revalidateDebounceRef.current)
         clearTimeout(revalidateDebounceRef.current);
@@ -53,13 +78,11 @@ export function useCallSocket() {
     socket.on(
       "ticketAssigned",
       (data: { title: string; message: string; ticketId: number }) => {
-        // Reproducir sonido
         try {
           const audio = new Audio("/sounds/notification.mp3");
           audio.play().catch(() => {});
         } catch (e) {}
 
-        // Mostrar Toast
         toast({
           title: data.title,
           description: data.message,
@@ -68,7 +91,6 @@ export function useCallSocket() {
           action: (
             <ToastAction
               altText="Ver"
-              // URL
               onClick={() =>
                 router.push(`/tickets?view=assigned_me&id=${data.ticketId}`)
               }
@@ -79,21 +101,34 @@ export function useCallSocket() {
           ),
         });
 
-        // Recargar datos
         revalidateCallCaches();
       },
     );
 
-    // Escuchar actualizaciones de tickets en tiempo real (reemplaza polling)
     socket.on(
       "ticketsUpdated",
       (data: { action: string; ticketId: number; timestamp: string }) => {
-        // Revalidar la lista de tickets cuando hay cambios
         revalidateCallCaches();
       },
     );
 
-    // Listen for overdue callback notifications
+    // Track live call status in real-time via WebSocket
+    socket.on(
+      "liveCallChanged",
+      (data: { callId: number; isLive: boolean; timestamp: string }) => {
+        setLiveCallIds((prev) => {
+          const next = new Set(prev);
+          if (data.isLive) {
+            next.add(data.callId);
+          } else {
+            next.delete(data.callId);
+          }
+          return next;
+        });
+        revalidateCallCaches();
+      },
+    );
+
     socket.on(
       "callbackDue",
       (data: {
@@ -104,15 +139,13 @@ export function useCallSocket() {
         agentId: number | null;
         createdAt: string;
       }) => {
-        // Play notification sound
         try {
           const audio = new Audio("/sounds/notification.mp3");
           audio.play().catch(() => {});
         } catch (e) {}
 
-        // Show toast
         toast({
-          title: "⏰ Callback Overdue",
+          title: "? Callback Overdue",
           description: data.message,
           duration: 10000,
           className: "bg-slate-900 border-l-4 border-l-red-500 text-white",
@@ -127,13 +160,11 @@ export function useCallSocket() {
           ),
         });
 
-        // Revalidate notification + ticket caches
         revalidateNotifications();
         revalidateCallCaches();
       },
     );
 
-    // Listen for overdue ticket follow-up notifications
     socket.on(
       "ticketFollowUpDue",
       (data: {
@@ -150,7 +181,7 @@ export function useCallSocket() {
         } catch (e) {}
 
         toast({
-          title: "⏰ Ticket Follow-up Overdue",
+          title: "? Ticket Follow-up Overdue",
           description: data.message,
           duration: 10000,
           className: "bg-slate-900 border-l-4 border-l-orange-500 text-white",
@@ -179,9 +210,15 @@ export function useCallSocket() {
       }
     };
   }, [user?.id, toast, router, mutate]);
+
+  return (
+    <LiveCallsContext.Provider value={{ liveCallIds }}>
+      {children}
+    </LiveCallsContext.Provider>
+  );
 }
 
-export function CallSocketProvider() {
-  useCallSocket();
-  return null;
+// Legacy hook kept for any existing consumers
+export function useCallSocket() {
+  // No-op: socket logic moved into CallSocketProvider
 }

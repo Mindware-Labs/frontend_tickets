@@ -31,6 +31,15 @@ export interface Call {
   yardId?: number | string;
   campaignId?: number | string;
   campaignOption?: string;
+  isLive?: boolean;
+  callDate?: string;
+  disposition?: string;
+  phoneLine?: {
+    id: number;
+    label?: string | null;
+    phoneNumber?: string;
+  } | null;
+  agent?: { id: number; name: string } | null;
 }
 
 export interface Ticket extends Call {}

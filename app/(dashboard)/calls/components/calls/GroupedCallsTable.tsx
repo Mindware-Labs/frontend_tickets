@@ -37,8 +37,10 @@ import {
   PhoneIncoming,
   ChevronDown,
   ChevronRight,
+  Radio,
 } from "lucide-react";
 import { useAircall } from "@/components/providers/AircallProvider";
+import { useLiveCalls } from "@/components/providers/CallSocketProvider";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import type { Call } from "@/lib/mock-data";
@@ -283,6 +285,7 @@ export function GroupedCallsTable({
     isLoggedIn: aircallLoggedIn,
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const { liveCallIds } = useLiveCalls();
   // ── Client-side grouping ─────────────────────────────────────────────────────
   const groups = useMemo<CustomerCallGroup[]>(() => {
     const map = new Map<
@@ -491,6 +494,7 @@ export function GroupedCallsTable({
               ) : (
                 paginatedGroups.map((group, i) => {
                   const t = group.latestCall;
+                  const isLive = !!(t.isLive || liveCallIds.has(Number(t.id)));
                   const yardDisplayName = getYardDisplayName(t, yards);
                   let yardType = (t as any).yardType;
                   if (!yardType && t.yardId) {
@@ -522,9 +526,11 @@ export function GroupedCallsTable({
                     <React.Fragment key={group.key}>
                       <TableRow
                         className={`cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150 ${
-                          i % 2 === 1
-                            ? "bg-slate-50/60 dark:bg-muted/20"
-                            : "bg-white dark:bg-card"
+                          isLive
+                            ? "bg-emerald-50/40 dark:bg-emerald-500/5 border-l-2 border-l-emerald-400"
+                            : i % 2 === 1
+                              ? "bg-slate-50/60 dark:bg-muted/20"
+                              : "bg-white dark:bg-card"
                         }`}
                         onClick={() => onOpenTimeline(group)}
                       >
@@ -548,8 +554,16 @@ export function GroupedCallsTable({
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <div className="font-bold text-[14px] leading-tight truncate text-foreground">
-                                {group.customerName}
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="font-bold text-[14px] leading-tight truncate text-foreground">
+                                  {group.customerName}
+                                </div>
+                                {isLive && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold leading-none shrink-0 shadow-sm shadow-emerald-500/40 tracking-wide">
+                                    <span className="w-1.25 h-1.25 rounded-full bg-white animate-pulse shrink-0" />
+                                    LIVE
+                                  </span>
+                                )}
                               </div>
                               <div className="text-[11.5px] text-muted-foreground mt-[2px] truncate">
                                 last {dateLabel}
