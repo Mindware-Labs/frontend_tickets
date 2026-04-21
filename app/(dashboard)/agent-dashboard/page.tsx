@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { CallActions } from "@/components/dashboard/call-actions";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import KPICard from "@/components/dashboard/kpi-card";
 import {
   Ticket as TicketIcon,
   RotateCcw,
-  TrendingUp,
   Clock,
   Target,
   CheckCircle2,
@@ -549,10 +549,15 @@ export default function AgentDashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Dashboard
+            {getGreeting()}, {auth.getUser?.()?.name ?? "Agent"}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Here's what's happening with your calls today.
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}{" "}
+            — here's your performance overview.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -582,101 +587,63 @@ export default function AgentDashboardPage() {
 
       {/* KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Tickets
-                </p>
-                <h3 className="text-3xl font-bold mt-2 tracking-tight">
-                  {myKpis.totalTickets}
-                </h3>
-              </div>
-              <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                <TicketIcon className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-xs text-muted-foreground">
-              <span className="text-emerald-600 font-medium mr-1 flex items-center">
-                <TrendingUp className="h-3 w-3 mr-0.5" /> +
-                {myKpis.callsLast7Days}
-              </span>
-              <span>last 7 days</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Pending Action
-                </p>
-                <h3 className="text-3xl font-bold mt-2 tracking-tight text-amber-600 dark:text-amber-500">
-                  {myKpis.activeTickets}
-                </h3>
-              </div>
-              <div className="p-2 bg-amber-500/10 rounded-lg text-amber-600">
-                <Clock className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-xs text-muted-foreground gap-3">
-              <span className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />{" "}
-                {myKpis.openTickets} Open
-              </span>
-              <span className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-amber-500" />{" "}
-                {myKpis.inProgressTickets} WIP
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Resolution Rate
-                </p>
-                <h3 className="text-3xl font-bold mt-2 tracking-tight text-emerald-600 dark:text-emerald-500">
-                  {myKpis.resolutionRate}%
-                </h3>
-              </div>
-              <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {myKpis.closedTickets} tickets successfully closed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-destructive shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Urgent Priority
-                </p>
-                <h3 className="text-3xl font-bold mt-2 tracking-tight text-destructive">
-                  {myKpis.pendingActions}
-                </h3>
-              </div>
-              <div className="p-2 bg-destructive/10 rounded-lg text-destructive">
-                <AlertCircle className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Requires immediate attention
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Total Tickets"
+          value={myKpis.totalTickets}
+          secondaryValue={`+${myKpis.callsLast7Days} calls last 7 days`}
+          icon={TicketIcon}
+          iconBg="bg-primary"
+          trend={`${myKpis.callsLast7Days} this week`}
+          trendUp={myKpis.callsLast7Days > 0}
+        />
+        <KPICard
+          title="Active Tickets"
+          value={myKpis.activeTickets}
+          secondaryValue={`${myKpis.openTickets} open · ${myKpis.inProgressTickets} in progress`}
+          icon={Clock}
+          iconBg="bg-amber-500"
+        />
+        <KPICard
+          title="Resolution Rate"
+          value={`${myKpis.resolutionRate}%`}
+          secondaryValue={`${myKpis.closedTickets} tickets closed`}
+          icon={CheckCircle2}
+          iconBg="bg-emerald-500"
+          trend={myKpis.resolutionRate >= 80 ? "On target" : "Below target"}
+          trendUp={myKpis.resolutionRate >= 80}
+        />
+        <KPICard
+          title="Urgent Priority"
+          value={myKpis.pendingActions}
+          secondaryValue="Requires immediate attention"
+          icon={AlertCircle}
+          iconBg="bg-rose-500"
+          trend={
+            myKpis.pendingActions === 0
+              ? "All clear"
+              : `${myKpis.pendingActions} critical`
+          }
+          trendUp={myKpis.pendingActions === 0}
+        />
       </div>
+
+      {/* URGENT ALERT BANNER */}
+      {myKpis.pendingActions > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm dark:border-rose-900/50 dark:bg-rose-950/30">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <span className="text-rose-700 dark:text-rose-300 font-medium">
+            You have <strong>{myKpis.pendingActions}</strong> ticket
+            {myKpis.pendingActions === 1 ? "" : "s"} marked as urgent — review
+            them as soon as possible.
+          </span>
+          <a
+            href="/tickets"
+            className="ml-auto shrink-0 text-xs font-semibold text-rose-700 underline underline-offset-4 hover:opacity-80 dark:text-rose-300"
+          >
+            View tickets
+          </a>
+        </div>
+      )}
 
       {/* MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

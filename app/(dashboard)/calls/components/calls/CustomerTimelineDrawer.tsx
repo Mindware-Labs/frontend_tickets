@@ -599,6 +599,16 @@ export function CustomerTimelineDrawer({
         side="right"
         className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
         style={{ maxWidth: "1100px" }}
+        onPointerDownOutside={(e) => {
+          const originalTarget = e.detail?.originalEvent
+            ?.target as HTMLElement | null;
+          if (
+            originalTarget?.closest?.("[data-aircall-fab='true']") ||
+            originalTarget?.closest?.("[data-aircall-panel='true']")
+          ) {
+            e.preventDefault();
+          }
+        }}
       >
         <SheetTitle className="sr-only">
           {customerName ? `Call Center — ${customerName}` : "Call Center"}

@@ -527,12 +527,15 @@ function AircallDock({
           "flex items-center justify-center",
           "transition-[bottom,right,left] duration-300 ease-in-out",
           "bg-primary text-primary-foreground hover:bg-primary/90",
+          "pointer-events-auto",
           open && !dragRef.current?.moved && "scale-90",
           isFullscreen && "hidden",
           !pos && (sheetOpen ? "bottom-6 left-6" : "bottom-6 right-6"),
         )}
         style={
-          pos ? { left: pos.x, top: pos.y, cursor: "grab" } : { cursor: "grab" }
+          pos
+            ? { left: pos.x, top: pos.y, cursor: "grab", pointerEvents: "auto" }
+            : { cursor: "grab", pointerEvents: "auto" }
         }
       >
         {lastIncomingCall &&
@@ -555,6 +558,7 @@ function AircallDock({
       <div ref={dockParentRef}>
         <div
           ref={panelRef}
+          data-aircall-panel="true"
           className={cn(
             "border bg-background overflow-hidden transition-all duration-200",
             movedToContainer
@@ -563,13 +567,19 @@ function AircallDock({
                   "z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl",
                   pos
                     ? "fixed origin-bottom"
-                    : "fixed bottom-24 right-6 origin-bottom-right",
+                    : sheetOpen
+                      ? "fixed bottom-24 left-6 origin-bottom-left"
+                      : "fixed bottom-24 right-6 origin-bottom-right",
                   open
                     ? "opacity-100 scale-100 pointer-events-auto"
                     : "opacity-0 scale-95 pointer-events-none",
                 ),
           )}
-          style={movedToContainer ? undefined : panelStyle()}
+          style={
+            movedToContainer
+              ? { pointerEvents: "auto" }
+              : { ...panelStyle(), pointerEvents: "auto" }
+          }
           aria-hidden={!panelVisible}
         >
           {/* Dock header */}
