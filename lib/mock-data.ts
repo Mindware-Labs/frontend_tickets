@@ -36,8 +36,8 @@ export interface Call {
   disposition?: string;
   phoneLine?: {
     id: number;
-    label?: string | null;
-    phoneNumber?: string;
+    label: string | null;
+    phoneNumber: string;
   } | null;
   agent?: { id: number; name: string } | null;
 }
