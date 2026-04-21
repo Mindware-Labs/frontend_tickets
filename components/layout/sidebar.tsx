@@ -34,7 +34,12 @@ import { auth } from "@/lib/auth";
 
 // ── Navigation data ────────────────────────────────────────────────────────────
 
-const workspaceItems = [
+const workspaceItems: {
+  title: string;
+  url: string;
+  icon: React.ComponentType;
+  adminOnly?: boolean;
+}[] = [
   // { title: "Aircall", url: "/aircall", icon: MessageSquare },
   { title: "Calls", url: "/calls", icon: PhoneCall },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
