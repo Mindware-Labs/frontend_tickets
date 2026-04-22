@@ -299,6 +299,7 @@ export default function TicketsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
+  const [drawerSuccessToast, setDrawerSuccessToast] = useState(false);
 
   // Move the floating Aircall FAB to the bottom edge when the drawer is open
   const { setSheetOpen } = useAircall();
@@ -821,7 +822,15 @@ export default function TicketsPage() {
       const result = await response.json();
 
       if (result.success) {
-        let updatedTicket = { ...selectedTicket, ...result.data };
+        // Preserve locally-managed attachments — they are updated via dedicated
+        // POST/DELETE /calls/:id/attachments endpoints and kept in sync through
+        // onAttachmentsChange. The PATCH response may carry stale data if the
+        // WebSocket-triggered SWR revalidation races the save.
+        let updatedTicket = {
+          ...selectedTicket,
+          ...result.data,
+          attachments: selectedTicket.attachments,
+        };
 
         mutate(
           (currentTickets: any) =>
@@ -839,15 +848,8 @@ export default function TicketsPage() {
         setSelectedTicket(updatedTicket);
         setAttachmentFiles([]);
 
-        toast({
-          title: "Success",
-          description: (
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Call updated successfully</span>
-            </div>
-          ),
-        });
+        // Show the sheet-anchored toast instead of the global fixed one
+        setDrawerSuccessToast(true);
         setShowEditModal(false);
       } else {
         toast({
@@ -1253,8 +1255,15 @@ export default function TicketsPage() {
             attachmentFiles={attachmentFiles}
             setAttachmentFiles={setAttachmentFiles}
             savedAttachments={savedAttachments}
+            onAttachmentsChange={(attachments) =>
+              setSelectedTicket((prev) =>
+                prev ? { ...prev, attachments } : prev,
+              )
+            }
             isUpdating={isUpdating}
             onUpdate={handleUpdateTicketFromModal}
+            showSuccessToast={drawerSuccessToast}
+            onSuccessToastDismiss={() => setDrawerSuccessToast(false)}
             customers={refData.customers}
             yards={refData.yards}
             agents={refData.agents}

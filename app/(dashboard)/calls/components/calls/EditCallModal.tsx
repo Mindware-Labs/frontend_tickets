@@ -170,16 +170,42 @@ export function EditCallModal({
       const res = await fetch(
         `/api/tickets?mode=page&customerId=${editFormData.customerId}&limit=50`,
       );
+
+      // ✅ Validar respuesta HTTP
+      if (!res.ok) {
+        console.error(
+          `[EditCallModal] API error fetching tickets: ${res.status} ${res.statusText}`,
+        );
+        onCreateTicket?.();
+        return;
+      }
+
       const result = await res.json();
+
+      // ✅ Validar success flag
+      if (!result.success) {
+        console.error(`[EditCallModal] API returned failure:`, result.message);
+        onCreateTicket?.();
+        return;
+      }
+
+      // ✅ Mejorado: Mejor manejo de estructura
       const raw = result.data;
-      const data = Array.isArray(raw)
-        ? raw
-        : Array.isArray(raw?.data)
-          ? raw.data
-          : [];
-      const active = data.filter(
+      const tickets = Array.isArray(raw) ? raw : (raw?.data ?? []);
+
+      console.log(
+        `[EditCallModal] Found ${tickets.length} tickets for customer ${editFormData.customerId}`,
+      );
+
+      const active = tickets.filter(
         (t: any) => t.status !== "CLOSED" && t.status !== "RESOLVED",
       );
+
+      console.log(
+        `[EditCallModal] Found ${active.length} active tickets with statuses:`,
+        active.map((t) => t.status),
+      );
+
       if (active.length > 0) {
         const fmtLabel = (v: string) =>
           v
@@ -193,7 +219,9 @@ export function EditCallModal({
       } else {
         onCreateTicket?.();
       }
-    } catch {
+    } catch (error) {
+      // ✅ Logging detallado del error
+      console.error(`[EditCallModal] Error checking active tickets:`, error);
       onCreateTicket?.();
     } finally {
       setCheckingTickets(false);
@@ -914,37 +942,53 @@ export function EditCallModal({
 
         {/* Active ticket warning */}
         {activeTicketWarning && (
-          <div className="mx-6 mb-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div className="flex-1">
-              <p className="font-medium">
-                This customer already has {activeTicketWarning.count} active{" "}
-                {activeTicketWarning.count === 1 ? "ticket" : "tickets"}
-              </p>
-              <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400">
-                Status: {activeTicketWarning.statuses.join(", ")}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs border-amber-400 hover:bg-amber-100 dark:border-amber-600 dark:hover:bg-amber-900"
-                  onClick={() => {
-                    setActiveTicketWarning(null);
-                    onCreateTicket?.();
-                  }}
-                >
-                  Create Anyway
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => setActiveTicketWarning(null)}
-                >
-                  Cancel
-                </Button>
+          <div className="mx-6 mb-2 bg-white rounded-xl border border-amber-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Header */}
+            <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-amber-100 bg-amber-50/50">
+              <div className="w-5 h-5 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-3 h-3 text-amber-600" />
               </div>
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex-1">
+                Active Ticket Alert
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="px-4 py-3 space-y-2">
+              <p className="text-sm font-semibold text-slate-800">
+                This customer already has {activeTicketWarning.count}{" "}
+                {activeTicketWarning.count === 1
+                  ? "active ticket"
+                  : "active tickets"}
+              </p>
+              <p className="text-[12px] text-slate-600">
+                Status:{" "}
+                <span className="font-medium text-slate-700">
+                  {activeTicketWarning.statuses.join(", ")}
+                </span>
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 pb-3 flex flex-col sm:flex-row gap-2">
+              <Button
+                size="sm"
+                className="flex-1 sm:flex-initial bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={() => {
+                  setActiveTicketWarning(null);
+                  onCreateTicket?.();
+                }}
+              >
+                Create Anyway
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 sm:flex-initial border-slate-200 hover:bg-slate-50 text-slate-700"
+                onClick={() => setActiveTicketWarning(null)}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         )}
