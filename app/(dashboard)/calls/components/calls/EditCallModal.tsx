@@ -203,7 +203,7 @@ export function EditCallModal({
 
       console.log(
         `[EditCallModal] Found ${active.length} active tickets with statuses:`,
-        active.map((t) => t.status),
+        active.map((t: any) => t.status),
       );
 
       if (active.length > 0) {
