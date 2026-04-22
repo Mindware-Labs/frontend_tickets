@@ -17,6 +17,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquare,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRole } from "@/components/providers/role-provider";
@@ -44,13 +46,25 @@ const workspaceItems: {
   { title: "Aircall", url: "/aircall", icon: MessageSquare },
   { title: "Calls", url: "/calls", icon: PhoneCall },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+  {
+    title: "Campaigns",
+    url: "/campaigns",
+    icon: Megaphone,
+    children: [
+      { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+      {
+        title: "Reports",
+        url: "/reports/campaigns",
+        icon: BarChart3,
+      },
+    ],
+  },
   {
     title: "Knowledge",
     icon: BookOpen,
     children: [
-      { title: "Guides", url: "/knowledge/guides", icon: BookOpen },
-      { title: "Policies", url: "/knowledge/policies", icon: BookOpen },
+      { title: "Guides", url: "/Knowledge/Guides", icon: BookOpen },
+      { title: "Policies", url: "/Knowledge/policies", icon: BookOpen },
     ],
   },
   {
@@ -58,8 +72,8 @@ const workspaceItems: {
     icon: BarChart3,
     adminOnly: true,
     children: [
-      { title: "Agents", url: "/agents", icon: Users },
-      { title: "Performance", url: "/performance", icon: BarChart3 },
+      { title: "Agents", url: "/reports/performance", icon: Users },
+      { title: "Performance", url: "/reports/agents", icon: BarChart3 },
     ],
   },
 ];
@@ -69,9 +83,22 @@ const managementItems: {
   url: string;
   icon: React.ComponentType;
   adminOnly?: boolean;
+  children?: { title: string; url: string; icon?: React.ComponentType }[];
 }[] = [
   { title: "Customers", url: "/customers", icon: Users },
-  { title: "Yards", url: "/yards", icon: Building },
+  {
+    title: "Yards",
+    url: "/yards",
+    icon: Building,
+    children: [
+      { title: "Yards", url: "/yards", icon: Building },
+      {
+        title: "Reports",
+        url: "/reports/yards",
+        icon: BarChart3,
+      },
+    ],
+  },
   { title: "Landlords", url: "/landlords", icon: User },
   { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
   { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
@@ -119,6 +146,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const isCollapsed = state === "collapsed";
   const isDark = mounted ? (resolvedTheme || theme) === "dark" : false;
   const normalizedRole = role?.toString().toLowerCase();
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
+  };
 
   // ── Filter items by role
   const visibleWorkspace =
@@ -286,12 +319,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   | undefined;
 
                 if (children && children.length > 0) {
+                  const isOpen =
+                    openGroups[item.title] ??
+                    children.some((c) => isActive(c.url));
                   return (
                     <li key={item.title}>
-                      <div
+                      <button
+                        onClick={() => toggleGroup(item.title)}
                         title={isCollapsed ? item.title : undefined}
                         className={[
-                          "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                          "w-full flex items-center rounded-lg text-[13.5px] transition-all duration-150",
                           isCollapsed
                             ? "w-10 h-10 justify-center"
                             : "gap-3 px-3 py-1.75",
@@ -303,11 +340,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           strokeWidth={1.8}
                         />
                         {!isCollapsed && (
-                          <span className="leading-none">{item.title}</span>
+                          <span className="leading-none flex-1 text-left">
+                            {item.title}
+                          </span>
                         )}
-                      </div>
+                        {!isCollapsed &&
+                          (isOpen ? (
+                            <ChevronDown
+                              className={`w-4 h-4 ${tk.iconInactive}`}
+                            />
+                          ) : (
+                            <ChevronRight
+                              className={`w-4 h-4 ${tk.iconInactive}`}
+                            />
+                          ))}
+                      </button>
 
-                      {!isCollapsed && (
+                      {!isCollapsed && isOpen && (
                         <ul className="mt-1 ml-3 space-y-0.5">
                           {children.map((c) => (
                             <NavItem
@@ -352,12 +401,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   | undefined;
 
                 if (children && children.length > 0) {
+                  const isOpen =
+                    openGroups[item.title] ??
+                    children.some((c) => isActive(c.url));
                   return (
                     <li key={item.title}>
-                      <div
+                      <button
+                        onClick={() => toggleGroup(item.title)}
                         title={isCollapsed ? item.title : undefined}
                         className={[
-                          "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                          "w-full flex items-center rounded-lg text-[13.5px] transition-all duration-150",
                           isCollapsed
                             ? "w-10 h-10 justify-center"
                             : "gap-3 px-3 py-1.75",
@@ -369,11 +422,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           strokeWidth={1.8}
                         />
                         {!isCollapsed && (
-                          <span className="leading-none">{item.title}</span>
+                          <span className="leading-none flex-1 text-left">
+                            {item.title}
+                          </span>
                         )}
-                      </div>
+                        {!isCollapsed &&
+                          (isOpen ? (
+                            <ChevronDown
+                              className={`w-4 h-4 ${tk.iconInactive}`}
+                            />
+                          ) : (
+                            <ChevronRight
+                              className={`w-4 h-4 ${tk.iconInactive}`}
+                            />
+                          ))}
+                      </button>
 
-                      {!isCollapsed && (
+                      {!isCollapsed && isOpen && (
                         <ul className="mt-1 ml-3 space-y-0.5">
                           {children.map((c) => (
                             <NavItem
