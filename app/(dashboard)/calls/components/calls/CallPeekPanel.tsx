@@ -194,7 +194,10 @@ function SectionHeader({ label }: { label: string }) {
 function SkeletonBlock(props: React.HTMLAttributes<HTMLDivElement>) {
   const { className, ...rest } = props;
   return (
-    <div className={cn("animate-pulse rounded-md bg-gray-100", className)} {...rest} />
+    <div
+      className={cn("animate-pulse rounded-md bg-gray-100", className)}
+      {...rest}
+    />
   );
 }
 
