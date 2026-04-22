@@ -36,16 +36,32 @@ import { auth } from "@/lib/auth";
 
 const workspaceItems: {
   title: string;
-  url: string;
+  url?: string;
   icon: React.ComponentType;
   adminOnly?: boolean;
+  children?: { title: string; url: string; icon?: React.ComponentType }[];
 }[] = [
   { title: "Aircall", url: "/aircall", icon: MessageSquare },
   { title: "Calls", url: "/calls", icon: PhoneCall },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Campaigns", url: "/campaigns", icon: Megaphone },
-  { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-  { title: "Reports", url: "/reports", icon: BarChart3, adminOnly: true },
+  {
+    title: "Knowledge",
+    icon: BookOpen,
+    children: [
+      { title: "Guides", url: "/knowledge/guides", icon: BookOpen },
+      { title: "Policies", url: "/knowledge/policies", icon: BookOpen },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: BarChart3,
+    adminOnly: true,
+    children: [
+      { title: "Agents", url: "/agents", icon: Users },
+      { title: "Performance", url: "/performance", icon: BarChart3 },
+    ],
+  },
 ];
 
 const managementItems: {
@@ -105,7 +121,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const normalizedRole = role?.toString().toLowerCase();
 
   // ── Filter items by role
-  const visibleWorkspace = (
+  const visibleWorkspace =
     normalizedRole === "agent"
       ? workspaceItems
           .filter((item) => !item.adminOnly)
@@ -114,12 +130,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               ? { ...item, url: "/agent-dashboard" }
               : item,
           )
-      : workspaceItems
-  ) as Array<{ title: string; url: string; icon: React.ElementType }>;
+      : workspaceItems;
 
   const visibleManagement = managementItems.filter(
     (item) => !(item.adminOnly && normalizedRole === "agent"),
-  ) as Array<{ title: string; url: string; icon: React.ElementType }>;
+  );
 
   // ── Active check
   const isActive = (url: string) =>
@@ -260,9 +275,56 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
             {isCollapsed && <div className="h-2" />}
             <ul className="space-y-0.5">
-              {visibleWorkspace.map((item) => (
-                <NavItem key={item.title} {...item} />
-              ))}
+              {visibleWorkspace.map((item) => {
+                const Icon = item.icon as React.ComponentType<any>;
+                const children = (item as any).children as
+                  | Array<{
+                      title: string;
+                      url: string;
+                      icon?: React.ComponentType<any>;
+                    }>
+                  | undefined;
+
+                if (children && children.length > 0) {
+                  return (
+                    <li key={item.title}>
+                      <div
+                        title={isCollapsed ? item.title : undefined}
+                        className={[
+                          "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                          isCollapsed
+                            ? "w-10 h-10 justify-center"
+                            : "gap-3 px-3 py-1.75",
+                          tk.itemInactive,
+                        ].join(" ")}
+                      >
+                        <Icon
+                          className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
+                          strokeWidth={1.8}
+                        />
+                        {!isCollapsed && (
+                          <span className="leading-none">{item.title}</span>
+                        )}
+                      </div>
+
+                      {!isCollapsed && (
+                        <ul className="mt-1 ml-3 space-y-0.5">
+                          {children.map((c) => (
+                            <NavItem
+                              key={c.title}
+                              title={c.title}
+                              url={c.url}
+                              icon={c.icon || item.icon}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
+                return <NavItem key={item.title} {...(item as any)} />;
+              })}
             </ul>
           </nav>
 
@@ -279,9 +341,56 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
             {isCollapsed && <div className="h-2" />}
             <ul className="space-y-0.5">
-              {visibleManagement.map((item) => (
-                <NavItem key={item.title} {...item} />
-              ))}
+              {visibleManagement.map((item) => {
+                const Icon = item.icon as React.ComponentType<any>;
+                const children = (item as any).children as
+                  | Array<{
+                      title: string;
+                      url: string;
+                      icon?: React.ComponentType<any>;
+                    }>
+                  | undefined;
+
+                if (children && children.length > 0) {
+                  return (
+                    <li key={item.title}>
+                      <div
+                        title={isCollapsed ? item.title : undefined}
+                        className={[
+                          "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
+                          isCollapsed
+                            ? "w-10 h-10 justify-center"
+                            : "gap-3 px-3 py-1.75",
+                          tk.itemInactive,
+                        ].join(" ")}
+                      >
+                        <Icon
+                          className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
+                          strokeWidth={1.8}
+                        />
+                        {!isCollapsed && (
+                          <span className="leading-none">{item.title}</span>
+                        )}
+                      </div>
+
+                      {!isCollapsed && (
+                        <ul className="mt-1 ml-3 space-y-0.5">
+                          {children.map((c) => (
+                            <NavItem
+                              key={c.title}
+                              title={c.title}
+                              url={c.url}
+                              icon={c.icon || item.icon}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
+                return <NavItem key={item.title} {...(item as any)} />;
+              })}
             </ul>
           </nav>
 
