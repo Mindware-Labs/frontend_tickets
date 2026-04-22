@@ -110,7 +110,10 @@ interface CustomerTimelineDrawerProps {
   savedAttachments: string[];
   onAttachmentsChange?: (attachments: string[]) => void;
   isUpdating: boolean;
-  onUpdate: (overrideRelatedCallId?: string | null) => void;
+  onUpdate: (
+    overrideRelatedCallId?: string | null,
+    overrideFormData?: Partial<CreateTicketFormData>,
+  ) => void;
   customers: CustomerOption[];
   yards: YardOption[];
   agents: AgentOption[];
@@ -208,12 +211,14 @@ function TimelineCard({
   onClick,
   onPeek,
   isLast,
+  linkedFromId,
 }: {
   call: Ticket;
   isActive: boolean;
   onClick: () => void;
   onPeek?: () => void;
   isLast: boolean;
+  linkedFromId?: number;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -358,6 +363,23 @@ function TimelineCard({
               </span>
             )}
           </div>
+
+          {/* Linked-call badges */}
+          {((call as any).relatedCallId || linkedFromId) && (
+            <div className="flex items-center gap-1 flex-wrap mt-1.5">
+              {(call as any).relatedCallId && (
+                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">
+                  <Link2 className="w-3 h-3 shrink-0" />
+                  Linked to #{(call as any).relatedCallId}
+                </span>
+              )}
+              {linkedFromId && (
+                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-500">
+                  <Link2 className="w-3 h-3 shrink-0" />← from #{linkedFromId}
+                </span>
+              )}
+            </div>
+          )}
         </button>
 
         {/* Peek action row — always visible on non-active cards, below the card */}
@@ -423,6 +445,9 @@ export function CustomerTimelineDrawer({
     notes: false,
     campaign: false,
     yard: false,
+    disposition: false,
+    status: false,
+    agent: false,
   });
 
   // ── Active ticket warning states ──────────────────────────────────────────
@@ -740,6 +765,16 @@ export function CustomerTimelineDrawer({
       campaignId: orig?.campaignId ? String(orig.campaignId) : "",
       campaignOption: orig?.campaignOption || "",
       yardId: orig?.yardId ? String(orig.yardId) : "",
+      disposition: orig?.disposition || "",
+      status: orig?.status || "",
+      agentId: orig?.agentId ? String(orig.agentId) : "",
+      followUpDueDate: orig?.followUpDueDate || "",
+      followUpAssignedToId: orig?.followUpAssignedToId
+        ? String(orig.followUpAssignedToId)
+        : "",
+      phoneLineId: orig?.phoneLineId ? String(orig.phoneLineId) : "",
+      direction: orig?.direction || "inbound",
+      originalDirection: orig?.originalDirection || "",
     });
     onUpdate("");
   };
@@ -747,7 +782,7 @@ export function CustomerTimelineDrawer({
   const handleLinkCall = () => {
     if (!selectedLinkCall) return;
     const target = selectedLinkCall as any;
-    setEditFormData({
+    const newFormData: CreateTicketFormData = {
       ...editFormData,
       relatedCallId: String(target.id),
       ...(importChecklist.notes && target.notes ? { notes: target.notes } : {}),
@@ -760,11 +795,28 @@ export function CustomerTimelineDrawer({
       ...(importChecklist.yard && target.yardId
         ? { yardId: String(target.yardId) }
         : {}),
-    });
+      ...(importChecklist.disposition && target.disposition
+        ? { disposition: target.disposition }
+        : {}),
+      ...(importChecklist.status && target.status
+        ? { status: target.status }
+        : {}),
+      ...(importChecklist.agent && target.agentId
+        ? { agentId: String(target.agentId) }
+        : {}),
+    };
+    setEditFormData(newFormData);
     setShowCallLinker(false);
     setSelectedLinkCall(null);
-    setImportChecklist({ notes: false, campaign: false, yard: false });
-    onUpdate(String(target.id));
+    setImportChecklist({
+      notes: false,
+      campaign: false,
+      yard: false,
+      disposition: false,
+      status: false,
+      agent: false,
+    });
+    onUpdate(String(target.id), newFormData);
   };
 
   const handleEscalateClick = async () => {
@@ -1005,6 +1057,19 @@ export function CustomerTimelineDrawer({
         call={peekCall}
         isLoading={peekCallId !== null && isPeekLoading}
         onClose={() => setPeekCallId(null)}
+        onLink={
+          peekCall && selectedCall && peekCall.id !== selectedCall.id
+            ? () => {
+                setCustomerCallsCache(
+                  allCalls.filter((c) => c.id !== selectedCall?.id),
+                );
+                setSelectedLinkCall(peekCall as Ticket);
+                setShowCallLinker(true);
+                scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                setPeekCallId(null);
+              }
+            : undefined
+        }
       />
 
       {/* ── Sheet-anchored success toast ─────────────────────────────────────
@@ -1082,7 +1147,8 @@ export function CustomerTimelineDrawer({
               ?.target as HTMLElement | null;
             if (
               originalTarget?.closest?.("[data-aircall-fab='true']") ||
-              originalTarget?.closest?.("[data-aircall-panel='true']")
+              originalTarget?.closest?.("[data-aircall-panel='true']") ||
+              originalTarget?.closest?.("[data-peek-panel='true']")
             ) {
               e.preventDefault();
             }
@@ -1227,13 +1293,15 @@ export function CustomerTimelineDrawer({
                     type="button"
                     onClick={handleOpenCallLinker}
                     className={`flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold rounded-xl border transition-all shadow-sm active:scale-95 ${
-                      showCallLinker
+                      showCallLinker || !!editFormData.relatedCallId
                         ? "bg-[#008f68]/10 text-[#008f68] border-[#008f68]/50 hover:bg-[#008f68]/20 hover:border-[#008f68]/70"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-[#008f68] hover:border-[#008f68]/40"
                     }`}
                   >
                     <Link2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Link</span>
+                    <span className="hidden sm:inline">
+                      {editFormData.relatedCallId ? "Linked" : "Link"}
+                    </span>
                   </button>
                 )}
                 {onCreateTicket && (
@@ -1555,10 +1623,35 @@ export function CustomerTimelineDrawer({
                         </div>
                         {selectedLinkCall && (
                           <div className="px-4 py-3 border-t border-slate-100 space-y-2">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Import from linked call
-                            </p>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Import from linked call
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const allSelected =
+                                    Object.values(importChecklist).every(
+                                      Boolean,
+                                    );
+                                  const next = {
+                                    notes: !allSelected,
+                                    campaign: !allSelected,
+                                    yard: !allSelected,
+                                    disposition: !allSelected,
+                                    status: !allSelected,
+                                    agent: !allSelected,
+                                  };
+                                  setImportChecklist(next);
+                                }}
+                                className="text-[9.5px] font-semibold text-[#008f68] hover:underline"
+                              >
+                                {Object.values(importChecklist).every(Boolean)
+                                  ? "Deselect all"
+                                  : "Select all"}
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap justify-center">
                               {(
                                 [
                                   { key: "notes" as const, label: "Notes" },
@@ -1567,6 +1660,12 @@ export function CustomerTimelineDrawer({
                                     label: "Campaign",
                                   },
                                   { key: "yard" as const, label: "Yard" },
+                                  {
+                                    key: "disposition" as const,
+                                    label: "Disposition",
+                                  },
+                                  { key: "status" as const, label: "Status" },
+                                  { key: "agent" as const, label: "Agent" },
                                 ] as const
                               ).map(({ key, label }) => (
                                 <button
@@ -1578,21 +1677,21 @@ export function CustomerTimelineDrawer({
                                       [key]: !p[key],
                                     }))
                                   }
-                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10.5px] font-semibold border transition-colors ${
                                     importChecklist[key]
                                       ? "bg-[#008f68]/8 border-[#008f68]/30 text-[#008f68]"
                                       : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                                   }`}
                                 >
                                   <div
-                                    className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition-colors ${
+                                    className={`w-3 h-3 rounded flex items-center justify-center border transition-colors ${
                                       importChecklist[key]
                                         ? "bg-[#008f68] border-[#008f68]"
                                         : "bg-white border-slate-300"
                                     }`}
                                   >
                                     {importChecklist[key] && (
-                                      <Check className="w-2.5 h-2.5 text-white" />
+                                      <Check className="w-2 h-2 text-white" />
                                     )}
                                   </div>
                                   {label}
@@ -2733,22 +2832,34 @@ export function CustomerTimelineDrawer({
                     <span className="text-[11px]">No calls</span>
                   </div>
                 ) : (
-                  allCalls.map((call, idx) => (
-                    <TimelineCard
-                      key={call.id}
-                      call={call}
-                      isActive={call.id === activeCallId}
-                      onClick={() => {
-                        setPeekCallId(null);
-                        onSelectCall(call);
-                      }}
-                      onPeek={() => {
-                        const numId = Number(call.id);
-                        setPeekCallId(peekCallId === numId ? null : numId);
-                      }}
-                      isLast={idx === allCalls.length - 1}
-                    />
-                  ))
+                  allCalls.map((call, idx) => {
+                    const linkedFromId = allCalls.find(
+                      (c) =>
+                        (c as any).relatedCallId &&
+                        Number((c as any).relatedCallId) === Number(call.id),
+                    )?.id as number | undefined;
+                    return (
+                      <TimelineCard
+                        key={call.id}
+                        call={call}
+                        isActive={call.id === activeCallId}
+                        onClick={() => {
+                          setPeekCallId(null);
+                          onSelectCall(call);
+                        }}
+                        onPeek={() => {
+                          const numId = Number(call.id);
+                          setPeekCallId(peekCallId === numId ? null : numId);
+                        }}
+                        isLast={idx === allCalls.length - 1}
+                        linkedFromId={
+                          linkedFromId !== undefined
+                            ? Number(linkedFromId)
+                            : undefined
+                        }
+                      />
+                    );
+                  })
                 )}
               </div>
             </aside>

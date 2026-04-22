@@ -766,48 +766,52 @@ export default function TicketsPage() {
 
   const handleUpdateTicketFromModal = async (
     overrideRelatedCallId?: string | null,
+    overrideFormData?: Partial<CreateCallFormData>,
   ) => {
     if (!selectedTicket) return;
     try {
       setIsUpdating(true);
+
+      // Merge overrideFormData to avoid stale closure issues (e.g. when linking)
+      const data = overrideFormData
+        ? { ...editFormData, ...overrideFormData }
+        : editFormData;
 
       // When called with an override (from link/unlink actions), use it directly
       // to avoid stale closure issues with editFormData
       const resolvedRelatedCallId =
         overrideRelatedCallId !== undefined
           ? overrideRelatedCallId
-          : editFormData.relatedCallId;
+          : data.relatedCallId;
 
       const updatePayload: any = {
-        customerId: editFormData.customerId
-          ? Number(editFormData.customerId)
-          : undefined,
-        yardId: editFormData.yardId ? parseInt(editFormData.yardId) : null,
+        customerId: data.customerId ? Number(data.customerId) : undefined,
+        yardId: data.yardId ? parseInt(data.yardId) : null,
         campaignId:
-          editFormData.campaignId && editFormData.campaignId !== "none"
-            ? Number(editFormData.campaignId)
+          data.campaignId && data.campaignId !== "none"
+            ? Number(data.campaignId)
             : null,
-        campaignOption: editFormData.campaignOption || null,
+        campaignOption: data.campaignOption || null,
         agentId:
-          editFormData.agentId && editFormData.agentId !== "none"
-            ? Number(editFormData.agentId)
+          data.agentId && data.agentId !== "none"
+            ? Number(data.agentId)
             : undefined,
-        status: normalizeCallStatusForApi(editFormData.status),
-        direction: editFormData.direction?.toUpperCase(),
-        disposition: editFormData.disposition || null,
+        status: normalizeCallStatusForApi(data.status),
+        direction: data.direction?.toUpperCase(),
+        disposition: data.disposition || null,
         followUpDueDate:
-          (editFormData.disposition === "CALLBACK_REQUIRED" ||
-            editFormData.disposition === "CALLBACK_SCHEDULED") &&
-          editFormData.followUpDueDate
-            ? new Date(editFormData.followUpDueDate).toISOString()
+          (data.disposition === "CALLBACK_REQUIRED" ||
+            data.disposition === "CALLBACK_SCHEDULED") &&
+          data.followUpDueDate
+            ? new Date(data.followUpDueDate).toISOString()
             : null,
         followUpAssignedToId:
-          (editFormData.disposition === "CALLBACK_REQUIRED" ||
-            editFormData.disposition === "CALLBACK_SCHEDULED") &&
-          editFormData.followUpAssignedToId
-            ? Number(editFormData.followUpAssignedToId)
+          (data.disposition === "CALLBACK_REQUIRED" ||
+            data.disposition === "CALLBACK_SCHEDULED") &&
+          data.followUpAssignedToId
+            ? Number(data.followUpAssignedToId)
             : null,
-        notes: editFormData.notes || null,
+        notes: data.notes || null,
         relatedCallId:
           resolvedRelatedCallId && resolvedRelatedCallId !== ""
             ? Number(resolvedRelatedCallId)

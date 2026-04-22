@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAircall } from "@/components/providers/AircallProvider";
 import type { Ticket } from "@/lib/mock-data";
 import {
   X,
@@ -36,6 +37,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Link2,
 } from "lucide-react";
 import {
   formatEnumLabel,
@@ -201,15 +203,19 @@ interface CallPeekPanelProps {
   call: Ticket | null;
   isLoading: boolean;
   onClose: () => void;
+  onLink?: () => void;
 }
 
 export function CallPeekPanel({
   call,
   isLoading,
   onClose,
+  onLink,
 }: CallPeekPanelProps) {
   const isMobile = useIsMobile();
-
+  const { dockOpen, sheetOpen: aircallSheetOpen } = useAircall();
+  // Aircall panel is on the left when both dock + sheet are open
+  const aircallOnLeft = dockOpen && aircallSheetOpen;
   // Visibility — two-phase (active = in DOM, visible = CSS transition applied)
   const [active, setActive] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -337,6 +343,7 @@ export function CallPeekPanel({
 
   const mobileClasses = cn(
     "fixed bottom-0 left-0 right-0 z-50 flex flex-col",
+    "pointer-events-auto",
     "bg-white rounded-t-2xl",
     "shadow-[0_-8px_32px_-4px_rgba(0,0,0,0.14)]",
     "border border-gray-200/80",
@@ -346,10 +353,13 @@ export function CallPeekPanel({
   );
 
   const desktopClasses = cn(
-    "fixed z-50 flex flex-col",
+    "fixed z-[65] pointer-events-auto flex flex-col",
     "bg-white rounded-2xl border border-gray-200/80",
     "shadow-[0_20px_40px_-8px_rgba(0,0,0,0.14),0_8px_16px_-6px_rgba(0,0,0,0.08)]",
-    "w-[400px]",
+    // Fixed width only when Aircall is NOT on the left — otherwise width is
+    // determined by the left/right bounds so both gaps are exactly 1rem.
+    !aircallOnLeft && "w-[400px]",
+    aircallOnLeft && "min-w-[280px]",
     "transition-all duration-300 ease-out",
     visible
       ? "translate-x-0 opacity-100 scale-100"
@@ -360,9 +370,13 @@ export function CallPeekPanel({
   const containerStyle = isMobile
     ? undefined
     : {
+        // Same 1rem gap on the right (from Sheet left edge)
         right: "calc(min(80svw, 1100px) + 1rem)",
         top: "4rem",
         bottom: "1rem",
+        // When Aircall dock is visible on the left: same 1rem gap from its right edge.
+        // Aircall panel: left-6 (1.5rem) + w-95 (380px) = ~404px from left.
+        ...(aircallOnLeft ? { left: "calc(1.5rem + 380px + 1rem)" } : {}),
       };
 
   return (
@@ -372,7 +386,9 @@ export function CallPeekPanel({
         <div
           className={cn(
             "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-            visible ? "opacity-100" : "opacity-0 pointer-events-none",
+            visible
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none",
           )}
           onClick={onClose}
           aria-hidden="true"
@@ -382,8 +398,15 @@ export function CallPeekPanel({
       <div
         role="complementary"
         aria-label={`Details for call #${call?.id ?? "…"}`}
+        data-peek-panel="true"
         className={containerClass}
         style={containerStyle}
+        onPointerDown={(e) => {
+          // Stop the native event from reaching Radix's document-level listener,
+          // which would otherwise treat any click here as an "outside click"
+          // and close the open Sheet/Dialog.
+          e.nativeEvent.stopImmediatePropagation();
+        }}
       >
         {/* ── Drag handle (mobile only) ────────────────────────────────────── */}
         {isMobile && (
@@ -641,9 +664,20 @@ export function CallPeekPanel({
         {/* ── Sticky footer ─────────────────────────────────────────────────── */}
         {!isLoading && call && (
           <div className="sticky bottom-0 shrink-0 px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-            <p className="text-xs text-gray-400 text-center">
-              Read-only preview · Edit in the main panel
-            </p>
+            {onLink ? (
+              <button
+                type="button"
+                onClick={onLink}
+                className="w-full h-8 flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Link to current call
+              </button>
+            ) : (
+              <p className="text-xs text-gray-400 text-center">
+                Read-only preview · Edit in the main panel
+              </p>
+            )}
           </div>
         )}
       </div>
