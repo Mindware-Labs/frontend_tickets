@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from "@/hooks/use-toast";
 import {
   Toast,
   ToastClose,
@@ -8,30 +8,44 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@/components/ui/toast'
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react'
+} from "@/components/ui/toast";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts } = useToast();
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, icon, variant, ...props }) {
+      {toasts.map(function ({
+        id,
+        title,
+        description,
+        action,
+        icon,
+        variant,
+        ...props
+      }) {
+        const isDestructive = variant === "destructive";
+        const iconBg = isDestructive ? "bg-red-100" : "bg-green-100";
         const resolvedIcon =
           icon ||
-          (variant === 'destructive' ? (
-            <AlertCircle className="h-5 w-5 text-red-500" />
-          ) : variant === 'default' ? (
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          (isDestructive ? (
+            <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+          ) : variant === "default" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
           ) : (
-            <Info className="h-5 w-5 text-primary" />
+            <Info className="h-3.5 w-3.5 text-blue-500" />
           ));
 
         return (
-          <Toast key={id} {...props}>
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5">{resolvedIcon}</span>
-              <div className="grid gap-1">
+          <Toast key={id} variant={variant} {...props}>
+            <div className="flex items-center gap-3 min-w-0">
+              <span
+                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}
+              >
+                {resolvedIcon}
+              </span>
+              <div className="flex-1 min-w-0">
                 {title && <ToastTitle>{title}</ToastTitle>}
                 {description && (
                   <ToastDescription>{description}</ToastDescription>
@@ -41,9 +55,9 @@ export function Toaster() {
             {action}
             <ToastClose />
           </Toast>
-        )
+        );
       })}
       <ToastViewport />
     </ToastProvider>
-  )
+  );
 }

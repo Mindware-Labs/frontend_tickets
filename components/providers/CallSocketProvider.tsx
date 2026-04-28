@@ -87,14 +87,12 @@ export function CallSocketProvider({
           title: data.title,
           description: data.message,
           duration: 8000,
-          className: "bg-slate-900 border-l-4 border-l-blue-500 text-white",
           action: (
             <ToastAction
               altText="Ver"
               onClick={() =>
-                router.push(`/tickets?view=assigned_me&id=${data.ticketId}`)
+                router.push(`/calls?view=assigned_me&id=${data.ticketId}`)
               }
-              className="text-blue-200 hover:text-white border-blue-200 hover:border-white"
             >
               View Call
             </ToastAction>
@@ -145,15 +143,14 @@ export function CallSocketProvider({
         } catch (e) {}
 
         toast({
-          title: "? Callback Overdue",
+          title: "⏰ Callback Overdue",
           description: data.message,
           duration: 10000,
-          className: "bg-slate-900 border-l-4 border-l-red-500 text-white",
+          variant: "destructive",
           action: (
             <ToastAction
               altText="View"
-              onClick={() => router.push(`/tickets?id=${data.callId}`)}
-              className="text-red-200 hover:text-white border-red-200 hover:border-white"
+              onClick={() => router.push(`/calls?id=${data.callId}`)}
             >
               View Call
             </ToastAction>
@@ -181,15 +178,14 @@ export function CallSocketProvider({
         } catch (e) {}
 
         toast({
-          title: "? Ticket Follow-up Overdue",
+          title: "⏰ Ticket Follow-up Overdue",
           description: data.message,
           duration: 10000,
-          className: "bg-slate-900 border-l-4 border-l-orange-500 text-white",
+          variant: "destructive",
           action: (
             <ToastAction
               altText="View"
-              onClick={() => router.push(`/tickets?id=${data.ticketId}`)}
-              className="text-orange-200 hover:text-white border-orange-200 hover:border-white"
+              onClick={() => router.push(`/calls?id=${data.ticketId}`)}
             >
               View Ticket
             </ToastAction>

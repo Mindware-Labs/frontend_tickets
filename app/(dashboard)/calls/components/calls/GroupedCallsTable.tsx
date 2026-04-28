@@ -729,29 +729,61 @@ export function GroupedCallsTable({
           </Button>
 
           <div className="hidden md:flex items-center justify-center gap-1.5">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
+            {(() => {
+              const windowSize = Math.min(5, totalPages);
+              let startPage = 1;
               if (totalPages > 5 && currentPage > 3) {
-                pageNum = currentPage - 2 + i;
-                if (pageNum > totalPages) pageNum = totalPages - 4 + i;
+                startPage = currentPage - 2;
+                if (startPage + 4 > totalPages) startPage = totalPages - 4;
               }
-              if (pageNum <= 0 || pageNum > totalPages) return null;
-
-              const active = pageNum === currentPage;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors ${
-                    active
-                      ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
-                      : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent"
-                  }`}
-                >
-                  {pageNum}
-                </button>
+              const pages = Array.from(
+                { length: windowSize },
+                (_, i) => startPage + i,
               );
-            })}
+              const lastInWindow = pages[pages.length - 1];
+              const showEllipsis =
+                totalPages > 5 && lastInWindow < totalPages - 1;
+              const showLastPage = totalPages > 5 && lastInWindow < totalPages;
+
+              return (
+                <>
+                  {pages.map((pageNum) => {
+                    if (pageNum <= 0 || pageNum > totalPages) return null;
+                    const active = pageNum === currentPage;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => onPageChange(pageNum)}
+                        className={`flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors ${
+                          active
+                            ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
+                            : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  {showEllipsis && (
+                    <span className="flex h-[36px] w-[36px] items-center justify-center text-[13px] text-muted-foreground select-none">
+                      …
+                    </span>
+                  )}
+                  {showLastPage && (
+                    <button
+                      onClick={() => onPageChange(totalPages)}
+                      className={`flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors ${
+                        currentPage === totalPages
+                          ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
+                          : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent"
+                      }`}
+                    >
+                      {totalPages}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <Button

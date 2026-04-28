@@ -15,10 +15,6 @@ const CreateCallModal = dynamic(
     import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
   { ssr: false },
 );
-const EditCallModal = dynamic(
-  () => import("./components/calls/EditCallModal").then((m) => m.EditCallModal),
-  { ssr: false },
-);
 const ViewCallModal = dynamic(
   () => import("./components/calls/ViewCallModal").then((m) => m.ViewCallModal),
   { ssr: false },
@@ -296,10 +292,11 @@ export default function TicketsPage() {
 
   // ---- Modal state ----
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
   const [drawerSuccessToast, setDrawerSuccessToast] = useState(false);
+  const [drawerErrorToast, setDrawerErrorToast] = useState(false);
+  const [drawerErrorMessage, setDrawerErrorMessage] = useState<string>();
 
   // Move the floating Aircall FAB to the bottom edge when the drawer is open
   const { setSheetOpen } = useAircall();
@@ -412,7 +409,6 @@ export default function TicketsPage() {
   // ---- Close modals on route change ----
   useEffect(() => {
     setShowCreateModal(false);
-    setShowEditModal(false);
     setShowViewModal(false);
     setShowTimelineDrawer(false);
   }, [pathname]);
@@ -601,19 +597,45 @@ export default function TicketsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketIdParam, customerIdParam, tickets.length]);
 
+  // ---- Helpers ----
+  /** Build a minimal CustomerCallGroup from a single Call so the timeline drawer can open */
+  const buildGroupFromCall = (ticket: Call): CustomerCallGroup => {
+    const customerName =
+      getClientName(ticket) ||
+      (ticket.customer &&
+      typeof ticket.customer === "object" &&
+      "name" in ticket.customer
+        ? (ticket.customer as { name?: string }).name || "Unknown"
+        : "Unknown");
+    const customerPhone =
+      getClientPhone(ticket) ||
+      (ticket.customer &&
+      typeof ticket.customer === "object" &&
+      "phone" in ticket.customer
+        ? (ticket.customer as { phone?: string }).phone || ""
+        : "");
+    const customerId = ticket.customerId
+      ? Number(ticket.customerId)
+      : ticket.customer &&
+          typeof ticket.customer === "object" &&
+          "id" in ticket.customer
+        ? Number((ticket.customer as { id: string | number }).id)
+        : undefined;
+    return {
+      key: `customer-${customerId ?? ticket.id}`,
+      customerId,
+      customerName,
+      customerPhone,
+      calls: [ticket as any],
+      latestCall: ticket as any,
+    };
+  };
+
   // ---- Handlers ----
   const openTicketModal = (ticket: Call) => {
-    setSelectedTicket(ticket);
-    const ticketStatus = ticket.status
-      ?.toString()
-      .toUpperCase()
-      .replace(/\s+/g, "_");
-    const isClosed = ticketStatus === "CLOSED" || ticketStatus === "RESOLVED";
-    if (ticket.yardId || isClosed) {
-      setShowViewModal(true);
-    } else {
-      setShowEditModal(true);
-    }
+    populateEditFormFromCall(ticket);
+    setTimelineGroup(buildGroupFromCall(ticket));
+    setShowTimelineDrawer(true);
   };
 
   const handleViewDetails = async (ticket: Call) => {
@@ -854,21 +876,16 @@ export default function TicketsPage() {
 
         // Show the sheet-anchored toast instead of the global fixed one
         setDrawerSuccessToast(true);
-        setShowEditModal(false);
+        setShowViewModal(false);
+        setShowTimelineDrawer(true);
       } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to update call",
-          variant: "destructive",
-        });
+        setDrawerErrorMessage(result.message || "Failed to update call");
+        setDrawerErrorToast(true);
       }
     } catch (err) {
       console.error("Update error:", err);
-      toast({
-        title: "Error",
-        description: "An error occurred while updating the call",
-        variant: "destructive",
-      });
+      setDrawerErrorMessage("An error occurred while updating the call");
+      setDrawerErrorToast(true);
     } finally {
       setIsUpdating(false);
     }
@@ -1000,7 +1017,6 @@ export default function TicketsPage() {
     if (editFormData.agentId) data.agentId = String(editFormData.agentId);
     if (editFormData.phoneLineId)
       data.phoneLineId = String(editFormData.phoneLineId);
-    setShowEditModal(false);
     setShowTimelineDrawer(false);
     setTicketCreateData(data);
     setActiveTab("tickets");
@@ -1194,7 +1210,13 @@ export default function TicketsPage() {
             savedAttachments={savedAttachments}
             onEdit={() => {
               setShowViewModal(false);
-              setShowEditModal(true);
+              setSelectedTicket((prev) => {
+                if (prev) {
+                  setTimelineGroup(buildGroupFromCall(prev));
+                  setShowTimelineDrawer(true);
+                }
+                return prev;
+              });
             }}
             formatEnumLabel={formatEnumLabel}
             getStatusBadgeColor={getStatusBadgeColor}
@@ -1211,38 +1233,6 @@ export default function TicketsPage() {
             getYardDisplayName={(t: Call) =>
               getYardDisplayName(t, refData.yards)
             }
-          />
-
-          <EditCallModal
-            open={showEditModal}
-            onOpenChange={setShowEditModal}
-            ticket={selectedTicket}
-            customers={refData.customers}
-            yards={refData.yards}
-            agents={refData.agents}
-            campaigns={refData.campaigns}
-            editFormData={editFormData}
-            setEditFormData={(next) =>
-              setEditFormData((prev) => ({ ...prev, ...next }))
-            }
-            customerSearchEdit={customerSearchEdit}
-            setCustomerSearchEdit={setCustomerSearchEdit}
-            yardSearchEdit={yardSearchEdit}
-            setYardSearchEdit={setYardSearchEdit}
-            agentSearchEdit={agentSearchEdit}
-            setAgentSearchEdit={setAgentSearchEdit}
-            campaignSearchEdit={campaignSearchEdit}
-            setCampaignSearchEdit={setCampaignSearchEdit}
-            attachmentFiles={attachmentFiles}
-            setAttachmentFiles={setAttachmentFiles}
-            savedAttachments={savedAttachments}
-            isUpdating={isUpdating}
-            onSubmit={handleUpdateTicketFromModal}
-            getAttachmentLabel={getAttachmentLabel}
-            getAttachmentUrl={(v: string) =>
-              getAttachmentUrl(v, refData.apiBase)
-            }
-            onCreateTicket={handleCreateTicketFromCall}
           />
 
           <CustomerTimelineDrawer
@@ -1268,6 +1258,9 @@ export default function TicketsPage() {
             onUpdate={handleUpdateTicketFromModal}
             showSuccessToast={drawerSuccessToast}
             onSuccessToastDismiss={() => setDrawerSuccessToast(false)}
+            showErrorToast={drawerErrorToast}
+            errorToastMessage={drawerErrorMessage}
+            onErrorToastDismiss={() => setDrawerErrorToast(false)}
             customers={refData.customers}
             yards={refData.yards}
             agents={refData.agents}

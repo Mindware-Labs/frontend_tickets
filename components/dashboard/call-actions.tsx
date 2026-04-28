@@ -21,7 +21,7 @@ export function CallActions({ ticketId }: CallActionsProps) {
 
   const handleViewCall = () => {
     toast.success(`Opening call #${ticketId}`);
-    router.push(`/tickets?id=${ticketId}`);
+    router.push(`/calls?id=${ticketId}`);
   };
 
   const handleViewCustomer = () => {
@@ -31,7 +31,7 @@ export function CallActions({ ticketId }: CallActionsProps) {
 
   const handleViewRecentActivity = () => {
     toast.success("Navigating to recent call activity");
-    router.push(`/tickets`);
+    router.push(`/calls`);
   };
 
   return (

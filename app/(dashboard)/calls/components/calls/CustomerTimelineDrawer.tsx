@@ -126,6 +126,12 @@ interface CustomerTimelineDrawerProps {
   showSuccessToast?: boolean;
   /** Called when the toast finishes its exit animation so the parent can reset the flag */
   onSuccessToastDismiss?: () => void;
+  /** When true, shows an animated error toast anchored to the left edge of the sheet */
+  showErrorToast?: boolean;
+  /** Message to display inside the error toast */
+  errorToastMessage?: string;
+  /** Called when the error toast finishes its exit animation so the parent can reset the flag */
+  onErrorToastDismiss?: () => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -424,6 +430,9 @@ export function CustomerTimelineDrawer({
   activeFilters,
   showSuccessToast,
   onSuccessToastDismiss,
+  showErrorToast,
+  errorToastMessage,
+  onErrorToastDismiss,
 }: CustomerTimelineDrawerProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [timeHourInput, setTimeHourInput] = useState("12");
@@ -506,6 +515,38 @@ export function CustomerTimelineDrawer({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSuccessToast]);
+
+  // ── Sheet-anchored error toast ────────────────────────────────────────────
+  const [errorToastActive, setErrorToastActive] = useState(false);
+  const [errorToastVisible, setErrorToastVisible] = useState(false);
+
+  useEffect(() => {
+    if (!showErrorToast) {
+      setErrorToastVisible(false);
+      const unmount = setTimeout(() => setErrorToastActive(false), 300);
+      return () => clearTimeout(unmount);
+    }
+
+    setErrorToastActive(true);
+    setErrorToastVisible(false);
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setErrorToastVisible(true)),
+    );
+
+    const dismiss = setTimeout(() => {
+      setErrorToastVisible(false);
+      setTimeout(() => {
+        setErrorToastActive(false);
+        onErrorToastDismiss?.();
+      }, 300);
+    }, 4000);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(dismiss);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showErrorToast]);
 
   // Effect to handle exit animation for ticket warning
   useEffect(() => {
@@ -655,6 +696,17 @@ export function CustomerTimelineDrawer({
   const customerName = group?.customerName ?? getClientName(selectedCall);
   const customerPhone = group?.customerPhone ?? getClientPhone(selectedCall);
   const callCount = allCalls.length || group?.calls.length || 0;
+
+  // Overdue calls from this customer that could be linked to the current call
+  const overdueCallsSuggestions = useMemo(
+    () =>
+      allCalls.filter(
+        (c) =>
+          c.id !== selectedCall?.id &&
+          (c as any).status?.toString().toUpperCase() === CallStatus.OVERDUE,
+      ),
+    [allCalls, selectedCall?.id],
+  );
 
   const campaignOptionValues = useMemo(() => {
     if (!editFormData.campaignId) return [];
@@ -1071,6 +1123,54 @@ export function CustomerTimelineDrawer({
             : undefined
         }
       />
+
+      {/* ── Sheet-anchored error toast ───────────────────────────────────── */}
+      {errorToastActive && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className={cn(
+            "fixed z-50 flex items-center gap-3",
+            "bg-white rounded-xl border border-slate-200/80",
+            "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.10),0_4px_6px_-4px_rgba(0,0,0,0.10),inset_4px_0_0_0_#ef4444]",
+            "px-4 py-3 min-w-65 max-w-80",
+            "transition-all duration-300 ease-out",
+            errorToastVisible
+              ? "translate-x-0 opacity-100"
+              : "translate-x-4 opacity-0",
+          )}
+          style={{
+            right: "calc(min(80svw, 1100px) + 1rem)",
+            bottom: "4.5rem",
+          }}
+        >
+          <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+              Error
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {errorToastMessage ?? "Failed to save changes"}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => {
+              setErrorToastVisible(false);
+              setTimeout(() => {
+                setErrorToastActive(false);
+                onErrorToastDismiss?.();
+              }, 300);
+            }}
+            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* ── Sheet-anchored success toast ─────────────────────────────────────
           Positioned just outside the left edge of the Sheet panel so it never
@@ -1528,6 +1628,40 @@ export function CustomerTimelineDrawer({
                         </div>
                       </div>
                     )}
+
+                    {/* ── Overdue Call Link Recommendation ── */}
+                    {overdueCallsSuggestions.length > 0 &&
+                      !editFormData.relatedCallId &&
+                      !showCallLinker && (
+                        <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200/70 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="w-6 h-6 rounded-lg bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold text-red-700 uppercase tracking-wider mb-0.5">
+                              Overdue Callback Detected
+                            </p>
+                            <p className="text-[11px] text-red-600 leading-snug">
+                              This customer has{" "}
+                              {overdueCallsSuggestions.length === 1
+                                ? `1 overdue call (Call #${overdueCallsSuggestions[0].id})`
+                                : `${overdueCallsSuggestions.length} overdue calls`}{" "}
+                              pending. Consider linking this call to the
+                              previous overdue callback.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLinkCall(overdueCallsSuggestions[0]);
+                              handleOpenCallLinker();
+                            }}
+                            className="shrink-0 px-3 py-1.5 text-[11px] font-semibold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors whitespace-nowrap active:scale-[0.97]"
+                          >
+                            Link Now
+                          </button>
+                        </div>
+                      )}
 
                     {/* ── Call Linker (inline panel) ── */}
                     {showCallLinker && (
