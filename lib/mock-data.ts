@@ -5,7 +5,7 @@ export interface Call {
   phone: string;
   type: "Onboarding" | "AR";
   campaign: string;
-  status: "Open" | "In Progress" | "Closed";
+  status: "Active" | "Closed";
   createdAt: string;
   assignedTo?: string;
   priority?: "Low" | "Medium" | "High";
@@ -80,7 +80,7 @@ export const mockCalls: Call[] = [
     phone: "+1 (555) 123-4567",
     type: "Onboarding",
     campaign: "Spring Campaign 2024",
-    status: "Open",
+    status: "Active",
     createdAt: "2024-01-15T10:30:00",
     priority: "High",
     callDuration: "5:34",
@@ -93,7 +93,7 @@ export const mockCalls: Call[] = [
     phone: "+1 (555) 234-5678",
     type: "AR",
     campaign: "Q1 Collections",
-    status: "In Progress",
+    status: "Active",
     createdAt: "2024-01-15T09:15:00",
     assignedTo: "Agent Smith",
     priority: "Medium",
@@ -121,7 +121,7 @@ export const mockCalls: Call[] = [
     phone: "+1 (555) 456-7890",
     type: "AR",
     campaign: "Q1 Collections",
-    status: "Open",
+    status: "Active",
     createdAt: "2024-01-14T11:45:00",
     priority: "High",
     callDuration: "2:45",
@@ -134,7 +134,7 @@ export const mockCalls: Call[] = [
     phone: "+1 (555) 567-8901",
     type: "Onboarding",
     campaign: "Spring Campaign 2024",
-    status: "In Progress",
+    status: "Active",
     createdAt: "2024-01-13T16:30:00",
     assignedTo: "Agent Smith",
     priority: "Medium",
@@ -229,7 +229,7 @@ export const getDashboardStats = () => {
   const arPayments = mockCalls.filter(
     (t) => t.type === "AR" && t.status === "Closed",
   ).length;
-  const openCalls = mockCalls.filter((t) => t.status === "Open").length;
+  const openCalls = mockCalls.filter((t) => t.status === "Active").length;
   const closedCalls = mockCalls.filter((t) => t.status === "Closed").length;
 
   return {

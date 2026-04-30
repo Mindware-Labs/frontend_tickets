@@ -385,7 +385,7 @@ export default function AgentStatsPage() {
                       <th className="px-6 py-4 text-center">Status</th>
                       <th className="px-6 py-4 text-right">Total</th>
                       <th className="px-6 py-4 text-right">Closed</th>
-                      <th className="px-6 py-4 text-right">Open</th>
+                      <th className="px-6 py-4 text-right">Active</th>
                       <th className="px-6 py-4 text-right">Resolution</th>
                       <th className="px-6 py-4 text-right">Avg Duration</th>
                       <th className="px-6 py-4"></th>

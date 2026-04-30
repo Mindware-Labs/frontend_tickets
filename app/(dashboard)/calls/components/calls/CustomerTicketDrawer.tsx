@@ -67,12 +67,13 @@ const STATUS_PILL: Record<
   string,
   { dot: string; bg: string; fg: string; label: string }
 > = {
-  OPEN: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Open" },
+  ACTIVE: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
+  OPEN: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
   IN_PROGRESS: {
-    dot: "#2563eb",
-    bg: "#eff6ff",
-    fg: "#1d4ed8",
-    label: "In Progress",
+    dot: "#008f68",
+    bg: "#e6f5f0",
+    fg: "#006d50",
+    label: "Active",
   },
   PENDING_FOLLOWUP: {
     dot: "#d97706",
@@ -83,6 +84,11 @@ const STATUS_PILL: Record<
   OVERDUE: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
   RESOLVED: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
   CLOSED: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
+};
+
+const normalizeStatusKey = (status?: string | null) => {
+  const key = (status || "").toString().toUpperCase().replace(/\s+/g, "_");
+  return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
 };
 
 const PRIORITY_PILL: Record<
@@ -144,55 +150,77 @@ function TicketCard({
   }, [isActive]);
 
   const dateLabel = fmtRelative(ticket.createdAt);
-  const sp = STATUS_PILL[ticket.status || ""] || STATUS_PILL.CLOSED;
+  const sp = STATUS_PILL[normalizeStatusKey(ticket.status)] || STATUS_PILL.CLOSED;
   const pp = PRIORITY_PILL[ticket.priority || ""] || PRIORITY_PILL.LOW;
 
   return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "w-full text-left px-3 py-3 border-b border-slate-100 transition-all last:border-0",
-        isActive
-          ? "bg-white border-l-[4px] border-l-[#008f68] shadow-sm pl-2.5"
-          : "border-l-[4px] border-l-transparent hover:bg-slate-100",
-      )}
-    >
-      <div className="flex items-center justify-between gap-1 mb-1">
-        <span className="text-[11px] font-bold text-slate-700 font-mono">
-          #{ticket.id}
-        </span>
-        <span className="text-[11px] text-slate-400">{dateLabel}</span>
-      </div>
-      {ticket.ticketType && (
-        <p className="text-[11px] text-slate-500 mb-1.5 truncate">
-          {formatEnumLabel(ticket.ticketType)}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-1">
+    <div className="relative flex gap-2 pl-3.5 pr-2.5">
+      <div className="relative z-10 mt-3 shrink-0">
         <span
-          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-          style={{ color: sp.fg, background: sp.bg }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ background: sp.dot }}
-          />
-          {sp.label}
-        </span>
-        <span
-          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-          style={{ color: pp.fg, background: pp.bg }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ background: pp.dot }}
-          />
-          {pp.label}
-        </span>
+          className={cn(
+            "w-3 h-3 rounded-full border-2 block transition-all",
+            isActive
+              ? "bg-[#008f68] border-[#008f68] shadow-[0_0_0_3px_#008f6820]"
+              : "bg-white border-slate-300",
+          )}
+        />
       </div>
-    </button>
+
+      <div className="flex-1 min-w-0">
+        <button
+          ref={ref}
+          type="button"
+          onClick={onClick}
+          className={cn(
+            "w-full text-left mb-1 rounded-xl p-2.5 border transition-all",
+            isActive
+              ? "bg-[#008f68]/5 border-[#008f68]/20 shadow-sm"
+              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/60",
+          )}
+        >
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <span
+              className={cn(
+                "text-[11px] font-bold font-mono",
+                isActive ? "text-[#008f68]" : "text-slate-700",
+              )}
+            >
+              #{ticket.id}
+            </span>
+            <span className="text-[9.5px] text-slate-400 tabular-nums">
+              {dateLabel}
+            </span>
+          </div>
+          {ticket.ticketType && (
+            <p className="text-[11px] text-slate-500 mb-1.5 truncate">
+              {formatEnumLabel(ticket.ticketType)}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-1">
+            <span
+              className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
+              style={{ color: sp.fg, background: sp.bg }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: sp.dot }}
+              />
+              {sp.label}
+            </span>
+            <span
+              className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
+              style={{ color: pp.fg, background: pp.bg }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: pp.dot }}
+              />
+              {pp.label}
+            </span>
+          </div>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -340,7 +368,7 @@ export function CustomerTicketDrawer({
   }, [customers, customerSearch]);
 
   // Status/priority pills for selected ticket
-  const sp = STATUS_PILL[selectedTicket?.status || ""] || null;
+  const sp = STATUS_PILL[normalizeStatusKey(selectedTicket?.status)] || null;
   const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
 
   // File handling
@@ -357,7 +385,8 @@ export function CustomerTicketDrawer({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        className="w-[55vw]! max-w-[55vw]! sm:max-w-[55vw]! p-0 flex flex-col bg-slate-50 [&>button.absolute]:hidden overflow-hidden"
+        className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
+        style={{ maxWidth: "1100px" }}
       >
         <SheetTitle className="sr-only">
           {customerName
@@ -366,77 +395,124 @@ export function CustomerTicketDrawer({
         </SheetTitle>
 
         {/* ── Top Bar ── */}
-        <div className="flex items-center gap-3 px-5 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-            style={{
-              background: `hsl(${(customerName?.charCodeAt(0) ?? 200) % 360} 50% 46%)`,
-            }}
-          >
-            {customerName ? customerName.substring(0, 2).toUpperCase() : "?"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-[13px] font-bold text-slate-900 leading-tight truncate">
-                {customerName}
-              </p>
-              <button
-                type="button"
-                title="Edit contact"
-                className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
+        <div className="shrink-0 bg-white border-b border-slate-100">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
+              style={{
+                background: `hsl(${(customerName?.charCodeAt(0) ?? 200) % 360} 50% 44%)`,
+              }}
+            >
+              {customerName ? customerName.substring(0, 2).toUpperCase() : "?"}
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs text-slate-500 font-mono">
+            <div className="min-w-0 shrink">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-[15px] font-bold text-slate-900 leading-none truncate">
+                  {customerName || "Unknown"}
+                </p>
+                <button
+                  type="button"
+                  title="Edit contact"
+                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
+              <p className="text-[11.5px] text-slate-400 font-mono mt-0.5 leading-none">
                 {customerPhone || "—"}
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="text-xs text-slate-500 flex items-center gap-1">
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] bg-[#008f68]/8 px-2 py-0.5 rounded-full">
+                <TicketIcon className="w-2.5 h-2.5" />
                 {isLoadingHistory ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
                 ) : (
-                  <>
-                    {ticketCount} ticket{ticketCount !== 1 ? "s" : ""}
-                  </>
+                  `${ticketCount} ticket${ticketCount !== 1 ? "s" : ""}`
                 )}
               </span>
             </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (dialPhone && canDial) dial(dialPhone, selectedTicket?.id);
+                }}
+                disabled={!dialPhone || !canDial}
+                className="flex items-center gap-1.5 h-8 px-3.5 text-white text-[12px] font-semibold rounded-xl bg-[#008f68] hover:bg-[#007a5a] active:scale-95 disabled:opacity-40 transition-all shadow-sm"
+              >
+                <PhoneOutgoing className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Call</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (dialPhone && canDial) dial(dialPhone, selectedTicket?.id);
-            }}
-            disabled={!dialPhone || !canDial}
-            className="flex items-center gap-1.5 h-8 px-3.5 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
-            style={{ background: "#008f68" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
-          >
-            <PhoneOutgoing className="w-3.5 h-3.5" />
-            Call
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+
+          {selectedTicket && (
+            <div className="flex items-center gap-1.5 px-4 pb-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                <TicketIcon className="w-3 h-3 text-slate-400" />
+                Ticket #{selectedTicket.id}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                <CalendarIcon className="w-3 h-3 text-slate-400" />
+                {fmtDate(selectedTicket.createdAt)}
+              </span>
+              {sp && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
+                  style={{ color: sp.fg, background: sp.bg, borderColor: `${sp.dot}30` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: sp.dot }} />
+                  {sp.label}
+                </span>
+              )}
+              {pp && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
+                  style={{ color: pp.fg, background: pp.bg, borderColor: `${pp.dot}30` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: pp.dot }} />
+                  {pp.label}
+                </span>
+              )}
+              {selectedTicket.ticketType && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                  <Activity className="w-3 h-3 text-slate-400" />
+                  {formatEnumLabel(selectedTicket.ticketType)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── 3-Column Body ── */}
-        <div className="flex-1 flex flex-row overflow-hidden min-h-0">
+        <div className="flex-1 overflow-hidden min-h-0 flex">
           {/* ═══ COL 1 (18%): Ticket Feed ═══ */}
-          <div className="w-[18%] shrink-0 flex flex-col border-r border-slate-200 bg-slate-50 overflow-hidden">
-            <div className="px-3 py-2.5 border-b border-slate-200 shrink-0">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                Ticket History
-              </p>
+          <div className="hidden sm:flex w-72 xl:w-80 order-last shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Ticket History
+                </p>
+              </div>
+              {isLoadingHistory ? (
+                <Loader2 className="w-3 h-3 animate-spin text-slate-300" />
+              ) : (
+                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">
+                  {allTickets.length}
+                </span>
+              )}
             </div>
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+            <div className="flex-1 overflow-y-auto py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
               {isLoadingHistory && allTickets.length === 0 ? (
                 <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -460,7 +536,7 @@ export function CustomerTicketDrawer({
           </div>
 
           {/* ═══ COL 2 (flex): Hub ═══ */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7]">
             {!selectedTicket ? (
               <div className="flex-1 flex items-center justify-center text-slate-400">
                 <div className="text-center">
@@ -736,9 +812,9 @@ export function CustomerTicketDrawer({
           </div>
 
           {/* ═══ COL 3 (22%): Entity Inspector ═══ */}
-          <div className="w-[22%] shrink-0 flex flex-col border-l border-slate-200 bg-slate-50/50 overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-slate-200 shrink-0 bg-white">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+          <div className="hidden lg:flex w-72 shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 shrink-0 bg-white">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Entity Inspector
               </p>
             </div>

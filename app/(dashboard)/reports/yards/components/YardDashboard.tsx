@@ -185,18 +185,18 @@ export function YardDashboard({
           </div>
         </div>
 
-        {/* Open Tickets */}
+        {/* Active Tickets */}
         <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground tracking-tight">
-                Open Tickets
+                Active Tickets
               </p>
               <h3 className="text-4xl font-bold tracking-tight text-foreground">
                 {stats.openTickets}
               </h3>
               <p className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 inline-flex px-2 py-1 rounded-md">
-                {stats.inProgressTickets} in progress
+                {stats.openTickets} active
               </p>
             </div>
             <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
@@ -418,7 +418,7 @@ export function YardDashboard({
                 />
                 <Bar
                   dataKey="open"
-                  name="Open Tickets"
+                  name="Active Tickets"
                   fill="oklch(0.65 0.22 25)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={45}

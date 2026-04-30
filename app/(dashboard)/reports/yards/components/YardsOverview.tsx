@@ -107,7 +107,7 @@ export function YardsOverview({
 
               <div className="rounded-xl border bg-background/70 p-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Open
+                  Active
                 </p>
                 <p className="mt-1 text-base font-semibold text-orange-600 dark:text-orange-400">
                   {stats.openTickets}

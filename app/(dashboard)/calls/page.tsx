@@ -1027,14 +1027,14 @@ export default function TicketsPage() {
 
   // ---- Render ----
   return (
-    <div className="h-screen flex flex-col px-4 pt-4 pb-4 gap-0">
+    <div className="h-screen flex flex-col px-4 pt-2 pb-4 gap-0">
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between w-full py-5 px-0.5 gap-3 border-b border-border">
+        <div className="flex flex-col md:flex-row md:items-center justify-between w-full pt-2 pb-5 px-0.5 gap-3 border-b border-border">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
               {activeTab === "calls"

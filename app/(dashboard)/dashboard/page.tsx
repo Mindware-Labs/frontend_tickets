@@ -1683,7 +1683,7 @@ function PanelExec({ data }: { data: DashboardLiveData }) {
           accent={C.blue}
         />
         <KpiCard
-          label="Open Tickets"
+          label="Active Tickets"
           value={String(kpi.openTotal)}
           sub={`${kpi.overdue} overdue`}
           trend={{ val: "+4%", up: false }}
@@ -1841,7 +1841,7 @@ function PanelExec({ data }: { data: DashboardLiveData }) {
           </ResponsiveContainer>
         </SectionCard>
 
-        <SectionCard title="Open vs Overdue" style={{ flex: 1 }}>
+        <SectionCard title="Active vs Overdue" style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height={150}>
             <BarChart
               data={yardsData}
@@ -1875,7 +1875,7 @@ function PanelExec({ data }: { data: DashboardLiveData }) {
               <Legend wrapperStyle={{ fontSize: 10, color: C.muted }} />
               <Bar
                 dataKey="open"
-                name="Open"
+                name="Active"
                 fill={C.blue}
                 radius={[3, 3, 0, 0]}
               >

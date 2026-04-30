@@ -91,8 +91,9 @@ const fetcher = async (url: string) => {
 };
 
 const STATUS_PILL: Record<string, { dot: string; bg: string; fg: string; label: string }> = {
-  OPEN:             { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Open" },
-  IN_PROGRESS:      { dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8", label: "In Progress" },
+  ACTIVE:           { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
+  OPEN:             { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
+  IN_PROGRESS:      { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
   PENDING_FOLLOWUP: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309", label: "Follow-up" },
   OVERDUE:          { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
   RESOLVED:         { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
@@ -108,8 +109,9 @@ const PRIORITY_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
 
 // Map status/priority to Tailwind classes for Badge styling
 const statusColors: Record<string, string> = {
+  ACTIVE:           "bg-green-100 text-green-800 hover:bg-green-100",
   OPEN:             "bg-green-100 text-green-800 hover:bg-green-100",
-  IN_PROGRESS:      "bg-blue-100 text-blue-800 hover:bg-blue-100",
+  IN_PROGRESS:      "bg-green-100 text-green-800 hover:bg-green-100",
   PENDING_FOLLOWUP: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
   OVERDUE:          "bg-red-100 text-red-800 hover:bg-red-100",
   RESOLVED:         "bg-green-100 text-green-800 hover:bg-green-100",
@@ -129,6 +131,11 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+const normalizeStatusKey = (status?: string | null) => {
+  const key = (status || "").toString().toUpperCase().replace(/\s+/g, "_");
+  return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
+};
+
 // ---------------------------------------------------------------------------
 // Initial form data
 // ---------------------------------------------------------------------------
@@ -140,7 +147,7 @@ const emptyForm: CreateSupportTicketFormData = {
   agentId: "",
   phoneLineId: "",
   callId: "",
-  status: SupportTicketStatus.OPEN,
+  status: SupportTicketStatus.ACTIVE,
   priority: SupportTicketPriority.MEDIUM,
   ticketType: "",
   issueDetail: "",
@@ -233,8 +240,7 @@ export function TicketsTab({
 
   // ---- Status options filtered by active tab ----
   const ACTIVE_STATUSES = [
-    SupportTicketStatus.OPEN,
-    SupportTicketStatus.IN_PROGRESS,
+    SupportTicketStatus.ACTIVE,
     SupportTicketStatus.PENDING_FOLLOWUP,
     SupportTicketStatus.OVERDUE,
   ];
@@ -325,7 +331,13 @@ export function TicketsTab({
   // ---- Auto-open create from call ----
   useEffect(() => {
     if (initialCreateData) {
-      setForm({ ...emptyForm, ...initialCreateData });
+      setForm({
+        ...emptyForm,
+        ...initialCreateData,
+        status: (initialCreateData.status
+          ? normalizeStatusKey(initialCreateData.status)
+          : emptyForm.status) as SupportTicketStatus,
+      });
       setShowCreate(true);
       onConsumeCreateData?.();
     }
@@ -351,7 +363,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: t.status,
+      status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       issueDetail: t.issueDetail || "",
@@ -374,7 +386,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: t.status,
+      status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       issueDetail: t.issueDetail || "",
@@ -396,7 +408,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: t.status,
+      status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       issueDetail: t.issueDetail || "",
@@ -600,9 +612,9 @@ export function TicketsTab({
 
   // ---- Render ----
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex-1 flex flex-col gap-1">
       {/* View Tabs */}
-      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
+      <div className="flex items-center gap-2 border-b border-border/80 overflow-x-auto no-scrollbar px-0.5">
         {[
           { key: "active",   label: "Active",  countKey: "active" },
           { key: "inactive", label: "Closed",  countKey: "inactive" },
@@ -634,7 +646,7 @@ export function TicketsTab({
         <button
           type="button"
           onClick={openCreate}
-          className="mb-1 flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-lg transition-colors self-center"
+          className="mb-1 flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-xl transition-all active:scale-95 shadow-sm self-center"
           style={{ background: "#008f68" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
@@ -646,22 +658,26 @@ export function TicketsTab({
 
       {/* Filters row */}
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
+          <div className="relative flex-1 max-w-[320px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
             <Input
-              placeholder="Search tickets..."
+              placeholder="Search tickets, customers, or issues..."
               value={ticketFilters.search}
               onChange={(e) => ticketFilters.setSearch(e.target.value)}
-              className="pl-8 h-9"
+              className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
             />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+              /
+            </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Select
             value={ticketFilters.filters.status}
             onValueChange={(v) => ticketFilters.setFilter("status", v)}
           >
-            <SelectTrigger className="w-37.5 h-9">
+            <SelectTrigger className="w-36 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -678,7 +694,7 @@ export function TicketsTab({
             value={ticketFilters.filters.priority}
             onValueChange={(v) => ticketFilters.setFilter("priority", v)}
           >
-            <SelectTrigger className="w-35 h-9">
+            <SelectTrigger className="w-34 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -695,7 +711,7 @@ export function TicketsTab({
             value={ticketFilters.filters.ticketType}
             onValueChange={(v) => ticketFilters.setFilter("ticketType", v)}
           >
-            <SelectTrigger className="w-40 h-9">
+            <SelectTrigger className="w-38 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -713,7 +729,7 @@ export function TicketsTab({
               filtersOpen || activeFilterCount > 0 ? "secondary" : "outline"
             }
             size="sm"
-            className="h-9 text-xs"
+            className="h-[30px] rounded-full px-3 text-[12.5px] font-medium border-border shadow-none"
             onClick={() => setFiltersOpen(!filtersOpen)}
           >
             <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
@@ -732,18 +748,19 @@ export function TicketsTab({
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 text-xs text-muted-foreground"
+              className="h-[30px] rounded-full px-3 text-[12.5px] text-muted-foreground"
               onClick={ticketFilters.clearAllFilters}
             >
               <X className="mr-1 h-3 w-3" />
               Clear all
             </Button>
           )}
+          </div>
         </div>
 
         {/* Expanded filter dropdowns */}
         {filtersOpen && (
-          <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/80 bg-slate-50/80 p-3 shadow-sm dark:bg-muted/30">
             {/* Yard */}
             <div className="min-w-35 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground">
@@ -956,23 +973,24 @@ export function TicketsTab({
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-15">ID</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Customer</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-20 text-center">Tickets</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Priority</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Type</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Agent</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Yard</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-25">Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
+        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+          <Table className="relative">
+            <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
+              <TableRow className="border-none hover:bg-transparent">
+                <TableHead className="w-[76px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">ID</TableHead>
+                <TableHead className="w-[250px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Customer</TableHead>
+                <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400 text-center">Tickets</TableHead>
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Status</TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Priority</TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Type</TableHead>
+                <TableHead className="w-[150px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Agent</TableHead>
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Yard</TableHead>
+                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Campaign</TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Created</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={10} className="h-24 text-center">
@@ -986,34 +1004,40 @@ export function TicketsTab({
                 </TableCell>
               </TableRow>
             ) : (
-              ticketGroups.map((group) => {
+              ticketGroups.map((group, i) => {
                 const t = group.latestTicket;
                 const initials = (t.customer?.name || "?").substring(0, 2).toUpperCase();
-                const sp = STATUS_PILL[t.status] || STATUS_PILL.CLOSED;
+                const statusKey = normalizeStatusKey(t.status);
+                const sp = STATUS_PILL[statusKey] || STATUS_PILL.CLOSED;
                 const pp = PRIORITY_PILL[t.priority] || PRIORITY_PILL.LOW;
                 return (
                   <React.Fragment key={group.key}>
                     <TableRow
-                      className="cursor-pointer hover:bg-[#f8fafc] border-b border-slate-100 last:border-0"
+                      className={cn(
+                        "cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150",
+                        i % 2 === 1
+                          ? "bg-slate-50/60 dark:bg-muted/20"
+                          : "bg-white dark:bg-card",
+                      )}
                       onClick={() => openView(t)}
                     >
-                      <TableCell className="text-[12px] font-mono text-slate-400">#{t.id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                      <TableCell className="pl-4 py-3 text-[12px] font-mono font-semibold text-slate-400">#{t.id}</TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-2.5">
                           <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
                             style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}
                           >
                             {initials}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-slate-800 truncate">{customerName(t)}</p>
+                            <p className="text-[14px] font-bold text-foreground leading-tight truncate">{customerName(t)}</p>
                             {t.customer?.phone && (
                               <div className="flex items-center gap-1">
-                                <span className="text-[11px] text-slate-400 font-mono">{t.customer.phone}</span>
+                                <span className="text-[11.5px] text-muted-foreground font-mono">{t.customer.phone}</span>
                                 <button
                                   type="button"
-                                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#e6f5f0] transition-colors"
+                                  className="w-5 h-5 flex items-center justify-center rounded-md hover:bg-[#e6f5f0] transition-colors disabled:opacity-40"
                                   style={{ color: "#008f68" }}
                                   onClick={(e) => { e.stopPropagation(); dial(t.customer!.phone!, t.id); }}
                                   disabled={!canDial}
@@ -1029,8 +1053,14 @@ export function TicketsTab({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setExpandedKey((prev) => prev === group.key ? null : group.key); }}
-                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11px] font-semibold transition-colors hover:bg-slate-100"
-                          style={{ background: "#f1f5f9", color: "#475569" }}
+                          className={cn(
+                            "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all duration-150 shadow-sm",
+                            expandedKey === group.key
+                              ? "bg-[#dcfce7] text-[#15803d] border-[#86efac] shadow-[#86efac]/20"
+                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-[#dcfce7] hover:text-[#15803d] hover:border-[#86efac] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600",
+                          )}
+                          aria-label="Toggle ticket timeline"
+                          title="View ticket timeline"
                         >
                           <ChevronRight className={cn("h-3 w-3 transition-transform", expandedKey === group.key && "rotate-90")} />
                           <Ticket className="h-3 w-3" />
@@ -1051,11 +1081,11 @@ export function TicketsTab({
                           {formatLabel(t.priority)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-[12px] text-slate-600">{t.ticketType ? formatLabel(t.ticketType) : "—"}</TableCell>
-                      <TableCell className="text-[12px] text-slate-600">{agentName(t)}</TableCell>
-                      <TableCell className="text-[12px] text-slate-600">{yardName(t)}</TableCell>
-                      <TableCell className="text-[12px] text-slate-600">{t.campaign?.nombre || "—"}</TableCell>
-                      <TableCell className="text-[11px] text-slate-400 font-mono">
+                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{t.ticketType ? formatLabel(t.ticketType) : "—"}</TableCell>
+                      <TableCell className="py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">{agentName(t)}</TableCell>
+                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{yardName(t)}</TableCell>
+                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{t.campaign?.nombre || "—"}</TableCell>
+                      <TableCell className="py-3 text-[13px] text-slate-500 dark:text-slate-400 font-mono font-medium">
                         {t.createdAt ? format(new Date(t.createdAt), "MMM d, yyyy") : "—"}
                       </TableCell>
                     </TableRow>
@@ -1070,8 +1100,9 @@ export function TicketsTab({
                 );
               })
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -1198,9 +1229,9 @@ export function TicketsTab({
                   <div>
                     <Badge
                       variant="secondary"
-                      className={statusColors[selected.status] || ""}
+                      className={statusColors[normalizeStatusKey(selected.status)] || ""}
                     >
-                      {formatLabel(selected.status)}
+                      {formatLabel(normalizeStatusKey(selected.status))}
                     </Badge>
                   </div>
                 </div>

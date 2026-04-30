@@ -215,15 +215,13 @@ export default function AgentDashboardPage() {
 
       const PRIORITY_ALERT = new Set(["HIGH", "EMERGENCY"]);
       const STATUS_CLOSED = new Set(["CLOSED", "RESOLVED"]);
-      const STATUS_OPEN = new Set(["OPEN"]);
-      const STATUS_IN_PROGRESS = new Set(["IN_PROGRESS"]);
+      const STATUS_ACTIVE = new Set(["ACTIVE", "OPEN", "IN_PROGRESS"]);
 
-      const openTickets = myTickets.filter((t) =>
-        statusIs(t, STATUS_OPEN),
+      const activeTickets = myTickets.filter((t) =>
+        statusIs(t, STATUS_ACTIVE),
       ).length;
-      const inProgressTickets = myTickets.filter((t) =>
-        statusIs(t, STATUS_IN_PROGRESS),
-      ).length;
+      const openTickets = activeTickets;
+      const inProgressTickets = 0;
       const closedTickets = myTickets.filter((t) =>
         statusIs(t, STATUS_CLOSED),
       ).length;
@@ -245,7 +243,6 @@ export default function AgentDashboardPage() {
 
       const totalTickets = myTickets.length;
       const totalCalls = totalTickets;
-      const activeTickets = openTickets + inProgressTickets;
       const resolutionRate =
         totalTickets > 0 ? Math.round((closedTickets / totalTickets) * 100) : 0;
 
@@ -599,7 +596,7 @@ export default function AgentDashboardPage() {
         <KPICard
           title="Active Tickets"
           value={myKpis.activeTickets}
-          secondaryValue={`${myKpis.openTickets} open · ${myKpis.inProgressTickets} in progress`}
+          secondaryValue={`${myKpis.activeTickets} active`}
           icon={Clock}
           iconBg="bg-amber-500"
         />

@@ -23,7 +23,7 @@ type Campaign = {
   isActive?: boolean;
 };
 
-const STATUS_ACTIVE = new Set(["OPEN", "IN_PROGRESS"]);
+const STATUS_ACTIVE = new Set(["ACTIVE", "OPEN", "IN_PROGRESS"]);
 const STATUS_CLOSED = new Set(["CLOSED", "RESOLVED"]);
 const PRIORITY_ALERT = new Set(["HIGH", "EMERGENCY"]);
 
@@ -34,8 +34,9 @@ const CAMPAIGN_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  OPEN: "Open",
-  IN_PROGRESS: "In Progress",
+  ACTIVE: "Active",
+  OPEN: "Active",
+  IN_PROGRESS: "Active",
   RESOLVED: "Resolved",
   CLOSED: "Closed",
 };
@@ -180,13 +181,11 @@ export async function GET(request: NextRequest) {
       {},
     );
 
-    const openTickets = answeredTickets.filter(
-      (ticket) => ticket.status === "OPEN",
+    const activeTickets = answeredTickets.filter((ticket) =>
+      STATUS_ACTIVE.has((ticket.status || "").toString().toUpperCase()),
     ).length;
-    const inProgressTickets = answeredTickets.filter(
-      (ticket) => ticket.status === "IN_PROGRESS",
-    ).length;
-    const activeTickets = openTickets + inProgressTickets;
+    const openTickets = activeTickets;
+    const inProgressTickets = 0;
     const closedTickets = answeredTickets.filter((ticket) =>
       STATUS_CLOSED.has(ticket.status || ""),
     ).length;

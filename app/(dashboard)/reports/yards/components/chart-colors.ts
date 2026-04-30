@@ -10,8 +10,9 @@ export const DISPOSITION_COLORS = [
 ];
 
 export const STATUS_COLORS: Record<string, string> = {
-  OPEN: "oklch(0.65 0.22 25)",
-  IN_PROGRESS: "oklch(0.75 0.18 85)",
+  ACTIVE: "oklch(0.65 0.18 160)",
+  OPEN: "oklch(0.65 0.18 160)",
+  IN_PROGRESS: "oklch(0.65 0.18 160)",
   CLOSED: "oklch(0.65 0.18 160)",
 };
 

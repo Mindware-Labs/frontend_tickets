@@ -223,8 +223,7 @@ export const TicketStatus = CallStatus;
 // ── Ticket-specific enums/types (backend /tickets entity) ─────────────
 
 export enum SupportTicketStatus {
-  OPEN = "OPEN",
-  IN_PROGRESS = "IN_PROGRESS",
+  ACTIVE = "ACTIVE",
   PENDING_FOLLOWUP = "PENDING_FOLLOWUP",
   OVERDUE = "OVERDUE",
   RESOLVED = "RESOLVED",

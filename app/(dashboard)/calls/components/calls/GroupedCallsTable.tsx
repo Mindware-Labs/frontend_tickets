@@ -356,7 +356,7 @@ export function GroupedCallsTable({
         <div className="relative flex-1 max-w-[320px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input
-            placeholder="Search calls, numbers, or contacts..."
+            placeholder="Search calls, numbers, or customers..."
             className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}

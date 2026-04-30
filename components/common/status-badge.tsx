@@ -1,15 +1,11 @@
 interface StatusBadgeProps {
-  status: "Open" | "In Progress" | "Closed" | "Active" | "Paused" | "Completed"
+  status: "Closed" | "Active" | "Paused" | "Completed"
   size?: "sm" | "md" | "lg"
 }
 
 export default function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
   const getStatusColor = () => {
     switch (status) {
-      case "Open":
-        return "badge-open"
-      case "In Progress":
-        return "badge-in-progress"
       case "Closed":
         return "badge-closed"
       case "Active":

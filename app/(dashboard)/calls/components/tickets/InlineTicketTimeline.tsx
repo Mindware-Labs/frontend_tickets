@@ -43,9 +43,10 @@ const priorityColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  OPEN: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   IN_PROGRESS:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   PENDING_FOLLOWUP:
     "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
   OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
@@ -59,6 +60,11 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+const normalizeStatusKey = (status?: string | null) => {
+  const key = (status || "").toString().toUpperCase().replace(/\s+/g, "_");
+  return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
+};
+
 function formatShortDate(date: Date): string {
   if (isToday(date)) return `Today ${format(date, "HH:mm")}`;
   if (isYesterday(date)) return `Yesterday ${format(date, "HH:mm")}`;
@@ -66,11 +72,12 @@ function formatShortDate(date: Date): string {
 }
 
 function statusRing(status: string): string {
-  switch (status) {
+  switch (normalizeStatusKey(status)) {
+    case "ACTIVE":
     case "OPEN":
-      return "border-blue-500";
+      return "border-green-500";
     case "IN_PROGRESS":
-      return "border-indigo-500";
+      return "border-green-500";
     case "PENDING_FOLLOWUP":
       return "border-amber-500";
     case "OVERDUE":
@@ -191,7 +198,8 @@ export function InlineTicketTimeline({
           const date = new Date(ticket.createdAt || 0);
           const dateLabel = isNaN(date.getTime()) ? "—" : formatShortDate(date);
           const agentLabel = resolveAgent(ticket);
-          const ring = statusRing(ticket.status);
+          const statusKey = normalizeStatusKey(ticket.status);
+          const ring = statusRing(statusKey);
           return (
             <li key={ticket.id} className="ml-4">
               <span
@@ -205,9 +213,9 @@ export function InlineTicketTimeline({
                 </span>
                 <Badge
                   variant="secondary"
-                  className={`text-xs ${statusColors[ticket.status] || ""}`}
+                  className={`text-xs ${statusColors[statusKey] || ""}`}
                 >
-                  {formatLabel(ticket.status)}
+                  {formatLabel(statusKey)}
                 </Badge>
                 <Badge
                   variant="secondary"
