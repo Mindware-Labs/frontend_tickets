@@ -1,18 +1,17 @@
 "use client";
 
 import {
-  Building,
   Calendar,
   Check,
   ChevronsUpDown,
   Download,
   FileSpreadsheet,
   X,
-  MapPin,
   AlertCircle,
   Filter,
+  Megaphone,
 } from "lucide-react";
-import { useEffect, useState, type WheelEvent } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,20 +38,28 @@ import {
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import type { Yard } from "./types";
 
-type FiltersSheetProps = {
+type Campaign = {
+  id: number;
+  nombre: string;
+  yarda?: { name?: string | null } | null;
+  isActive?: boolean;
+  tipo?: string;
+  createdAt?: string;
+};
+
+type CampaignFiltersSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  yardOpen: boolean;
-  onYardOpenChange: (open: boolean) => void;
-  yards: Yard[];
-  selectedYardId: string;
-  loadingYards: boolean;
+  campaignOpen: boolean;
+  onCampaignOpenChange: (open: boolean) => void;
+  campaigns: Campaign[];
+  selectedCampaignId: string;
+  loadingCampaigns: boolean;
   startDate: string;
   endDate: string;
   canExport: boolean;
-  onYardSelect: (yardId: string) => void;
+  onCampaignSelect: (campaignId: string) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
   onExportPDF: () => void;
@@ -60,42 +67,36 @@ type FiltersSheetProps = {
   onApplyFilters: () => void;
 };
 
-export function FiltersSheet({
+export function CampaignFiltersSheet({
   open,
   onOpenChange,
-  yardOpen,
-  onYardOpenChange,
-  yards,
-  selectedYardId,
-  loadingYards,
+  campaignOpen,
+  onCampaignOpenChange,
+  campaigns,
+  selectedCampaignId,
+  loadingCampaigns,
   startDate,
   endDate,
   canExport,
-  onYardSelect,
+  onCampaignSelect,
   onStartDateChange,
   onEndDateChange,
   onExportPDF,
   onExportExcel,
   onApplyFilters,
-}: FiltersSheetProps) {
-  // Popover states for auto-closing dates
+}: CampaignFiltersSheetProps) {
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
 
-  const [localStartDate, setLocalStartDate] = useState<Date | undefined>(
-    undefined,
-  );
+  const [localStartDate, setLocalStartDate] = useState<Date | undefined>(undefined);
   const [localEndDate, setLocalEndDate] = useState<Date | undefined>(undefined);
 
-  const selectedYardName = selectedYardId
-    ? yards.find((yard) => yard.id.toString() === selectedYardId)?.name
+  const selectedCampaignName = selectedCampaignId
+    ? campaigns.find((c) => c.id.toString() === selectedCampaignId)?.nombre
     : null;
 
-  // Sync external props to local state safely
   useEffect(() => {
-    setLocalStartDate(
-      startDate ? new Date(startDate + "T12:00:00") : undefined,
-    );
+    setLocalStartDate(startDate ? new Date(startDate + "T12:00:00") : undefined);
   }, [startDate]);
 
   useEffect(() => {
@@ -104,10 +105,10 @@ export function FiltersSheet({
 
   useEffect(() => {
     if (open) return;
-    onYardOpenChange(false);
+    onCampaignOpenChange(false);
     setStartPopoverOpen(false);
     setEndPopoverOpen(false);
-  }, [open, onYardOpenChange]);
+  }, [open, onCampaignOpenChange]);
 
   const handleStartSelect = (date: Date | undefined) => {
     setLocalStartDate(date);
@@ -115,7 +116,7 @@ export function FiltersSheet({
       onStartDateChange("");
     } else {
       onStartDateChange(format(date, "yyyy-MM-dd"));
-      setStartPopoverOpen(false); // Auto-close UX
+      setStartPopoverOpen(false);
     }
   };
 
@@ -125,46 +126,32 @@ export function FiltersSheet({
       onEndDateChange("");
     } else {
       onEndDateChange(format(date, "yyyy-MM-dd"));
-      setEndPopoverOpen(false); // Auto-close UX
+      setEndPopoverOpen(false);
     }
   };
 
-  const handleYardSelect = (yardId: string) => {
-    onYardSelect(yardId);
-    onYardOpenChange(false); // Auto-close UX
+  const handleCampaignSelect = (campaignId: string) => {
+    onCampaignSelect(campaignId);
+    onCampaignOpenChange(false);
   };
-
-  const handleYardListWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const list = event.currentTarget;
-
-    if (list.scrollHeight <= list.clientHeight) {
-      return;
-    }
-
-    // Keep wheel scrolling inside the yard dropdown when rendered in a Sheet.
-    event.preventDefault();
-    event.stopPropagation();
-    list.scrollTop += event.deltaY;
-  };
-
-  // Validations
-  const hasDateRange = Boolean(startDate && endDate);
-  const isDateRangeValid = hasDateRange
-    ? new Date(startDate) <= new Date(endDate)
-    : true;
-  const showMissingDateAlert = Boolean(selectedYardId) && !hasDateRange;
-  const isYardPopoverOpen = open && yardOpen;
-  const isStartDatePopoverOpen = open && startPopoverOpen;
-  const isEndDatePopoverOpen = open && endPopoverOpen;
 
   const handleSheetOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
-      onYardOpenChange(false);
+      onCampaignOpenChange(false);
       setStartPopoverOpen(false);
       setEndPopoverOpen(false);
     }
     onOpenChange(nextOpen);
   };
+
+  const hasDateRange = Boolean(startDate && endDate);
+  const isDateRangeValid = hasDateRange
+    ? new Date(startDate) <= new Date(endDate)
+    : true;
+  const showMissingDateAlert = Boolean(selectedCampaignId) && !hasDateRange;
+  const isCampaignPopoverOpen = open && campaignOpen;
+  const isStartDatePopoverOpen = open && startPopoverOpen;
+  const isEndDatePopoverOpen = open && endPopoverOpen;
 
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -180,37 +167,36 @@ export function FiltersSheet({
             Report Filters
           </SheetTitle>
           <SheetDescription className="ml-11 text-sm">
-            Configure the parameters to generate your yard report.
+            Configure the parameters to generate your campaign report.
           </SheetDescription>
         </SheetHeader>
 
-        {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Section: Location */}
+          {/* Campaign */}
           <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
             <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              Location Settings
+              <Megaphone className="h-4 w-4 text-primary" />
+              Campaign
             </label>
 
             <Popover
               modal
-              open={isYardPopoverOpen}
-              onOpenChange={(nextOpen) => onYardOpenChange(open ? nextOpen : false)}
+              open={isCampaignPopoverOpen}
+              onOpenChange={(nextOpen) => onCampaignOpenChange(open ? nextOpen : false)}
             >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={yardOpen}
+                  aria-expanded={campaignOpen}
                   className={cn(
                     "w-full justify-between bg-background transition-colors hover:bg-muted/50",
-                    !selectedYardId && "text-muted-foreground",
+                    !selectedCampaignId && "text-muted-foreground",
                   )}
-                  disabled={loadingYards}
+                  disabled={loadingCampaigns}
                 >
                   <span className="truncate">
-                    {selectedYardName || "Select a yard..."}
+                    {selectedCampaignName || "Select a campaign..."}
                   </span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -221,40 +207,37 @@ export function FiltersSheet({
                 align="start"
               >
                 <Command>
-                  <CommandInput placeholder="Search yard..." className="h-10" />
-                  <CommandList
-                    className="max-h-[220px]"
-                    onWheel={handleYardListWheel}
-                  >
+                  <CommandInput placeholder="Search campaign..." className="h-10" />
+                  <CommandList className="max-h-[220px]">
                     <CommandEmpty className="py-6 text-center text-sm">
-                      {loadingYards ? (
+                      {loadingCampaigns ? (
                         <span className="animate-pulse text-muted-foreground">
-                          Loading yards...
+                          Loading campaigns...
                         </span>
                       ) : (
-                        "No yard found."
+                        "No campaign found."
                       )}
                     </CommandEmpty>
                     <CommandGroup>
-                      {yards.map((yard) => (
+                      {campaigns.map((c) => (
                         <CommandItem
-                          key={yard.id}
-                          value={yard.name}
-                          onSelect={() => handleYardSelect(yard.id.toString())}
+                          key={c.id}
+                          value={c.nombre}
+                          onSelect={() => handleCampaignSelect(c.id.toString())}
                           className="cursor-pointer my-0.5 rounded-lg"
                         >
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4 transition-opacity",
-                              selectedYardId === yard.id.toString()
+                              selectedCampaignId === c.id.toString()
                                 ? "opacity-100 text-primary"
                                 : "opacity-0",
                             )}
                           />
-                          <span className="font-medium">{yard.name}</span>
-                          {yard.commonName && (
+                          <span className="font-medium">{c.nombre}</span>
+                          {c.yarda?.name && (
                             <span className="ml-2 text-xs text-muted-foreground truncate">
-                              ({yard.commonName})
+                              ({c.yarda.name})
                             </span>
                           )}
                         </CommandItem>
@@ -266,7 +249,7 @@ export function FiltersSheet({
             </Popover>
           </div>
 
-          {/* Section: Date Range */}
+          {/* Date Range */}
           <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
             <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
               <Calendar className="h-4 w-4 text-primary" />
@@ -295,18 +278,13 @@ export function FiltersSheet({
                     >
                       <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                       {localStartDate ? (
-                        <span className="truncate">
-                          {format(localStartDate, "MMM d, yyyy")}
-                        </span>
+                        <span className="truncate">{format(localStartDate, "MMM d, yyyy")}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent
-                    className="z-[60] w-auto p-0 rounded-xl"
-                    align="start"
-                  >
+                  <PopoverContent className="z-[60] w-auto p-0 rounded-xl" align="start">
                     <div className="p-3">
                       <CalendarWidget
                         mode="single"
@@ -355,9 +333,7 @@ export function FiltersSheet({
                     >
                       <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                       {localEndDate ? (
-                        <span className="truncate">
-                          {format(localEndDate, "MMM d, yyyy")}
-                        </span>
+                        <span className="truncate">{format(localEndDate, "MMM d, yyyy")}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
@@ -392,13 +368,10 @@ export function FiltersSheet({
               </div>
             </div>
 
-            {/* Date Alerts Contextualized inside the Date Range box */}
             {showMissingDateAlert && (
               <Alert className="mt-2 border-sky-200 bg-sky-50/50 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
                 <AlertCircle className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                <AlertTitle className="text-sm font-semibold">
-                  Missing Dates
-                </AlertTitle>
+                <AlertTitle className="text-sm font-semibold">Missing Dates</AlertTitle>
                 <AlertDescription className="text-xs mt-1">
                   Select both Start Date and End Date to generate the report.
                 </AlertDescription>
@@ -408,18 +381,14 @@ export function FiltersSheet({
             {hasDateRange && !isDateRangeValid && (
               <Alert className="mt-2 border-amber-200 bg-amber-50/50 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
                 <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-sm font-semibold">
-                  Invalid Range
-                </AlertTitle>
+                <AlertTitle className="text-sm font-semibold">Invalid Range</AlertTitle>
                 <AlertDescription className="text-xs mt-1">
-                  Start date cannot be later than end date. Please adjust the
-                  range.
+                  Start date cannot be later than end date. Please adjust the range.
                 </AlertDescription>
               </Alert>
             )}
           </div>
 
-          {/* Section: Export Options */}
           {canExport && (
             <div className="space-y-3 rounded-xl border border-primary/10 bg-primary/5 p-4">
               <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-primary">
@@ -452,7 +421,6 @@ export function FiltersSheet({
           )}
         </div>
 
-        {/* Fixed Footer */}
         <SheetFooter className="px-6 py-4 border-t bg-card/50 backdrop-blur-sm flex-col-reverse sm:flex-row gap-3">
           <Button
             variant="ghost"
@@ -464,7 +432,7 @@ export function FiltersSheet({
           <Button
             onClick={onApplyFilters}
             className="gap-2 w-full sm:w-auto sm:flex-1 h-11 font-semibold shadow-md"
-            disabled={!hasDateRange || !isDateRangeValid}
+            disabled={!selectedCampaignId || !hasDateRange || !isDateRangeValid}
           >
             <Check className="h-4 w-4" />
             Apply Filters

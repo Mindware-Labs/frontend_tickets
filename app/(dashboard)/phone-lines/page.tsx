@@ -2,16 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useRole } from "@/components/providers/role-provider";
 import { fetchFromBackend } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PhoneLine, PhoneLineFormData } from "./types";
 import { PhoneLinesToolbar } from "./components/PhoneLinesToolbar";
 import { PhoneLinesTable } from "./components/PhoneLinesTable";
-import { PhoneLinesPagination } from "./components/PhoneLinesPagination";
-import { PhoneLineFormModal } from "./components/PhoneLineFormModal";
-import { DeletePhoneLineModal } from "./components/DeletePhoneLineModal";
+
+const PhoneLineFormModal = dynamic(
+  () => import("./components/PhoneLineFormModal").then((m) => m.PhoneLineFormModal),
+  { ssr: false },
+);
+const DeletePhoneLineModal = dynamic(
+  () => import("./components/DeletePhoneLineModal").then((m) => m.DeletePhoneLineModal),
+  { ssr: false },
+);
+
+const ITEMS_PER_PAGE = 10;
 
 const DEFAULT_FORM: PhoneLineFormData = {
   phoneNumber: "",
@@ -27,16 +37,16 @@ export default function PhoneLinesPage() {
   const [lines, setLines] = useState<PhoneLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLines, setSelectedLines] = useState<number[]>([]);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLine, setSelectedLine] = useState<PhoneLine | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<PhoneLineFormData>(DEFAULT_FORM);
 
   const fetchLines = async () => {
@@ -44,21 +54,14 @@ export default function PhoneLinesPage() {
       setLoading(true);
       const data = await fetchFromBackend("/phone-lines");
       setLines(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching phone lines:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load phone lines",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to load phone lines", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchLines();
-  }, []);
+  useEffect(() => { fetchLines(); }, []);
 
   const pathname = usePathname();
   useEffect(() => {
@@ -76,20 +79,20 @@ export default function PhoneLinesPage() {
     );
   }, [lines, search]);
 
-  const totalPages = Math.ceil(filteredLines.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLines.length / ITEMS_PER_PAGE);
   const paginatedLines = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredLines.slice(start, start + itemsPerPage);
-  }, [filteredLines, currentPage, itemsPerPage]);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredLines.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredLines, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedLines([]);
   }, [search]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
-  const clearValidationErrors = () => setValidationErrors({});
+  const clearErrors = () => setValidationErrors({});
 
-  // Format raw digits from DB into display format for the form
   const formatForEdit = (digits: string): string => {
     const clean = digits.startsWith("1") ? digits.slice(1) : digits;
     if (clean.length === 0) return "";
@@ -107,18 +110,14 @@ export default function PhoneLinesPage() {
 
   const handleCreate = () => {
     resetForm();
-    clearValidationErrors();
+    clearErrors();
     setShowCreateModal(true);
   };
 
   const handleEdit = (line: PhoneLine) => {
     setSelectedLine(line);
-    setFormData({
-      phoneNumber: formatForEdit(line.phoneNumber),
-      label: line.label || "",
-      isActive: line.isActive,
-    });
-    clearValidationErrors();
+    setFormData({ phoneNumber: formatForEdit(line.phoneNumber), label: line.label || "", isActive: line.isActive });
+    clearErrors();
     setShowEditModal(true);
   };
 
@@ -128,18 +127,13 @@ export default function PhoneLinesPage() {
   };
 
   const handleSubmitCreate = async () => {
-    setValidationErrors({});
+    clearErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields correctly",
-        variant: "destructive",
-      });
+      toast({ title: "Validation Error", description: "Please fill in all required fields correctly", variant: "destructive" });
       return;
     }
-
     try {
       setIsSubmitting(true);
       await fetchFromBackend("/phone-lines", {
@@ -150,7 +144,6 @@ export default function PhoneLinesPage() {
           isActive: formData.isActive,
         }),
       });
-
       toast({
         title: "Success",
         description: (
@@ -160,17 +153,11 @@ export default function PhoneLinesPage() {
           </div>
         ),
       });
-
       setShowCreateModal(false);
-      fetchLines();
       resetForm();
+      fetchLines();
     } catch (error: any) {
-      console.error("Error creating phone line:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create phone line",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to create phone line", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -178,18 +165,13 @@ export default function PhoneLinesPage() {
 
   const handleSubmitEdit = async () => {
     if (!selectedLine) return;
-    setValidationErrors({});
+    clearErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields correctly",
-        variant: "destructive",
-      });
+      toast({ title: "Validation Error", description: "Please fill in all required fields correctly", variant: "destructive" });
       return;
     }
-
     try {
       setIsSubmitting(true);
       await fetchFromBackend(`/phone-lines/${selectedLine.id}`, {
@@ -200,7 +182,6 @@ export default function PhoneLinesPage() {
           isActive: formData.isActive,
         }),
       });
-
       toast({
         title: "Success",
         description: (
@@ -210,18 +191,12 @@ export default function PhoneLinesPage() {
           </div>
         ),
       });
-
       setShowEditModal(false);
-      fetchLines();
-      resetForm();
       setSelectedLine(null);
+      resetForm();
+      fetchLines();
     } catch (error: any) {
-      console.error("Error updating phone line:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update phone line",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to update phone line", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -229,13 +204,9 @@ export default function PhoneLinesPage() {
 
   const handleSubmitDelete = async () => {
     if (!selectedLine) return;
-
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/phone-lines/${selectedLine.id}`, {
-        method: "DELETE",
-      });
-
+      await fetchFromBackend(`/phone-lines/${selectedLine.id}`, { method: "DELETE" });
       toast({
         title: "Success",
         description: (
@@ -245,60 +216,74 @@ export default function PhoneLinesPage() {
           </div>
         ),
       });
-
       setShowDeleteModal(false);
-      fetchLines();
+      setSelectedLines((prev) => prev.filter((id) => id !== selectedLine.id));
       setSelectedLine(null);
+      fetchLines();
     } catch (error: any) {
-      console.error("Error deleting phone line:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete phone line",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to delete phone line", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <>
-      <div className="flex flex-col gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Phone Lines</h1>
-          <p className="text-muted-foreground">
-            Manage allowed Aircall phone lines that generate tickets
-          </p>
+    <div className="h-screen flex flex-col px-4 pt-4 pb-4 gap-0">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between w-full py-5 px-0.5 gap-3 border-b border-border">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+            Phone Lines
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{today}</p>
         </div>
 
+        {canManage && (
+          <Button
+            onClick={handleCreate}
+            className="h-9 px-4 rounded-xl bg-[#008f68] hover:bg-[#007a5a] text-white text-[13px] font-medium shadow-sm"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            New Line
+          </Button>
+        )}
+      </div>
+
+      {/* Toolbar */}
+      <div className="mt-3 mb-2">
         <PhoneLinesToolbar
           search={search}
           onSearchChange={setSearch}
           onRefresh={fetchLines}
-          onCreate={canManage ? handleCreate : undefined}
-          canCreate={canManage}
+          canCreate={false}
           totalCount={filteredLines.length}
+          selectedCount={selectedLines.length}
+          onClearSelection={() => setSelectedLines([])}
         />
+      </div>
 
+      {/* Table */}
+      <div className="flex-1 min-h-0">
         <PhoneLinesTable
           loading={loading}
           lines={paginatedLines}
           totalFiltered={filteredLines.length}
+          selectedLines={selectedLines}
+          onSelectionChange={setSelectedLines}
           onEdit={canManage ? handleEdit : undefined}
           onDelete={canManage ? handleDelete : undefined}
           canManage={canManage}
-        />
-
-        <PhoneLinesPagination
-          totalCount={filteredLines.length}
           currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={(value) => {
-            setItemsPerPage(value);
-            setCurrentPage(1);
-          }}
           onPageChange={setCurrentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalPages={totalPages}
         />
       </div>
 
@@ -306,10 +291,7 @@ export default function PhoneLinesPage() {
         <>
           <PhoneLineFormModal
             open={showCreateModal}
-            onOpenChange={(open) => {
-              setShowCreateModal(open);
-              if (!open) clearValidationErrors();
-            }}
+            onOpenChange={(open) => { setShowCreateModal(open); if (!open) clearErrors(); }}
             title="Add Phone Line"
             description="Add a new Aircall line that will generate tickets"
             submitLabel="Add Line"
@@ -324,10 +306,7 @@ export default function PhoneLinesPage() {
 
           <PhoneLineFormModal
             open={showEditModal}
-            onOpenChange={(open) => {
-              setShowEditModal(open);
-              if (!open) clearValidationErrors();
-            }}
+            onOpenChange={(open) => { setShowEditModal(open); if (!open) clearErrors(); }}
             title="Edit Phone Line"
             description="Update the phone line details"
             submitLabel="Save Changes"
@@ -342,15 +321,13 @@ export default function PhoneLinesPage() {
 
           <DeletePhoneLineModal
             open={showDeleteModal}
-            onOpenChange={(open) => {
-              setShowDeleteModal(open);
-            }}
+            onOpenChange={setShowDeleteModal}
             phoneNumber={selectedLine?.phoneNumber}
             isSubmitting={isSubmitting}
             onConfirm={handleSubmitDelete}
           />
         </>
       )}
-    </>
+    </div>
   );
 }

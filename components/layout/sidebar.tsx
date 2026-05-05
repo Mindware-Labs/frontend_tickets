@@ -12,7 +12,6 @@ import {
   UserCircle,
   Building,
   Phone,
-  Settings,
   HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
@@ -43,40 +42,58 @@ const workspaceItems: {
   adminOnly?: boolean;
   children?: { title: string; url: string; icon?: React.ComponentType }[];
 }[] = [
-  { title: "Aircall", url: "/aircall", icon: MessageSquare },
-  { title: "Calls", url: "/calls", icon: PhoneCall },
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  {
-    title: "Campaigns",
-    url: "/campaigns",
-    icon: Megaphone,
-    children: [
-      { title: "Campaigns", url: "/campaigns", icon: Megaphone },
-      {
-        title: "Reports",
-        url: "/reports/campaigns",
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    title: "Knowledge",
-    icon: BookOpen,
-    children: [
-      { title: "Guides", url: "/Knowledge/Guides", icon: BookOpen },
-      { title: "Policies", url: "/Knowledge/policies", icon: BookOpen },
-    ],
-  },
-  {
-    title: "Reports",
-    icon: BarChart3,
-    adminOnly: true,
-    children: [
-      { title: "Agents", url: "/reports/performance", icon: Users },
-      { title: "Performance", url: "/reports/agents", icon: BarChart3 },
-    ],
-  },
-];
+    { title: "Aircall", url: "/aircall", icon: MessageSquare },
+    { title: "Calls", url: "/calls", icon: PhoneCall },
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    {
+      title: "Campaigns",
+      url: "/campaigns",
+      icon: Megaphone,
+      children: [
+        { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+        {
+          title: "Reports",
+          url: "/reports/campaigns",
+          icon: BarChart3,
+        },
+      ],
+    },
+    {
+      title: "Yards",
+      url: "/yards",
+      icon: Building,
+      children: [
+        { title: "Yards", url: "/yards", icon: Building },
+        {
+          title: "Reports",
+          url: "/reports/yards",
+          icon: BarChart3,
+        },
+      ],
+    },
+     {
+      title: "Landlords",
+      url: "/landlords",
+      icon: User,
+      children: [
+        { title: "Landlords", url: "/landlords", icon: User },
+        {
+          title: "Reports",
+          url: "/reports/landlords",
+          icon: BarChart3,
+        },
+      ],
+    },
+    {
+      title: "Reports",
+      icon: BarChart3,
+      adminOnly: true,
+      children: [
+        { title: "Performance", url: "/reports/performance", icon: BarChart3 },
+        { title: "Agents", url: "/reports/agents", icon: Users },
+      ],
+    },
+  ];
 
 const managementItems: {
   title: string;
@@ -85,25 +102,11 @@ const managementItems: {
   adminOnly?: boolean;
   children?: { title: string; url: string; icon?: React.ComponentType }[];
 }[] = [
-  { title: "Customers", url: "/customers", icon: Users },
-  {
-    title: "Yards",
-    url: "/yards",
-    icon: Building,
-    children: [
-      { title: "Yards", url: "/yards", icon: Building },
-      {
-        title: "Reports",
-        url: "/reports/yards",
-        icon: BarChart3,
-      },
-    ],
-  },
-  { title: "Landlords", url: "/landlords", icon: User },
-  { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
-  { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
-  { title: "Profile", url: "/profile", icon: UserCircle },
-];
+    { title: "Customers", url: "/customers", icon: Users },
+    { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
+    { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
+    { title: "Profile", url: "/profile", icon: UserCircle },
+  ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -157,12 +160,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const visibleWorkspace =
     normalizedRole === "agent"
       ? workspaceItems
-          .filter((item) => !item.adminOnly)
-          .map((item) =>
-            item.title === "Dashboard"
-              ? { ...item, url: "/agent-dashboard" }
-              : item,
-          )
+        .filter((item) => !item.adminOnly)
+        .map((item) =>
+          item.title === "Dashboard"
+            ? { ...item, url: "/agent-dashboard" }
+            : item,
+        )
       : workspaceItems;
 
   const visibleManagement = managementItems.filter(
@@ -176,41 +179,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // ── Design tokens
   const tk = isDark
     ? {
-        sidebar: "bg-[#111113] border-[#1e1e21]",
-        header: "border-[#1e1e21]",
-        brand: "text-white",
-        sectionLbl: "text-[#46464c]",
-        divider: "bg-[#1e1e21]",
-        itemInactive: "text-[#8e8e96] hover:bg-white/5 hover:text-[#e8e8e8]",
-        itemActive: "bg-white/10 text-white font-semibold",
-        iconInactive: "text-[#4d4d54]",
-        iconActive: "text-white",
-        toggleBtn: "text-[#4d4d54] hover:bg-white/5 hover:text-[#e8e8e8]",
-        logoRing: "border-[#2a2a2e]",
-        footerBorder: "border-[#1e1e21]",
-        footerName: "text-[#e8e8e8]",
-        footerSub: "text-[#46464c]",
-        avatarBg: "bg-[#2a2a2e] text-[#e8e8e8]",
-        statusBorder: "border-[#111113]",
-      }
+      sidebar: "bg-[#111113] border-[#1e1e21]",
+      header: "border-[#1e1e21]",
+      brand: "text-white",
+      sectionLbl: "text-[#46464c]",
+      divider: "bg-[#1e1e21]",
+      itemInactive: "text-[#8e8e96] hover:bg-white/5 hover:text-[#e8e8e8]",
+      itemActive: "bg-white/10 text-white font-semibold",
+      iconInactive: "text-[#4d4d54]",
+      iconActive: "text-white",
+      toggleBtn: "text-[#4d4d54] hover:bg-white/5 hover:text-[#e8e8e8]",
+      logoRing: "border-[#2a2a2e]",
+      footerBorder: "border-[#1e1e21]",
+      footerName: "text-[#e8e8e8]",
+      footerSub: "text-[#46464c]",
+      avatarBg: "bg-[#2a2a2e] text-[#e8e8e8]",
+      statusBorder: "border-[#111113]",
+    }
     : {
-        sidebar: "bg-white border-slate-200",
-        header: "border-slate-100",
-        brand: "text-slate-900",
-        sectionLbl: "text-slate-400",
-        divider: "bg-slate-100",
-        itemInactive: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-        itemActive: "bg-green-50 text-green-900 font-medium",
-        iconInactive: "text-slate-400",
-        iconActive: "text-green-700",
-        toggleBtn: "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
-        logoRing: "border-slate-200",
-        footerBorder: "border-slate-100",
-        footerName: "text-slate-800",
-        footerSub: "text-slate-400",
-        avatarBg: "bg-teal-500 text-white",
-        statusBorder: "border-white",
-      };
+      sidebar: "bg-white border-slate-200",
+      header: "border-slate-100",
+      brand: "text-slate-900",
+      sectionLbl: "text-slate-400",
+      divider: "bg-slate-100",
+      itemInactive: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+      itemActive: "bg-green-50 text-green-900 font-medium",
+      iconInactive: "text-slate-400",
+      iconActive: "text-green-700",
+      toggleBtn: "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
+      logoRing: "border-slate-200",
+      footerBorder: "border-slate-100",
+      footerName: "text-slate-800",
+      footerSub: "text-slate-400",
+      avatarBg: "bg-teal-500 text-white",
+      statusBorder: "border-white",
+    };
 
   // ── Nav item component
   const NavItem = ({
@@ -312,10 +315,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 const Icon = item.icon as React.ComponentType<any>;
                 const children = (item as any).children as
                   | Array<{
-                      title: string;
-                      url: string;
-                      icon?: React.ComponentType<any>;
-                    }>
+                    title: string;
+                    url: string;
+                    icon?: React.ComponentType<any>;
+                  }>
                   | undefined;
 
                 if (children && children.length > 0) {
@@ -394,10 +397,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 const Icon = item.icon as React.ComponentType<any>;
                 const children = (item as any).children as
                   | Array<{
-                      title: string;
-                      url: string;
-                      icon?: React.ComponentType<any>;
-                    }>
+                    title: string;
+                    url: string;
+                    icon?: React.ComponentType<any>;
+                  }>
                   | undefined;
 
                 if (children && children.length > 0) {
@@ -503,26 +506,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               )}
             </div>
 
-            {/* Settings — admin only */}
-            {normalizedRole !== "agent" && (
-              <Link
-                href="/settings"
-                title={isCollapsed ? "Settings" : undefined}
-                className={[
-                  "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
-                  isCollapsed
-                    ? "w-10 h-10 justify-center"
-                    : "gap-3 px-3 py-1.75",
-                  tk.itemInactive,
-                ].join(" ")}
-              >
-                <Settings
-                  className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
-                  strokeWidth={1.8}
-                />
-                {!isCollapsed && <span className="leading-none">Settings</span>}
-              </Link>
-            )}
 
             {/* Help & Feedback */}
             <Link

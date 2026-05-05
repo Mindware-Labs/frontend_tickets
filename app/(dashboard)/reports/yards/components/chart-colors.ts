@@ -10,10 +10,12 @@ export const DISPOSITION_COLORS = [
 ];
 
 export const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: "oklch(0.65 0.18 160)",
-  OPEN: "oklch(0.65 0.18 160)",
-  IN_PROGRESS: "oklch(0.65 0.18 160)",
-  CLOSED: "oklch(0.65 0.18 160)",
+  OPEN: "oklch(0.72 0.16 250)",
+  IN_PROGRESS: "oklch(0.75 0.18 85)",
+  PENDING_FOLLOWUP: "oklch(0.65 0.22 25)",
+  OVERDUE: "oklch(0.65 0.22 10)",
+  RESOLVED: "oklch(0.65 0.18 160)",
+  CLOSED: "oklch(0.60 0.10 220)",
 };
 
 export const DIRECTION_COLORS: Record<string, string> = {

@@ -21,6 +21,12 @@ export interface Customer {
   campaigns?: CampaignOption[];
   createdAt: string;
   ticketCount?: number;
+  lastContactAt?: string;
+  tags?: string[];
+  yard?: { id: number; name: string };
+  pinnedNote?: string;
+  totalCalls?: number;
+  openTickets?: number;
 }
 
 export interface CustomerFormData {

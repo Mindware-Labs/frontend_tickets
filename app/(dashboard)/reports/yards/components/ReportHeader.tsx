@@ -78,6 +78,7 @@ export function ReportHeader({
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Exportar PDF: Hover semántico en tonos rojos */}
             <Button
+              type="button"
               variant="outline"
               onClick={onExportPDF}
               className="gap-2 flex-1 sm:flex-none hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 transition-colors"
@@ -88,6 +89,7 @@ export function ReportHeader({
 
             {/* Exportar Excel: Hover semántico en tonos verdes */}
             <Button
+              type="button"
               variant="outline"
               onClick={onExportExcel}
               className="gap-2 flex-1 sm:flex-none hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors"

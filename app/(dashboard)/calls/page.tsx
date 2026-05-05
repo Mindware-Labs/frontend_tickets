@@ -284,7 +284,12 @@ export default function TicketsPage() {
   ]);
 
   // ---- Tab state ----
-  const [activeTab, setActiveTab] = useState("calls");
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)
+      ? tabParam
+      : "calls"
+  );
   const [ticketCreateData, setTicketCreateData] = useState<Record<
     string,
     string

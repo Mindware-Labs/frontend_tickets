@@ -1,7 +1,11 @@
 "use client";
 
 import { Sun, Moon } from "lucide-react";
-import { NotificationBell } from "./notification-bell";
+import dynamic from "next/dynamic";
+const NotificationBell = dynamic(
+  () => import("./notification-bell").then((m) => m.NotificationBell),
+  { ssr: false },
+);
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import {
   Breadcrumb,

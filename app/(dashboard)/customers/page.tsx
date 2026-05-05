@@ -1,18 +1,34 @@
+// app/customers/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { CheckCircle2, Plus } from "lucide-react";
+
 import { fetchFromBackend } from "@/lib/api-client";
 import { useRole } from "@/components/providers/role-provider";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 import { CampaignOption, Customer, CustomerFormData } from "./types";
 import { CustomersToolbar } from "./components/CustomersToolbar";
 import { CustomersTable } from "./components/CustomersTable";
-import { CustomersPagination } from "./components/CustomersPagination";
-import { CustomerFormModal } from "./components/CustomerFormModal";
-import { DeleteCustomerModal } from "./components/DeleteCustomerModal";
-import { CustomerDetailsModal } from "./components/CustomerDetailsModal";
+import { Customer360Drawer } from "./components/CustomerDrawer";
+
+// Heavy modals loaded only when needed
+const CustomerFormModal = dynamic(
+  () => import("./components/CustomerFormModal").then((m) => m.CustomerFormModal),
+  { ssr: false },
+);
+const DeleteCustomerModal = dynamic(
+  () => import("./components/DeleteCustomerModal").then((m) => m.DeleteCustomerModal),
+  { ssr: false },
+);
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const ITEMS_PER_PAGE = 10;
 
 const DEFAULT_FORM: CustomerFormData = {
   name: "",
@@ -22,47 +38,51 @@ const DEFAULT_FORM: CustomerFormData = {
   campaignIds: [],
 };
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function CustomersPage() {
   const { role } = useRole();
-  const normalizedRole = role?.toString().toLowerCase();
-  const isAgent = normalizedRole === "agent";
-  const canManage = !isAgent;
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const isAgent = role?.toString().toLowerCase() === "agent";
+  const canManage = !isAgent;
+
+  // ── Data state ──
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── UI state ──
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
+
+  // ── Modal / drawer state ──
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null,
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  // ── Form state ──
   const [formData, setFormData] = useState<CustomerFormData>(DEFAULT_FORM);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
-  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Misc refs ──
+  const prevCountRef = useRef(0);
+
+  // ─── Data fetching ───────────────────────────────────────────────────────────
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const data = await fetchFromBackend("/customers?page=1&limit=5000");
-      const items = Array.isArray(data) ? data : data?.data || [];
-      setCustomers(items);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load customers",
-        variant: "destructive",
-      });
+      setCustomers(Array.isArray(data) ? data : (data?.data ?? []));
+    } catch {
+      toast({ title: "Error", description: "Failed to load customers", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -71,10 +91,9 @@ export default function CustomersPage() {
   const fetchCampaigns = async () => {
     try {
       const data = await fetchFromBackend("/campaign?page=1&limit=200");
-      const items = Array.isArray(data) ? data : data?.data || [];
-      setCampaigns(items);
-    } catch (error) {
-      console.error("Error fetching campaigns:", error);
+      setCampaigns(Array.isArray(data) ? data : (data?.data ?? []));
+    } catch {
+      console.error("Failed to load campaigns");
     }
   };
 
@@ -83,163 +102,157 @@ export default function CustomersPage() {
     fetchCampaigns();
   }, []);
 
-  // Close all modals when route changes
-  const pathname = usePathname();
+  // ─── Toast when new customers appear ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (customers.length > 0 && prevCountRef.current > 0) {
+      const diff = customers.length - prevCountRef.current;
+      if (diff > 0) {
+        toast({
+          title: `New Customer${diff > 1 ? "s" : ""}`,
+          description: `${diff} new customer${diff > 1 ? "s" : ""} added`,
+          duration: 3000,
+        });
+      }
+    }
+    prevCountRef.current = customers.length;
+  }, [customers.length]);
+
+  // ─── Close everything on route change ────────────────────────────────────────
+
   useEffect(() => {
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
-    setShowDetailsModal(false);
+    setShowDrawer(false);
   }, [pathname]);
 
-  // Abrir modal automáticamente si hay customerId en la URL
+  // ─── Open drawer from URL param (?customerId=X) ───────────────────────────────
+
   useEffect(() => {
-    const customerIdParam = searchParams.get("customerId");
-    if (customerIdParam && customers.length > 0 && !showDetailsModal) {
-      const customer = customers.find(
-        (c) => c.id.toString() === customerIdParam,
-      );
-      if (customer) {
-        console.log(
-          "🔍 [Customers Page] Opening modal automatically for customer:",
-          customerIdParam,
-        );
-        handleDetails(customer);
-        // Limpiar el parámetro de la URL después de abrir el modal
-        setTimeout(() => {
-          if (typeof window !== "undefined") {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("customerId");
-            window.history.replaceState({}, "", url.toString());
-          }
-        }, 100);
-      }
-    }
+    const id = searchParams.get("customerId");
+    if (!id || customers.length === 0 || showDrawer) return;
+
+    const customer = customers.find((c) => c.id.toString() === id);
+    if (!customer) return;
+
+    openDrawer(customer);
+
+    // Clean the URL without navigation
+    const url = new URL(window.location.href);
+    url.searchParams.delete("customerId");
+    window.history.replaceState({}, "", url.toString());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, customers]);
 
-  // Abrir modal automáticamente si hay customerId en la URL
-  useEffect(() => {
-    const customerIdParam = searchParams.get("customerId");
-    if (customerIdParam && customers.length > 0) {
-      const customer = customers.find(
-        (c) => c.id.toString() === customerIdParam,
-      );
-      if (customer) {
-        handleDetails(customer);
-        // Limpiar el parámetro de la URL después de abrir el modal
-        const url = new URL(window.location.href);
-        url.searchParams.delete("customerId");
-        window.history.replaceState({}, "", url.toString());
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, customers]);
+  // ─── Derived data ─────────────────────────────────────────────────────────────
 
   const filteredCustomers = useMemo(() => {
     const term = search.toLowerCase();
-    return customers.filter((customer) => {
-      const name = customer.name?.toLowerCase() || "";
-      const phone = customer.phone?.toLowerCase() || "";
-      const campaignNames =
-        customer.campaigns?.map((campaign) => campaign.nombre).join(" ") || "";
-      return (
-        name.includes(term) ||
-        phone.includes(term) ||
-        campaignNames.toLowerCase().includes(term)
-      );
+    if (!term) return customers;
+    return customers.filter((c) => {
+      const name = c.name?.toLowerCase() ?? "";
+      const phone = c.phone?.toLowerCase() ?? "";
+      const id = c.id?.toString() ?? "";
+      const campaigns = c.campaigns?.map((x) => x.nombre).join(" ").toLowerCase() ?? "";
+      return name.includes(term) || phone.includes(term) || id.includes(term) || campaigns.includes(term);
     });
   }, [customers, search]);
 
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const paginatedCustomers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredCustomers, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
 
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCustomers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCustomers, currentPage]);
+
+  // Reset page + selection when search changes
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedCustomers([]);
   }, [search]);
 
+  // ─── Form helpers ─────────────────────────────────────────────────────────────
+
   const resetForm = () => setFormData(DEFAULT_FORM);
-  const clearValidationErrors = () => setValidationErrors({});
+  const clearErrors = () => setValidationErrors({});
 
-  const handleCreate = () => {
-    resetForm();
-    clearValidationErrors();
-    setShowCreateModal(true);
-  };
-
-  const handleEdit = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setFormData({
-      name: customer.name || "",
-      phone: customer.phone || "",
-      note: customer.note || "",
-      pendingNotes: [],
-      campaignIds:
-        customer.campaigns?.map((campaign) => campaign.id.toString()) || [],
-    });
-    clearValidationErrors();
-    setShowEditModal(true);
-  };
-
-  const handleDelete = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    clearValidationErrors();
-    setShowDeleteModal(true);
-  };
-
-  const handleDetails = async (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowDetailsModal(true);
-    setTicketsLoading(true);
-    setCustomerTickets([]);
-    try {
-      const response = await fetchFromBackend("/tickets?page=1&limit=500");
-      const tickets = Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response)
-          ? response
-          : [];
-      const filtered = tickets.filter(
-        (ticket: any) =>
-          ticket.customerId === customer.id ||
-          ticket.customer?.id === customer.id,
-      );
-      setCustomerTickets(filtered);
-    } catch (error) {
-      console.error("Error fetching tickets for customer", error);
-      setCustomerTickets([]);
-    } finally {
-      setTicketsLoading(false);
-    }
-  };
-
-  const buildPayload = (data: CustomerFormData) => ({
-    name: data.name.trim(),
-    phone: data.phone.trim(),
-    note: data.note.trim() || undefined,
-    campaignIds: data.campaignIds.map((id) => Number(id)),
-  });
-
-  const validateForm = () => {
+  const validateForm = (): Record<string, string> => {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Name is required";
     if (!formData.phone.trim()) errors.phone = "Phone is required";
     return errors;
   };
 
+  const buildPayload = (data: CustomerFormData) => ({
+    name: data.name.trim(),
+    phone: data.phone.trim(),
+    note: data.note.trim() || undefined,
+    campaignIds: data.campaignIds.map(Number),
+  });
+
+  // ─── Action handlers ──────────────────────────────────────────────────────────
+
+  const openDrawer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowDrawer(true);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    clearErrors();
+    setShowCreateModal(true);
+  };
+
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setFormData({
+      name: customer.name ?? "",
+      phone: customer.phone ?? "",
+      note: customer.note ?? "",
+      pendingNotes: [],
+      campaignIds: customer.campaigns?.map((c) => c.id.toString()) ?? [],
+    });
+    clearErrors();
+    setShowEditModal(true);
+  };
+
+  const handleDelete = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    clearErrors();
+    setShowDeleteModal(true);
+  };
+
+  // ─── Bulk actions ─────────────────────────────────────────────────────────────
+
+  const handleClearSelection = () => setSelectedCustomers([]);
+
+  const handleAssignCampaign = () => {
+    toast({
+      title: "Bulk Action",
+      description: `Assign ${selectedCustomers.length} customer${selectedCustomers.length !== 1 ? "s" : ""} to campaign`,
+    });
+  };
+
+  const handleMergeContacts = () => {
+    if (selectedCustomers.length < 2) {
+      toast({ title: "Cannot Merge", description: "Select at least 2 customers to merge", variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Bulk Action",
+      description: `Merge ${selectedCustomers.length} contacts`,
+    });
+  };
+
+  // ─── Submit handlers ──────────────────────────────────────────────────────────
+
   const handleSubmitCreate = async () => {
-    setValidationErrors({});
+    clearErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast({ title: "Validation Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
@@ -250,7 +263,7 @@ export default function CustomersPage() {
         body: JSON.stringify(buildPayload(formData)),
       });
 
-      // Create pending notes if any
+      // Save any pending notes for the new customer
       if (formData.pendingNotes.length > 0 && created?.id) {
         await Promise.all(
           formData.pendingNotes.map((content) =>
@@ -273,15 +286,10 @@ export default function CustomersPage() {
       });
 
       setShowCreateModal(false);
-      fetchCustomers();
       resetForm();
-    } catch (error: any) {
-      console.error("Error creating customer:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create customer",
-        variant: "destructive",
-      });
+      await fetchCustomers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message ?? "Failed to create customer", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -289,15 +297,11 @@ export default function CustomersPage() {
 
   const handleSubmitEdit = async () => {
     if (!selectedCustomer) return;
-    setValidationErrors({});
+    clearErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast({ title: "Validation Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
@@ -319,16 +323,11 @@ export default function CustomersPage() {
       });
 
       setShowEditModal(false);
-      fetchCustomers();
-      resetForm();
       setSelectedCustomer(null);
-    } catch (error: any) {
-      console.error("Error updating customer:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update customer",
-        variant: "destructive",
-      });
+      resetForm();
+      await fetchCustomers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message ?? "Failed to update customer", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -339,9 +338,7 @@ export default function CustomersPage() {
 
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/customers/${selectedCustomer.id}`, {
-        method: "DELETE",
-      });
+      await fetchFromBackend(`/customers/${selectedCustomer.id}`, { method: "DELETE" });
 
       toast({
         title: "Success",
@@ -354,77 +351,98 @@ export default function CustomersPage() {
       });
 
       setShowDeleteModal(false);
-      fetchCustomers();
+      setSelectedCustomers((prev) => prev.filter((id) => id !== selectedCustomer.id));
       setSelectedCustomer(null);
-    } catch (error: any) {
-      console.error("Error deleting customer:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete customer",
-        variant: "destructive",
-      });
+      await fetchCustomers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message ?? "Failed to delete customer", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <>
-      <div className="flex flex-col gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">
-            Manage customers and their campaign assignments
+    <div className="h-screen flex flex-col px-4 pt-4 pb-4 gap-0">
+
+      {/* ── Page header ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between w-full py-5 px-0.5 gap-3 border-b border-border">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+            Customer Management
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {today} 
           </p>
         </div>
 
+        {canManage && (
+          <Button
+            onClick={handleCreate}
+            className="h-9 px-4 rounded-xl bg-[#008f68] hover:bg-[#007a5a] text-white text-[13px] font-medium shadow-sm"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            New Customer
+          </Button>
+        )}
+      </div>
+
+      {/* ── Search / filter toolbar ── */}
+      <div className="mt-3 mb-2">
         <CustomersToolbar
           search={search}
           onSearchChange={setSearch}
           onRefresh={fetchCustomers}
           onCreate={canManage ? handleCreate : undefined}
+          canCreate={false}
           totalCount={filteredCustomers.length}
+          selectedCount={selectedCustomers.length}
+          onClearSelection={handleClearSelection}
+          onAssignCampaign={handleAssignCampaign}
         />
+      </div>
 
+      {/* ── Table ── */}
+      <div className="flex-1 min-h-0">
         <CustomersTable
           loading={loading}
           customers={paginatedCustomers}
           totalFiltered={filteredCustomers.length}
-          onDetails={handleDetails}
+          selectedCustomers={selectedCustomers}
+          onSelectionChange={setSelectedCustomers}
+          onDetails={openDrawer}
           onEdit={canManage ? handleEdit : undefined}
           onDelete={canManage ? handleDelete : undefined}
           canManage={canManage}
-        />
-
-        <CustomersPagination
-          totalCount={filteredCustomers.length}
+          search={search}
+          onSearchChange={setSearch}
           currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={(value) => {
-            setItemsPerPage(value);
-            setCurrentPage(1);
-          }}
           onPageChange={setCurrentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalPages={totalPages}
         />
       </div>
 
-      <CustomerDetailsModal
-        open={showDetailsModal}
-        onOpenChange={(open) => setShowDetailsModal(open)}
+      {/* ── Customer 360 drawer ── */}
+      <Customer360Drawer
+        open={showDrawer}
+        onOpenChange={setShowDrawer}
         customer={selectedCustomer}
-        tickets={customerTickets}
-        ticketsLoading={ticketsLoading}
       />
 
+      {/* ── Modals (manager-only) ── */}
       {canManage && (
         <>
           <CustomerFormModal
             open={showCreateModal}
-            onOpenChange={(open) => {
-              setShowCreateModal(open);
-              if (!open) clearValidationErrors();
-            }}
+            onOpenChange={(open) => { setShowCreateModal(open); if (!open) clearErrors(); }}
             title="Create New Customer"
             description="Fill in the details to create a customer"
             submitLabel="Create Customer"
@@ -440,10 +458,7 @@ export default function CustomersPage() {
 
           <CustomerFormModal
             open={showEditModal}
-            onOpenChange={(open) => {
-              setShowEditModal(open);
-              if (!open) clearValidationErrors();
-            }}
+            onOpenChange={(open) => { setShowEditModal(open); if (!open) clearErrors(); }}
             title="Edit Customer"
             description="Update customer details"
             submitLabel="Save Changes"
@@ -458,22 +473,16 @@ export default function CustomersPage() {
             customerId={selectedCustomer?.id}
             existingNotes={selectedCustomer?.notes ?? []}
             onNotesChange={(notes) => {
-              if (selectedCustomer) {
-                const updated = { ...selectedCustomer, notes };
-                setSelectedCustomer(updated);
-                setCustomers((prev) =>
-                  prev.map((c) => (c.id === updated.id ? updated : c)),
-                );
-              }
+              if (!selectedCustomer) return;
+              const updated = { ...selectedCustomer, notes };
+              setSelectedCustomer(updated);
+              setCustomers((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
             }}
           />
 
           <DeleteCustomerModal
             open={showDeleteModal}
-            onOpenChange={(open) => {
-              setShowDeleteModal(open);
-              if (!open) clearValidationErrors();
-            }}
+            onOpenChange={(open) => { setShowDeleteModal(open); if (!open) clearErrors(); }}
             customerName={selectedCustomer?.name}
             ticketCount={selectedCustomer?.ticketCount}
             isSubmitting={isSubmitting}
@@ -481,6 +490,6 @@ export default function CustomersPage() {
           />
         </>
       )}
-    </>
+    </div>
   );
 }

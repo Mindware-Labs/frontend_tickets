@@ -77,7 +77,7 @@ const getPriorityRank = (priority?: string | null) => {
 
 const isClosedStatus = (status?: string | null) => {
   const normalized = (status || "").toUpperCase();
-  return normalized === "CLOSED" || normalized === "RESOLVED";
+  return normalized === "COMPLETED" || normalized === "CLOSED" || normalized === "RESOLVED";
 };
 
 const getAgentLabel = (ticket: Ticket) =>

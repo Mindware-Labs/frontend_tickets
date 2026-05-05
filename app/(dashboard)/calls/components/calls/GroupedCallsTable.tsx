@@ -156,7 +156,6 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-/* ── Direction Chip (matches mockup design) ────────────────────────────── */
 const DIRECTION_CONFIG: Record<
   string,
   {

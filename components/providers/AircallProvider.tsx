@@ -578,7 +578,7 @@ function AircallDock({
           style={
             movedToContainer
               ? { pointerEvents: "auto" }
-              : { ...panelStyle(), pointerEvents: "auto" }
+              : { ...panelStyle(), pointerEvents: open ? "auto" : "none" }
           }
           aria-hidden={!panelVisible}
         >

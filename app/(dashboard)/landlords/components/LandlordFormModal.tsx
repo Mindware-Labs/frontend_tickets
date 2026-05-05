@@ -289,6 +289,7 @@ export function LandlordFormModal({
                                   yardIds: "",
                                 });
                               }}
+                              className="data-[state=checked]:bg-[#008f68] data-[state=checked]:border-[#008f68]"
                             />
                             <div className="flex flex-col">
                               <span
@@ -317,19 +318,24 @@ export function LandlordFormModal({
         </div>
 
         {/* Footer */}
-        <DialogFooter className="p-4 bg-muted/20 border-t">
+        <DialogFooter className="p-4 bg-slate-50/60 border-t border-border">
           <div className="flex w-full justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
+              className="border-slate-200 text-slate-600"
             >
               Cancel
             </Button>
-            <Button onClick={onSubmit} disabled={isSubmitting}>
+            <Button
+              onClick={onSubmit}
+              disabled={isSubmitting}
+              className="bg-[#008f68] hover:bg-[#007a5a] text-white min-w-[120px]"
+            >
               {isSubmitting ? (
                 <>
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></span>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Saving...
                 </>
               ) : (

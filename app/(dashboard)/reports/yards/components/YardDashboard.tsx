@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Target,
   UserPlus,
+  Phone,
+  ClipboardList,
 } from "lucide-react";
 import {
   BarChart,
@@ -76,6 +78,24 @@ export function YardDashboard({
       : nonMissedTicketsCount > 0
         ? Math.round((stats.closedTickets / nonMissedTicketsCount) * 100)
         : 0;
+  // Counts from backend's 3-repo separation
+  const totalCallsFromAircall = stats.totalCalls ?? 0;
+  const totalManualRecords = stats.totalManualRecords ?? 0;
+  const totalAnsweredTickets = useMemo(
+    () =>
+      stats.ticketsByDirection
+        .filter((d) => d.direction === "INBOUND" || d.direction === "OUTBOUND")
+        .reduce((sum, d) => sum + d.count, 0),
+    [stats.ticketsByDirection],
+  );
+  const totalMissedCalls = useMemo(
+    () =>
+      stats.ticketsByDirection
+        .filter((d) => d.direction === "MISSED")
+        .reduce((sum, d) => sum + d.count, 0),
+    [stats.ticketsByDirection],
+  );
+
   const topNewLead = stats.ticketsByNewLead[0];
   const topNewLeadName = topNewLead?.customerName?.trim() || "No data";
   const highPriorityPendingTickets = useMemo(
@@ -85,7 +105,7 @@ export function YardDashboard({
         const status = (ticket.status || "").toUpperCase();
         const isCriticalPriority =
           priority === "HIGH" || priority === "EMERGENCY";
-        const isClosed = status === "CLOSED" || status === "RESOLVED";
+        const isClosed = status === "COMPLETED" || status === "CLOSED" || status === "RESOLVED";
         return isCriticalPriority && !isClosed;
       }),
     [yardTickets],
@@ -97,7 +117,7 @@ export function YardDashboard({
         const status = (ticket.status || "").toUpperCase();
         const isCriticalPriority =
           priority === "HIGH" || priority === "EMERGENCY";
-        const isClosed = status === "CLOSED" || status === "RESOLVED";
+        const isClosed = status === "COMPLETED" || status === "CLOSED" || status === "RESOLVED";
         return isCriticalPriority && isClosed;
       }),
     [yardTickets],
@@ -165,6 +185,34 @@ export function YardDashboard({
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       {/* --- ROW 1: KPIs Principales --- */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+       
+
+       
+        
+      </div>
+
+      {/* --- ROW 1B: Calls / Tickets / Manual Records --- */}
+      <div className="grid gap-4 sm:grid-cols-4">
+        {/* Total Calls (Aircall) */}
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground tracking-tight">
+                Total Calls
+              </p>
+              <h3 className="text-4xl font-bold tracking-tight text-foreground">
+                {totalCallsFromAircall}
+              </h3>
+              <p className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 inline-flex px-2 py-1 rounded-md">
+                {totalAnsweredTickets} answered · {totalMissedCalls} missed
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+              <Phone className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
         {/* Total Tickets */}
         <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
@@ -175,56 +223,35 @@ export function YardDashboard({
               <h3 className="text-4xl font-bold tracking-tight text-foreground">
                 {stats.totalTickets}
               </h3>
-              <p className="text-xs font-medium text-muted-foreground bg-muted/50 inline-flex px-2 py-1 rounded-md">
-                {stats.openTickets} open, {stats.closedTickets} closed
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 inline-flex px-2 py-1 rounded-md">
+                {stats.openTickets} open · {stats.closedTickets} closed
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
               <Ticket className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        {/* Active Tickets */}
+        {/* Manual Records */}
         <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground tracking-tight">
-                Active Tickets
+                Manual Records
               </p>
               <h3 className="text-4xl font-bold tracking-tight text-foreground">
-                {stats.openTickets}
+                {totalManualRecords}
               </h3>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 inline-flex px-2 py-1 rounded-md">
-                {stats.openTickets} active
+              <p className="text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 inline-flex px-2 py-1 rounded-md">
+                Agent entries
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-              <Clock className="w-5 h-5" />
+            <div className="p-3 rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
+              <ClipboardList className="w-5 h-5" />
             </div>
           </div>
         </div>
-
-        {/* Closed Tickets */}
-        <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground tracking-tight">
-                Closed Tickets
-              </p>
-              <h3 className="text-4xl font-bold tracking-tight text-foreground">
-                {stats.closedTickets}
-              </h3>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 inline-flex px-2 py-1 rounded-md">
-                {resolutionRate}% resolution rate
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
         {/* Resolution Rate */}
         <div className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex justify-between items-start">
@@ -485,27 +512,36 @@ export function YardDashboard({
 
           <div className="p-4 bg-muted/10 border-t mt-auto">
             <div className="flex flex-wrap gap-2 justify-center">
-              {stats.ticketsByStatus.map((item, index) => (
-                <div
-                  key={item.status}
-                  className="flex items-center gap-2 text-xs bg-background px-3 py-1.5 rounded-full border shadow-sm"
-                >
-                  <div
-                    className="h-2 w-2 rounded-full shrink-0"
-                    style={{
-                      backgroundColor:
-                        STATUS_COLORS[item.status] ||
-                        DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
-                    }}
-                  />
-                  <span className="text-muted-foreground font-medium capitalize">
-                    {item.status.replace("_", " ").toLowerCase()}
-                  </span>
-                  <span className="font-bold text-foreground ml-1">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
+              {(() => {
+                const statusTotal = stats.ticketsByStatus.reduce((sum, s) => sum + s.count, 0);
+                return stats.ticketsByStatus.map((item, index) => {
+                  const pct = statusTotal > 0 ? Math.round((item.count / statusTotal) * 100) : 0;
+                  return (
+                    <div
+                      key={item.status}
+                      className="flex items-center gap-2 text-xs bg-background px-3 py-1.5 rounded-full border shadow-sm"
+                    >
+                      <div
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{
+                          backgroundColor:
+                            STATUS_COLORS[item.status] ||
+                            DISPOSITION_COLORS[index % DISPOSITION_COLORS.length],
+                        }}
+                      />
+                      <span className="text-muted-foreground font-medium capitalize">
+                        {item.status.replace("_", " ").toLowerCase()}
+                      </span>
+                      <span className="font-bold text-foreground ml-1">
+                        {item.count}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {pct}%
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

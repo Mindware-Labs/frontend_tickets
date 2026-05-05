@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(npx tsc *)",
+      "Bash(find C:/Users/Yordy/Downloads/Projects/frontend_tickets/app/\\\\\\(dashboard\\\\\\) -name \"*.tsx\" -type f -exec grep -l \"totalTickets\\\\|manual\\\\|aircall\\\\|Call.aircallId\" {} \\\\;)",
+      "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx\\)$\")",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(python3 *)"
+    ]
+  }
+}

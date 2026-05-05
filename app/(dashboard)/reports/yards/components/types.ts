@@ -65,6 +65,8 @@ export type YardStatsDay = {
 export type YardStats = {
   yard: Yard;
   totalTickets: number;
+  totalCalls?: number;
+  totalManualRecords?: number;
   openTickets: number;
   inProgressTickets: number;
   closedTickets: number;
