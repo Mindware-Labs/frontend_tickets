@@ -35,7 +35,7 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [activeView, setActiveView] = useState("active");
+  const [activeView, setActiveView] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [ticketTypeFilter, setTicketTypeFilter] = useState("all");

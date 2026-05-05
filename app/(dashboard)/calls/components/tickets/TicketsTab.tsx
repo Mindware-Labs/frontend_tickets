@@ -48,7 +48,6 @@ import {
   ChevronsUpDown,
   Check,
   CalendarIcon,
-  SlidersHorizontal,
   PhoneOutgoing,
   ChevronDown,
   Ticket,
@@ -63,22 +62,18 @@ import {
   type CustomerTicketGroup,
 } from "./InlineTicketTimeline";
 import { EditTicketModal } from "./EditTicketModal";
+import { TicketFiltersBar } from "./TicketFiltersBar";
 import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
 import {
   SupportTicketStatus,
   SupportTicketPriority,
   SupportTicketType,
   CampaignOptionEnum,
-  ManagementType,
-  OnboardingOption,
-  ArOption,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
-  type CampaignOption,
 } from "../../types";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import type { DateRange } from "react-day-picker";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -136,6 +131,19 @@ const normalizeStatusKey = (status?: string | null) => {
   return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
 };
 
+const TICKET_STATUS_VIEW_TABS = [
+  { key: "all", label: "All Tickets", countKey: "all" },
+  { key: "active_status", label: "Active", countKey: "active_status" },
+  {
+    key: "pending_followup",
+    label: "Pending Follow-up",
+    countKey: "pending_followup",
+  },
+  { key: "overdue", label: "Overdue", countKey: "overdue", isOverdue: true },
+  { key: "resolved", label: "Resolved", countKey: "resolved" },
+  { key: "closed", label: "Closed", countKey: "closed" },
+];
+
 // ---------------------------------------------------------------------------
 // Initial form data
 // ---------------------------------------------------------------------------
@@ -178,41 +186,6 @@ export function TicketsTab({
     currentAgentId: refData.currentAgent?.id,
   });
 
-  // ---- Filter bar state ----
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [campaignSearch, setCampaignSearch] = useState("");
-
-  const activeFilterCount = useMemo(() => {
-    let count = Object.values(ticketFilters.filters).filter(
-      (v) => v !== "all",
-    ).length;
-    if (ticketFilters.dateRange?.from) count++;
-    return count;
-  }, [ticketFilters.filters, ticketFilters.dateRange]);
-
-  const filteredCampaigns = useMemo(() => {
-    const term = campaignSearch.toLowerCase();
-    return refData.campaigns.filter((c) =>
-      c.nombre.toLowerCase().includes(term),
-    );
-  }, [refData.campaigns, campaignSearch]);
-
-  const selectedCampaignTipo = useMemo(() => {
-    if (ticketFilters.filters.campaign === "all") return null;
-    const found = refData.campaigns.find(
-      (c) => c.id.toString() === ticketFilters.filters.campaign,
-    );
-    return found?.tipo ?? null;
-  }, [ticketFilters.filters.campaign, refData.campaigns]);
-
-  const availableCampaignOptions: string[] = useMemo(() => {
-    if (selectedCampaignTipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (selectedCampaignTipo === ManagementType.AR)
-      return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [selectedCampaignTipo]);
-
   // ---- SWR ----
   const {
     data: pageData,
@@ -237,24 +210,6 @@ export function TicketsTab({
     Math.max(1, Math.ceil(totalCount / ticketFilters.itemsPerPage));
 
   const viewCounts = pageData?.viewCounts as Record<string, number> | undefined;
-
-  // ---- Status options filtered by active tab ----
-  const ACTIVE_STATUSES = [
-    SupportTicketStatus.ACTIVE,
-    SupportTicketStatus.PENDING_FOLLOWUP,
-    SupportTicketStatus.OVERDUE,
-  ];
-  const CLOSED_STATUSES = [
-    SupportTicketStatus.RESOLVED,
-    SupportTicketStatus.CLOSED,
-  ];
-
-  const filteredStatusOptions = useMemo(() => {
-    const view = ticketFilters.activeView;
-    if (view === "active") return ACTIVE_STATUSES;
-    if (view === "inactive") return CLOSED_STATUSES;
-    return Object.values(SupportTicketStatus);
-  }, [ticketFilters.activeView]);
 
   // ---- Group tickets by customer ----
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
@@ -614,30 +569,30 @@ export function TicketsTab({
   return (
     <div className="flex-1 flex flex-col gap-1">
       {/* View Tabs */}
-      <div className="flex items-center gap-2 border-b border-border/80 overflow-x-auto no-scrollbar px-0.5">
-        {[
-          { key: "active",   label: "Active",  countKey: "active" },
-          { key: "inactive", label: "Closed",  countKey: "inactive" },
-          { key: "all",      label: "All",     countKey: "all" },
-        ].map((tab) => {
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
+        {TICKET_STATUS_VIEW_TABS.map((tab) => {
           const isActive = ticketFilters.activeView === tab.key;
-          const count = viewCounts?.[tab.countKey];
+          const count = viewCounts?.[tab.countKey] ?? 0;
           return (
             <button
               key={tab.key}
               type="button"
-              onClick={() => { ticketFilters.handleViewChange(tab.key); ticketFilters.setFilter("status", "all"); }}
+              onClick={() => {
+                ticketFilters.handleViewChange(tab.key);
+                ticketFilters.setFilter("status", "all");
+              }}
               className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
                 isActive ? "border-[#008f68] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
-              {count != null && (
-                <span className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
-                  isActive ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]" : "bg-muted/40 text-muted-foreground font-medium border-border"
-                }`}>
-                  {count}
-                </span>
+              <span className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                isActive ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]" : "bg-muted/40 text-muted-foreground font-medium border-border"
+              }`}>
+                {count}
+              </span>
+              {tab.isOverdue && count > 0 && (
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5" />
               )}
             </button>
           );
@@ -646,7 +601,7 @@ export function TicketsTab({
         <button
           type="button"
           onClick={openCreate}
-          className="mb-1 flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-xl transition-all active:scale-95 shadow-sm self-center"
+          className="mb-1 self-center flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
           style={{ background: "#008f68" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
@@ -672,304 +627,72 @@ export function TicketsTab({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <Select
-            value={ticketFilters.filters.status}
-            onValueChange={(v) => ticketFilters.setFilter("status", v)}
-          >
-            <SelectTrigger className="w-36 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {filteredStatusOptions.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {formatLabel(s)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={ticketFilters.filters.priority}
-            onValueChange={(v) => ticketFilters.setFilter("priority", v)}
-          >
-            <SelectTrigger className="w-34 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              {Object.values(SupportTicketPriority).map((p) => (
-                <SelectItem key={p} value={p}>
-                  {formatLabel(p)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={ticketFilters.filters.ticketType}
-            onValueChange={(v) => ticketFilters.setFilter("ticketType", v)}
-          >
-            <SelectTrigger className="w-38 h-[30px] rounded-full text-[12.5px] border-border shadow-none">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {Object.values(SupportTicketType).map((t) => (
-                <SelectItem key={t} value={t}>
-                  {formatLabel(t)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant={
-              filtersOpen || activeFilterCount > 0 ? "secondary" : "outline"
-            }
-            size="sm"
-            className="h-[30px] rounded-full px-3 text-[12.5px] font-medium border-border shadow-none"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-            More Filters
-            {activeFilterCount > 0 && (
-              <Badge
-                variant="default"
-                className="ml-1.5 h-4 min-w-4 px-1 text-[10px] leading-none"
-              >
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-
-          {activeFilterCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-[30px] rounded-full px-3 text-[12.5px] text-muted-foreground"
-              onClick={ticketFilters.clearAllFilters}
-            >
-              <X className="mr-1 h-3 w-3" />
-              Clear all
-            </Button>
-          )}
-          </div>
-        </div>
-
-        {/* Expanded filter dropdowns */}
-        {filtersOpen && (
-          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/80 bg-slate-50/80 p-3 shadow-sm dark:bg-muted/30">
-            {/* Yard */}
-            <div className="min-w-35 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Yard
-              </span>
-              <Select
-                value={ticketFilters.filters.yard}
-                onValueChange={(v) => ticketFilters.setFilter("yard", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Yards</SelectItem>
-                  {refData.yards.map((y) => (
-                    <SelectItem key={y.id} value={y.id.toString()}>
-                      {y.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Agent */}
-            <div className="min-w-35 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Agent
-              </span>
-              <Select
-                value={ticketFilters.filters.agent}
-                onValueChange={(v) => ticketFilters.setFilter("agent", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Agents</SelectItem>
-                  {refData.agents.map((a) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Campaign */}
-            <div className="min-w-40 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Campaign
-              </span>
-              <Select
-                value={ticketFilters.filters.campaign}
-                onValueChange={(v) => {
-                  ticketFilters.setFilter("campaign", v);
-                  if (ticketFilters.filters.campaignOption !== "all") {
-                    const newCampaign = refData.campaigns.find(
-                      (c) => c.id.toString() === v,
-                    );
-                    const newTipo =
-                      v === "all" ? null : (newCampaign?.tipo ?? null);
-                    const newOptions: string[] =
-                      newTipo === ManagementType.ONBOARDING
-                        ? Object.values(OnboardingOption)
-                        : newTipo === ManagementType.AR
-                          ? Object.values(ArOption)
-                          : Object.values(CampaignOptionEnum);
-                    if (
-                      !newOptions.includes(ticketFilters.filters.campaignOption)
-                    ) {
-                      ticketFilters.setFilter("campaignOption", "all");
-                    }
-                  }
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <Input
-                      placeholder="Search..."
-                      value={campaignSearch}
-                      onChange={(e) => setCampaignSearch(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                  <SelectItem value="all">All Campaigns</SelectItem>
-                  {filteredCampaigns.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Campaign Option */}
-            <div className="min-w-40 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Campaign Option
-              </span>
-              <Select
-                value={
-                  ticketFilters.filters.campaignOption !== "all" &&
-                  !availableCampaignOptions.includes(
-                    ticketFilters.filters.campaignOption,
-                  )
-                    ? "all"
-                    : ticketFilters.filters.campaignOption
-                }
-                onValueChange={(v) =>
-                  ticketFilters.setFilter("campaignOption", v)
-                }
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Options</SelectItem>
-                  {availableCampaignOptions.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {formatLabel(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Phone Line */}
-            <div className="min-w-35 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Phone Line
-              </span>
-              <Select
-                value={ticketFilters.filters.phoneLine}
-                onValueChange={(v) => ticketFilters.setFilter("phoneLine", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Lines</SelectItem>
-                  {refData.phoneLines.map((l) => (
-                    <SelectItem key={l.id} value={l.id.toString()}>
-                      {l.label || l.phoneNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Date Range */}
-            <div className="min-w-55 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Date Range
-              </span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "h-8 w-full justify-start text-left text-xs font-normal",
-                      !ticketFilters.dateRange && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                    {ticketFilters.dateRange?.from ? (
-                      ticketFilters.dateRange.to ? (
-                        <>
-                          {format(ticketFilters.dateRange.from, "LLL dd, y")} –{" "}
-                          {format(ticketFilters.dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(ticketFilters.dateRange.from, "LLL dd, y")
-                      )
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex h-[30px] items-center rounded-full border-border px-3 text-[12.5px] font-medium shadow-none",
+                    !ticketFilters.dateRange?.from && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-[14px] w-[14px] shrink-0" />
+                  {ticketFilters.dateRange?.from ? (
+                    ticketFilters.dateRange.to ? (
+                      <span className="truncate">
+                        {format(ticketFilters.dateRange.from, "MMM d")} -{" "}
+                        {format(ticketFilters.dateRange.to, "MMM d, yyyy")}
+                      </span>
                     ) : (
-                      "Pick a date range"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                      <span>
+                        {format(ticketFilters.dateRange.from, "MMM d, yyyy")}
+                      </span>
+                    )
+                  ) : (
+                    <span>Select dates</span>
+                  )}
+                  <ChevronDown className="ml-2 h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="space-y-3 p-3">
                   <Calendar
                     initialFocus
                     mode="range"
-                    defaultMonth={ticketFilters.dateRange?.from}
                     selected={ticketFilters.dateRange}
                     onSelect={ticketFilters.setDateRange}
-                    numberOfMonths={2}
+                    numberOfMonths={1}
+                    disabled={{ after: new Date() }}
+                    className="rounded-md"
                   />
                   {ticketFilters.dateRange?.from && (
-                    <div className="border-t p-2">
+                    <div className="flex justify-end px-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-full text-xs"
+                        className="h-7 text-xs"
                         onClick={() => ticketFilters.setDateRange(undefined)}
                       >
+                        <X className="mr-1 h-3 w-3" />
                         Clear dates
                       </Button>
                     </div>
                   )}
-                </PopoverContent>
-              </Popover>
-            </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <TicketFiltersBar
+              filters={ticketFilters.filters}
+              onFilterChange={ticketFilters.setFilter}
+              agents={refData.agents}
+              campaigns={refData.campaigns}
+              yards={refData.yards}
+              phoneLines={refData.phoneLines}
+            />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Table */}

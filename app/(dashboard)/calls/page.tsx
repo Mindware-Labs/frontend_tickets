@@ -1278,7 +1278,7 @@ export default function TicketsPage() {
           />
         </TabsContent>
 
-        <TabsContent value="tickets" className="flex-1 mt-2">
+        <TabsContent value="tickets" className="flex-1 mt-0">
           <TicketsTab
             initialCreateData={ticketCreateData}
             onConsumeCreateData={() => setTicketCreateData(null)}
