@@ -49,6 +49,9 @@ import {
   Check,
   CalendarIcon,
   PhoneOutgoing,
+  PhoneIncoming,
+  PhoneMissed,
+  Phone,
   ChevronDown,
   Ticket,
 } from "lucide-react";
@@ -85,38 +88,51 @@ const fetcher = async (url: string) => {
   return result.data;
 };
 
-const STATUS_PILL: Record<string, { dot: string; bg: string; fg: string; label: string }> = {
-  ACTIVE:           { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
-  OPEN:             { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
-  IN_PROGRESS:      { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
-  PENDING_FOLLOWUP: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309", label: "Follow-up" },
-  OVERDUE:          { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
-  RESOLVED:         { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
-  CLOSED:           { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
+const STATUS_PILL: Record<
+  string,
+  { dot: string; bg: string; fg: string; label: string }
+> = {
+  ACTIVE: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
+  OPEN: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
+  IN_PROGRESS: {
+    dot: "#008f68",
+    bg: "#e6f5f0",
+    fg: "#006d50",
+    label: "Active",
+  },
+  PENDING_FOLLOWUP: {
+    dot: "#d97706",
+    bg: "#fef3c7",
+    fg: "#b45309",
+    label: "Follow-up",
+  },
+  OVERDUE: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
+  RESOLVED: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
+  CLOSED: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
 };
 
 const PRIORITY_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
-  LOW:       { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
-  MEDIUM:    { dot: "#f59e0b", bg: "#fef3c7", fg: "#b45309" },
-  HIGH:      { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
+  LOW: { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
+  MEDIUM: { dot: "#f59e0b", bg: "#fef3c7", fg: "#b45309" },
+  HIGH: { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
   EMERGENCY: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
 };
 
 // Map status/priority to Tailwind classes for Badge styling
 const statusColors: Record<string, string> = {
-  ACTIVE:           "bg-green-100 text-green-800 hover:bg-green-100",
-  OPEN:             "bg-green-100 text-green-800 hover:bg-green-100",
-  IN_PROGRESS:      "bg-green-100 text-green-800 hover:bg-green-100",
+  ACTIVE: "bg-green-100 text-green-800 hover:bg-green-100",
+  OPEN: "bg-green-100 text-green-800 hover:bg-green-100",
+  IN_PROGRESS: "bg-green-100 text-green-800 hover:bg-green-100",
   PENDING_FOLLOWUP: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  OVERDUE:          "bg-red-100 text-red-800 hover:bg-red-100",
-  RESOLVED:         "bg-green-100 text-green-800 hover:bg-green-100",
-  CLOSED:           "bg-gray-100 text-gray-800 hover:bg-gray-100",
+  OVERDUE: "bg-red-100 text-red-800 hover:bg-red-100",
+  RESOLVED: "bg-green-100 text-green-800 hover:bg-green-100",
+  CLOSED: "bg-gray-100 text-gray-800 hover:bg-gray-100",
 };
 
 const priorityColors: Record<string, string> = {
-  LOW:       "bg-slate-100 text-slate-800 hover:bg-slate-100",
-  MEDIUM:    "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  HIGH:      "bg-orange-100 text-orange-800 hover:bg-orange-100",
+  LOW: "bg-slate-100 text-slate-800 hover:bg-slate-100",
+  MEDIUM: "bg-amber-100 text-amber-800 hover:bg-amber-100",
+  HIGH: "bg-orange-100 text-orange-800 hover:bg-orange-100",
   EMERGENCY: "bg-red-100 text-red-800 hover:bg-red-100",
 };
 
@@ -180,6 +196,7 @@ export function TicketsTab({
     dial,
     status: aircallStatus,
     isLoggedIn: aircallLoggedIn,
+    setSheetOpen,
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
   const ticketFilters = useTicketFilters({
@@ -276,6 +293,15 @@ export function TicketsTab({
     ...emptyForm,
   });
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  // Drawer-anchored toasts
+  const [showDrawerSuccess, setShowDrawerSuccess] = useState(false);
+  const [showDrawerError, setShowDrawerError] = useState(false);
+  const [drawerErrorMessage, setDrawerErrorMessage] = useState("");
+
+  useEffect(() => {
+    setSheetOpen(showDrawer);
+    return () => setSheetOpen(false);
+  }, [showDrawer, setSheetOpen]);
 
   // ---- Handlers ----
   const resetForm = () => {
@@ -521,31 +547,21 @@ export function TicketsTab({
             }
           }
           if (uploadErrors > 0) {
-            toast({
-              title: "Warning",
-              description: `${uploadErrors} file(s) failed to upload`,
-              variant: "destructive",
-            });
+            setDrawerErrorMessage(`${uploadErrors} file(s) failed to upload`);
+            setShowDrawerError(true);
           }
         }
-        toast({ title: "Ticket updated" });
+        setShowDrawerSuccess(true);
         setShowEdit(false);
-        setShowDrawer(false);
         resetForm();
         await mutate();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        setDrawerErrorMessage(result.message ?? "Failed to save changes");
+        setShowDrawerError(true);
       }
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update ticket",
-        variant: "destructive",
-      });
+      setDrawerErrorMessage("Failed to update ticket");
+      setShowDrawerError(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -582,13 +598,19 @@ export function TicketsTab({
                 ticketFilters.setFilter("status", "all");
               }}
               className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
-                isActive ? "border-[#008f68] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                isActive
+                  ? "border-[#008f68] text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
-              <span className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
-                isActive ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]" : "bg-muted/40 text-muted-foreground font-medium border-border"
-              }`}>
+              <span
+                className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                  isActive
+                    ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                    : "bg-muted/40 text-muted-foreground font-medium border-border"
+                }`}
+              >
                 {count}
               </span>
               {tab.isOverdue && count > 0 && (
@@ -701,128 +723,318 @@ export function TicketsTab({
           <Table className="relative">
             <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[76px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">ID</TableHead>
-                <TableHead className="w-[250px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Customer</TableHead>
-                <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400 text-center">Tickets</TableHead>
-                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Status</TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Priority</TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Type</TableHead>
-                <TableHead className="w-[150px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Agent</TableHead>
-                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Yard</TableHead>
-                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Campaign</TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">Created</TableHead>
+                <TableHead className="w-[76px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  ID
+                </TableHead>
+                <TableHead className="w-[250px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Customer
+                </TableHead>
+                <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400 text-center">
+                  Tickets
+                </TableHead>
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Status
+                </TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Priority
+                </TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Type
+                </TableHead>
+                <TableHead className="w-[150px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Agent
+                </TableHead>
+                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Yard
+                </TableHead>
+                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Campaign
+                </TableHead>
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                  Created
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
-                </TableCell>
-              </TableRow>
-            ) : ticketGroups.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center text-slate-400 text-sm">
-                  No tickets found
-                </TableCell>
-              </TableRow>
-            ) : (
-              ticketGroups.map((group, i) => {
-                const t = group.latestTicket;
-                const initials = (t.customer?.name || "?").substring(0, 2).toUpperCase();
-                const statusKey = normalizeStatusKey(t.status);
-                const sp = STATUS_PILL[statusKey] || STATUS_PILL.CLOSED;
-                const pp = PRIORITY_PILL[t.priority] || PRIORITY_PILL.LOW;
-                return (
-                  <React.Fragment key={group.key}>
-                    <TableRow
-                      className={cn(
-                        "cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150",
-                        i % 2 === 1
-                          ? "bg-slate-50/60 dark:bg-muted/20"
-                          : "bg-white dark:bg-card",
-                      )}
-                      onClick={() => openView(t)}
-                    >
-                      <TableCell className="pl-4 py-3 text-[12px] font-mono font-semibold text-slate-400">#{t.id}</TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
-                            style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}
-                          >
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[14px] font-bold text-foreground leading-tight truncate">{customerName(t)}</p>
-                            {t.customer?.phone && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-[11.5px] text-muted-foreground font-mono">{t.customer.phone}</span>
-                                <button
-                                  type="button"
-                                  className="w-5 h-5 flex items-center justify-center rounded-md hover:bg-[#e6f5f0] transition-colors disabled:opacity-40"
-                                  style={{ color: "#008f68" }}
-                                  onClick={(e) => { e.stopPropagation(); dial(t.customer!.phone!, t.id); }}
-                                  disabled={!canDial}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-24 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
+                  </TableCell>
+                </TableRow>
+              ) : ticketGroups.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={10}
+                    className="h-24 text-center text-slate-400 text-sm"
+                  >
+                    No tickets found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                ticketGroups.map((group, i) => {
+                  const t = group.latestTicket;
+                  const initials = (t.customer?.name || "?")
+                    .substring(0, 2)
+                    .toUpperCase();
+                  const statusKey = normalizeStatusKey(t.status);
+                  const sp = STATUS_PILL[statusKey] || STATUS_PILL.CLOSED;
+                  const pp = PRIORITY_PILL[t.priority] || PRIORITY_PILL.LOW;
+                  return (
+                    <React.Fragment key={group.key}>
+                      <TableRow
+                        className={cn(
+                          "cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150",
+                          i % 2 === 1
+                            ? "bg-slate-50/60 dark:bg-muted/20"
+                            : "bg-white dark:bg-card",
+                        )}
+                        onClick={() => openView(t)}
+                      >
+                        <TableCell className="pl-4 py-3">
+                          <span className="text-[12px] font-mono font-semibold text-slate-400">
+                            #{t.id}
+                          </span>
+                          {t.callId && (
+                            <div className="mt-0.5">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer"
+                                  >
+                                    {(t.call?.direction ?? "").toUpperCase() ===
+                                    "INBOUND" ? (
+                                      <PhoneIncoming className="w-2.5 h-2.5" />
+                                    ) : (
+                                        t.call?.direction ?? ""
+                                      ).toUpperCase() === "OUTBOUND" ? (
+                                      <PhoneOutgoing className="w-2.5 h-2.5" />
+                                    ) : (
+                                        t.call?.direction ?? ""
+                                      ).toUpperCase() === "MISSED" ? (
+                                      <PhoneMissed className="w-2.5 h-2.5" />
+                                    ) : (
+                                      <Phone className="w-2.5 h-2.5" />
+                                    )}
+                                    via call
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  side="right"
+                                  align="start"
+                                  className="w-64 p-3 text-[12px]"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <PhoneOutgoing className="h-3 w-3" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setExpandedKey((prev) => prev === group.key ? null : group.key); }}
-                          className={cn(
-                            "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all duration-150 shadow-sm",
-                            expandedKey === group.key
-                              ? "bg-[#dcfce7] text-[#15803d] border-[#86efac] shadow-[#86efac]/20"
-                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-[#dcfce7] hover:text-[#15803d] hover:border-[#86efac] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600",
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                    Source Call #{t.callId}
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {t.call?.direction && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                          Direction
+                                        </span>
+                                        <span className="font-semibold text-slate-700 capitalize">
+                                          {t.call.direction.charAt(0) +
+                                            t.call.direction
+                                              .slice(1)
+                                              .toLowerCase()}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {t.call?.agent?.name && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                          Agent
+                                        </span>
+                                        <span className="font-semibold text-slate-700">
+                                          {t.call.agent.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {t.call?.startedAt && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                          Date
+                                        </span>
+                                        <span className="font-semibold text-slate-700 tabular-nums">
+                                          {format(
+                                            new Date(t.call.startedAt),
+                                            "MMM d, yyyy HH:mm",
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {(t.call?.duration ?? 0) > 0 && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                          Duration
+                                        </span>
+                                        <span className="font-semibold text-slate-700 tabular-nums">
+                                          {Math.floor(
+                                            (t.call!.duration ?? 0) / 60,
+                                          )}
+                                          :
+                                          {String(
+                                            (t.call!.duration ?? 0) % 60,
+                                          ).padStart(2, "0")}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {t.call?.disposition && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                          Disposition
+                                        </span>
+                                        <span className="font-semibold text-slate-700 capitalize">
+                                          {t.call.disposition
+                                            .replace(/_/g, " ")
+                                            .toLowerCase()}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                           )}
-                          aria-label="Toggle ticket timeline"
-                          title="View ticket timeline"
-                        >
-                          <ChevronRight className={cn("h-3 w-3 transition-transform", expandedKey === group.key && "rotate-90")} />
-                          <Ticket className="h-3 w-3" />
-                          {group.tickets.length}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
-                          style={{ color: sp.fg, background: sp.bg, borderColor: sp.bg }}>
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sp.dot }} />
-                          {sp.label}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
-                          style={{ color: pp.fg, background: pp.bg, borderColor: pp.bg }}>
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: pp.dot }} />
-                          {formatLabel(t.priority)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{t.ticketType ? formatLabel(t.ticketType) : "—"}</TableCell>
-                      <TableCell className="py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">{agentName(t)}</TableCell>
-                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{yardName(t)}</TableCell>
-                      <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">{t.campaign?.nombre || "—"}</TableCell>
-                      <TableCell className="py-3 text-[13px] text-slate-500 dark:text-slate-400 font-mono font-medium">
-                        {t.createdAt ? format(new Date(t.createdAt), "MMM d, yyyy") : "—"}
-                      </TableCell>
-                    </TableRow>
-                    {expandedKey === group.key && (
-                      <TableRow key={`${group.key}-timeline`} className="bg-slate-50/50 hover:bg-slate-50/50">
-                        <TableCell colSpan={10} className="p-0">
-                          <InlineTicketTimeline group={group} agents={refData.agents} onOpenView={openView} />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #d1d5db",
+                                color: "#111827",
+                              }}
+                            >
+                              {initials}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[14px] font-bold text-foreground leading-tight truncate">
+                                {customerName(t)}
+                              </p>
+                              {t.customer?.phone && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11.5px] text-muted-foreground font-mono">
+                                    {t.customer.phone}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="w-5 h-5 flex items-center justify-center rounded-md hover:bg-[#e6f5f0] transition-colors disabled:opacity-40"
+                                    style={{ color: "#008f68" }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      dial(t.customer!.phone!, t.id);
+                                    }}
+                                    disabled={!canDial}
+                                  >
+                                    <PhoneOutgoing className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedKey((prev) =>
+                                prev === group.key ? null : group.key,
+                              );
+                            }}
+                            className={cn(
+                              "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all duration-150 shadow-sm",
+                              expandedKey === group.key
+                                ? "bg-[#dcfce7] text-[#15803d] border-[#86efac] shadow-[#86efac]/20"
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-[#dcfce7] hover:text-[#15803d] hover:border-[#86efac] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600",
+                            )}
+                            aria-label="Toggle ticket timeline"
+                            title="View ticket timeline"
+                          >
+                            <ChevronRight
+                              className={cn(
+                                "h-3 w-3 transition-transform",
+                                expandedKey === group.key && "rotate-90",
+                              )}
+                            />
+                            <Ticket className="h-3 w-3" />
+                            {group.tickets.length}
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
+                            style={{
+                              color: sp.fg,
+                              background: sp.bg,
+                              borderColor: sp.bg,
+                            }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ background: sp.dot }}
+                            />
+                            {sp.label}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
+                            style={{
+                              color: pp.fg,
+                              background: pp.bg,
+                              borderColor: pp.bg,
+                            }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ background: pp.dot }}
+                            />
+                            {formatLabel(t.priority)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          {t.ticketType ? formatLabel(t.ticketType) : "—"}
+                        </TableCell>
+                        <TableCell className="py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">
+                          {agentName(t)}
+                        </TableCell>
+                        <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          {yardName(t)}
+                        </TableCell>
+                        <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          {t.campaign?.nombre || "—"}
+                        </TableCell>
+                        <TableCell className="py-3 text-[13px] text-slate-500 dark:text-slate-400 font-mono font-medium">
+                          {t.createdAt
+                            ? format(new Date(t.createdAt), "MMM d, yyyy")
+                            : "—"}
                         </TableCell>
                       </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })
-            )}
+                      {expandedKey === group.key && (
+                        <TableRow
+                          key={`${group.key}-timeline`}
+                          className="bg-slate-50/50 hover:bg-slate-50/50"
+                        >
+                          <TableCell colSpan={10} className="p-0">
+                            <InlineTicketTimeline
+                              group={group}
+                              agents={refData.agents}
+                              onOpenView={openView}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
@@ -832,15 +1044,25 @@ export function TicketsTab({
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-slate-500">
-            Page <span className="font-semibold text-slate-700">{ticketFilters.currentPage}</span> of {totalPages} · {totalCount} {totalCount === 1 ? "ticket" : "tickets"}
+            Page{" "}
+            <span className="font-semibold text-slate-700">
+              {ticketFilters.currentPage}
+            </span>{" "}
+            of {totalPages} · {totalCount}{" "}
+            {totalCount === 1 ? "ticket" : "tickets"}
           </span>
-          <Select value={String(ticketFilters.itemsPerPage)} onValueChange={(v) => ticketFilters.setItemsPerPage(Number(v))}>
+          <Select
+            value={String(ticketFilters.itemsPerPage)}
+            onValueChange={(v) => ticketFilters.setItemsPerPage(Number(v))}
+          >
             <SelectTrigger className="h-7 w-20 text-[11px] border-slate-200 rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {[8, 10, 25, 50].map((n) => (
-                <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
+                <SelectItem key={n} value={String(n)}>
+                  {n} / page
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -850,7 +1072,9 @@ export function TicketsTab({
             type="button"
             className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
             disabled={ticketFilters.currentPage <= 1}
-            onClick={() => ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)}
+            onClick={() =>
+              ticketFilters.setCurrentPage(ticketFilters.currentPage - 1)
+            }
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
@@ -858,7 +1082,9 @@ export function TicketsTab({
             type="button"
             className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
             disabled={ticketFilters.currentPage >= totalPages}
-            onClick={() => ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)}
+            onClick={() =>
+              ticketFilters.setCurrentPage(ticketFilters.currentPage + 1)
+            }
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -952,7 +1178,9 @@ export function TicketsTab({
                   <div>
                     <Badge
                       variant="secondary"
-                      className={statusColors[normalizeStatusKey(selected.status)] || ""}
+                      className={
+                        statusColors[normalizeStatusKey(selected.status)] || ""
+                      }
                     >
                       {formatLabel(normalizeStatusKey(selected.status))}
                     </Badge>
@@ -1139,6 +1367,11 @@ export function TicketsTab({
         agents={refData.agents}
         campaigns={refData.campaigns}
         phoneLines={refData.phoneLines}
+        showSuccessToast={showDrawerSuccess}
+        onSuccessToastDismiss={() => setShowDrawerSuccess(false)}
+        showErrorToast={showDrawerError}
+        errorToastMessage={drawerErrorMessage}
+        onErrorToastDismiss={() => setShowDrawerError(false)}
       />
     </div>
   );
@@ -1358,7 +1591,66 @@ function TicketForm({
         </div>
       </div>
 
-      {/* Type */}
+      {/* Follow-up panel (shown when status is Pending Follow-up) */}
+      {form.status === SupportTicketStatus.PENDING_FOLLOWUP && (
+        <div className="grid grid-cols-2 gap-3 animate-in fade-in-0 slide-in-from-top-2 duration-200 rounded-xl p-3 bg-amber-50 border border-amber-200/70">
+          <div className="grid gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[11px] font-semibold text-slate-600">
+                Follow-up Date
+              </Label>
+              <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                Follow-up
+              </span>
+            </div>
+            <Input
+              type="datetime-local"
+              value={
+                form.followUpDueDate
+                  ? new Date(form.followUpDueDate).toISOString().slice(0, 16)
+                  : ""
+              }
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  followUpDueDate: e.target.value
+                    ? new Date(e.target.value).toISOString()
+                    : "",
+                }))
+              }
+              className="h-9 border-amber-300 focus-visible:ring-amber-300/40"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-[11px] font-semibold text-slate-600">
+              Assignee
+            </Label>
+            <Select
+              value={form.followUpAssignedToId || "none"}
+              onValueChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  followUpAssignedToId: v === "none" ? "" : v,
+                }))
+              }
+            >
+              <SelectTrigger className="h-9 border-amber-300 focus:ring-amber-300/40">
+                <SelectValue placeholder="Unassigned" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {agents.map((a) => (
+                  <SelectItem key={a.id} value={a.id.toString()}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Ticket Type */}
       <div className="grid gap-1.5">
         <Label>Ticket Type</Label>
         <Select
@@ -1576,45 +1868,6 @@ function TicketForm({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Follow-up */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="grid gap-1.5">
-          <Label>Follow-up Due</Label>
-          <Input
-            type="datetime-local"
-            value={form.followUpDueDate}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, followUpDueDate: e.target.value }))
-            }
-            className="h-9"
-          />
-        </div>
-        <div className="grid gap-1.5">
-          <Label>Follow-up Agent</Label>
-          <Select
-            value={form.followUpAssignedToId || "none"}
-            onValueChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                followUpAssignedToId: v === "none" ? "" : v,
-              }))
-            }
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select agent" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              {agents.map((a) => (
-                <SelectItem key={a.id} value={a.id.toString()}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
     </div>
   );

@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PhoneOutgoing, StickyNote, Loader2, Circle } from "lucide-react";
+import {
+  PhoneOutgoing,
+  PhoneIncoming,
+  PhoneMissed,
+  Phone,
+  StickyNote,
+  Loader2,
+  Circle,
+} from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import type { AgentOption, SupportTicketRecord } from "../../types";
 import { Button } from "@/components/ui/button";
@@ -69,6 +77,20 @@ function formatShortDate(date: Date): string {
   if (isToday(date)) return `Today ${format(date, "HH:mm")}`;
   if (isYesterday(date)) return `Yesterday ${format(date, "HH:mm")}`;
   return format(date, "MMM d HH:mm");
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function callDirectionIcon(direction?: string | null) {
+  const dir = (direction || "").toUpperCase();
+  if (dir === "INBOUND") return <PhoneIncoming className="w-2.5 h-2.5" />;
+  if (dir === "OUTBOUND") return <PhoneOutgoing className="w-2.5 h-2.5" />;
+  if (dir === "MISSED") return <PhoneMissed className="w-2.5 h-2.5" />;
+  return <Phone className="w-2.5 h-2.5" />;
 }
 
 function statusRing(status: string): string {
@@ -249,6 +271,54 @@ export function InlineTicketTimeline({
                 <p className="text-sm text-foreground/80 mt-1 line-clamp-2">
                   {ticket.issueDetail}
                 </p>
+              )}
+              {ticket.callId && (
+                <div className="mt-1.5 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 px-2 py-1 rounded-md bg-blue-50 border border-blue-100">
+                  <span className="text-blue-500">
+                    {callDirectionIcon(ticket.call?.direction)}
+                  </span>
+                  <span className="text-[10px] font-semibold text-blue-700">
+                    Source Call
+                  </span>
+                  {ticket.call?.direction && (
+                    <>
+                      <span className="text-[10px] text-blue-300">·</span>
+                      <span className="text-[10px] font-medium text-blue-600">
+                        {formatLabel(ticket.call.direction)}
+                      </span>
+                    </>
+                  )}
+                  {ticket.call?.startedAt && (
+                    <>
+                      <span className="text-[10px] text-blue-300">·</span>
+                      <span className="font-mono text-[10px] text-blue-500">
+                        {formatShortDate(new Date(ticket.call.startedAt))}
+                      </span>
+                    </>
+                  )}
+                  {ticket.call?.duration != null &&
+                    ticket.call.duration > 0 && (
+                      <>
+                        <span className="text-[10px] text-blue-300">·</span>
+                        <span className="font-mono text-[10px] text-blue-500">
+                          {formatDuration(ticket.call.duration)}
+                        </span>
+                      </>
+                    )}
+                  {ticket.call?.disposition && (
+                    <>
+                      <span className="text-[10px] text-blue-300">·</span>
+                      <span className="text-[10px] text-blue-500">
+                        {formatLabel(ticket.call.disposition)}
+                      </span>
+                    </>
+                  )}
+                  {!ticket.call && (
+                    <span className="font-mono text-[10px] text-blue-400">
+                      #{ticket.callId}
+                    </span>
+                  )}
+                </div>
               )}
             </li>
           );

@@ -260,6 +260,14 @@ export interface SupportTicketRecord {
     notes?: { id: number; content: string; createdAt: string }[];
   };
   callId?: number | null;
+  call?: {
+    id: number;
+    startedAt?: string | null;
+    direction?: string | null;
+    duration?: number | null;
+    disposition?: string | null;
+    agent?: { id: number; name: string } | null;
+  } | null;
   yardId?: number | null;
   yard?: YardOption | null;
   campaignId?: number | null;
@@ -272,6 +280,7 @@ export interface SupportTicketRecord {
   priority: SupportTicketPriority;
   ticketType?: SupportTicketType | null;
   campaignOption?: string | null;
+  disposition?: CallDisposition | string | null;
   issueDetail?: string | null;
   attachments?: string[] | null;
   followUpDueDate?: string | null;
@@ -292,6 +301,7 @@ export interface CreateSupportTicketFormData {
   status: SupportTicketStatus;
   priority: SupportTicketPriority;
   ticketType: string;
+  disposition: string;
   issueDetail: string;
   followUpDueDate: string;
   followUpAssignedToId: string;
