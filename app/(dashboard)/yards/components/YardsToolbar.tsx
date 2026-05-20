@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronDown, Layers, CircleDot } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  Layers,
+  CircleDot,
+  MousePointerClick,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type YardsFilterState = {
@@ -47,6 +53,11 @@ export function YardsToolbar({
         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
           /
         </span>
+      </div>
+
+      <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground lg:whitespace-nowrap">
+        <MousePointerClick className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+        <span>Click a row to view yard details.</span>
       </div>
 
       {/* Filters */}

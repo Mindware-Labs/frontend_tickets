@@ -472,6 +472,13 @@ function AircallDock({
     if (!drag?.moved) onToggle(); // pure click
   };
 
+  const stopDockDismissPropagation = (
+    e: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement>,
+  ) => {
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+  };
+
   // Panel position: appear above/beside the button, clamped to viewport
   const panelStyle = (): React.CSSProperties => {
     if (!pos)
@@ -559,6 +566,7 @@ function AircallDock({
         <div
           ref={panelRef}
           data-aircall-panel="true"
+          onPointerDown={stopDockDismissPropagation}
           className={cn(
             "border bg-background overflow-hidden transition-all duration-200",
             movedToContainer
@@ -614,7 +622,10 @@ function AircallDock({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={onClose}
+                onClick={(e) => {
+                  stopDockDismissPropagation(e);
+                  onClose();
+                }}
                 aria-label="Minimize"
               >
                 <Minus className="h-4 w-4" />
@@ -623,7 +634,10 @@ function AircallDock({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={onClose}
+                onClick={(e) => {
+                  stopDockDismissPropagation(e);
+                  onClose();
+                }}
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />

@@ -208,13 +208,14 @@ export function YardsTable({
                     </TableCell>
 
                     <TableCell className="py-3 text-right pr-4" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1">
                         {canManage && onEdit && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
                             title="Edit yard"
+                            aria-label="Edit yard"
                             onClick={() => onEdit(yard)}
                           >
                             <Pencil className="h-4 w-4 pointer-events-none" />
@@ -226,6 +227,7 @@ export function YardsTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                             title="Delete yard"
+                            aria-label="Delete yard"
                             onClick={() => onDelete(yard)}
                           >
                             <Trash2 className="h-4 w-4 pointer-events-none" />
