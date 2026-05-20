@@ -2,24 +2,27 @@
 
 import * as React from "react";
 import {
-  BookOpen,
-  LayoutDashboard,
-  Megaphone,
-  Users,
   BarChart3,
+  Building,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  Megaphone,
+  MessageSquare,
+  PanelLeft,
+  Phone,
   PhoneCall,
   User,
   UserCircle,
-  Building,
-  Phone,
-  HelpCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
-  MessageSquare,
-  ChevronDown,
-  ChevronRight,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useEffect, useMemo, useState } from "react";
+
 import { useRole } from "@/components/providers/role-provider";
 import {
   Sidebar,
@@ -27,99 +30,92 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
-import Link from "next/link";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { auth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
-// ── Navigation data ────────────────────────────────────────────────────────────
-
-const workspaceItems: {
-  title: string;
-  url?: string;
-  icon: React.ComponentType;
-  adminOnly?: boolean;
-  children?: { title: string; url: string; icon?: React.ComponentType }[];
-}[] = [
-    { title: "Aircall", url: "/aircall", icon: MessageSquare },
-    { title: "Calls", url: "/calls", icon: PhoneCall },
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    {
-      title: "Campaigns",
-      url: "/campaigns",
-      icon: Megaphone,
-      children: [
-        { title: "Campaigns", url: "/campaigns", icon: Megaphone },
-        {
-          title: "Reports",
-          url: "/reports/campaigns",
-          icon: BarChart3,
-        },
-      ],
-    },
-    {
-      title: "Yards",
-      url: "/yards",
-      icon: Building,
-      children: [
-        { title: "Yards", url: "/yards", icon: Building },
-        {
-          title: "Reports",
-          url: "/reports/yards",
-          icon: BarChart3,
-        },
-      ],
-    },
-     {
-      title: "Landlords",
-      url: "/landlords",
-      icon: User,
-      children: [
-        { title: "Landlords", url: "/landlords", icon: User },
-        {
-          title: "Reports",
-          url: "/reports/landlords",
-          icon: BarChart3,
-        },
-      ],
-    },
-    {
-      title: "Reports",
-      icon: BarChart3,
-      adminOnly: true,
-      children: [
-        { title: "Performance", url: "/reports/performance", icon: BarChart3 },
-        { title: "Agents", url: "/reports/agents", icon: Users },
-      ],
-    },
-  ];
-
-const managementItems: {
+type NavChild = {
   title: string;
   url: string;
-  icon: React.ComponentType;
+  icon?: LucideIcon;
   adminOnly?: boolean;
-  children?: { title: string; url: string; icon?: React.ComponentType }[];
-}[] = [
-    { title: "Customers", url: "/customers", icon: Users },
-    { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
-    { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
-    { title: "Profile", url: "/profile", icon: UserCircle },
-  ];
+};
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+type NavItem = {
+  title: string;
+  url?: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+  children?: NavChild[];
+};
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((p) => p[0] ?? "")
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+type NavSection = {
+  title?: string;
+  items: NavItem[];
+};
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const sections: NavSection[] = [
+  {
+    items: [
+      { title: "Calls", url: "/calls", icon: PhoneCall },
+      { title: "Aircall", url: "/aircall", icon: MessageSquare },
+    ],
+  },
+  {
+    title: "OPERATIONS",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
+      {
+        title: "Campaigns",
+        url: "/campaigns",
+        icon: Megaphone,
+        children: [
+          { title: "Campaigns", url: "/campaigns", icon: Megaphone },
+          { title: "Reports", url: "/reports/campaigns", icon: BarChart3 },
+        ],
+      },
+      {
+        title: "Reports",
+        icon: BarChart3,
+        adminOnly: true,
+        children: [
+          { title: "Performance", url: "/reports/performance", icon: BarChart3 },
+          { title: "Agents", url: "/reports/agents", icon: Users },
+        ],
+      },
+    ],
+  },
+  {
+    title: "MANAGEMENT",
+    items: [
+      {
+        title: "Yards",
+        url: "/yards",
+        icon: Building,
+        children: [
+          { title: "Yards", url: "/yards", icon: Building },
+          { title: "Reports", url: "/reports/yards", icon: BarChart3 },
+        ],
+      },
+      {
+        title: "Landlords",
+        url: "/landlords",
+        icon: User,
+        children: [
+          { title: "Landlords", url: "/landlords", icon: User },
+          { title: "Reports", url: "/reports/landlords", icon: BarChart3 },
+        ],
+      },
+    ],
+  },
+  {
+    title: "DIRECTORY",
+    items: [
+      { title: "Customers", url: "/customers", icon: Users },
+      { title: "Users", url: "/users", icon: User, adminOnly: true },
+      { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
+      { title: "Profile", url: "/profile", icon: UserCircle },
+    ],
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -128,121 +124,156 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { theme, resolvedTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
-  const [currentUser, setCurrentUser] = useState({
-    name: "User",
-    initials: "U",
-  });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const u = auth.getUser();
-    if (u) {
-      const full = [u.name, u.lastName].filter(Boolean).join(" ");
-      const display = full || u.email || "User";
-      setCurrentUser({ name: display, initials: getInitials(display) });
-    }
-  }, []);
-
   const isCollapsed = state === "collapsed";
   const isDark = mounted ? (resolvedTheme || theme) === "dark" : false;
   const normalizedRole = role?.toString().toLowerCase();
+  const isAgent = normalizedRole === "agent";
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-
-  const toggleGroup = (key: string) => {
-    setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
-  };
-
-  // ── Filter items by role
-  const visibleWorkspace =
-    normalizedRole === "agent"
-      ? workspaceItems
-        .filter((item) => !item.adminOnly)
-        .map((item) =>
-          item.title === "Dashboard"
-            ? { ...item, url: "/agent-dashboard" }
-            : item,
-        )
-      : workspaceItems;
-
-  const visibleManagement = managementItems.filter(
-    (item) => !(item.adminOnly && normalizedRole === "agent"),
+  const visibleSections = useMemo(
+    () =>
+      sections
+        .map((section) => ({
+          ...section,
+          items: section.items
+            .filter((item) => !(item.adminOnly && isAgent))
+            .map((item) => ({
+              ...item,
+              url:
+                item.title === "Dashboard" && isAgent
+                  ? "/agent-dashboard"
+                  : item.url,
+              children: item.children?.filter(
+                (child) => !(child.adminOnly && isAgent),
+              ),
+            }))
+            .filter(
+              (item) =>
+                item.url || item.children === undefined || item.children.length > 0,
+            ),
+        }))
+        .filter((section) => section.items.length > 0),
+    [isAgent],
   );
 
-  // ── Active check
-  const isActive = (url: string) =>
-    pathname === url || pathname.startsWith(url + "/");
+  const isActive = (url?: string) =>
+    Boolean(url && (pathname === url || pathname.startsWith(`${url}/`)));
 
-  // ── Design tokens
+  const groupIsActive = (item: NavItem) =>
+    isActive(item.url) || Boolean(item.children?.some((child) => isActive(child.url)));
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups((current) => ({ ...current, [key]: !current[key] }));
+  };
+
   const tk = isDark
     ? {
-      sidebar: "bg-[#111113] border-[#1e1e21]",
-      header: "border-[#1e1e21]",
-      brand: "text-white",
-      sectionLbl: "text-[#46464c]",
-      divider: "bg-[#1e1e21]",
-      itemInactive: "text-[#8e8e96] hover:bg-white/5 hover:text-[#e8e8e8]",
-      itemActive: "bg-white/10 text-white font-semibold",
-      iconInactive: "text-[#4d4d54]",
-      iconActive: "text-white",
-      toggleBtn: "text-[#4d4d54] hover:bg-white/5 hover:text-[#e8e8e8]",
-      logoRing: "border-[#2a2a2e]",
-      footerBorder: "border-[#1e1e21]",
-      footerName: "text-[#e8e8e8]",
-      footerSub: "text-[#46464c]",
-      avatarBg: "bg-[#2a2a2e] text-[#e8e8e8]",
-      statusBorder: "border-[#111113]",
-    }
+        sidebar: "border-slate-200 bg-white [&_[data-slot=sidebar-inner]]:bg-white",
+        headerBorder: "border-slate-200/80",
+        divider: "bg-slate-200/80",
+        brand: "text-slate-900",
+        section: "text-slate-500",
+        item: "text-slate-700 hover:bg-emerald-50/60 hover:text-slate-950",
+        icon: "text-slate-600",
+        activeItem: "bg-emerald-100 text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)]",
+        activeIcon: "text-emerald-700",
+        mutedItem: "text-slate-500",
+        toggle: "text-slate-600 hover:bg-emerald-50/70 hover:text-slate-900",
+        childItem: "text-slate-600 hover:bg-emerald-50/60 hover:text-slate-900",
+      }
     : {
-      sidebar: "bg-white border-slate-200",
-      header: "border-slate-100",
-      brand: "text-slate-900",
-      sectionLbl: "text-slate-400",
-      divider: "bg-slate-100",
-      itemInactive: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-      itemActive: "bg-green-50 text-green-900 font-medium",
-      iconInactive: "text-slate-400",
-      iconActive: "text-green-700",
-      toggleBtn: "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
-      logoRing: "border-slate-200",
-      footerBorder: "border-slate-100",
-      footerName: "text-slate-800",
-      footerSub: "text-slate-400",
-      avatarBg: "bg-teal-500 text-white",
-      statusBorder: "border-white",
-    };
+        sidebar: "border-slate-200 bg-white [&_[data-slot=sidebar-inner]]:bg-white",
+        headerBorder: "border-slate-200/80",
+        divider: "bg-slate-200/80",
+        brand: "text-slate-900",
+        section: "text-slate-500",
+        item: "text-slate-700 hover:bg-emerald-50/60 hover:text-slate-950",
+        icon: "text-slate-600",
+        activeItem: "bg-emerald-100 text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)]",
+        activeIcon: "text-emerald-700",
+        mutedItem: "text-slate-500",
+        toggle: "text-slate-600 hover:bg-emerald-50/70 hover:text-slate-900",
+        childItem: "text-slate-600 hover:bg-emerald-50/60 hover:text-slate-900",
+      };
 
-  // ── Nav item component
-  const NavItem = ({
-    title,
-    url,
-    icon: Icon,
-  }: {
-    title: string;
-    url: string;
-    icon: React.ElementType;
-  }) => {
-    const active = isActive(url);
+  const renderNavItem = (item: NavItem | NavChild, child = false) => {
+    if (!item.url) return null;
+
+    const Icon = item.icon ?? PhoneCall;
+    const active = isActive(item.url);
+
     return (
-      <li>
+      <li key={`${item.title}-${item.url}`}>
         <Link
-          href={url}
-          title={isCollapsed ? title : undefined}
-          className={[
-            "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
-            isCollapsed ? "w-10 h-10 justify-center" : "gap-3 px-3 py-1.75",
-            active ? tk.itemActive : tk.itemInactive,
-          ].join(" ")}
+          href={item.url}
+          title={isCollapsed ? item.title : undefined}
+          aria-current={active ? "page" : undefined}
+          className={cn(
+            "flex h-9 w-full items-center rounded-md text-[13.5px] font-semibold leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+            isCollapsed ? "justify-center px-0" : child ? "gap-2.5 px-3" : "gap-3 px-3",
+            child && !isCollapsed && "pl-9 text-[13px]",
+            active ? tk.activeItem : child ? tk.childItem : tk.item,
+          )}
         >
           <Icon
-            className={`w-5 h-5 shrink-0 ${active ? tk.iconActive : tk.iconInactive}`}
+            className={cn(
+              "h-4 w-4 shrink-0",
+              active ? tk.activeIcon : tk.icon,
+              child && !active && "opacity-80",
+            )}
             strokeWidth={active ? 2.2 : 1.8}
           />
-          {!isCollapsed && <span className="leading-none">{title}</span>}
+          {!isCollapsed && <span className="truncate">{item.title}</span>}
         </Link>
+      </li>
+    );
+  };
+
+  const renderGroup = (item: NavItem) => {
+    const Icon = item.icon;
+    const active = groupIsActive(item);
+    const isOpen =
+      openGroups[item.title] ?? Boolean(item.children?.some((child) => isActive(child.url)));
+
+    return (
+      <li key={item.title}>
+        <button
+          type="button"
+          onClick={() => toggleGroup(item.title)}
+          title={isCollapsed ? item.title : undefined}
+          aria-expanded={isOpen}
+          className={cn(
+            "flex h-9 w-full items-center rounded-md text-[13.5px] font-semibold leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+            isCollapsed ? "justify-center px-0" : "gap-3 px-3",
+            active ? tk.activeItem : tk.item,
+          )}
+        >
+          <Icon
+            className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)}
+            strokeWidth={active ? 2.2 : 1.8}
+          />
+          {!isCollapsed && (
+            <>
+              <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
+              {isOpen ? (
+                <ChevronDown className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)} />
+              ) : (
+                <ChevronRight className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)} />
+              )}
+            </>
+          )}
+        </button>
+
+        {!isCollapsed && isOpen && item.children && (
+          <ul className="mt-1 space-y-0.5">
+            {item.children.map((child) => renderNavItem(child, true))}
+          </ul>
+        )}
       </li>
     );
   };
@@ -250,282 +281,70 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className={`border-r transition-colors duration-200 ${tk.sidebar}`}
+      className={cn("border-r transition-colors duration-200", tk.sidebar)}
       {...props}
     >
-      <SidebarContent className="flex flex-col h-full overflow-hidden gap-0 p-0">
-        {/* ── HEADER ── */}
-        <div
-          className={[
-            "flex items-center h-14 border-b shrink-0 transition-all duration-300",
-            tk.header,
-            isCollapsed ? "justify-center px-3" : "justify-between px-4",
-          ].join(" ")}
+      <SidebarContent className="flex h-full flex-col gap-0 overflow-hidden bg-white p-0 font-sans">
+        <header
+          className={cn(
+            "flex h-14 shrink-0 items-center border-b transition-all duration-200",
+            tk.headerBorder,
+            isCollapsed ? "justify-center px-2" : "justify-between px-4",
+          )}
         >
           {!isCollapsed && (
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2.5 min-w-0"
-            >
-              <div
-                className={`shrink-0 w-7 h-7 rounded-md overflow-hidden relative border ${tk.logoRing}`}
-              >
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
+              <span className="relative h-7 w-7 shrink-0 overflow-hidden">
                 <Image
                   src="/images/LOGO CQ-10.png"
                   alt="Center Quest"
                   fill
-                  className="object-contain scale-125"
+                  className="scale-[2.65] object-contain"
                   sizes="28px"
                   priority
                 />
-              </div>
-              <span className={`text-[13px] font-bold truncate ${tk.brand}`}>
+              </span>
+              <span className={cn("truncate text-[14px] font-extrabold leading-none", tk.brand)}>
                 Center Quest
               </span>
             </Link>
           )}
 
           <button
+            type="button"
             onClick={toggleSidebar}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shrink-0 ${tk.toggleBtn}`}
+            className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+              tk.toggle,
+            )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {isCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4" />
-            )}
+            <PanelLeft className="h-4 w-4" strokeWidth={1.8} />
           </button>
-        </div>
+        </header>
 
-        {/* ── SCROLLABLE BODY ── */}
-        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden min-h-0">
-          {/* Inbox section */}
-          <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
-            {!isCollapsed && (
-              <p
-                className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-2 ${tk.sectionLbl}`}
-              >
-                Inbox
-              </p>
-            )}
-            {isCollapsed && <div className="h-2" />}
-            <ul className="space-y-0.5">
-              {visibleWorkspace.map((item) => {
-                const Icon = item.icon as React.ComponentType<any>;
-                const children = (item as any).children as
-                  | Array<{
-                    title: string;
-                    url: string;
-                    icon?: React.ComponentType<any>;
-                  }>
-                  | undefined;
-
-                if (children && children.length > 0) {
-                  const isOpen =
-                    openGroups[item.title] ??
-                    children.some((c) => isActive(c.url));
-                  return (
-                    <li key={item.title}>
-                      <button
-                        onClick={() => toggleGroup(item.title)}
-                        title={isCollapsed ? item.title : undefined}
-                        className={[
-                          "w-full flex items-center rounded-lg text-[13.5px] transition-all duration-150",
-                          isCollapsed
-                            ? "w-10 h-10 justify-center"
-                            : "gap-3 px-3 py-1.75",
-                          tk.itemInactive,
-                        ].join(" ")}
-                      >
-                        <Icon
-                          className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
-                          strokeWidth={1.8}
-                        />
-                        {!isCollapsed && (
-                          <span className="leading-none flex-1 text-left">
-                            {item.title}
-                          </span>
-                        )}
-                        {!isCollapsed &&
-                          (isOpen ? (
-                            <ChevronDown
-                              className={`w-4 h-4 ${tk.iconInactive}`}
-                            />
-                          ) : (
-                            <ChevronRight
-                              className={`w-4 h-4 ${tk.iconInactive}`}
-                            />
-                          ))}
-                      </button>
-
-                      {!isCollapsed && isOpen && (
-                        <ul className="mt-1 ml-3 space-y-0.5">
-                          {children.map((c) => (
-                            <NavItem
-                              key={c.title}
-                              title={c.title}
-                              url={c.url}
-                              icon={c.icon || item.icon}
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                }
-
-                return <NavItem key={item.title} {...(item as any)} />;
-              })}
-            </ul>
-          </nav>
-
-          <div className={`mx-3 h-px ${tk.divider}`} />
-
-          {/* Management section */}
-          <nav className={`py-3 ${isCollapsed ? "px-1.5" : "px-2"}`}>
-            {!isCollapsed && (
-              <p
-                className={`text-[10px] font-semibold uppercase tracking-widest px-2 mb-2 ${tk.sectionLbl}`}
-              >
-                Contacts
-              </p>
-            )}
-            {isCollapsed && <div className="h-2" />}
-            <ul className="space-y-0.5">
-              {visibleManagement.map((item) => {
-                const Icon = item.icon as React.ComponentType<any>;
-                const children = (item as any).children as
-                  | Array<{
-                    title: string;
-                    url: string;
-                    icon?: React.ComponentType<any>;
-                  }>
-                  | undefined;
-
-                if (children && children.length > 0) {
-                  const isOpen =
-                    openGroups[item.title] ??
-                    children.some((c) => isActive(c.url));
-                  return (
-                    <li key={item.title}>
-                      <button
-                        onClick={() => toggleGroup(item.title)}
-                        title={isCollapsed ? item.title : undefined}
-                        className={[
-                          "w-full flex items-center rounded-lg text-[13.5px] transition-all duration-150",
-                          isCollapsed
-                            ? "w-10 h-10 justify-center"
-                            : "gap-3 px-3 py-1.75",
-                          tk.itemInactive,
-                        ].join(" ")}
-                      >
-                        <Icon
-                          className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
-                          strokeWidth={1.8}
-                        />
-                        {!isCollapsed && (
-                          <span className="leading-none flex-1 text-left">
-                            {item.title}
-                          </span>
-                        )}
-                        {!isCollapsed &&
-                          (isOpen ? (
-                            <ChevronDown
-                              className={`w-4 h-4 ${tk.iconInactive}`}
-                            />
-                          ) : (
-                            <ChevronRight
-                              className={`w-4 h-4 ${tk.iconInactive}`}
-                            />
-                          ))}
-                      </button>
-
-                      {!isCollapsed && isOpen && (
-                        <ul className="mt-1 ml-3 space-y-0.5">
-                          {children.map((c) => (
-                            <NavItem
-                              key={c.title}
-                              title={c.title}
-                              url={c.url}
-                              icon={c.icon || item.icon}
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                }
-
-                return <NavItem key={item.title} {...(item as any)} />;
-              })}
-            </ul>
-          </nav>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* ── FOOTER ── */}
-          <div
-            className={[
-              "border-t pt-3 pb-3 space-y-0.5",
-              tk.footerBorder,
-              isCollapsed ? "px-1.5" : "px-2",
-            ].join(" ")}
-          >
-            {/* User card */}
-            <div
-              className={[
-                "flex items-center rounded-lg py-1.5",
-                isCollapsed ? "justify-center" : "gap-3 px-3",
-              ].join(" ")}
-            >
-              <div className="relative shrink-0">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${tk.avatarBg}`}
-                >
-                  {currentUser.initials}
-                </div>
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 ${tk.statusBorder}`}
-                />
-              </div>
-
-              {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-[13px] font-medium truncate leading-tight ${tk.footerName}`}
-                  >
-                    {currentUser.name}
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          {visibleSections.map((section, index) => (
+            <React.Fragment key={section.title ?? "communications"}>
+              <nav className={cn("py-3", isCollapsed ? "px-1.5" : "px-2")}>
+                {section.title && !isCollapsed && (
+                  <p className={cn("mb-2 px-3 text-[11px] font-bold uppercase leading-none", tk.section)}>
+                    {section.title}
                   </p>
-                  <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                    Unavailable
-                  </span>
-                </div>
-              )}
-            </div>
+                )}
 
+                <ul className="space-y-1">
+                  {section.items.map((item) =>
+                    item.children?.length ? renderGroup(item) : renderNavItem(item),
+                  )}
+                </ul>
+              </nav>
 
-            {/* Help & Feedback */}
-            <Link
-              href="/support"
-              title={isCollapsed ? "Help and Feedback" : undefined}
-              className={[
-                "flex items-center rounded-lg text-[13.5px] transition-all duration-150",
-                isCollapsed ? "w-10 h-10 justify-center" : "gap-3 px-3 py-1.75",
-                tk.itemInactive,
-              ].join(" ")}
-            >
-              <HelpCircle
-                className={`w-5 h-5 shrink-0 ${tk.iconInactive}`}
-                strokeWidth={1.8}
-              />
-              {!isCollapsed && (
-                <span className="leading-none">Help and Feedback</span>
+              {index < visibleSections.length - 1 && (
+                <div className={cn("mx-4 h-px", tk.divider)} />
               )}
-            </Link>
-          </div>
+            </React.Fragment>
+          ))}
         </div>
       </SidebarContent>
 
