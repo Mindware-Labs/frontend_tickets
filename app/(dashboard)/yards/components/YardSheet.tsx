@@ -7,11 +7,11 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Building2,
   Check,
   Clock,
   Copy,
@@ -31,7 +31,6 @@ import { useAircall } from "@/components/providers/AircallProvider";
 import { useRole } from "@/components/providers/role-provider";
 import { cn } from "@/lib/utils";
 import type { Yard } from "../types";
-import { YardMark } from "./YardMark";
 
 interface YardSheetProps {
   open: boolean;
@@ -353,7 +352,8 @@ export function YardSheet({
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const data = yard || detail;
+  const data = detail || yard;
+  const lastActivityLabel = formatActivityDate(data?.lastActivity) ?? "None";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -376,52 +376,67 @@ export function YardSheet({
               <SheetTitle>{data.name}</SheetTitle>
             </SheetHeader>
 
-            {/* TOP BAR ARREGLADA */}
             <div className="relative shrink-0 border-b border-slate-200/70 bg-white pt-6">
-              {/* Botón Cerrar (X) absoluto */}
-              <SheetClose className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200/80 hover:bg-slate-100 hover:text-slate-800 active:scale-95 transition-all">
+              <SheetClose
+                aria-label="Close yard details"
+                className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35"
+              >
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
 
-              <div className="px-6 pb-5">
-                <div className="flex items-start gap-4 pr-8">
-                  <YardMark className="h-16 w-16" iconClassName="h-7 w-7" />
+              <div className="px-6 pb-5 pt-1">
+                <div className="flex items-center gap-4 pr-8">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68]">
+                    <Building2 className="h-6 w-6" strokeWidth={1.5} />
+                  </div>
 
-                  <div className="flex-1 pt-0.5 min-w-0">
-                    <h2 className="min-w-0 wrap-anywhere text-[20px] font-bold leading-snug text-slate-900">
-                      {data.name}
-                    </h2>
-                    {data.commonName?.trim() &&
-                      data.commonName.trim() !== data.name.trim() && (
-                        <p className="mt-1 min-w-0 wrap-anywhere text-[13px] font-medium leading-snug text-slate-500">
-                          {data.commonName}
-                        </p>
-                      )}
-
-                    <p className="mt-1 flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
-                      <span className="font-mono font-semibold text-slate-600">
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="min-w-0 break-all text-[20px] font-bold leading-tight text-slate-900">
+                        {data.name || "Unknown Yard"}
+                      </h2>
+                      <span className="mt-1 shrink-0 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500">
                         #{data.id}
                       </span>
-                      <span className="text-slate-300">•</span>
-                      <span className="truncate font-mono">
-                        {data.contactInfo || "No phone"}
-                      </span>
-                    </p>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      <StatusChip active={data.isActive} />
-                      <TypeChip type={data.yardType} />
+                      {loading ? (
+                        <span className="mt-1 shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                          Refreshing
+                        </span>
+                      ) : null}
                     </div>
+
+                    {data.commonName?.trim() &&
+                    data.commonName.trim() !== data.name.trim() ? (
+                      <p className="mt-1.5 min-w-0 break-all text-[13px] font-medium text-slate-500">
+                        {data.commonName}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                  <StatusChip active={data.isActive} />
+                  <TypeChip type={data.yardType} />
+
+                  <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                    <Phone className="h-3 w-3 shrink-0 text-slate-400" />
+                    <span className="min-w-0 break-all font-mono text-[12px] font-semibold text-slate-700">
+                      {data.contactInfo || "No phone"}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Banner de Última actividad (Integrado al header) */}
-              <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50/50 py-2.5 text-[12px] text-slate-500">
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                <span>
+              <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50/50 px-5 py-2.5 text-[12px] text-slate-500">
+                <Clock
+                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                  strokeWidth={2}
+                />
+                <span className="min-w-0 break-all">
                   Last activity:{" "}
-                  {formatActivityDate(data.lastActivity) ?? "None"}
+                  <span className="font-semibold text-slate-700">
+                    {lastActivityLabel}
+                  </span>
                 </span>
               </div>
             </div>
