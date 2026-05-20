@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -10,22 +9,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Loader2,
   MapPin,
   Pencil,
   Phone,
   Trash2,
-  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Yard } from "../types";
+import { YardMark } from "./YardMark";
 
 interface YardsTableProps {
   loading: boolean;
   yards: Yard[];
   totalFiltered: number;
+  onRowClick?: (yard: Yard) => void;
   onEdit?: (yard: Yard) => void;
   onDelete?: (yard: Yard) => void;
   canManage?: boolean;
@@ -33,15 +32,6 @@ interface YardsTableProps {
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
   totalPages?: number;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
 }
 
 function TypePill({ type }: { type: Yard["yardType"] }) {
@@ -78,6 +68,7 @@ export function YardsTable({
   loading,
   yards,
   totalFiltered,
+  onRowClick,
   onEdit,
   onDelete,
   canManage = true,
@@ -90,19 +81,16 @@ export function YardsTable({
     <div className="flex-1 flex flex-col gap-3">
       <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
         <div className="max-h-[calc(100vh-14rem)] overflow-y-auto">
-          <Table className="relative w-full">
+          <Table className="relative w-full table-fixed">
             <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[72px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500">
-                  ID
-                </TableHead>
-                <TableHead className="min-w-[180px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[22%] max-w-[240px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="min-w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[14%] max-w-[160px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Common Name
                 </TableHead>
-                <TableHead className="min-w-[200px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[22%] max-w-[240px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Address
                 </TableHead>
                 <TableHead className="min-w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
@@ -126,7 +114,7 @@ export function YardsTable({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Loading yards...
@@ -136,7 +124,7 @@ export function YardsTable({
               ) : totalFiltered === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={8}
                     className="h-24 text-center text-sm text-muted-foreground"
                   >
                     No yards found.
@@ -146,38 +134,28 @@ export function YardsTable({
                 yards.map((yard, i) => (
                   <TableRow
                     key={yard.id}
+                    onClick={() => onRowClick?.(yard)}
                     className={cn(
                       "group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 transition-all duration-150",
                       i % 2 === 1 ? "bg-slate-50/60 dark:bg-muted/20" : "bg-white dark:bg-card",
+                      onRowClick && "cursor-pointer",
                     )}
                   >
-                    <TableCell className="pl-4 py-3">
-                      <span className="text-[12px] font-mono font-semibold text-slate-400">
-                        #{yard.id}
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar className="h-8 w-8 shrink-0 rounded-full">
-                          <AvatarFallback
-                            className="text-[12px] font-bold rounded-full"
-                            style={{ background: "#e2fae9", color: "#008f68" }}
+                    <TableCell className="max-w-0 overflow-hidden pl-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <YardMark className="h-8 w-8" />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="truncate font-bold text-[14px] leading-tight text-foreground"
+                            title={yard.name}
                           >
-                            {getInitials(yard.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="font-bold text-[14px] leading-tight truncate text-foreground">
-                            <Link
-                              href={`/yards/${yard.id}`}
-                              className="hover:text-[#008f68] hover:underline underline-offset-4"
-                            >
-                              {yard.name}
-                            </Link>
-                          </div>
+                            {yard.name}
+                          </p>
                           {yard.landlord?.name && (
-                            <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
+                            <p
+                              className="mt-0.5 truncate text-[11.5px] text-muted-foreground"
+                              title={yard.landlord.name}
+                            >
                               {yard.landlord.name}
                             </p>
                           )}
@@ -185,14 +163,22 @@ export function YardsTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300">
-                      {yard.commonName}
+                    <TableCell className="max-w-0 overflow-hidden py-3">
+                      <p
+                        className="truncate text-[13.5px] text-slate-600 dark:text-slate-300"
+                        title={yard.commonName}
+                      >
+                        {yard.commonName}
+                      </p>
                     </TableCell>
 
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5 min-w-0 max-w-[240px]">
+                    <TableCell className="max-w-0 overflow-hidden py-3">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-[13px] text-slate-600 truncate">
+                        <span
+                          className="min-w-0 flex-1 truncate text-[13px] text-slate-600"
+                          title={yard.propertyAddress}
+                        >
                           {yard.propertyAddress}
                         </span>
                       </div>
@@ -223,17 +209,6 @@ export function YardsTable({
 
                     <TableCell className="py-3 text-right pr-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <Button
-                          asChild
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:bg-[#e2fae9] hover:text-[#008f68]"
-                          title="View yard details"
-                        >
-                          <Link href={`/yards/${yard.id}`} aria-label={`View details for ${yard.name}`}>
-                            <Eye className="h-4 w-4 pointer-events-none" />
-                          </Link>
-                        </Button>
                         {canManage && onEdit && (
                           <Button
                             variant="ghost"

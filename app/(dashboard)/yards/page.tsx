@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { CheckCircle2, Plus } from "lucide-react";
+import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 
 import { fetchFromBackend } from "@/lib/api-client";
 import { useRole } from "@/components/providers/role-provider";
@@ -21,6 +22,10 @@ const YardFormModal = dynamic(
 );
 const DeleteYardModal = dynamic(
   () => import("./components/DeleteYardModal").then((m) => m.DeleteYardModal),
+  { ssr: false },
+);
+const YardSheet = dynamic(
+  () => import("./components/YardSheet").then((m) => m.YardSheet),
   { ssr: false },
 );
 
@@ -61,6 +66,7 @@ type YardView = (typeof VIEW_TABS)[number]["key"];
 export default function YardsPage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { role } = useRole();
 
   const isAgent = role?.toString().toLowerCase() === "agent";
@@ -81,6 +87,7 @@ export default function YardsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showYardSheet, setShowYardSheet] = useState(false);
   const [selectedYard, setSelectedYard] = useState<Yard | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<YardFormData>(DEFAULT_FORM);
@@ -110,7 +117,30 @@ export default function YardsPage() {
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
+    setShowYardSheet(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!yardIdFilter || loading || yards.length === 0) return;
+    const match = yards.find((y) => y.id === yardIdFilter);
+    if (match) {
+      setSelectedYard(match);
+      setShowYardSheet(true);
+    }
+  }, [yardIdFilter, loading, yards.length]);
+
+  const handleYardSheetOpenChange = (open: boolean) => {
+    setShowYardSheet(open);
+    if (!open) {
+      setSelectedYard(null);
+      if (yardIdParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("yardId");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      }
+    }
+  };
 
   const viewCounts = useMemo(() => {
     const base = yards.filter((yard) => {
@@ -211,6 +241,11 @@ export default function YardsPage() {
     setSelectedYard(yard);
     clearValidationErrors();
     setShowDeleteModal(true);
+  };
+
+  const handleRowClick = (yard: Yard) => {
+    setSelectedYard(yard);
+    setShowYardSheet(true);
   };
 
   const validateForm = (): Record<string, string> => {
@@ -365,47 +400,73 @@ export default function YardsPage() {
           </p>
         </div>
 
-        {canManage && (
+        {!isAgent && (
           <Button
-            onClick={handleCreate}
-            className="h-9 px-4 rounded-xl bg-[#008f68] hover:bg-[#007a5a] text-white text-[13px] font-medium shadow-sm"
+            asChild
+            variant="outline"
+            className="h-9 px-4 rounded-xl border-border text-[13px] font-medium shadow-sm hover:bg-[#f0faf5] hover:text-[#008f68] hover:border-[#008f68]/40"
           >
-            <Plus className="mr-1.5 h-4 w-4" />
-            New Yard
+            <Link href="/reports/yards">
+              <BarChart3 className="mr-1.5 h-4 w-4" />
+              Yard Reports
+            </Link>
           </Button>
         )}
       </div>
 
-      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5 mt-1">
-        {VIEW_TABS.map((tab) => {
-          const isActive = activeView === tab.key;
-          const count = viewCounts[tab.key];
-          return (
+      <div className="flex border-b border-border mt-1 items-end">
+        <div className="flex flex-1 min-w-0 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex px-0.5">
+            {VIEW_TABS.map((tab) => {
+              const isActive = activeView === tab.key;
+              const count = viewCounts[tab.key];
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveView(tab.key)}
+                  className={cn(
+                    "px-2 py-2.5 text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px whitespace-nowrap",
+                    isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      "py-px px-1.5 rounded-full text-[11px] border",
+                      isActive
+                        ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                        : "bg-muted/40 text-muted-foreground font-medium border-border",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {canManage && (
+          <div className="shrink-0 pl-4 pr-2 pb-2 pt-0.5">
             <button
-              key={tab.key}
               type="button"
-              onClick={() => setActiveView(tab.key)}
-              className={cn(
-                "px-2 py-2.5 text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px whitespace-nowrap",
-                isActive
-                  ? "border-[#008f68] text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
+              onClick={handleCreate}
+              className="flex h-[30px] items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+              style={{ background: "#008f68" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#007a5a";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#008f68";
+              }}
             >
-              {tab.label}
-              <span
-                className={cn(
-                  "py-px px-1.5 rounded-full text-[11px] border",
-                  isActive
-                    ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
-                    : "bg-muted/40 text-muted-foreground font-medium border-border",
-                )}
-              >
-                {count}
-              </span>
+              <Plus className="w-3.5 h-3.5" />
+              New Yard
             </button>
-          );
-        })}
+          </div>
+        )}
       </div>
 
       <div className="mt-3 mb-2">
@@ -423,6 +484,7 @@ export default function YardsPage() {
           loading={loading}
           yards={paginatedYards}
           totalFiltered={filteredYards.length}
+          onRowClick={handleRowClick}
           onEdit={canManage ? handleEdit : undefined}
           onDelete={canManage ? handleDelete : undefined}
           canManage={canManage}
@@ -488,6 +550,13 @@ export default function YardsPage() {
         ticketCount={selectedYard?.ticketCount}
         isSubmitting={isSubmitting}
         onConfirm={handleSubmitDelete}
+      />
+
+      <YardSheet
+        open={showYardSheet}
+        onOpenChange={handleYardSheetOpenChange}
+        yard={selectedYard}
+        onEdit={canManage ? handleEdit : undefined}
       />
 
     </div>

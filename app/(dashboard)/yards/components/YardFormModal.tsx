@@ -362,7 +362,12 @@ export function YardFormModal({
               type="button"
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="h-11 rounded-lg bg-slate-700 px-6 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-60 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white"
+              className={cn(
+                "h-11 rounded-lg px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
+                idPrefix === "create"
+                  ? "bg-[#008f68] hover:bg-[#007a5a] dark:bg-[#008f68] dark:hover:bg-[#007a5a]"
+                  : "bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white",
+              )}
             >
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
