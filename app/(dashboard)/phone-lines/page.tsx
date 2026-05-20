@@ -261,9 +261,6 @@ export default function PhoneLinesPage() {
         <PhoneLinesToolbar
           search={search}
           onSearchChange={setSearch}
-          onRefresh={fetchLines}
-          canCreate={false}
-          totalCount={filteredLines.length}
           selectedCount={selectedLines.length}
           onClearSelection={() => setSelectedLines([])}
         />

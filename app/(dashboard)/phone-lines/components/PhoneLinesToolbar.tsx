@@ -1,17 +1,12 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Search, ListFilter, X, Trash2 } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface PhoneLinesToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
-  onRefresh: () => void;
-  onCreate?: () => void;
-  canCreate?: boolean;
-  totalCount: number;
   selectedCount?: number;
   onClearSelection?: () => void;
   onDeleteSelected?: () => void;
@@ -20,8 +15,6 @@ interface PhoneLinesToolbarProps {
 export function PhoneLinesToolbar({
   search,
   onSearchChange,
-  onRefresh,
-  totalCount,
   selectedCount = 0,
   onClearSelection,
   onDeleteSelected,
@@ -29,71 +22,52 @@ export function PhoneLinesToolbar({
   const hasSelection = selectedCount > 0;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+        {/* Search */}
+        <div className="relative flex-1 max-w-[420px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input
             placeholder="Search by phone number or label..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 bg-white border-slate-200 focus:border-[#008f68] focus:ring-[#008f68]"
+            className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
           />
-        </div>
-
-        <Button
-          variant="outline"
-          className="h-10 px-4 rounded-xl text-slate-600 hover:text-slate-900 border-slate-200 shadow-none"
-        >
-          <ListFilter className="h-4 w-4 mr-2" />
-          Filters
-        </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-10 w-10 rounded-xl border-slate-200 shadow-none"
-          onClick={onRefresh}
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-
-        <div className="text-sm text-slate-500 whitespace-nowrap">
-          {totalCount} line{totalCount !== 1 ? "s" : ""}
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+            /
+          </span>
         </div>
       </div>
 
+      {/* Selection bar */}
       {hasSelection && (
-        <div className="flex items-center justify-between p-3 bg-[#f0fdf8] rounded-xl border border-[#bbf7d0]">
-          <div className="flex items-center gap-3">
-            <Badge className="bg-[#008f68] text-white hover:bg-[#007a5a] px-3 py-1">
+        <div className="flex items-center justify-between py-2 px-3 bg-[#f0fdf8] rounded-lg border border-[#bbf7d0]">
+          <div className="flex items-center gap-2.5">
+            <Badge className="bg-[#008f68] text-white hover:bg-[#007a5a] px-2.5 py-0.5 text-[11px]">
               {selectedCount} selected
             </Badge>
-            <span className="text-sm text-slate-700 font-medium">
+            <span className="text-[12px] text-slate-600 font-medium">
               {selectedCount} line{selectedCount !== 1 ? "s" : ""} selected
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {onDeleteSelected && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 rounded-lg text-red-600 border-red-200 hover:bg-red-50 shadow-none text-xs"
+              <button
+                type="button"
                 onClick={onDeleteSelected}
+                className="h-7 px-2.5 rounded-md text-[11.5px] font-medium text-red-600 border border-red-200 bg-white hover:bg-red-50 transition-colors"
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                Delete Selected
-              </Button>
+                Delete
+              </button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
+            <button
+              type="button"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               onClick={onClearSelection}
             >
-              <X className="h-4 w-4" />
-            </Button>
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       )}

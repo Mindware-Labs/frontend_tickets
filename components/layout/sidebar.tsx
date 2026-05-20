@@ -3,26 +3,25 @@
 import * as React from "react";
 import {
   BarChart3,
-  Building,
+  Building2,
   ChevronDown,
   ChevronRight,
-  LayoutGrid,
+  CircleUser,
+  LayoutDashboard,
   Megaphone,
-  MessageSquare,
   PanelLeft,
   Phone,
   PhoneCall,
+  Radio,
   User,
-  UserCircle,
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 
+import { CenterQuestMark } from "@/components/layout/center-quest-mark";
 import { useRole } from "@/components/providers/role-provider";
 import {
   Sidebar,
@@ -31,6 +30,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+
+const ICON_SIZE = 16;
+const ICON_STROKE = 2;
 
 type NavChild = {
   title: string;
@@ -56,13 +58,13 @@ const sections: NavSection[] = [
   {
     items: [
       { title: "Calls", url: "/calls", icon: PhoneCall },
-      { title: "Aircall", url: "/aircall", icon: MessageSquare },
+      { title: "Aircall", url: "/aircall", icon: Radio },
     ],
   },
   {
     title: "OPERATIONS",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       {
         title: "Campaigns",
         url: "/campaigns",
@@ -89,9 +91,9 @@ const sections: NavSection[] = [
       {
         title: "Yards",
         url: "/yards",
-        icon: Building,
+        icon: Building2,
         children: [
-          { title: "Yards", url: "/yards", icon: Building },
+          { title: "Yards", url: "/yards", icon: Building2 },
           { title: "Reports", url: "/reports/yards", icon: BarChart3 },
         ],
       },
@@ -110,28 +112,40 @@ const sections: NavSection[] = [
     title: "DIRECTORY",
     items: [
       { title: "Customers", url: "/customers", icon: Users },
-      { title: "Users", url: "/users", icon: User, adminOnly: true },
+      { title: "Users", url: "/users", icon: Users, adminOnly: true },
       { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
-      { title: "Profile", url: "/profile", icon: UserCircle },
+      { title: "Profile", url: "/profile", icon: CircleUser },
     ],
   },
 ];
+
+function NavIcon({
+  icon: Icon,
+  active,
+  className,
+}: {
+  icon: LucideIcon;
+  active?: boolean;
+  className?: string;
+}) {
+  return (
+    <Icon
+      size={ICON_SIZE}
+      strokeWidth={ICON_STROKE}
+      className={cn("shrink-0", className)}
+      aria-hidden
+    />
+  );
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { role } = useRole();
   const { state, toggleSidebar } = useSidebar();
-  const { theme, resolvedTheme } = useTheme();
 
-  const [mounted, setMounted] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const isCollapsed = state === "collapsed";
-  const isDark = mounted ? (resolvedTheme || theme) === "dark" : false;
   const normalizedRole = role?.toString().toLowerCase();
   const isAgent = normalizedRole === "agent";
 
@@ -171,35 +185,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setOpenGroups((current) => ({ ...current, [key]: !current[key] }));
   };
 
-  const tk = isDark
-    ? {
-        sidebar: "border-slate-200 bg-white [&_[data-slot=sidebar-inner]]:bg-white",
-        headerBorder: "border-slate-200/80",
-        divider: "bg-slate-200/80",
-        brand: "text-slate-900",
-        section: "text-slate-500",
-        item: "text-slate-700 hover:bg-emerald-50/60 hover:text-slate-950",
-        icon: "text-slate-600",
-        activeItem: "bg-emerald-100 text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)]",
-        activeIcon: "text-emerald-700",
-        mutedItem: "text-slate-500",
-        toggle: "text-slate-600 hover:bg-emerald-50/70 hover:text-slate-900",
-        childItem: "text-slate-600 hover:bg-emerald-50/60 hover:text-slate-900",
-      }
-    : {
-        sidebar: "border-slate-200 bg-white [&_[data-slot=sidebar-inner]]:bg-white",
-        headerBorder: "border-slate-200/80",
-        divider: "bg-slate-200/80",
-        brand: "text-slate-900",
-        section: "text-slate-500",
-        item: "text-slate-700 hover:bg-emerald-50/60 hover:text-slate-950",
-        icon: "text-slate-600",
-        activeItem: "bg-emerald-100 text-slate-950 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)]",
-        activeIcon: "text-emerald-700",
-        mutedItem: "text-slate-500",
-        toggle: "text-slate-600 hover:bg-emerald-50/70 hover:text-slate-900",
-        childItem: "text-slate-600 hover:bg-emerald-50/60 hover:text-slate-900",
-      };
+  const itemBase =
+    "flex h-9 w-full items-center rounded-md text-[13px] font-medium leading-none antialiased transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/35";
+
+  const itemIdle = "text-slate-700 hover:bg-slate-50 hover:text-slate-900";
+  const itemActive =
+    "border border-emerald-200/80 bg-emerald-50 text-slate-900 shadow-none";
+  const iconIdle = "text-slate-500";
+  const iconActive = "text-emerald-700";
+  const sectionLabel =
+    "mb-2.5 px-3 text-[10.5px] font-semibold uppercase leading-none tracking-[0.1em] text-slate-400 antialiased";
 
   const renderNavItem = (item: NavItem | NavChild, child = false) => {
     if (!item.url) return null;
@@ -214,19 +209,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title={isCollapsed ? item.title : undefined}
           aria-current={active ? "page" : undefined}
           className={cn(
-            "flex h-9 w-full items-center rounded-md text-[13.5px] font-semibold leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+            itemBase,
             isCollapsed ? "justify-center px-0" : child ? "gap-2.5 px-3" : "gap-3 px-3",
-            child && !isCollapsed && "pl-9 text-[13px]",
-            active ? tk.activeItem : child ? tk.childItem : tk.item,
+            child && !isCollapsed && "pl-10 text-[12.5px] font-normal",
+            active ? itemActive : child ? "text-slate-600 hover:bg-slate-50" : itemIdle,
           )}
         >
-          <Icon
-            className={cn(
-              "h-4 w-4 shrink-0",
-              active ? tk.activeIcon : tk.icon,
-              child && !active && "opacity-80",
-            )}
-            strokeWidth={active ? 2.2 : 1.8}
+          <NavIcon
+            icon={Icon}
+            active={active}
+            className={active ? iconActive : iconIdle}
           />
           {!isCollapsed && <span className="truncate">{item.title}</span>}
         </Link>
@@ -248,23 +240,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title={isCollapsed ? item.title : undefined}
           aria-expanded={isOpen}
           className={cn(
-            "flex h-9 w-full items-center rounded-md text-[13.5px] font-semibold leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+            itemBase,
             isCollapsed ? "justify-center px-0" : "gap-3 px-3",
-            active ? tk.activeItem : tk.item,
+            active ? itemActive : itemIdle,
           )}
         >
-          <Icon
-            className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)}
-            strokeWidth={active ? 2.2 : 1.8}
-          />
+          <NavIcon icon={Icon} active={active} className={active ? iconActive : iconIdle} />
           {!isCollapsed && (
             <>
               <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
-              {isOpen ? (
-                <ChevronDown className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)} />
-              ) : (
-                <ChevronRight className={cn("h-4 w-4 shrink-0", active ? tk.activeIcon : tk.icon)} />
-              )}
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                {isOpen ? (
+                  <ChevronDown
+                    size={ICON_SIZE}
+                    strokeWidth={ICON_STROKE}
+                    className={active ? iconActive : iconIdle}
+                  />
+                ) : (
+                  <ChevronRight
+                    size={ICON_SIZE}
+                    strokeWidth={ICON_STROKE}
+                    className={active ? iconActive : iconIdle}
+                  />
+                )}
+              </span>
             </>
           )}
         </button>
@@ -281,30 +280,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className={cn("border-r transition-colors duration-200", tk.sidebar)}
+      className="border-r border-slate-200 bg-white transition-colors duration-200 [&_[data-slot=sidebar-inner]]:bg-white"
       {...props}
     >
-      <SidebarContent className="flex h-full flex-col gap-0 overflow-hidden bg-white p-0 font-sans">
+      <SidebarContent className="flex h-full flex-col gap-0 overflow-hidden bg-white p-0 font-sans antialiased">
         <header
           className={cn(
-            "flex h-14 shrink-0 items-center border-b transition-all duration-200",
-            tk.headerBorder,
-            isCollapsed ? "justify-center px-2" : "justify-between px-4",
+            "flex h-[3.25rem] shrink-0 items-center border-b border-slate-200 transition-all duration-200",
+            isCollapsed ? "justify-center px-2" : "justify-between gap-2 px-3.5",
           )}
         >
           {!isCollapsed && (
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
-              <span className="relative h-7 w-7 shrink-0 overflow-hidden">
-                <Image
-                  src="/images/LOGO CQ-10.png"
-                  alt="Center Quest"
-                  fill
-                  className="scale-[2.65] object-contain"
-                  sizes="28px"
-                  priority
-                />
-              </span>
-              <span className={cn("truncate text-[14px] font-extrabold leading-none", tk.brand)}>
+            <Link
+              href="/dashboard"
+              className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/35"
+            >
+              <CenterQuestMark size={28} />
+              <span className="truncate text-[15px] font-bold tracking-[-0.01em] text-slate-900">
                 Center Quest
               </span>
             </Link>
@@ -314,26 +306,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             type="button"
             onClick={toggleSidebar}
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
-              tk.toggle,
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/35",
+              isCollapsed && "mx-auto",
             )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <PanelLeft className="h-4 w-4" strokeWidth={1.8} />
+            <PanelLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           {visibleSections.map((section, index) => (
             <React.Fragment key={section.title ?? "communications"}>
-              <nav className={cn("py-3", isCollapsed ? "px-1.5" : "px-2")}>
+              <nav className={cn("py-3.5", isCollapsed ? "px-1.5" : "px-2")}>
                 {section.title && !isCollapsed && (
-                  <p className={cn("mb-2 px-3 text-[11px] font-bold uppercase leading-none", tk.section)}>
-                    {section.title}
-                  </p>
+                  <p className={sectionLabel}>{section.title}</p>
                 )}
 
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {section.items.map((item) =>
                     item.children?.length ? renderGroup(item) : renderNavItem(item),
                   )}
@@ -341,7 +331,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </nav>
 
               {index < visibleSections.length - 1 && (
-                <div className={cn("mx-4 h-px", tk.divider)} />
+                <div role="presentation" className="mx-3 h-px bg-slate-200" />
               )}
             </React.Fragment>
           ))}

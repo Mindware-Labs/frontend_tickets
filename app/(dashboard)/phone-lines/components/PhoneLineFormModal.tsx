@@ -4,15 +4,13 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Phone, PhoneCall } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Phone, Tag, CircleDot, Loader2 } from "lucide-react";
 import { PhoneLineFormData } from "../types";
 
 interface PhoneLineFormModalProps {
@@ -31,13 +29,10 @@ interface PhoneLineFormModalProps {
 }
 
 function formatPhoneNumber(value: string): string {
-  // If already correctly formatted, leave it as-is
   if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
     return value;
   }
-  // Strip everything except digits
   const numbers = value.replace(/\D/g, "");
-  // Always remove leading 1 to avoid duplication with the +1 prefix
   const cleaned = numbers.startsWith("1") ? numbers.slice(1) : numbers;
   if (cleaned.length === 0) return "";
   if (cleaned.length <= 3) return `+1 ${cleaned}`;
@@ -63,118 +58,104 @@ export function PhoneLineFormModal({
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
     onFormChange({ ...formData, phoneNumber: formatted });
-    onValidationErrorChange({ ...validationErrors, phoneNumber: "" });
+    if (validationErrors.phoneNumber) {
+      onValidationErrorChange({ ...validationErrors, phoneNumber: "" });
+    }
   };
+
+  const fieldInput = (
+    "h-9 rounded-lg border-[#e2e8f0] bg-white text-[13px] text-slate-700 placeholder:text-slate-300 shadow-none " +
+    "focus-visible:ring-1 focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40 " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-600"
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden bg-background">
+      <DialogContent className="max-w-md p-0 gap-0 rounded-xl border-[#e2e8f0] shadow-xl overflow-hidden dark:border-slate-700">
         {/* Header */}
-        <DialogHeader className="p-6 pb-4 bg-muted/20 border-b">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 shadow-sm">
-              <PhoneCall className="h-6 w-6 text-primary" />
-            </div>
-            <div className="space-y-1 mt-0.5">
-              <DialogTitle className="text-xl font-bold tracking-tight">
-                {title}
-              </DialogTitle>
-              <p className="text-sm text-muted-foreground">{description}</p>
-            </div>
-          </div>
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-[#e2e8f0] dark:border-slate-700">
+          <DialogTitle className="text-[15px] font-semibold text-slate-800 dark:text-slate-100">
+            {title}
+          </DialogTitle>
+          <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
         </DialogHeader>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto max-h-[65vh]">
-          <div className="space-y-5">
-            {/* Phone Number */}
-            <div className="space-y-2">
-              <Label
-                htmlFor={`${idPrefix}-phone`}
-                className="text-xs uppercase text-muted-foreground font-semibold tracking-wider"
-              >
-                Phone Number <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id={`${idPrefix}-phone`}
-                  placeholder="+1 XXX-XXX-XXXX"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  className={cn(
-                    "pl-9 font-mono",
-                    validationErrors.phoneNumber &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
-                />
-              </div>
-              {validationErrors.phoneNumber && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />{" "}
-                  {validationErrors.phoneNumber}
-                </p>
-              )}
-            </div>
+        <div className="px-5 py-4 space-y-3.5">
+          {/* Phone Number */}
+          <div className="space-y-1">
+            <label htmlFor={`${idPrefix}-phone`} className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
+              <Phone className="h-3 w-3" />
+              Phone Number <span className="text-red-400">*</span>
+            </label>
+            <Input
+              id={`${idPrefix}-phone`}
+              placeholder="+1 XXX-XXX-XXXX"
+              value={formData.phoneNumber}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              className={cn(fieldInput, "font-mono", validationErrors.phoneNumber && "border-red-400 focus-visible:ring-red-200")}
+            />
+            {validationErrors.phoneNumber && (
+              <p className="text-[10.5px] text-red-500 mt-0.5">{validationErrors.phoneNumber}</p>
+            )}
+          </div>
 
-            {/* Label */}
-            <div className="space-y-2">
-              <Label
-                htmlFor={`${idPrefix}-label`}
-                className="text-xs uppercase text-muted-foreground font-semibold tracking-wider"
-              >
-                Label
-              </Label>
-              <Input
-                id={`${idPrefix}-label`}
-                placeholder="e.g. Rig Hut – Main Office"
-                value={formData.label}
-                onChange={(e) =>
-                  onFormChange({ ...formData, label: e.target.value })
-                }
-              />
-            </div>
+          {/* Label */}
+          <div className="space-y-1">
+            <label htmlFor={`${idPrefix}-label`} className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
+              <Tag className="h-3 w-3" />
+              Label
+            </label>
+            <Input
+              id={`${idPrefix}-label`}
+              placeholder="e.g. Rig Hut – Main Office"
+              value={formData.label}
+              onChange={(e) => onFormChange({ ...formData, label: e.target.value })}
+              className={fieldInput}
+            />
+          </div>
 
-            {/* Active toggle */}
-            <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/20">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium">Active</Label>
-                <p className="text-xs text-muted-foreground">
-                  Inactive lines will not generate tickets from Aircall
-                </p>
-              </div>
-              <Switch
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  onFormChange({ ...formData, isActive: checked })
-                }
-              />
+          {/* Active toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-[#e2e8f0] p-3.5 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
+            <div className="space-y-0.5">
+              <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
+                <CircleDot className="h-3 w-3" />
+                Active
+              </label>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Inactive lines won't generate tickets from Aircall
+              </p>
             </div>
+            <Switch
+              checked={formData.isActive}
+              onCheckedChange={(checked) =>
+                onFormChange({ ...formData, isActive: checked })
+              }
+            />
           </div>
         </div>
 
         {/* Footer */}
-        <DialogFooter className="p-4 bg-muted/20 border-t">
-          <div className="flex w-full justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={onSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                  Saving...
-                </>
-              ) : (
-                submitLabel
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
+        <div className="flex items-center justify-center gap-2 px-5 py-3.5 border-t border-[#e2e8f0] bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className="h-9 px-6 rounded-lg text-[13px] font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="h-9 px-8 rounded-lg text-[13px] font-medium bg-[#008f68] hover:bg-[#007a5a] text-white shadow-sm"
+          >
+            {isSubmitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            {isSubmitting ? "Saving..." : submitLabel}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

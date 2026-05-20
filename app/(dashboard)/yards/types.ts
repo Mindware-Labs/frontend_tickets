@@ -11,6 +11,10 @@ export interface Yard {
   landlord?: { id: number; name: string; email?: string; phone?: string };
   landlordId?: number | null;
   ticketCount?: number;
+  totalTickets?: number;
+  openTickets?: number;
+  closedTickets?: number;
+  lastActivity?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

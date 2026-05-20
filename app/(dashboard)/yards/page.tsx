@@ -1,34 +1,69 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
-import { useRole } from "@/components/providers/role-provider";
-import { fetchFromBackend } from "@/lib/api-client";
-import { toast } from "@/hooks/use-toast";
-import { YardsFilters } from "./components/YardsFilters";
-import { YardsToolbar } from "./components/YardsToolbar";
-import { YardsTable } from "./components/YardsTable";
-import { YardsPagination } from "./components/YardsPagination";
-import { YardFormModal } from "./components/YardFormModal";
-import { DeleteYardModal } from "./components/DeleteYardModal";
-import { YardDetailsModal } from "./components/YardDetailsModal";
-import { Yard, YardFormData } from "./types";
-import { CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { CheckCircle2, Plus } from "lucide-react";
 
-type YardTicket = {
-  id: number;
-  status?: string | null;
-  createdAt?: string;
-  customer?: { name?: string | null };
-  customerPhone?: string | null;
-  yardId?: number | null;
+import { fetchFromBackend } from "@/lib/api-client";
+import { useRole } from "@/components/providers/role-provider";
+import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+import { Yard, YardFormData } from "./types";
+import { YardsToolbar, type YardsFilterState } from "./components/YardsToolbar";
+import { YardsTable } from "./components/YardsTable";
+
+const YardFormModal = dynamic(
+  () => import("./components/YardFormModal").then((m) => m.YardFormModal),
+  { ssr: false },
+);
+const DeleteYardModal = dynamic(
+  () => import("./components/DeleteYardModal").then((m) => m.DeleteYardModal),
+  { ssr: false },
+);
+
+const ITEMS_PER_PAGE = 10;
+
+const DEFAULT_FORM: YardFormData = {
+  name: "",
+  commonName: "",
+  propertyAddress: "",
+  contactInfo: "",
+  yardLink: "",
+  notes: "",
+  yardType: "SAAS",
+  isActive: true,
 };
+
+const getYardFormData = (yard: Yard): YardFormData => ({
+  name: yard.name,
+  commonName: yard.commonName,
+  propertyAddress: yard.propertyAddress,
+  contactInfo: yard.contactInfo,
+  yardLink: yard.yardLink || "",
+  notes: yard.notes || "",
+  yardType: yard.yardType,
+  isActive: yard.isActive,
+});
+
+const VIEW_TABS = [
+  { key: "all", label: "All Yards" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Inactive" },
+  { key: "saas", label: "SaaS" },
+  { key: "full_service", label: "Full Service" },
+] as const;
+
+type YardView = (typeof VIEW_TABS)[number]["key"];
 
 export default function YardsPage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { role } = useRole();
-  const normalizedRole = role?.toString().toLowerCase();
-  const isAgent = normalizedRole === "agent";
+
+  const isAgent = role?.toString().toLowerCase() === "agent";
   const canManage = !isAgent;
   const yardIdParam = searchParams?.get("yardId");
   const yardIdFilter = yardIdParam ? Number(yardIdParam) : null;
@@ -36,44 +71,27 @@ export default function YardsPage() {
   const [yards, setYards] = useState<Yard[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [activeView, setActiveView] = useState<YardView>("all");
+  const [filters, setFilters] = useState<YardsFilterState>({
+    type: "all",
+    status: "all",
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedYard, setSelectedYard] = useState<Yard | null>(null);
-  const [ticketsLoading, setTicketsLoading] = useState(false);
-  const [yardTickets, setYardTickets] = useState<YardTicket[]>([]);
-  const [showTicketsPanel, setShowTicketsPanel] = useState(false);
-  const [showLandlordPanel, setShowLandlordPanel] = useState(false);
-  const [ticketSearch, setTicketSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+  const [formData, setFormData] = useState<YardFormData>(DEFAULT_FORM);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  const [formData, setFormData] = useState<YardFormData>({
-    name: "",
-    commonName: "",
-    propertyAddress: "",
-    contactInfo: "",
-    yardLink: "",
-    notes: "",
-    yardType: "SAAS" as "SAAS" | "FULL_SERVICE",
-    isActive: true,
-  });
-
-  // Fetch yards from backend
   const fetchYards = async () => {
     try {
       setLoading(true);
       const response = await fetchFromBackend("/yards?page=1&limit=10000");
       setYards(Array.isArray(response) ? response : response.data || []);
-    } catch (error) {
-      console.error("Error fetching yards:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load yards",
@@ -88,74 +106,92 @@ export default function YardsPage() {
     fetchYards();
   }, []);
 
-  // Close all modals when route changes
-  const pathname = usePathname();
   useEffect(() => {
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
-    setShowDetailsModal(false);
   }, [pathname]);
 
-  // Filter yards
+  const viewCounts = useMemo(() => {
+    const base = yards.filter((yard) => {
+      if (yardIdFilter && yard.id !== yardIdFilter) return false;
+      const term = search.toLowerCase();
+      if (!term) return true;
+      return (
+        yard.name.toLowerCase().includes(term) ||
+        yard.commonName.toLowerCase().includes(term) ||
+        yard.propertyAddress.toLowerCase().includes(term) ||
+        yard.contactInfo.toLowerCase().includes(term) ||
+        (yard.landlord?.name || "").toLowerCase().includes(term)
+      );
+    });
+
+    return {
+      all: base.length,
+      active: base.filter((y) => y.isActive).length,
+      inactive: base.filter((y) => !y.isActive).length,
+      saas: base.filter((y) => y.yardType === "SAAS").length,
+      full_service: base.filter((y) => y.yardType === "FULL_SERVICE").length,
+    };
+  }, [yards, search, yardIdFilter]);
+
   const filteredYards = useMemo(() => {
     return yards
       .filter((yard) => {
+        const term = search.toLowerCase();
         const matchesSearch =
-          yard.name.toLowerCase().includes(search.toLowerCase()) ||
-          yard.commonName.toLowerCase().includes(search.toLowerCase()) ||
-          yard.propertyAddress.toLowerCase().includes(search.toLowerCase()) ||
-          yard.contactInfo.toLowerCase().includes(search.toLowerCase()) ||
-          (yard.landlord?.name || "")
-            .toLowerCase()
-            .includes(search.toLowerCase());
+          !term ||
+          yard.name.toLowerCase().includes(term) ||
+          yard.commonName.toLowerCase().includes(term) ||
+          yard.propertyAddress.toLowerCase().includes(term) ||
+          yard.contactInfo.toLowerCase().includes(term) ||
+          (yard.landlord?.name || "").toLowerCase().includes(term);
 
         const matchesType =
-          typeFilter === "all" || yard.yardType === typeFilter;
+          filters.type === "all" || yard.yardType === filters.type;
         const matchesStatus =
-          statusFilter === "all" ||
-          (statusFilter === "active" && yard.isActive) ||
-          (statusFilter === "inactive" && !yard.isActive);
+          filters.status === "all" ||
+          (filters.status === "active" && yard.isActive) ||
+          (filters.status === "inactive" && !yard.isActive);
+
+        const matchesView =
+          activeView === "all" ||
+          (activeView === "active" && yard.isActive) ||
+          (activeView === "inactive" && !yard.isActive) ||
+          (activeView === "saas" && yard.yardType === "SAAS") ||
+          (activeView === "full_service" && yard.yardType === "FULL_SERVICE");
 
         const matchesQuery = yardIdFilter ? yard.id === yardIdFilter : true;
 
-        return matchesSearch && matchesType && matchesStatus && matchesQuery;
+        return (
+          matchesSearch &&
+          matchesType &&
+          matchesStatus &&
+          matchesView &&
+          matchesQuery
+        );
       })
-      .sort((a, b) => a.id - b.id); // Ordenar por ID de menor a mayor (1 a x)
-  }, [yards, search, typeFilter, statusFilter, yardIdFilter]);
+      .sort((a, b) => a.id - b.id);
+  }, [yards, search, filters, activeView, yardIdFilter]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredYards.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredYards.length / ITEMS_PER_PAGE));
+
   const paginatedYards = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredYards.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredYards, currentPage, itemsPerPage]);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredYards.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredYards, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter, statusFilter, yardIdFilter]);
+  }, [search, filters, activeView, yardIdFilter]);
 
-  useEffect(() => {
-    if (!yardIdFilter || yards.length === 0) return;
-    const match = yards.find((y) => y.id === yardIdFilter);
-    if (match) {
-      handleDetails(match);
-    }
-  }, [yardIdFilter, yards]);
+  const resetForm = () => setFormData(DEFAULT_FORM);
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      commonName: "",
-      propertyAddress: "",
-      contactInfo: "",
-      yardLink: "",
-      notes: "",
-      yardType: "SAAS",
-      isActive: true,
-    });
+  const handleFilterChange = (key: keyof YardsFilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const clearFilters = () => setFilters({ type: "all", status: "all" });
   const clearValidationErrors = () => setValidationErrors({});
 
   const handleCreate = () => {
@@ -166,16 +202,7 @@ export default function YardsPage() {
 
   const handleEdit = (yard: Yard) => {
     setSelectedYard(yard);
-    setFormData({
-      name: yard.name,
-      commonName: yard.commonName,
-      propertyAddress: yard.propertyAddress,
-      contactInfo: yard.contactInfo,
-      yardLink: yard.yardLink || "",
-      notes: yard.notes || "",
-      yardType: yard.yardType,
-      isActive: yard.isActive,
-    });
+    setFormData(getYardFormData(yard));
     clearValidationErrors();
     setShowEditModal(true);
   };
@@ -186,57 +213,18 @@ export default function YardsPage() {
     setShowDeleteModal(true);
   };
 
-  const handleDetails = (yard: Yard) => {
-    setSelectedYard(yard);
-    setShowDetailsModal(true);
-    setShowTicketsPanel(false);
-    setShowLandlordPanel(false);
-    setTicketSearch("");
-    setYardTickets([]);
-  };
-
-  const fetchTicketsForYard = async (yardId: number) => {
-    try {
-      setTicketsLoading(true);
-      const response = await fetchFromBackend("/tickets?page=1&limit=500");
-      const items: YardTicket[] = response?.data || response || [];
-      const filtered = items.filter((ticket) => ticket.yardId === yardId);
-      setYardTickets(filtered);
-    } catch (error) {
-      console.error("Error fetching tickets:", error);
-      setYardTickets([]);
-    } finally {
-      setTicketsLoading(false);
-    }
-  };
-
-  const filteredTickets = useMemo(() => {
-    const term = ticketSearch.toLowerCase();
-    return yardTickets.filter((ticket) => {
-      const name = ticket.customer?.name?.toLowerCase() || "";
-      const phone = (ticket.customerPhone || "").toLowerCase();
-      const id = `#${ticket.id}`;
-      return (
-        name.includes(term) ||
-        phone.includes(term) ||
-        id.toLowerCase().includes(term)
-      );
-    });
-  }, [yardTickets, ticketSearch]);
-
-  const handleSubmitCreate = async () => {
-    setValidationErrors({});
-
-    // Frontend validation
+  const validateForm = (): Record<string, string> => {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Name is required";
-    if (!formData.commonName.trim())
-      errors.commonName = "Common name is required";
-    if (!formData.propertyAddress.trim())
-      errors.propertyAddress = "Address is required";
-    if (!formData.contactInfo.trim())
-      errors.contactInfo = "Contact info is required";
+    if (!formData.commonName.trim()) errors.commonName = "Common name is required";
+    if (!formData.propertyAddress.trim()) errors.propertyAddress = "Address is required";
+    if (!formData.contactInfo.trim()) errors.contactInfo = "Contact info is required";
+    return errors;
+  };
 
+  const handleSubmitCreate = async () => {
+    clearValidationErrors();
+    const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       toast({
@@ -253,7 +241,6 @@ export default function YardsPage() {
         method: "POST",
         body: JSON.stringify(formData),
       });
-
       toast({
         title: "Success",
         description: (
@@ -263,25 +250,17 @@ export default function YardsPage() {
           </div>
         ),
       });
-
       setShowCreateModal(false);
-      fetchYards();
       resetForm();
-    } catch (error: any) {
-      console.error("Error creating yard:", error);
-
-      // Handle validation errors from backend
-      if (error.message && typeof error.message === "object") {
-        setValidationErrors(error.message);
-        toast({
-          title: "Validation Error",
-          description: "Please check the form for errors",
-          variant: "destructive",
-        });
+      await fetchYards();
+    } catch (error: unknown) {
+      const err = error as { message?: string | Record<string, string> };
+      if (err.message && typeof err.message === "object") {
+        setValidationErrors(err.message);
       } else {
         toast({
           title: "Error",
-          description: error.message || "Failed to create yard",
+          description: (typeof err.message === "string" ? err.message : null) || "Failed to create yard",
           variant: "destructive",
         });
       }
@@ -292,20 +271,8 @@ export default function YardsPage() {
 
   const handleSubmitEdit = async () => {
     if (!selectedYard) return;
-
-    // Reset validation errors
-    setValidationErrors({});
-
-    // Frontend validation
-    const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = "Name is required";
-    if (!formData.commonName.trim())
-      errors.commonName = "Common name is required";
-    if (!formData.propertyAddress.trim())
-      errors.propertyAddress = "Address is required";
-    if (!formData.contactInfo.trim())
-      errors.contactInfo = "Contact info is required";
-
+    clearValidationErrors();
+    const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       toast({
@@ -322,7 +289,6 @@ export default function YardsPage() {
         method: "PATCH",
         body: JSON.stringify(formData),
       });
-
       toast({
         title: "Success",
         description: (
@@ -332,26 +298,18 @@ export default function YardsPage() {
           </div>
         ),
       });
-
       setShowEditModal(false);
-      fetchYards();
-      resetForm();
       setSelectedYard(null);
-    } catch (error: any) {
-      console.error("Error updating yard:", error);
-
-      // Handle validation errors from backend
-      if (error.message && typeof error.message === "object") {
-        setValidationErrors(error.message);
-        toast({
-          title: "Validation Error",
-          description: "Please check the form for errors",
-          variant: "destructive",
-        });
+      resetForm();
+      await fetchYards();
+    } catch (error: unknown) {
+      const err = error as { message?: string | Record<string, string> };
+      if (err.message && typeof err.message === "object") {
+        setValidationErrors(err.message);
       } else {
         toast({
           title: "Error",
-          description: error.message || "Failed to update yard",
+          description: (typeof err.message === "string" ? err.message : null) || "Failed to update yard",
           variant: "destructive",
         });
       }
@@ -362,13 +320,9 @@ export default function YardsPage() {
 
   const handleSubmitDelete = async () => {
     if (!selectedYard) return;
-
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/yards/${selectedYard.id}`, {
-        method: "DELETE",
-      });
-
+      await fetchFromBackend(`/yards/${selectedYard.id}`, { method: "DELETE" });
       toast({
         title: "Success",
         description: (
@@ -378,74 +332,105 @@ export default function YardsPage() {
           </div>
         ),
       });
-
       setShowDeleteModal(false);
-      fetchYards();
       setSelectedYard(null);
-    } catch (error: any) {
-      console.error("Error deleting yard:", error);
-      let errorMsg = error.message || "Failed to delete yard.";
-      if (
-        errorMsg.includes(
-          "No se puede eliminar la yard porque tiene tickets asociados",
-        )
-      ) {
+      await fetchYards();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      let errorMsg = err.message || "Failed to delete yard.";
+      if (errorMsg.includes("No se puede eliminar la yard porque tiene tickets asociados")) {
         errorMsg = "Cannot delete yard because it has associated tickets.";
       }
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: errorMsg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <>
-      {/* CAMBIO IMPORTANTE: Cambiar h-[calc(100vh-4rem)] por min-h-[calc(100vh-4rem)] */}
-      <div className="flex min-h-[calc(100vh-4rem)] gap-4">
-        <YardsFilters
-          typeFilter={typeFilter}
-          statusFilter={statusFilter}
-          onTypeChange={setTypeFilter}
-          onStatusChange={setStatusFilter}
-          onCreate={canManage ? handleCreate : undefined}
-          canCreate={canManage}
-        />
-
-        {/* Main area */}
-        <div className="flex-1 flex flex-col gap-4">
-          <YardsToolbar
-            search={search}
-            onSearchChange={setSearch}
-            onRefresh={fetchYards}
-            totalCount={filteredYards.length}
-          />
-
-          <YardsTable
-            loading={loading}
-            yards={paginatedYards}
-            totalFiltered={filteredYards.length}
-            onDetails={handleDetails}
-            onEdit={canManage ? handleEdit : undefined}
-            onDelete={canManage ? handleDelete : undefined}
-            canManage={canManage}
-          />
-
-          <YardsPagination
-            totalCount={filteredYards.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            onItemsPerPageChange={(value) => {
-              setItemsPerPage(value);
-              setCurrentPage(1);
-            }}
-            onPageChange={setCurrentPage}
-          />
+    <div className="h-screen flex flex-col px-4 pt-2 pb-4 gap-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between w-full pt-2 pb-5 px-0.5 gap-3 border-b border-border">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+            Yard Management
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {today} · Manage yards, locations, and assignments
+          </p>
         </div>
+
+        {canManage && (
+          <Button
+            onClick={handleCreate}
+            className="h-9 px-4 rounded-xl bg-[#008f68] hover:bg-[#007a5a] text-white text-[13px] font-medium shadow-sm"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            New Yard
+          </Button>
+        )}
+      </div>
+
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5 mt-1">
+        {VIEW_TABS.map((tab) => {
+          const isActive = activeView === tab.key;
+          const count = viewCounts[tab.key];
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveView(tab.key)}
+              className={cn(
+                "px-2 py-2.5 text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px whitespace-nowrap",
+                isActive
+                  ? "border-[#008f68] text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              <span
+                className={cn(
+                  "py-px px-1.5 rounded-full text-[11px] border",
+                  isActive
+                    ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                    : "bg-muted/40 text-muted-foreground font-medium border-border",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 mb-2">
+        <YardsToolbar
+          search={search}
+          onSearchChange={setSearch}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClearFilters={clearFilters}
+        />
+      </div>
+
+      <div className="flex-1 min-h-0">
+        <YardsTable
+          loading={loading}
+          yards={paginatedYards}
+          totalFiltered={filteredYards.length}
+          onEdit={canManage ? handleEdit : undefined}
+          onDelete={canManage ? handleDelete : undefined}
+          canManage={canManage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalPages={totalPages}
+        />
       </div>
 
       <YardFormModal
@@ -463,6 +448,10 @@ export default function YardsPage() {
         validationErrors={validationErrors}
         onValidationErrorChange={setValidationErrors}
         onSubmit={handleSubmitCreate}
+        onReset={() => {
+          resetForm();
+          clearValidationErrors();
+        }}
         idPrefix="create"
         showPlaceholders
       />
@@ -482,6 +471,10 @@ export default function YardsPage() {
         validationErrors={validationErrors}
         onValidationErrorChange={setValidationErrors}
         onSubmit={handleSubmitEdit}
+        onReset={() => {
+          if (selectedYard) setFormData(getYardFormData(selectedYard));
+          clearValidationErrors();
+        }}
         idPrefix="edit"
       />
 
@@ -497,38 +490,6 @@ export default function YardsPage() {
         onConfirm={handleSubmitDelete}
       />
 
-      <YardDetailsModal
-        open={showDetailsModal}
-        onOpenChange={(open) => {
-          setShowDetailsModal(open);
-          if (!open) {
-            setShowTicketsPanel(false);
-            setShowLandlordPanel(false);
-            setTicketSearch("");
-            setYardTickets([]);
-          }
-        }}
-        yard={selectedYard}
-        showTicketsPanel={showTicketsPanel}
-        showLandlordPanel={showLandlordPanel}
-        ticketsLoading={ticketsLoading}
-        tickets={filteredTickets}
-        ticketSearch={ticketSearch}
-        setTicketSearch={setTicketSearch}
-        onViewTickets={async () => {
-          if (!selectedYard) return;
-          if (!showTicketsPanel) {
-            await fetchTicketsForYard(selectedYard.id);
-          }
-          setShowLandlordPanel(false);
-          setShowTicketsPanel(true);
-        }}
-        onViewLandlord={() => {
-          if (!selectedYard) return;
-          setShowTicketsPanel(false);
-          setShowLandlordPanel(true);
-        }}
-      />
-    </>
+    </div>
   );
 }
