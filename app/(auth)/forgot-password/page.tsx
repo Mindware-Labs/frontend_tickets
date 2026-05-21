@@ -1,394 +1,526 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
-  Loader2,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  KeyRound,
-  ShieldCheck,
-  CheckCircle2,
+  ArrowRight, Loader2, Mail, Lock, Eye, EyeOff,
+  RefreshCw, KeyRound, ShieldCheck, CheckCircle2, X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
+  InputOTP, InputOTPGroup, InputOTPSlot,
 } from "@/components/ui/input-otp";
-import Image from "next/image";
 import { auth } from "@/lib/auth";
 
-// ── Step meta ─────────────────────────────────────────────────────────────────
-const STEP_META = {
-  request: {
-    title: "Forgot password?",
-    sub:   "Enter your email and we'll send a 6-digit code to reset it.",
-    icon:  KeyRound,
-  },
-  code: {
-    title: "Check your inbox",
-    sub:   "Enter the 6-digit code we sent to your email address.",
-    icon:  ShieldCheck,
-  },
-  reset: {
-    title: "New password",
-    sub:   "Choose a strong password to secure your account.",
-    icon:  Lock,
-  },
-  done: {
-    title: "All done!",
-    sub:   "Your password has been reset. You can now sign in.",
-    icon:  CheckCircle2,
-  },
+/* ─── CSS ────────────────────────────────────────────────────────────────── */
+const CSS = `
+  @keyframes spin    { to { transform: rotate(360deg); } }
+  @keyframes breathe { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scaleIn { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+  @keyframes errorIn { 0%{opacity:0;transform:translateY(-6px)} 60%{transform:translateY(2px)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes successIn { 0%{opacity:0;transform:scale(.88)} 60%{transform:scale(1.04)} 100%{opacity:1;transform:scale(1)} }
+  @keyframes stepIn  { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:translateX(0)} }
+
+  .fp-logo   { animation: scaleIn .5s  cubic-bezier(.22,1,.36,1) both; }
+  .fp-title  { animation: fadeUp  .55s cubic-bezier(.22,1,.36,1) .08s both; }
+  .fp-card   { animation: fadeUp  .6s  cubic-bezier(.22,1,.36,1) .14s both; }
+  .fp-footer { animation: fadeUp  .6s  cubic-bezier(.22,1,.36,1) .22s both; }
+  .fp-error  { animation: errorIn .3s ease both; }
+  .fp-step   { animation: stepIn  .3s cubic-bezier(.22,1,.36,1) both; }
+  .fp-done   { animation: successIn .45s cubic-bezier(.22,1,.36,1) both; }
+
+  .fp-btn {
+    position:relative; overflow:hidden;
+    transition: filter .18s ease, box-shadow .18s ease;
+  }
+  .fp-btn::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);
+    transform:translateX(-100%) skewX(-15deg); transition:none;
+  }
+  .fp-btn:not(:disabled):hover { filter:brightness(1.08); box-shadow:0 18px 36px -12px rgba(15,93,78,.50) !important; }
+  .fp-btn:not(:disabled):hover::after { transform:translateX(240%) skewX(-15deg); transition:transform .55s ease; }
+  .fp-btn:not(:disabled):active { filter:brightness(.96); box-shadow:0 4px 12px -6px rgba(15,93,78,.35) !important; }
+
+  .fp-link { position:relative; transition:color .15s ease; }
+  .fp-link::after { content:''; position:absolute; left:0; bottom:-1px; right:0; height:1px; background:#0F5D4E; transform:scaleX(0); transform-origin:left; transition:transform .2s ease; }
+  .fp-link:hover::after { transform:scaleX(1); }
+
+  .fp-otp-slot {
+    flex:1; height:48px; border-radius:10px;
+    border:1.5px solid rgba(15,30,28,.10);
+    background:#FAFCFB; font-size:18px; font-weight:700;
+    color:#0E1B19; text-align:center; outline:none;
+    transition:border-color .18s, box-shadow .18s, background .18s;
+    min-width:0;
+  }
+  .fp-otp-slot[data-active=true] {
+    border-color:rgba(31,142,120,.65);
+    box-shadow:0 0 0 3px rgba(31,142,120,.12),0 1px 3px rgba(0,0,0,.04);
+    background:#fff;
+  }
+`;
+
+/* ─── Input ──────────────────────────────────────────────────────────────── */
+function LightInput({
+  id, type = "text", value, onChange, placeholder, autoComplete,
+  leadingIcon, trailing, autoFocus, disabled, onKeyDown,
+}: {
+  id?: string; type?: string; value: string; disabled?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  placeholder?: string; autoComplete?: string;
+  leadingIcon?: React.ReactNode; trailing?: React.ReactNode; autoFocus?: boolean;
+}) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <div style={{
+      display:"flex", alignItems:"center", gap:10,
+      background: disabled ? "rgba(15,30,28,.03)" : focus ? "#fff" : "#FAFCFB",
+      border:`1.5px solid ${focus ? "rgba(31,142,120,.65)" : "rgba(15,30,28,.10)"}`,
+      boxShadow: focus ? "0 0 0 3px rgba(31,142,120,.12),0 1px 3px rgba(0,0,0,.04)" : "0 1px 2px rgba(0,0,0,.03)",
+      borderRadius:10, padding:"0 14px", height:46,
+      transition:"border-color .18s,box-shadow .18s,background .18s",
+      cursor: disabled ? "not-allowed" : "text",
+      opacity: disabled ? 0.6 : 1,
+    }}>
+      {leadingIcon && (
+        <span style={{ color: focus ? "rgba(31,142,120,.7)" : "rgba(15,30,28,.35)", display:"inline-flex", flexShrink:0, transition:"color .18s" }}>
+          {leadingIcon}
+        </span>
+      )}
+      <input
+        id={id} type={type} value={value} onChange={onChange}
+        placeholder={placeholder} autoComplete={autoComplete}
+        autoFocus={autoFocus} disabled={disabled} onKeyDown={onKeyDown}
+        onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+        style={{
+          flex:1, border:0, outline:"none", background:"transparent",
+          fontFamily:"inherit", fontSize:14, color:"#0E1B19", height:"100%",
+          letterSpacing:"-.01em", cursor: disabled ? "not-allowed" : "text",
+        }}
+      />
+      {trailing}
+    </div>
+  );
+}
+
+/* ─── Step dots ──────────────────────────────────────────────────────────── */
+const STEPS = ["request","code","reset","done"] as const;
+type Step = typeof STEPS[number];
+
+const STEP_META: Record<Step, { title: string; sub: string; icon: React.ElementType }> = {
+  request: { title:"Forgot password?",  sub:"Enter your email to receive a 6-digit reset code.", icon: KeyRound    },
+  code:    { title:"Check your inbox",  sub:"Enter the code we sent to your email address.",     icon: ShieldCheck  },
+  reset:   { title:"New password",      sub:"Choose a strong password to secure your account.",  icon: Lock         },
+  done:    { title:"All done!",         sub:"Your password has been reset. Redirecting…",        icon: CheckCircle2 },
 };
 
+/* ══════════════════════════════════════════════════════════════════════════ */
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [step, setStep]                         = useState<"request" | "code" | "reset" | "done">("request");
-  const [isLoading, setIsLoading]               = useState(false);
-  const [showPassword, setShowPassword]         = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError]                       = useState("");
-  const [email, setEmail]                       = useState("");
-  const [code, setCode]                         = useState("");
-  const [password, setPassword]                 = useState("");
-  const [confirmPassword, setConfirmPassword]   = useState("");
-  const [resendTimer, setResendTimer]           = useState(0);
-  const [isResending, setIsResending]           = useState(false);
+
+  const [step,                setStep               ] = useState<Step>("request");
+  const [isLoading,           setIsLoading          ] = useState(false);
+  const [isResending,         setIsResending        ] = useState(false);
+  const [showPassword,        setShowPassword       ] = useState(false);
+  const [showConfirm,         setShowConfirm        ] = useState(false);
+  const [error,               setError              ] = useState("");
+  const [errorKey,            setErrorKey           ] = useState(0);
+  const [email,               setEmail              ] = useState("");
+  const [code,                setCode               ] = useState("");
+  const [password,            setPassword           ] = useState("");
+  const [confirmPassword,     setConfirmPassword    ] = useState("");
+  const [resendTimer,         setResendTimer        ] = useState(0);
+
+  /* Animation clock */
+  const [t, setT] = useState(0);
+  const rafRef    = useRef<number>(0);
+  useEffect(() => {
+    const tick = (ts: number) => { setT(ts / 1000); rafRef.current = requestAnimationFrame(tick); };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (resendTimer > 0) {
-      interval = setInterval(() => setResendTimer((p) => p - 1), 1000);
-    }
-    return () => clearInterval(interval);
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer((p) => p - 1), 1000);
+    return () => clearTimeout(t);
   }, [resendTimer]);
+
+  const showError = (msg: string) => {
+    setErrorKey((k) => k + 1);
+    setError(msg);
+  };
 
   const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    setIsLoading(true); setError("");
     try {
       await auth.requestPasswordReset(email.trim().toLowerCase());
-      setStep("code");
-      setResendTimer(120);
+      setStep("code"); setResendTimer(120);
     } catch (err: any) {
-      const message = err?.message || "Failed to request reset code.";
-      setError(message.toLowerCase().includes("email not found")
-        ? "Email not registered. Please check and try again."
-        : message);
-    } finally {
-      setIsLoading(false);
-    }
+      const m = err?.message || "Failed to request reset code.";
+      showError(m.toLowerCase().includes("email not found")
+        ? "Email not registered. Please check and try again." : m);
+    } finally { setIsLoading(false); }
   };
 
   const handleResendCode = async () => {
-    setError("");
-    setIsResending(true);
+    setIsResending(true); setError("");
     try {
       await auth.requestPasswordReset(email.trim().toLowerCase());
-      setResendTimer(120);
-      setCode("");
+      setResendTimer(120); setCode("");
     } catch (err: any) {
-      setError(err?.message || "Failed to resend code.");
-    } finally {
-      setIsResending(false);
-    }
+      showError(err?.message || "Failed to resend code.");
+    } finally { setIsResending(false); }
   };
 
-  const handleContinueWithCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!code.trim() || code.trim().length !== 6) {
-      setError("Please enter the 6-digit code.");
-      return;
-    }
+  const handleVerifyCode = (e: React.FormEvent) => {
+    e.preventDefault(); setError("");
+    if (code.trim().length !== 6) { showError("Please enter the 6-digit code."); return; }
     setIsLoading(true);
     auth.verifyResetCode(email.trim().toLowerCase(), code.trim())
       .then(() => setStep("reset"))
-      .catch((err: any) => setError(err.message || "Invalid or expired code."))
+      .catch((err: any) => showError(err.message || "Invalid or expired code."))
       .finally(() => setIsLoading(false));
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (password.length < 6) { setError("Password must be at least 6 characters long."); return; }
-    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    e.preventDefault(); setError("");
+    if (password.length < 6) { showError("Password must be at least 6 characters."); return; }
+    if (password !== confirmPassword) { showError("Passwords do not match."); return; }
     setIsLoading(true);
     try {
       await auth.resetPasswordWithCode(email.trim().toLowerCase(), code.trim(), password);
       setStep("done");
       setTimeout(() => router.push("/login"), 2000);
     } catch (err: any) {
-      setError(err.message || "Failed to reset password.");
-    } finally {
-      setIsLoading(false);
-    }
+      showError(err.message || "Failed to reset password.");
+    } finally { setIsLoading(false); }
   };
 
-  const meta = STEP_META[step];
+  const wavePath = useCallback((k: number) => {
+    const N = 80, W = 440, H = 120;
+    const pts: string[] = [];
+    for (let i = 0; i <= N; i++) {
+      const x = (i / N) * W;
+      const y = H / 2 + Math.sin(i * 0.18 + t * (1 + k * 0.3) + k) * (10 + k * 4);
+      pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    return pts.join(" ");
+  }, [t]);
+
+  const meta    = STEP_META[step];
   const StepIcon = meta.icon;
 
-  const inputCls = "h-11 text-[13.5px] bg-muted/50 border-border rounded-xl text-foreground placeholder:text-muted-foreground/40 shadow-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 focus-visible:bg-background transition-all duration-200";
-
+  /* ─────────────────────────────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden p-4 sm:p-8">
+    <div style={{
+      height:"100vh", width:"100%",
+      position:"relative", overflow:"hidden",
+      background:"radial-gradient(ellipse at 50% 0%,#EEF7F3 0%,#F4F8F5 50%,#F9FAF9 100%)",
+      color:"#0E1B19",
+      fontFamily:"var(--font-inter,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)",
+      display:"flex", flexDirection:"column", alignItems:"center",
+      justifyContent:"space-between",
+      padding:"32px 24px 24px", gap:16,
+    }}>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
 
-      {/* ── Background layers - Aircall Green/Teal Theme ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-900" />
-      <div className="absolute inset-0 bg-gradient-to-tr from-emerald-600/25 via-teal-500/15 to-emerald-400/20" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-900/35 to-slate-950/75" />
-      <div className="absolute -top-1/3 -right-1/3 w-[1000px] h-[1000px] rounded-full bg-gradient-to-bl from-emerald-500/20 via-teal-400/10 to-transparent blur-[150px]" />
-      <div className="absolute -bottom-1/3 -left-1/3 w-[900px] h-[900px] rounded-full bg-gradient-to-tr from-teal-600/18 via-emerald-600/12 to-transparent blur-[140px]" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-b from-emerald-400/15 to-transparent blur-[110px]" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.07)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_30%,#000_40%,transparent_100%)]" />
-      <div className="absolute -top-40 -right-20 w-[800px] h-[1.5px] bg-gradient-to-l from-emerald-400/35 via-teal-400/15 to-transparent rotate-[25deg]" />
-      <div className="absolute -bottom-20 -left-20 w-[700px] h-[1.5px] bg-gradient-to-r from-teal-500/25 via-emerald-400/10 to-transparent rotate-[30deg]" />
-      <div className="absolute inset-0 pointer-events-none">
-        {[
-          { top: "15%", left: "10%",  size: "w-1 h-1",     color: "bg-emerald-400/55", delay: "0ms"    },
-          { top: "25%", left: "20%",  size: "w-1.5 h-1.5", color: "bg-teal-400/45",    delay: "1000ms" },
-          { top: "40%", left: "85%",  size: "w-1 h-1",     color: "bg-emerald-500/50", delay: "700ms"  },
-          { top: "60%", left: "15%",  size: "w-1.5 h-1.5", color: "bg-teal-300/40",    delay: "1500ms" },
-          { top: "70%", left: "75%",  size: "w-1 h-1",     color: "bg-emerald-500/45", delay: "300ms"  },
-        ].map((p, i) => (
-          <div key={i} className={`absolute ${p.size} ${p.color} rounded-full blur-[0.5px] animate-pulse`}
-            style={{ top: p.top, left: p.left, animationDelay: p.delay, animationDuration: "3s" }} />
+      {/* Aurora top */}
+      <div aria-hidden style={{ position:"absolute", left:"50%", top:"-12%", width:860, height:560, transform:"translateX(-50%)", background:"radial-gradient(ellipse at center,rgba(46,169,142,.18) 0%,rgba(46,169,142,.05) 40%,transparent 70%)", filter:"blur(24px)", pointerEvents:"none" }}/>
+      {/* Bottom glow */}
+      <div aria-hidden style={{ position:"absolute", left:"50%", bottom:"-20%", width:1000, height:440, transform:"translateX(-50%)", background:"radial-gradient(ellipse at center,rgba(15,93,78,.08) 0%,rgba(15,93,78,.02) 45%,transparent 70%)", filter:"blur(32px)", pointerEvents:"none" }}/>
+      {/* Top line */}
+      <div aria-hidden style={{ position:"absolute", left:0, right:0, top:0, height:1, background:"linear-gradient(90deg,transparent,rgba(46,169,142,.5) 50%,transparent)" }}/>
+
+      {/* Signal waves */}
+      <svg viewBox="0 0 440 120" preserveAspectRatio="xMidYMid meet" aria-hidden style={{ position:"absolute", top:66, left:"50%", transform:"translateX(-50%)", width:"min(440px,100%)", height:120, opacity:.45, pointerEvents:"none" }}>
+        <defs>
+          <linearGradient id="lw" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="rgba(46,169,142,0)"/>
+            <stop offset="0.5" stopColor="rgba(46,169,142,0.6)"/>
+            <stop offset="1" stopColor="rgba(46,169,142,0)"/>
+          </linearGradient>
+        </defs>
+        {[0,1,2].map((k) => (
+          <path key={k} d={wavePath(k)} stroke="url(#lw)" strokeWidth={1+k*.4} fill="none" opacity={.55-k*.12}/>
         ))}
+      </svg>
+
+      {/* ════ LOGO ════ */}
+      <div className="fp-logo" style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:12, paddingTop:0 }}>
+        <div style={{ width:80, height:80, borderRadius:20, background:"linear-gradient(145deg,#0D1A16 0%,#091310 100%)", border:"1px solid rgba(46,169,142,0.20)", boxShadow:"0 0 0 5px rgba(46,169,142,0.06),0 14px 36px -10px rgba(15,93,78,.38)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/LOGO CQ-12.png" alt="Center Quest" style={{ width:56, height:56, objectFit:"contain", filter:"brightness(0) invert(1)" }}/>
+        </div>
+        <div className="fp-title" style={{ textAlign:"center" }}>
+          <h1 style={{ margin:0, fontSize:28, letterSpacing:-.7, fontWeight:800, background:"linear-gradient(160deg,#0B1714 0%,#1F4038 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
+            Center Quest
+          </h1>
+          <p style={{ margin:"6px 0 0", fontSize:13.5, color:"rgba(15,30,28,.50)", letterSpacing:.05 }}>
+            Account recovery
+          </p>
+        </div>
       </div>
 
-      {/* ── Card ── */}
-      <div className="relative z-10 w-full max-w-4xl rounded-[2rem] border border-slate-200/50 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.35)] overflow-hidden flex flex-col md:flex-row min-h-[520px]">
+      {/* ════ FORM CARD ════ */}
+      <div className="fp-card" style={{
+        position:"relative", zIndex:10, width:"100%", maxWidth:432,
+        background:"rgba(255,255,255,0.82)",
+        border:"1px solid rgba(15,30,28,0.07)",
+        borderRadius:20, padding:"28px 28px 24px",
+        backdropFilter:"blur(16px)",
+        boxShadow:"0 2px 4px rgba(0,0,0,.04),0 8px 24px -8px rgba(15,30,28,.10),0 32px 64px -24px rgba(15,30,28,.14),inset 0 1px 0 rgba(255,255,255,.9)",
+        display:"flex", flexDirection:"column", gap:14,
+      }}>
+        {/* Top edge accent */}
+        <div aria-hidden style={{ position:"absolute", top:0, left:"20%", right:"20%", height:1, background:"linear-gradient(90deg,transparent,rgba(46,169,142,.5),transparent)", borderRadius:"0 0 4px 4px" }}/>
 
-        {/* LEFT - Aircall Green Gradient */}
-        <div className="w-full md:w-[45%] relative p-10 lg:p-12 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-700 via-teal-800 to-slate-900">
-          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20 bg-gradient-to-br from-white/20 to-transparent blur-[40px]" />
-          <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full opacity-15 bg-gradient-to-tl from-emerald-300/20 to-transparent blur-[48px]" />
-          <div className="absolute top-1/2 left-1/3 w-40 h-40 rounded-full opacity-10 bg-gradient-to-r from-emerald-300/30 to-teal-600/20 blur-[32px]" />
-          <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)", backgroundSize: "22px 22px" }} />
-          <svg className="absolute inset-0 w-full h-full opacity-[0.06]" viewBox="0 0 400 560" fill="none" preserveAspectRatio="xMidYMid slice">
-            <ellipse cx="200" cy="560" rx="340" ry="260" stroke="white" strokeWidth="1.5"/>
-            <ellipse cx="200" cy="560" rx="280" ry="200" stroke="white" strokeWidth="1.5"/>
-            <ellipse cx="200" cy="560" rx="220" ry="145" stroke="white" strokeWidth="1.5"/>
-            <ellipse cx="200" cy="560" rx="160" ry="95"  stroke="white" strokeWidth="1.5"/>
-            <ellipse cx="340" cy="-20"  rx="220" ry="170" stroke="white" strokeWidth="1"/>
-            <ellipse cx="340" cy="-20"  rx="160" ry="120" stroke="white" strokeWidth="1"/>
-          </svg>
-
-          {/* Logo */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border bg-white/10 border-white/20">
-              <div className="relative w-full h-full">
-                <Image src="/images/LOGO CQ-12.png" alt="Center Quest" fill sizes="40px" className="object-contain scale-125" priority />
-              </div>
+        {/* Step indicator */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:32, height:32, borderRadius:10, background:"rgba(31,142,120,.10)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
+              <StepIcon size={15} style={{ color:"#1F8E78" }}/>
             </div>
-            <div className="leading-tight">
-              <p className="text-white text-sm font-bold tracking-tight">Center Quest</p>
-              <p className="text-[11px] text-white/45">Tickets system</p>
+            <div>
+              <h2 style={{ margin:0, fontSize:16, fontWeight:700, color:"#0B1714", letterSpacing:-.3 }}>{meta.title}</h2>
+              <p style={{ margin:0, fontSize:11.5, color:"rgba(15,30,28,.45)", marginTop:1 }}>{meta.sub}</p>
             </div>
           </div>
-
-          {/* Step-aware content */}
-          <div className="relative z-10 space-y-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 border border-white/20 mb-2">
-              <StepIcon className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-white leading-tight tracking-tight">
-              {meta.title}
-            </h2>
-            <p className="text-sm leading-relaxed max-w-[240px] text-white/60">
-              {meta.sub}
-            </p>
-            {/* Step dots */}
-            <div className="flex items-center gap-2 pt-2">
-              {(["request","code","reset","done"] as const).map((s) => (
-                <div key={s} className="h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: s === step ? "24px" : "6px", background: s === step ? "white" : "rgba(255,255,255,0.25)" }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom badge */}
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 transition-all duration-300 hover:bg-white/15">
-              <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-widest">Account Recovery</span>
-            </div>
+          {/* Step dots */}
+          <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+            {STEPS.filter(s => s !== "done").map((s) => (
+              <div key={s} style={{
+                height:5, borderRadius:99, transition:"all .3s ease",
+                width: s === step ? 18 : 5,
+                background: s === step ? "#1F8E78" : STEPS.indexOf(s) < STEPS.indexOf(step) ? "rgba(31,142,120,.4)" : "rgba(15,30,28,.12)",
+              }}/>
+            ))}
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div className="w-full md:w-[55%] bg-card p-10 lg:p-14 flex flex-col justify-center">
+        <div style={{ height:1, background:"rgba(15,30,28,.06)" }}/>
 
-          {/* Mobile logo */}
-          <div className="flex md:hidden justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted border border-border relative">
-                <Image src="/images/LOGO CQ-12.png" alt="Center Quest" fill sizes="32px" className="object-contain scale-125" priority />
-              </div>
-              <span className="text-foreground text-sm font-bold">Center Quest</span>
+        {/* ── STEP: request ── */}
+        {step === "request" && (
+          <form key="request" className="fp-step" onSubmit={handleRequestCode} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <label htmlFor="fp-email" style={{ fontSize:12, fontWeight:600, color:"rgba(15,30,28,.6)", letterSpacing:".06em", textTransform:"uppercase" }}>
+                Email address
+              </label>
+              <LightInput
+                id="fp-email" type="email" autoComplete="email" autoFocus
+                value={email} disabled={isLoading}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@ccquest.com"
+                leadingIcon={<Mail size={14}/>}
+              />
             </div>
+
+            {error && <ErrorBanner key={errorKey} message={error} onDismiss={() => setError("")}/>}
+
+            <button type="submit" disabled={isLoading || !email.trim()} className="fp-btn" style={btnStyle(isLoading || !email.trim())}>
+              {isLoading
+                ? <><Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/><span>Sending…</span></>
+                : <><span>Send Code</span><ArrowRight size={14}/></>}
+            </button>
+
+            <p style={{ textAlign:"center", fontSize:12.5, color:"rgba(15,30,28,.5)", margin:0 }}>
+              Remembered it?{" "}
+              <Link href="/login" className="fp-link" style={{ color:"#0F5D4E", textDecoration:"none", fontWeight:600 }}>
+                Sign in
+              </Link>
+            </p>
+          </form>
+        )}
+
+        {/* ── STEP: code ── */}
+        {step === "code" && (
+          <form key="code" className="fp-step" onSubmit={handleVerifyCode} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <p style={{ margin:0, fontSize:13, color:"rgba(15,30,28,.55)" }}>
+              Code sent to{" "}
+              <strong style={{ color:"#0B1714", fontWeight:600 }}>{email}</strong>
+            </p>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"rgba(15,30,28,.6)", letterSpacing:".06em", textTransform:"uppercase" }}>
+                Verification Code
+              </label>
+              <InputOTP value={code} onChange={setCode} maxLength={6} inputMode="numeric"
+                containerClassName="w-full gap-2">
+                <InputOTPGroup className="w-full gap-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i}
+                      className="fp-otp-slot flex-1 h-12 rounded-[10px] border-[1.5px] border-[rgba(15,30,28,0.10)] bg-[#FAFCFB] text-[18px] font-bold text-[#0E1B19] text-center outline-none transition-all duration-200 min-w-0 focus:border-[rgba(31,142,120,0.65)] focus:shadow-[0_0_0_3px_rgba(31,142,120,0.12)]"
+                    />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+
+            {error && <ErrorBanner key={errorKey} message={error} onDismiss={() => setError("")}/>}
+
+            <button type="submit" disabled={isLoading || code.length !== 6} className="fp-btn" style={btnStyle(isLoading || code.length !== 6)}>
+              {isLoading
+                ? <><Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/><span>Verifying…</span></>
+                : <><span>Continue</span><ArrowRight size={14}/></>}
+            </button>
+
+            <div style={{ textAlign:"center" }}>
+              {resendTimer > 0 ? (
+                <p style={{ fontSize:12, color:"rgba(15,30,28,.5)", margin:0 }}>
+                  Resend in{" "}
+                  <strong style={{ color:"#0B1714", fontVariantNumeric:"tabular-nums" }}>
+                    {Math.floor(resendTimer/60)}:{(resendTimer%60).toString().padStart(2,"0")}
+                  </strong>
+                </p>
+              ) : (
+                <button type="button" onClick={handleResendCode} disabled={isResending}
+                  style={{ background:"none", border:0, cursor:"pointer", fontSize:12.5, color:"#0F5D4E", fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, padding:0, fontFamily:"inherit" }}>
+                  {isResending ? <Loader2 size={12} style={{ animation:"spin 1s linear infinite" }}/> : <RefreshCw size={12}/>}
+                  Resend Code
+                </button>
+              )}
+            </div>
+          </form>
+        )}
+
+        {/* ── STEP: reset ── */}
+        {step === "reset" && (
+          <form key="reset" className="fp-step" onSubmit={handleResetPassword} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <label htmlFor="fp-password" style={{ fontSize:12, fontWeight:600, color:"rgba(15,30,28,.6)", letterSpacing:".06em", textTransform:"uppercase" }}>
+                New Password
+              </label>
+              <LightInput
+                id="fp-password" type={showPassword ? "text" : "password"}
+                autoComplete="new-password" autoFocus
+                value={password} disabled={isLoading}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                leadingIcon={<Lock size={14}/>}
+                trailing={
+                  <button type="button" onClick={() => setShowPassword(v => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    style={{ background:"transparent", border:0, color:"rgba(15,30,28,.35)", cursor:"pointer", padding:4, display:"inline-flex", flexShrink:0, transition:"color .15s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.65)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.35)")}
+                  >
+                    {showPassword ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                }
+              />
+            </div>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <label htmlFor="fp-confirm" style={{ fontSize:12, fontWeight:600, color:"rgba(15,30,28,.6)", letterSpacing:".06em", textTransform:"uppercase" }}>
+                Confirm Password
+              </label>
+              <LightInput
+                id="fp-confirm" type={showConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                value={confirmPassword} disabled={isLoading}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                leadingIcon={<Lock size={14}/>}
+                trailing={
+                  <button type="button" onClick={() => setShowConfirm(v => !v)}
+                    aria-label={showConfirm ? "Hide password" : "Show password"}
+                    style={{ background:"transparent", border:0, color:"rgba(15,30,28,.35)", cursor:"pointer", padding:4, display:"inline-flex", flexShrink:0, transition:"color .15s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.65)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.35)")}
+                  >
+                    {showConfirm ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                }
+              />
+            </div>
+
+            {error && <ErrorBanner key={errorKey} message={error} onDismiss={() => setError("")}/>}
+
+            <button type="submit" disabled={isLoading || !password || !confirmPassword} className="fp-btn" style={btnStyle(isLoading || !password || !confirmPassword)}>
+              {isLoading
+                ? <><Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/><span>Resetting…</span></>
+                : <><span>Reset Password</span><ArrowRight size={14}/></>}
+            </button>
+          </form>
+        )}
+
+        {/* ── STEP: done ── */}
+        {step === "done" && (
+          <div key="done" className="fp-done" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16, padding:"8px 0 4px", textAlign:"center" }}>
+            <div style={{ width:56, height:56, borderRadius:"50%", background:"rgba(31,142,120,.10)", border:"1px solid rgba(31,142,120,.20)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <CheckCircle2 size={28} style={{ color:"#1F8E78" }}/>
+            </div>
+            <div>
+              <p style={{ margin:0, fontSize:16, fontWeight:700, color:"#0B1714" }}>Password updated!</p>
+              <p style={{ margin:"5px 0 0", fontSize:13, color:"rgba(15,30,28,.45)" }}>Redirecting you to sign in…</p>
+            </div>
+            <button type="button" onClick={() => router.push("/login")} className="fp-btn" style={{ ...btnStyle(false), width:"100%" }}>
+              <span>Go to Sign In</span><ArrowRight size={14}/>
+            </button>
           </div>
+        )}
+      </div>
 
-          {/* ── STEP: request ── */}
-          {step === "request" && (
-            <form onSubmit={handleRequestCode} className="space-y-5">
-              <h1 className="text-2xl font-bold text-foreground mb-1 tracking-tight">Reset password</h1>
-              <p className="text-[13px] text-muted-foreground mb-6">We'll email you a 6-digit code to reset your password.</p>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Work Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                  <Input id="email" type="email" placeholder="Email Address"
-                    className={`pl-10 ${inputCls}`} required
-                    value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-              </div>
-
-              {error && <ErrorBox message={error} />}
-
-              <button type="submit" disabled={isLoading}
-                className="w-full h-11 mt-2 rounded-full text-white text-[13.5px] font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 bg-emerald-600 hover:bg-emerald-700">
-                {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : <>Send Code <ArrowRight className="h-4 w-4" /></>}
-              </button>
-
-              <p className="text-[12px] text-center text-muted-foreground pt-1">
-                Remembered it?{" "}
-                <Link href="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors">Sign In</Link>
-              </p>
-            </form>
-          )}
-
-          {/* ── STEP: code ── */}
-          {step === "code" && (
-            <form onSubmit={handleContinueWithCode} className="space-y-5">
-              <h1 className="text-2xl font-bold text-foreground mb-1 tracking-tight">Enter code</h1>
-              <p className="text-[13px] text-muted-foreground mb-4">
-                Code sent to <span className="text-emerald-600 font-semibold">{email}</span>
-              </p>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Verification Code</Label>
-                <InputOTP value={code} onChange={setCode} maxLength={6} inputMode="numeric" containerClassName="w-full gap-2.5">
-                  <InputOTPGroup className="w-full gap-2.5">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <InputOTPSlot key={i} index={i}
-                        className="flex-1 h-12 rounded-xl border-border bg-muted/50 text-foreground text-lg font-bold focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 min-w-0" />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              {error && <ErrorBox message={error} />}
-
-              <button type="submit" disabled={isLoading}
-                className="w-full h-11 rounded-full text-white text-[13.5px] font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 bg-emerald-600 hover:bg-emerald-700">
-                {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Verifying…</> : <>Continue <ArrowRight className="h-4 w-4" /></>}
-              </button>
-
-              <div className="text-center">
-                {resendTimer > 0 ? (
-                  <p className="text-[12px] text-muted-foreground">
-                    Resend in <span className="font-bold tabular-nums text-foreground">
-                      {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2,"0")}
-                    </span>
-                  </p>
-                ) : (
-                  <button type="button" onClick={handleResendCode} disabled={isResending}
-                    className="text-[12px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1.5 mx-auto transition-colors">
-                    {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    Resend Code
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-
-          {/* ── STEP: reset ── */}
-          {step === "reset" && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <h1 className="text-2xl font-bold text-foreground mb-1 tracking-tight">New password</h1>
-              <p className="text-[13px] text-muted-foreground mb-4">Must be at least 6 characters.</p>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">New Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-                    className={`pl-10 pr-10 ${inputCls}`} required
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                  <Input id="confirm" type={showConfirmPassword ? "text" : "password"} placeholder="••••••••"
-                    className={`pl-10 pr-10 ${inputCls}`} required
-                    value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                  <button type="button" tabIndex={-1} onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {error && <ErrorBox message={error} />}
-
-              <button type="submit" disabled={isLoading}
-                className="w-full h-11 mt-2 rounded-full text-white text-[13.5px] font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 bg-emerald-600 hover:bg-emerald-700">
-                {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Resetting…</> : <>Reset Password <ArrowRight className="h-4 w-4" /></>}
-              </button>
-            </form>
-          )}
-
-          {/* ── STEP: done ── */}
-          {step === "done" && (
-            <div className="space-y-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">Password updated!</h1>
-                <p className="text-[13px] text-muted-foreground mt-2">Redirecting you to sign in…</p>
-              </div>
-              <button type="button" onClick={() => router.push("/login")}
-                className="w-full h-11 rounded-full text-white text-[13.5px] font-semibold flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 bg-emerald-600 hover:bg-emerald-700">
-                Go to Sign In <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          <p className="text-[10px] text-muted-foreground text-center mt-8 leading-relaxed">
-            System restricted to CCQUEST and RIG HUT authorized personnel only.
-          </p>
+      {/* ════ FOOTER ════ */}
+      <div className="fp-footer" style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+        <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"10px 18px", borderRadius:12, background:"rgba(255,255,255,0.72)", border:"1px solid rgba(15,30,28,0.07)", boxShadow:"0 1px 3px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.9)", fontSize:12.5, color:"rgba(15,30,28,.65)" }}>
+          <ShieldCheck size={13} style={{ color:"#1F8E78", flexShrink:0 }}/>
+          Restricted to{" "}
+          <strong style={{ color:"#0B1714", fontWeight:700 }}>CCQUEST</strong>
+          {" "}&amp;{" "}
+          <strong style={{ color:"#0B1714", fontWeight:700 }}>RIG HUT</strong>
+          {" "}personnel only.
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:16, fontSize:11, color:"rgba(15,30,28,.38)", flexWrap:"wrap", justifyContent:"center" }}>
+          <span>Powered by Mindware Labs</span>
         </div>
       </div>
     </div>
   );
 }
 
-function ErrorBox({ message }: { message: string }) {
+/* ─── Shared helpers ─────────────────────────────────────────────────────── */
+function btnStyle(disabled: boolean): React.CSSProperties {
+  return {
+    height:46, borderRadius:10, border:0,
+    background:"linear-gradient(160deg,#22957D 0%,#0F5D4E 100%)",
+    color:"#fff", fontSize:14, fontWeight:600, letterSpacing:-.1,
+    cursor: disabled ? "not-allowed" : "pointer",
+    display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+    boxShadow:"0 10px 28px -8px rgba(15,93,78,.40),inset 0 1px 0 rgba(255,255,255,.16)",
+    opacity: disabled ? 0.5 : 1,
+    fontFamily:"inherit",
+    transition:"filter .18s,box-shadow .18s,opacity .15s",
+    width:"100%",
+  };
+}
+
+function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (
-    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border bg-red-50 border-red-200 text-[13px]">
-      <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center shrink-0 mt-0.5">
-        <span className="text-white text-[10px] font-bold">!</span>
-      </div>
-      <p className="text-red-700">{message}</p>
+    <div className="fp-error" style={{
+      display:"flex", alignItems:"flex-start", gap:10,
+      padding:"11px 13px", borderRadius:10, fontSize:13,
+      border:"1px solid rgba(200,74,31,.28)",
+      background:"rgba(200,74,31,.06)",
+      color:"#0E1B19", position:"relative",
+    }}>
+      <svg style={{ flexShrink:0, marginTop:1, color:"#C84A1F" }}
+        width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p style={{ margin:0, flex:1 }}>{message}</p>
+      <button type="button" onClick={onDismiss} aria-label="Dismiss error"
+        style={{ background:"none", border:0, cursor:"pointer", padding:2, color:"rgba(15,30,28,.35)", display:"flex", flexShrink:0, marginTop:-1, transition:"color .15s" }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.7)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(15,30,28,.35)")}
+      >
+        <X size={13}/>
+      </button>
     </div>
   );
 }
