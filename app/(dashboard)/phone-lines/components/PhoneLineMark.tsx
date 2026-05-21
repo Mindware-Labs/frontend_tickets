@@ -1,0 +1,26 @@
+import { Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function PhoneLineMark({
+  className,
+  iconClassName,
+}: {
+  className?: string;
+  iconClassName?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68]",
+        className,
+      )}
+      aria-hidden
+    >
+      <Phone
+        className={cn("h-4 w-4", iconClassName)}
+        strokeWidth={2}
+        aria-hidden
+      />
+    </div>
+  );
+}

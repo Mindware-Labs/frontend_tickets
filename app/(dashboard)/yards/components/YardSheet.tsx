@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetClose,
@@ -17,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  ArrowLeft,
   Building2,
   Check,
   Clock,
@@ -40,11 +42,18 @@ import { useRole } from "@/components/providers/role-provider";
 import { cn } from "@/lib/utils";
 import type { Yard } from "../types";
 
+interface YardSheetReturnLandlord {
+  id: number;
+  name: string;
+}
+
 interface YardSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   yard: Yard | null;
   onEdit?: (yard: Yard) => void;
+  /** When opened from a landlord, show back navigation to restore that context. */
+  returnLandlord?: YardSheetReturnLandlord | null;
 }
 
 function hasText(value?: string | null): value is string {
@@ -434,6 +443,87 @@ function SheetAction({
   );
 }
 
+function ReturnLandlordRail({
+  landlord,
+  onBack,
+}: {
+  landlord: YardSheetReturnLandlord;
+  onBack: () => void;
+}) {
+  const railSurface =
+    "border border-r-0 border-emerald-700/20 bg-gradient-to-l from-[#00a67a] via-[#008f68] to-[#007a5a] text-white";
+
+  const expandLeft =
+    "max-w-0 opacity-0 " +
+    "group-hover/landlord-back:max-w-[min(280px,calc(100vw-6rem))] group-hover/landlord-back:opacity-100 " +
+    "group-focus-visible/landlord-back:max-w-[min(280px,calc(100vw-6rem))] group-focus-visible/landlord-back:opacity-100 " +
+    "group-active/landlord-back:max-w-[min(280px,calc(100vw-6rem))] group-active/landlord-back:opacity-100";
+
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      aria-label={`Back to ${landlord.name}`}
+      title={`Back to ${landlord.name}`}
+      className={cn(
+        "group/landlord-back overflow-visible",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/45 focus-visible:ring-offset-2",
+        "animate-in slide-in-from-left-8 fade-in duration-500",
+      )}
+    >
+      <span
+        className={cn(
+          "relative inline-flex h-12 items-center overflow-visible",
+          "drop-shadow-[0_10px_28px_rgba(0,111,80,0.38)]",
+          "transition-[filter] duration-300",
+          "group-hover/landlord-back:drop-shadow-[0_12px_32px_rgba(0,111,80,0.45)]",
+          "group-active/landlord-back:drop-shadow-[0_12px_32px_rgba(0,111,80,0.45)]",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute right-full top-0 flex h-12 items-center gap-3 overflow-hidden",
+            "rounded-l-[22px] border-r-0 pl-4 pr-4 -mr-px",
+            railSurface,
+            "origin-right transition-[max-width,opacity] duration-300 ease-out",
+            expandLeft,
+            "group-hover/landlord-back:rounded-r-none group-focus-visible/landlord-back:rounded-r-none group-active/landlord-back:rounded-r-none",
+            "before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-10 before:rounded-l-[22px] before:bg-gradient-to-r before:from-white/12 before:to-transparent",
+          )}
+        >
+          <ArrowLeft
+            className="relative z-[1] h-4 w-4 shrink-0 text-white/95"
+            strokeWidth={2.5}
+          />
+          <span className="relative z-[1] flex min-w-0 flex-col items-start justify-center gap-0.5 text-left">
+            <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-50/90">
+              Back to landlord
+            </span>
+            <span className="truncate whitespace-nowrap text-[14px] font-bold leading-tight">
+              {landlord.name}
+            </span>
+          </span>
+        </span>
+
+        <span
+          className={cn(
+            "relative z-10 flex h-12 w-12 shrink-0 items-center justify-center",
+            "rounded-l-[22px] border-r-0",
+            railSurface,
+            "transition-[border-radius] duration-300",
+            "group-hover/landlord-back:rounded-l-none group-hover/landlord-back:border-l group-hover/landlord-back:border-white/20",
+            "group-focus-visible/landlord-back:rounded-l-none group-active/landlord-back:rounded-l-none group-active/landlord-back:border-l group-active/landlord-back:border-white/20",
+          )}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/25">
+            <User className="h-5 w-5" strokeWidth={2.5} />
+          </span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function FloatingNotesPopover({ notes }: { notes?: string | null }) {
   const cleanNotes = notes?.trim();
 
@@ -481,7 +571,9 @@ export function YardSheet({
   onOpenChange,
   yard,
   onEdit,
+  returnLandlord,
 }: YardSheetProps) {
+  const router = useRouter();
   const { role } = useRole();
   const isAgent = role?.toString().toLowerCase() === "agent";
   const {
@@ -597,7 +689,7 @@ export function YardSheet({
             </SheetHeader>
             <FloatingNotesPopover notes={data.notes} />
 
-            <div className="relative shrink-0 border-b border-slate-200/70 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <div className="relative shrink-0 overflow-visible bg-white dark:bg-slate-950">
               <SheetClose
                 aria-label="Close yard details"
                 className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-slate-900 dark:hover:text-slate-200"
@@ -605,7 +697,12 @@ export function YardSheet({
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
 
-              <div className="px-5 pb-4 pt-5 sm:px-6">
+              <div
+                className={cn(
+                  "px-5 pt-5 sm:px-6",
+                  returnLandlord ? "pb-6" : "pb-4",
+                )}
+              >
                 <div className="flex items-start gap-4 pr-12">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68] shadow-sm dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
                     <Building2 className="h-6 w-6" strokeWidth={1.7} />
@@ -660,8 +757,34 @@ export function YardSheet({
 
             </div>
 
+            <div
+              className={cn(
+                "relative z-30 h-0 shrink-0 overflow-visible border-t border-slate-200/70 dark:border-slate-800",
+                returnLandlord ? "pointer-events-none" : "",
+              )}
+            >
+              {returnLandlord ? (
+                <div className="pointer-events-auto absolute top-0 left-0 -translate-y-1/2 sm:-translate-x-10">
+                  <ReturnLandlordRail
+                    landlord={returnLandlord}
+                    onBack={() => {
+                      onOpenChange(false);
+                      router.push(
+                        `/landlords?landlordId=${returnLandlord.id}`,
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
+              <div
+                className={cn(
+                  "space-y-6 px-5 pb-8 sm:px-6",
+                  returnLandlord ? "pt-6 pb-5" : "py-5",
+                )}
+              >
                 <div>
                   <SectionLabel>Property & Contact</SectionLabel>
                   <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">

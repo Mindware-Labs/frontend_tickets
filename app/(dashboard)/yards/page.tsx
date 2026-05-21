@@ -72,7 +72,9 @@ export default function YardsPage() {
   const isAgent = role?.toString().toLowerCase() === "agent";
   const canManage = !isAgent;
   const yardIdParam = searchParams?.get("yardId");
+  const landlordIdParam = searchParams?.get("landlordId");
   const yardIdFilter = yardIdParam ? Number(yardIdParam) : null;
+  const returnLandlordId = landlordIdParam ? Number(landlordIdParam) : null;
 
   const [yards, setYards] = useState<Yard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,14 +135,34 @@ export default function YardsPage() {
     setShowYardSheet(open);
     if (!open) {
       setSelectedYard(null);
-      if (yardIdParam) {
+      if (yardIdParam || landlordIdParam) {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("yardId");
+        params.delete("landlordId");
         const qs = params.toString();
         router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
       }
     }
   };
+
+  const returnLandlord = useMemo(() => {
+    if (!returnLandlordId || Number.isNaN(returnLandlordId)) return null;
+
+    const yard =
+      selectedYard ??
+      (yardIdFilter ? yards.find((y) => y.id === yardIdFilter) : undefined);
+
+    if (yard?.landlord?.id === returnLandlordId && yard.landlord.name) {
+      return { id: returnLandlordId, name: yard.landlord.name };
+    }
+
+    const match = yards.find((y) => y.landlord?.id === returnLandlordId);
+    if (match?.landlord?.name) {
+      return { id: returnLandlordId, name: match.landlord.name };
+    }
+
+    return { id: returnLandlordId, name: `Landlord #${returnLandlordId}` };
+  }, [returnLandlordId, selectedYard, yardIdFilter, yards]);
 
   const viewCounts = useMemo(() => {
     const base = yards.filter((yard) => {
@@ -557,6 +579,7 @@ export default function YardsPage() {
         onOpenChange={handleYardSheetOpenChange}
         yard={selectedYard}
         onEdit={canManage ? handleEdit : undefined}
+        returnLandlord={returnLandlord}
       />
 
     </div>

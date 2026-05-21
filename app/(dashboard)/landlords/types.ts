@@ -3,8 +3,12 @@ export interface YardOption {
   name: string;
   commonName?: string;
   propertyAddress?: string;
+  contactInfo?: string;
+  yardLink?: string;
   yardType?: "SAAS" | "FULL_SERVICE";
   isActive?: boolean;
+  ticketCount?: number;
+  totalTickets?: number;
   landlord?: { id: number; name: string };
 }
 
