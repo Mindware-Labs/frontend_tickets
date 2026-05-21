@@ -21,8 +21,8 @@ export interface Customer {
   campaigns?: CampaignOption[];
   createdAt: string;
   ticketCount?: number;
+  callCount?: number;
   lastContactAt?: string;
-  tags?: string[];
   yard?: { id: number; name: string };
   pinnedNote?: string;
   totalCalls?: number;

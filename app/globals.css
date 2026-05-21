@@ -156,9 +156,7 @@
   }
 
   body[data-scroll-locked] {
-    overflow-y: scroll !important;
-    margin-right: 0 !important;
-    padding-right: 0 !important;
+    overflow: hidden !important;
   }
 
   body {
@@ -217,6 +215,19 @@
 
 .text-balance {
   text-wrap: balance;
+}
+
+/* Entity list tables — fill viewport; avoid height jump when filters reduce rows */
+.entity-table-root {
+  @apply flex h-full min-h-0 flex-1 flex-col gap-3;
+}
+
+.entity-table-frame {
+  @apply flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/80 shadow-sm;
+}
+
+.entity-table-scroll {
+  @apply min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&_[data-slot=table-container]]:overflow-x-clip;
 }
 
 /* Custom Scrollbar */

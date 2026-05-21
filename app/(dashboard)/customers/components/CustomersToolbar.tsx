@@ -1,125 +1,116 @@
-// components/customers/CustomersToolbar.tsx
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  RefreshCw, 
-  Search, 
-  ListFilter,
-  Users,
-  X
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Search,
+  ChevronDown,
+  Megaphone,
+  MousePointerClick,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { CampaignOption } from "../types";
+
+export type CustomersFilterState = {
+  campaign: string;
+};
 
 interface CustomersToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
-  onRefresh: () => void;
-  onCreate?: () => void;
-  canCreate?: boolean;
-  totalCount: number;
-  selectedCount?: number;
-  onClearSelection?: () => void;
-  onAssignCampaign?: () => void;
+  filters: CustomersFilterState;
+  onFilterChange: (key: keyof CustomersFilterState, value: string) => void;
+  onClearFilters: () => void;
+  campaigns: CampaignOption[];
 }
 
 export function CustomersToolbar({
   search,
   onSearchChange,
-  onRefresh,
-  onCreate,
-  canCreate = true,
-  totalCount,
-  selectedCount = 0,
-  onClearSelection,
-  onAssignCampaign,
+  filters,
+  onFilterChange,
+  onClearFilters,
+  campaigns,
 }: CustomersToolbarProps) {
-  const hasSelection = selectedCount > 0;
+  const hasActiveFilters = filters.campaign !== "all";
 
   return (
-    <div className="space-y-3">
-      {/* Barra principal de búsqueda y acciones */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search customers by name, phone, or campaign..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        
-        <Button
-          variant="outline"
-          className="h-10 px-4 rounded-xl text-slate-600 hover:text-slate-900 border-slate-200 shadow-none"
-        >
-          <ListFilter className="h-4 w-4 mr-2" />
-          Filters
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-10 w-10 rounded-xl border-slate-200 shadow-none"
-          onClick={onRefresh}
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-        
-        {canCreate && onCreate && (
-          <Button
-            onClick={onCreate}
-            className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-all"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            New Customer
-          </Button>
-        )}
-        
-        <div className="text-sm text-slate-500 whitespace-nowrap">
-          {totalCount} customer{totalCount !== 1 ? "s" : ""}
-        </div>
+    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+      <div className="relative flex-1 max-w-[420px]">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
+        <Input
+          placeholder="Search customers by name, phone, ID, or campaign..."
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
+        />
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+          /
+        </span>
       </div>
 
-      {/* Barra de acciones en lote - aparece solo cuando hay selección */}
-      {hasSelection && (
-        <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-blue-200">
-          <div className="flex items-center gap-3">
-            <Badge className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1">
-              {selectedCount} selected
-            </Badge>
-            <span className="text-sm text-slate-700 font-medium">
-              {selectedCount} customer{selectedCount !== 1 ? "s" : ""} selected
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 rounded-lg text-slate-600 border-slate-200 shadow-none text-xs"
-              onClick={onAssignCampaign}
-            >
-              <Users className="h-3.5 w-3.5 mr-1.5" />
-              Assign to Campaign
-            </Button>
-            
-           
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
-              onClick={onClearSelection}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground lg:whitespace-nowrap">
+        <MousePointerClick className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+        <span>Click a row to view customer details.</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 lg:ml-auto">
+        <Select
+          value={filters.campaign}
+          onValueChange={(v) => onFilterChange("campaign", v)}
+        >
+          <SelectTrigger
+            className={cn(
+              "h-[30px] gap-1.5 rounded-full pl-2.5 pr-2 border bg-white text-[12.5px] font-medium shadow-none transition-colors [&>svg]:hidden dark:bg-slate-900",
+              filters.campaign !== "all"
+                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8] dark:border-[#00c98d]/40 dark:text-[#5bebb8] dark:hover:bg-[#00c98d]/10"
+                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400",
+            )}
+          >
+            <Megaphone
+              className={cn(
+                "h-3.5 w-3.5 shrink-0",
+                filters.campaign !== "all"
+                  ? "text-[#008f68] dark:text-[#5bebb8]"
+                  : "text-slate-400 dark:text-slate-500",
+              )}
+            />
+            <SelectValue placeholder="All campaigns" />
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 shrink-0",
+                filters.campaign !== "all"
+                  ? "text-[#008f68]/60 dark:text-[#5bebb8]/60"
+                  : "text-slate-400 dark:text-slate-500",
+              )}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All campaigns</SelectItem>
+            {campaigns.map((c) => (
+              <SelectItem key={c.id} value={String(c.id)}>
+                {c.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-slate-500 dark:hover:text-slate-300 ml-1"
+          >
+            Clear all
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

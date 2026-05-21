@@ -78,9 +78,9 @@ export function YardsTable({
   totalPages = 1,
 }: YardsTableProps) {
   return (
-    <div className="flex-1 flex flex-col gap-3">
-      <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
-        <div className="max-h-[calc(100vh-14rem)] overflow-y-auto">
+    <div className="entity-table-root">
+      <div className="entity-table-frame">
+        <div className="entity-table-scroll">
           <Table className="relative w-full table-fixed">
             <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
