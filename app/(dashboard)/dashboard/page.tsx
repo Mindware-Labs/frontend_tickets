@@ -1,962 +1,1034 @@
 "use client";
 
-/**
- * CallCenter OS — Premium Dashboard
- * Power BI style: light theme, Z layout, no global scroll
- * 3 tabs: Operations · Executive · Marketing
- * Charts: Recharts (Area, Bar, Line, Pie, Radial, Funnel)
- */
-
-import { useState, useEffect, useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import {
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
+  BarChart,
+  CartesianGrid,
   Cell,
-  RadialBarChart,
-  RadialBar,
   ComposedChart,
-  Scatter,
+  Legend,
+  Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  LabelList,
-  ReferenceLine,
 } from "recharts";
 import {
-  Phone,
-  PhoneCall,
-  Users,
-  UserCheck,
-  Clock,
-  Timer,
-  CheckCircle2,
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  MessageSquare,
-  DollarSign,
-  HeartPulse,
-  Sparkles,
-  CalendarClock,
-  Activity,
-  Headphones,
   BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Download,
+  Headphones,
   MapPin,
-  Shield,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-  Voicemail,
-  ShieldAlert,
-  AlertCircle,
-  RefreshCw,
+  MessageSquare,
+  PhoneCall,
+  Radio,
+  Target,
+  Timer,
+  TrendingUp,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
-// ─────────────────────────────────────────── PALETTE ─────
-const C = {
-  bg: "#FFFFFF",
-  surface: "#F8FAFC",
-  card: "#FFFFFF",
-  border: "#E2E8F0",
-  border2: "#CBD5E1",
-  text: "#1E293B",
-  muted: "#64748B",
-  hint: "#94A3B8",
-  blue: "#3B82F6",
-  cyan: "#06B6D4",
-  violet: "#8B5CF6",
-  emerald: "#10B981",
-  amber: "#F59E0B",
-  rose: "#F43F5E",
-  indigo: "#6366F1",
-  teal: "#14B8A6",
-  chart1: "#3B82F6",
-  chart2: "#8B5CF6",
-  chart3: "#06B6D4",
-  chart4: "#10B981",
-  chart5: "#F59E0B",
-};
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────── STATIC SEED DATA ────────
+type Tone = "emerald" | "sky" | "amber" | "rose" | "indigo" | "slate";
 
-const SEED_CALLS_7D = [
-  { day: "Mon", calls: 412, tickets: 128, resolved: 104 },
-  { day: "Tue", calls: 487, tickets: 151, resolved: 138 },
-  { day: "Wed", calls: 521, tickets: 167, resolved: 149 },
-  { day: "Thu", calls: 498, tickets: 155, resolved: 141 },
-  { day: "Fri", calls: 563, tickets: 178, resolved: 162 },
-  { day: "Sat", calls: 298, tickets: 94, resolved: 88 },
-  { day: "Sun", calls: 187, tickets: 58, resolved: 54 },
-];
-
-const SEED_CALLS_30D = Array.from({ length: 30 }, (_, i) => ({
-  d: i + 1,
-  calls: Math.round(350 + Math.sin(i / 3) * 120 + ((i * 7) % 80)),
-  target: 450,
-}));
-
-const SEED_AGENTS = [
-  {
-    agent: "Lucia R.",
-    calls: 61,
-    talkMin: 345,
-    wrapMin: 49,
-    res: 92,
-    kept: 22,
-    total: 23,
-    score: 96,
-  },
-  {
-    agent: "Maria G.",
-    calls: 54,
-    talkMin: 312,
-    wrapMin: 58,
-    res: 88,
-    kept: 18,
-    total: 20,
-    score: 89,
-  },
-  {
-    agent: "Sofia L.",
-    calls: 52,
-    talkMin: 298,
-    wrapMin: 55,
-    res: 85,
-    kept: 16,
-    total: 19,
-    score: 84,
-  },
-  {
-    agent: "Carlos P.",
-    calls: 48,
-    talkMin: 287,
-    wrapMin: 72,
-    res: 81,
-    kept: 12,
-    total: 17,
-    score: 74,
-  },
-  {
-    agent: "Javier T.",
-    calls: 43,
-    talkMin: 252,
-    wrapMin: 63,
-    res: 77,
-    kept: 10,
-    total: 15,
-    score: 68,
-  },
-  {
-    agent: "Diego M.",
-    calls: 37,
-    talkMin: 201,
-    wrapMin: 89,
-    res: 64,
-    kept: 6,
-    total: 14,
-    score: 52,
-  },
-];
-
-const SEED_YARDS_DATA = [
-  { yard: "Miami", calls: 842, open: 42, ovd: 6, aht: 5.2, contact: 71 },
-  { yard: "Orlando", calls: 621, open: 31, ovd: 3, aht: 4.8, contact: 68 },
-  { yard: "Tampa", calls: 514, open: 28, ovd: 7, aht: 6.1, contact: 59 },
-  { yard: "Jacksonville", calls: 389, open: 19, ovd: 2, aht: 5.7, contact: 74 },
-  { yard: "Atlanta", calls: 276, open: 14, ovd: 1, aht: 4.3, contact: 62 },
-];
-
-const SEED_DISPOSITIONS = [
-  { name: "Hot", value: 142, color: C.rose },
-  { name: "Warm", value: 286, color: C.amber },
-  { name: "Cold", value: 612, color: C.blue },
-];
-
-const SEED_CAMPAIGN_DATA = [
-  { name: "AR Q1", rate: 68, conv: 42, roi: 3.2, spend: 12400 },
-  { name: "Wellness", rate: 54, conv: 88, roi: 4.1, spend: 8900 },
-  { name: "Leads Hot", rate: 72, conv: 31, roi: 2.4, spend: 5600 },
-  { name: "Winback", rate: 41, conv: 19, roi: 1.8, spend: 3200 },
-];
-
-const SEED_LEAD_FUNNEL = [
-  { stage: "Leads", value: 1240, pct: 100 },
-  { stage: "Contacted", value: 864, pct: 69.7 },
-  { stage: "Qualified", value: 512, pct: 41.3 },
-  { stage: "Enrolled", value: 218, pct: 17.6 },
-];
-
-const SEED_AR_FUNNEL = [
-  { stage: "Dials", value: 4820, pct: 100 },
-  { stage: "Contacts", value: 1842, pct: 38.2 },
-  { stage: "PTPs", value: 612, pct: 12.7 },
-  { stage: "Payments", value: 388, pct: 8.0 },
-];
-
-const SEED_WELLNESS_ENROLL = [
-  { h: "9a", v: 12 },
-  { h: "10a", v: 21 },
-  { h: "11a", v: 28 },
-  { h: "12p", v: 19 },
-  { h: "1p", v: 14 },
-  { h: "2p", v: 23 },
-  { h: "3p", v: 31 },
-  { h: "4p", v: 26 },
-  { h: "5p", v: 17 },
-];
-
-const SEED_SMS_DATA = [
-  { week: "W1", sent: 820, replied: 210, rate: 25.6 },
-  { week: "W2", sent: 940, replied: 284, rate: 30.2 },
-  { week: "W3", sent: 1012, replied: 331, rate: 32.7 },
-  { week: "W4", sent: 1180, replied: 402, rate: 34.1 },
-];
-
-const HEATMAP = Array.from({ length: 7 }, (_, d) =>
-  Array.from({ length: 24 }, (_, h) => {
-    const base =
-      Math.max(0, 40 - Math.abs(11 - h) * 4) +
-      Math.max(0, 30 - Math.abs(16 - h) * 5);
-    return Math.round(base * (d >= 5 ? 0.4 : 1) + ((d * 24 + h) % 13));
-  }),
-);
-const HM_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-const SEED_ACTIVE_CALLS = [
-  {
-    id: "C-8821",
-    agent: "Maria G.",
-    customer: "R. Alvarez",
-    line: "AR — L1",
-    dur: "04:12",
-    status: "Active",
-  },
-  {
-    id: "C-8822",
-    agent: "Lucia R.",
-    customer: "J. Martinez",
-    line: "Wellness — L3",
-    dur: "02:45",
-    status: "Active",
-  },
-  {
-    id: "C-8823",
-    agent: "Sofia L.",
-    customer: "P. Rojas",
-    line: "Leads — L2",
-    dur: "07:08",
-    status: "Active",
-  },
-  {
-    id: "—",
-    agent: "—",
-    customer: "K. Ng",
-    line: "AR — L1",
-    dur: "00:42",
-    status: "Queued",
-  },
-  {
-    id: "—",
-    agent: "—",
-    customer: "T. Villa",
-    line: "Leads — L2",
-    dur: "01:12",
-    status: "Queued",
-  },
-];
-
-const RADIAL_AGENTS = SEED_AGENTS.map((a) => ({
-  ...a,
-  fill: a.score >= 85 ? C.emerald : a.score >= 70 ? C.amber : C.rose,
-}));
-
-const OVERDUE_ACTIONS = [
-  {
-    id: "T-1042",
-    client: "Marcus Holloway",
-    agent: "Priya Shah",
-    tag: "Callback Req.",
-    due: "2 hrs ago",
-  },
-  {
-    id: "T-1088",
-    client: "Rig Hut Logistics",
-    agent: "Carlos P.",
-    tag: "PTP Overdue",
-    due: "4 hrs ago",
-  },
-  {
-    id: "T-1095",
-    client: "Sarah Jenkins",
-    agent: "Diego M.",
-    tag: "Dispute",
-    due: "1 día ago",
-  },
-  {
-    id: "T-1102",
-    client: "Alvarez Bros",
-    agent: "María G.",
-    tag: "Escalado",
-    due: "1 día ago",
-  },
-];
-
-const CALLER_TYPE = [
-  { name: "New", value: 65, color: C.blue },
-  { name: "Returning", value: 35, color: "#94A3B8" },
-];
-
-// ─────────────────────────────────────────── HELPERS ─────
-const fmt = (n: number) => n.toLocaleString("en");
-const fmtMin = (m: number) => {
-  const h = Math.floor(m / 60),
-    r = m % 60;
-  return h ? `${h}h ${r}m` : `${r}m`;
-};
-const pctColor = (v: number) =>
-  v >= 85 ? C.emerald : v >= 70 ? C.amber : C.rose;
-
-// ─────────────────────────────────────────── LIVE DATA HOOK ──────────────────
-
-/** Drift a number ±maxDelta, clamp to [min, max] */
-function drift(v: number, maxDelta: number, min = 0, max = Infinity) {
-  const delta = Math.round((Math.random() - 0.5) * 2 * maxDelta);
-  return Math.min(max, Math.max(min, v + delta));
-}
-
-/** Tick a "MM:SS" call duration string forward by 2–5 seconds */
-function tickDur(dur: string): string {
-  const [m, s] = dur.split(":").map(Number);
-  const addSecs = Math.floor(Math.random() * 4) + 2;
-  const totalSecs = m * 60 + s + addSecs;
-  const nm = Math.floor(totalSecs / 60);
-  const ns = totalSecs % 60;
-  return `${String(nm).padStart(2, "0")}:${String(ns).padStart(2, "0")}`;
-}
-
-interface OpsKpis {
-  totalCalls: number;
-  promiseFulfilled: number;
-  promiseTotal: number;
-  overdue: number;
-  openTotal: number;
-  resolutionPct: number;
-  ahtMin: number;
-  ahtSec: number;
-  voicemails: number;
-}
-
-interface LiveQueue {
+type Metric = {
   label: string;
-  count: number;
-  color: string;
-}
+  value: string;
+  detail: string;
+  trend: string;
+  tone: Tone;
+  icon: LucideIcon;
+};
 
-interface DashboardLiveData {
-  calls7d: typeof SEED_CALLS_7D;
-  calls30d: typeof SEED_CALLS_30D;
-  activeCalls: typeof SEED_ACTIVE_CALLS;
-  agents: typeof SEED_AGENTS;
-  yardsData: typeof SEED_YARDS_DATA;
-  dispositions: typeof SEED_DISPOSITIONS;
-  campaignData: typeof SEED_CAMPAIGN_DATA;
-  leadFunnel: typeof SEED_LEAD_FUNNEL;
-  arFunnel: typeof SEED_AR_FUNNEL;
-  wellnessEnroll: typeof SEED_WELLNESS_ENROLL;
-  smsData: typeof SEED_SMS_DATA;
-  opsKpis: OpsKpis;
-  liveQueue: LiveQueue[];
-  flashedKeys: Set<string>;
-  lastUpdated: Date;
-  refresh: () => void;
-}
+const toneClasses: Record<
+  Tone,
+  {
+    icon: string;
+    iconWrap: string;
+    border: string;
+    text: string;
+    bg: string;
+    chart: string;
+  }
+> = {
+  emerald: {
+    icon: "text-emerald-700 dark:text-emerald-300",
+    iconWrap: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-200 dark:border-emerald-900",
+    text: "text-emerald-700 dark:text-emerald-300",
+    bg: "bg-emerald-600",
+    chart: "#059669",
+  },
+  sky: {
+    icon: "text-sky-700 dark:text-sky-300",
+    iconWrap: "bg-sky-50 dark:bg-sky-950/40",
+    border: "border-sky-200 dark:border-sky-900",
+    text: "text-sky-700 dark:text-sky-300",
+    bg: "bg-sky-600",
+    chart: "#0284c7",
+  },
+  amber: {
+    icon: "text-amber-700 dark:text-amber-300",
+    iconWrap: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-900",
+    text: "text-amber-700 dark:text-amber-300",
+    bg: "bg-amber-500",
+    chart: "#d97706",
+  },
+  rose: {
+    icon: "text-rose-700 dark:text-rose-300",
+    iconWrap: "bg-rose-50 dark:bg-rose-950/40",
+    border: "border-rose-200 dark:border-rose-900",
+    text: "text-rose-700 dark:text-rose-300",
+    bg: "bg-rose-600",
+    chart: "#e11d48",
+  },
+  indigo: {
+    icon: "text-indigo-700 dark:text-indigo-300",
+    iconWrap: "bg-indigo-50 dark:bg-indigo-950/40",
+    border: "border-indigo-200 dark:border-indigo-900",
+    text: "text-indigo-700 dark:text-indigo-300",
+    bg: "bg-indigo-600",
+    chart: "#4f46e5",
+  },
+  slate: {
+    icon: "text-slate-700 dark:text-slate-300",
+    iconWrap: "bg-slate-100 dark:bg-slate-900",
+    border: "border-slate-200 dark:border-slate-800",
+    text: "text-slate-700 dark:text-slate-300",
+    bg: "bg-slate-500",
+    chart: "#64748b",
+  },
+};
 
-function useDashboardData(intervalMs = 4500): DashboardLiveData {
-  const [calls7d, setCalls7d] = useState(SEED_CALLS_7D);
-  const [calls30d, setCalls30d] = useState(SEED_CALLS_30D);
-  const [activeCalls, setActiveCalls] = useState(SEED_ACTIVE_CALLS);
-  const [agents, setAgents] = useState(SEED_AGENTS);
-  const [yardsData, setYardsData] = useState(SEED_YARDS_DATA);
-  const [dispositions, setDispositions] = useState(SEED_DISPOSITIONS);
-  const [campaignData, setCampaignData] = useState(SEED_CAMPAIGN_DATA);
-  const [leadFunnel, setLeadFunnel] = useState(SEED_LEAD_FUNNEL);
-  const [arFunnel, setArFunnel] = useState(SEED_AR_FUNNEL);
-  const [wellnessEnroll, setWellnessEnroll] = useState(SEED_WELLNESS_ENROLL);
-  const [smsData, setSmsData] = useState(SEED_SMS_DATA);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [flashedKeys, setFlashedKeys] = useState<Set<string>>(new Set());
+const tooltipStyle = {
+  background: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 8,
+  color: "hsl(var(--foreground))",
+  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
+};
 
-  const [opsKpis, setOpsKpis] = useState<OpsKpis>({
-    totalCalls: 7,
-    promiseFulfilled: 84,
-    promiseTotal: 122,
-    overdue: 19,
-    openTotal: 134,
-    resolutionPct: 82,
-    ahtMin: 5,
-    ahtSec: 24,
-    voicemails: 4,
-  });
+const operationsMetrics: Metric[] = [
+  {
+    label: "Calls today",
+    value: "728",
+    detail: "432 inbound, 296 outbound",
+    trend: "+12% vs last Tue",
+    tone: "emerald",
+    icon: PhoneCall,
+  },
+  {
+    label: "Live queue",
+    value: "18",
+    detail: "7 active, 11 waiting",
+    trend: "Peak window now",
+    tone: "amber",
+    icon: Headphones,
+  },
+  {
+    label: "Avg handle time",
+    value: "5m 21s",
+    detail: "Talk + wrap-up",
+    trend: "-24s vs target",
+    tone: "sky",
+    icon: Timer,
+  },
+  {
+    label: "Overdue follow-ups",
+    value: "14",
+    detail: "8 calls, 6 tickets",
+    trend: "Supervisor review",
+    tone: "rose",
+    icon: AlertTriangle,
+  },
+];
 
-  const [liveQueue, setLiveQueue] = useState<LiveQueue[]>([
-    { label: "Active", count: 7, color: C.emerald },
-    { label: "Queued", count: 12, color: C.amber },
-    { label: "Available", count: 5, color: C.blue },
-    { label: "Break", count: 2, color: C.muted },
-  ]);
+const executiveMetrics: Metric[] = [
+  {
+    label: "Call volume",
+    value: "14,820",
+    detail: "All lines, last 30 days",
+    trend: "+8.4% month over month",
+    tone: "emerald",
+    icon: Radio,
+  },
+  {
+    label: "Ticket resolution",
+    value: "82%",
+    detail: "Resolved inside SLA",
+    trend: "+5.1 points",
+    tone: "indigo",
+    icon: CheckCircle2,
+  },
+  {
+    label: "Callback kept rate",
+    value: "91%",
+    detail: "Promised callbacks honored",
+    trend: "+7.2 points",
+    tone: "sky",
+    icon: Clock3,
+  },
+  {
+    label: "At-risk workload",
+    value: "39",
+    detail: "Overdue or emergency",
+    trend: "12 require action today",
+    tone: "rose",
+    icon: AlertTriangle,
+  },
+];
 
-  const tick = useCallback(() => {
-    const newFlash = new Set<string>();
+const marketingMetrics: Metric[] = [
+  {
+    label: "Contact rate",
+    value: "64%",
+    detail: "Connected / attempted",
+    trend: "+6.8 points",
+    tone: "emerald",
+    icon: Target,
+  },
+  {
+    label: "Lead enrollment",
+    value: "18.6%",
+    detail: "Lead to enrolled funnel",
+    trend: "+2.4 points",
+    tone: "indigo",
+    icon: TrendingUp,
+  },
+  {
+    label: "SMS reply rate",
+    value: "31%",
+    detail: "Across active campaigns",
+    trend: "+4.9 points",
+    tone: "sky",
+    icon: MessageSquare,
+  },
+  {
+    label: "Campaign ROI",
+    value: "3.4x",
+    detail: "Calls vs outcomes",
+    trend: "AR and Wellness lead",
+    tone: "amber",
+    icon: BarChart3,
+  },
+];
 
-    setLiveQueue((prev) =>
-      prev.map((q) => {
-        const maxD = q.label === "Queued" ? 3 : 1;
-        const nc = drift(q.count, maxD, 0, q.label === "Queued" ? 20 : 12);
-        if (nc !== q.count) newFlash.add(`queue_${q.label}`);
-        return { ...q, count: nc };
-      }),
-    );
+const operationsTrend = [
+  { day: "Mon", inbound: 284, outbound: 226, tickets: 132, callbacks: 42 },
+  { day: "Tue", inbound: 318, outbound: 244, tickets: 146, callbacks: 48 },
+  { day: "Wed", inbound: 344, outbound: 268, tickets: 153, callbacks: 51 },
+  { day: "Thu", inbound: 331, outbound: 251, tickets: 149, callbacks: 45 },
+  { day: "Fri", inbound: 372, outbound: 289, tickets: 166, callbacks: 56 },
+  { day: "Sat", inbound: 194, outbound: 122, tickets: 77, callbacks: 21 },
+  { day: "Sun", inbound: 138, outbound: 92, tickets: 51, callbacks: 17 },
+];
 
-    setActiveCalls((prev) => prev.map((c) => ({ ...c, dur: tickDur(c.dur) })));
+const agentActivity = [
+  { agent: "Lucia", calls: 68, talk: 351, resolution: 94 },
+  { agent: "Maria", calls: 61, talk: 318, resolution: 90 },
+  { agent: "Sofia", calls: 57, talk: 296, resolution: 88 },
+  { agent: "Carlos", calls: 49, talk: 274, resolution: 81 },
+  { agent: "Javier", calls: 44, talk: 248, resolution: 77 },
+  { agent: "Diego", calls: 39, talk: 216, resolution: 69 },
+];
 
-    setOpsKpis((prev) => {
-      const next = {
-        ...prev,
-        totalCalls: drift(prev.totalCalls, 1, 0, 30),
-        voicemails: drift(prev.voicemails, 1, 0, 12),
-        overdue: drift(prev.overdue, 1, 0, 40),
-        resolutionPct: drift(prev.resolutionPct, 1, 70, 100),
-        promiseFulfilled: drift(
-          prev.promiseFulfilled,
-          1,
-          60,
-          prev.promiseTotal,
-        ),
-        ahtSec: drift(prev.ahtSec, 5, 0, 59),
-      };
-      if (next.voicemails !== prev.voicemails) newFlash.add("kpi_voicemails");
-      if (next.overdue !== prev.overdue) newFlash.add("kpi_overdue");
-      if (next.totalCalls !== prev.totalCalls) newFlash.add("kpi_totalCalls");
-      return next;
-    });
+const liveWallboard = [
+  {
+    label: "Active calls",
+    value: "7",
+    detail: "3 AR, 2 Leads, 2 Wellness",
+    tone: "emerald" as Tone,
+  },
+  {
+    label: "Queued calls",
+    value: "11",
+    detail: "Longest wait 02:18",
+    tone: "amber" as Tone,
+  },
+  {
+    label: "Agents available",
+    value: "9",
+    detail: "5 ready, 4 after-call work",
+    tone: "sky" as Tone,
+  },
+  {
+    label: "Missed today",
+    value: "23",
+    detail: "Top gap: 12p - 2p",
+    tone: "rose" as Tone,
+  },
+];
 
-    setCalls7d((prev) => {
-      const next = [...prev];
-      for (let i = 5; i < 7; i++) {
-        next[i] = {
-          ...next[i],
-          calls: drift(next[i].calls, 12, 100, 700),
-          tickets: drift(next[i].tickets, 4, 20, 200),
-          resolved: drift(next[i].resolved, 4, 20, 200),
-        };
-      }
-      return next;
-    });
+const linePerformance = [
+  {
+    line: "AR Collections",
+    calls: "4,820",
+    contact: "68%",
+    aht: "5m 48s",
+    missed: "4.8%",
+    owner: "Operations",
+  },
+  {
+    line: "Wellness",
+    calls: "2,940",
+    contact: "58%",
+    aht: "6m 12s",
+    missed: "6.1%",
+    owner: "Marketing",
+  },
+  {
+    line: "New Leads",
+    calls: "3,180",
+    contact: "72%",
+    aht: "4m 56s",
+    missed: "3.9%",
+    owner: "Sales",
+  },
+  {
+    line: "Onboarding",
+    calls: "1,470",
+    contact: "61%",
+    aht: "7m 18s",
+    missed: "5.3%",
+    owner: "Client Success",
+  },
+];
 
-    setCalls30d((prev) => {
-      const next = [...prev];
-      for (let i = 27; i < 30; i++) {
-        next[i] = { ...next[i], calls: drift(next[i].calls, 15, 200, 700) };
-      }
-      return next;
-    });
+const followUpQueue = [
+  {
+    id: "CALL-1088",
+    customer: "R. Alvarez",
+    owner: "Maria G.",
+    status: "PTP overdue",
+    due: "2h late",
+    tone: "rose" as Tone,
+  },
+  {
+    id: "TCK-4217",
+    customer: "Marcus Holloway",
+    owner: "Carlos P.",
+    status: "Dispute callback",
+    due: "Today 3:30p",
+    tone: "amber" as Tone,
+  },
+  {
+    id: "CALL-1096",
+    customer: "K. Nguyen",
+    owner: "Lucia R.",
+    status: "Enrollment follow-up",
+    due: "Today 4:15p",
+    tone: "sky" as Tone,
+  },
+  {
+    id: "TCK-4231",
+    customer: "Alvarez Bros",
+    owner: "Sofia L.",
+    status: "Escalated case",
+    due: "Tomorrow 9:00a",
+    tone: "indigo" as Tone,
+  },
+];
 
-    if (Math.random() < 0.4) {
-      setAgents((prev) =>
-        prev.map((a) => ({
-          ...a,
-          calls: drift(a.calls, 1, 10, 120),
-          res: drift(a.res, 1, 50, 100),
-          score: drift(a.score, 1, 40, 100),
-        })),
-      );
-    }
+const executiveCallKpis = [
+  { metric: "Response time", actual: 82, target: 90 },
+  { metric: "AHT by line", actual: 76, target: 80 },
+  { metric: "Utilization", actual: 88, target: 85 },
+  { metric: "Callbacks kept", actual: 91, target: 90 },
+  { metric: "Resolution by line", actual: 84, target: 86 },
+];
 
-    if (Math.random() < 0.3) {
-      setYardsData((prev) =>
-        prev.map((y) => ({
-          ...y,
-          calls: drift(y.calls, 8, 100, 1200),
-          open: drift(y.open, 1, 0, 80),
-        })),
-      );
-    }
+const ticketVsCallTrend = [
+  { week: "W1", calls: 3210, tickets: 842, resolved: 704 },
+  { week: "W2", calls: 3488, tickets: 901, resolved: 762 },
+  { week: "W3", calls: 3714, tickets: 974, resolved: 836 },
+  { week: "W4", calls: 4408, tickets: 1056, resolved: 916 },
+];
 
-    if (Math.random() < 0.3) {
-      setDispositions((prev) =>
-        prev.map((d) => ({
-          ...d,
-          value: drift(d.value, 3, 50, 900),
-        })),
-      );
-    }
+const ticketRisk = [
+  {
+    yard: "Miami",
+    open: 42,
+    overdue: 6,
+    response: "18m",
+    resolution: "14h",
+    rate: "86%",
+  },
+  {
+    yard: "Orlando",
+    open: 31,
+    overdue: 3,
+    response: "21m",
+    resolution: "16h",
+    rate: "83%",
+  },
+  {
+    yard: "Tampa",
+    open: 28,
+    overdue: 7,
+    response: "27m",
+    resolution: "19h",
+    rate: "74%",
+  },
+  {
+    yard: "Jacksonville",
+    open: 19,
+    overdue: 2,
+    response: "14m",
+    resolution: "11h",
+    rate: "89%",
+  },
+];
 
-    if (Math.random() < 0.25) {
-      setCampaignData((prev) =>
-        prev.map((c) => ({
-          ...c,
-          rate: drift(c.rate, 1, 20, 95),
-          conv: drift(c.conv, 2, 5, 150),
-        })),
-      );
-    }
+const heatmapHours = ["8a", "9a", "10a", "11a", "12p", "1p", "2p", "3p", "4p", "5p"];
+const peakHourHeatmap = [
+  { day: "Mon", values: [18, 26, 38, 52, 61, 58, 49, 44, 31, 20] },
+  { day: "Tue", values: [22, 31, 42, 59, 67, 64, 56, 47, 35, 24] },
+  { day: "Wed", values: [24, 35, 48, 63, 72, 69, 61, 53, 39, 27] },
+  { day: "Thu", values: [21, 33, 45, 57, 66, 62, 55, 51, 37, 25] },
+  { day: "Fri", values: [19, 29, 41, 54, 62, 59, 48, 42, 32, 22] },
+  { day: "Sat", values: [10, 16, 24, 31, 36, 33, 28, 23, 18, 12] },
+  { day: "Sun", values: [7, 12, 17, 21, 24, 23, 19, 16, 12, 9] },
+];
 
-    if (Math.random() < 0.4) {
-      setWellnessEnroll((prev) => {
-        const next = [...prev];
-        const idx = Math.floor(Math.random() * prev.length);
-        next[idx] = { ...next[idx], v: drift(next[idx].v, 3, 5, 50) };
-        return next;
-      });
-    }
+const campaignRates = [
+  { campaign: "AR", contact: 68, conversion: 31, sms: 24, roi: 3.9 },
+  { campaign: "Wellness", contact: 58, conversion: 42, sms: 36, roi: 4.2 },
+  { campaign: "Leads", contact: 72, conversion: 19, sms: 28, roi: 2.7 },
+  { campaign: "Onboarding", contact: 61, conversion: 54, sms: 41, roi: 3.1 },
+];
 
-    if (Math.random() < 0.2) {
-      setSmsData((prev) => {
-        const next = [...prev];
-        const updated = {
-          ...next[3],
-          sent: drift(next[3].sent, 20, 800, 1800),
-          replied: drift(next[3].replied, 8, 200, 600),
-        };
-        next[3] = {
-          ...updated,
-          rate: parseFloat(((updated.replied / updated.sent) * 100).toFixed(1)),
-        };
-        return next;
-      });
-    }
+const leadFunnel = [
+  { stage: "Leads", value: 1240, pct: 100 },
+  { stage: "Called", value: 1014, pct: 82 },
+  { stage: "Connected", value: 731, pct: 59 },
+  { stage: "Qualified", value: 412, pct: 33 },
+  { stage: "Enrolled", value: 231, pct: 19 },
+];
 
-    if (Math.random() < 0.2) {
-      setLeadFunnel((prev) => {
-        const next = [...prev];
-        next[0] = { ...next[0], value: drift(next[0].value, 10, 1000, 2000) };
-        return next;
-      });
-      setArFunnel((prev) => {
-        const next = [...prev];
-        next[0] = { ...next[0], value: drift(next[0].value, 20, 4000, 6000) };
-        return next;
-      });
-    }
+const arFunnel = [
+  { stage: "Dials", value: 4820, pct: 100 },
+  { stage: "Contacts", value: 3278, pct: 68 },
+  { stage: "PTP", value: 1196, pct: 25 },
+  { stage: "Paid", value: 612, pct: 13 },
+];
 
-    setFlashedKeys(newFlash);
-    setLastUpdated(new Date());
-    setTimeout(() => setFlashedKeys(new Set()), 700);
-  }, []);
+const smsTrend = [
+  { week: "W1", sent: 820, replies: 214, rate: 26 },
+  { week: "W2", sent: 934, replies: 282, rate: 30 },
+  { week: "W3", sent: 1048, replies: 329, rate: 31 },
+  { week: "W4", sent: 1180, replies: 386, rate: 33 },
+];
 
-  const refresh = useCallback(() => tick(), [tick]);
+const dispositionBreakdown = [
+  { name: "PTP", value: 26, color: toneClasses.emerald.chart },
+  { name: "No answer", value: 31, color: toneClasses.amber.chart },
+  { name: "Dispute", value: 12, color: toneClasses.rose.chart },
+  { name: "Enrolled", value: 18, color: toneClasses.indigo.chart },
+  { name: "Callback", value: 13, color: toneClasses.sky.chart },
+];
 
-  useEffect(() => {
-    const id = setInterval(tick, intervalMs);
-    return () => clearInterval(id);
-  }, [tick, intervalMs]);
+const yardVolume = [
+  { yard: "Miami", calls: 1840, outcomes: 612 },
+  { yard: "Orlando", calls: 1320, outcomes: 421 },
+  { yard: "Tampa", calls: 1184, outcomes: 336 },
+  { yard: "Jacksonville", calls: 872, outcomes: 294 },
+  { yard: "Atlanta", calls: 641, outcomes: 178 },
+];
 
-  return {
-    calls7d,
-    calls30d,
-    activeCalls,
-    agents,
-    yardsData,
-    dispositions,
-    campaignData,
-    leadFunnel,
-    arFunnel,
-    wellnessEnroll,
-    smsData,
-    opsKpis,
-    liveQueue,
-    flashedKeys,
-    lastUpdated,
-    refresh,
-  };
-}
+function MetricCard({ metric }: { metric: Metric }) {
+  const tone = toneClasses[metric.tone];
+  const Icon = metric.icon;
 
-// ─────────────────────────────── CUSTOM TOOLTIP ───
-const LightTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: `1px solid ${C.border}`,
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 12,
-        color: C.text,
-        boxShadow: "0 4px 6px -2px rgba(0,0,0,0.05)",
-      }}
+    <Card className="gap-0 rounded-[8px] border-slate-200 bg-white py-0 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+      <CardContent className="px-4 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              {metric.label}
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+              {metric.value}
+            </p>
+          </div>
+          <span
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border",
+              tone.iconWrap,
+              tone.border,
+            )}
+          >
+            <Icon className={cn("h-5 w-5", tone.icon)} aria-hidden />
+          </span>
+        </div>
+        <div className="mt-4 flex flex-col gap-1 text-sm">
+          <span className="text-slate-600 dark:text-slate-400">
+            {metric.detail}
+          </span>
+          <span className={cn("font-medium", tone.text)}>{metric.trend}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PanelCard({
+  title,
+  subtitle,
+  children,
+  className,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  className?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <Card
+      className={cn(
+        "gap-0 rounded-[8px] border-slate-200 bg-white py-0 shadow-sm dark:border-slate-800 dark:bg-slate-950",
+        className,
+      )}
     >
-      {label && (
-        <p
-          style={{
-            color: C.muted,
-            marginBottom: 4,
-            fontSize: 11,
-            fontWeight: 600,
-          }}
-        >
+      <CardHeader className="grid gap-1 border-b border-slate-100 px-4 py-4 dark:border-slate-800 sm:grid-cols-[1fr_auto] sm:items-start">
+        <div className="min-w-0">
+          <CardTitle className="text-base font-semibold text-slate-950 dark:text-slate-50">
+            {title}
+          </CardTitle>
+          {subtitle ? (
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        {action ? <div className="mt-2 sm:mt-0">{action}</div> : null}
+      </CardHeader>
+      <CardContent className="px-4 py-4">{children}</CardContent>
+    </Card>
+  );
+}
+
+function StatusBadge({ children, tone }: { children: ReactNode; tone: Tone }) {
+  const toneClass = toneClasses[tone];
+
+  return (
+    <span
+      className={cn(
+        "inline-flex min-h-6 items-center rounded-[6px] border px-2 text-xs font-medium",
+        toneClass.iconWrap,
+        toneClass.border,
+        toneClass.text,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function DataRow({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  tone: Tone;
+}) {
+  const toneClass = toneClasses[tone];
+
+  return (
+    <div className="grid gap-2 rounded-[8px] border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
           {label}
         </p>
-      )}
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color ?? C.text, margin: "2px 0" }}>
-          <span style={{ color: C.muted }}>{p.name}: </span>
-          <strong>
-            {typeof p.value === "number" ? fmt(p.value) : p.value}
-          </strong>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          {helper}
         </p>
+      </div>
+      <div className="flex items-center gap-2 sm:justify-end">
+        <span className={cn("h-2 w-2 rounded-full", toneClass.bg)} />
+        <span className="text-lg font-semibold tabular-nums text-slate-950 dark:text-slate-50">
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SectionIntro() {
+  return (
+    <div className="grid gap-4 rounded-[8px] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          Rig Hut Support Center
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+          Support Center Dashboards
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+          Operations, executive and marketing views aligned with the Aircall
+          integration requirements: call logs, ticket KPIs, follow-ups, SMS,
+          campaign attribution and yard performance.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 lg:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 rounded-[8px] border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+        >
+          <CalendarDays className="h-4 w-4" aria-hidden />
+          Last 30 days
+        </Button>
+        <Button type="button" className="h-9 rounded-[8px]">
+          <Download className="h-4 w-4" aria-hidden />
+          Export
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function MetricsGrid({ metrics }: { metrics: Metric[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((metric) => (
+        <MetricCard key={metric.label} metric={metric} />
       ))}
     </div>
   );
-};
+}
 
-// ─────────────────────────────────────────── UI ATOMS ────
-
-function KpiCard({
-  label,
-  value,
-  sub,
-  trend,
-  icon: Icon,
-  accent,
-  flashStyle,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  trend?: { val: string; up: boolean | null };
-  icon?: React.ComponentType<{ size?: number; color?: string }>;
-  accent: string;
-  flashStyle?: React.CSSProperties;
-}) {
+function OperationsDashboard() {
   return (
-    <div
-      className="relative flex flex-col justify-between rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-      style={{
-        background: `linear-gradient(160deg, ${accent}08 0%, #ffffff 55%)`,
-        border: `1px solid ${C.border}`,
-        borderTop: `3px solid ${accent}`,
-        padding: "14px 16px",
-        flex: 1,
-        minWidth: 0,
-        boxShadow: `0 1px 2px 0 rgba(0,0,0,0.04)`,
-        ...flashStyle,
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: -16,
-          right: -16,
-          width: 100,
-          height: 100,
-          borderRadius: "50%",
-          background: accent,
-          opacity: 0.06,
-          filter: "blur(24px)",
-          pointerEvents: "none",
-        }}
-      />
+    <div className="space-y-4">
+      <MetricsGrid metrics={operationsMetrics} />
 
-      <div className="flex items-start justify-between">
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: C.muted,
-            textTransform: "uppercase",
-            letterSpacing: "0.6px",
-          }}
+      <div className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
+        <PanelCard
+          title="Call volume and ticket creation"
+          subtitle="Inbound, outbound, tickets created and follow-up callbacks by day."
         >
-          {label}
-        </span>
-        {Icon && (
-          <div
-            style={{
-              padding: "7px",
-              borderRadius: 9,
-              background: `${accent}14`,
-              border: `1px solid ${accent}28`,
-            }}
-          >
-            <Icon size={14} color={accent} />
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={operationsTrend} margin={{ left: -16, right: 8 }}>
+                <defs>
+                  <linearGradient id="inboundFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor={toneClasses.emerald.chart}
+                      stopOpacity={0.28}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={toneClasses.emerald.chart}
+                      stopOpacity={0.02}
+                    />
+                  </linearGradient>
+                  <linearGradient id="outboundFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor={toneClasses.sky.chart}
+                      stopOpacity={0.22}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={toneClasses.sky.chart}
+                      stopOpacity={0.02}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="inbound"
+                  name="Inbound"
+                  stroke={toneClasses.emerald.chart}
+                  fill="url(#inboundFill)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="outbound"
+                  name="Outbound"
+                  stroke={toneClasses.sky.chart}
+                  fill="url(#outboundFill)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="tickets"
+                  name="Tickets"
+                  stroke={toneClasses.indigo.chart}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        )}
-      </div>
-      <div>
-        <div
-          className="tracking-tight"
-          style={{
-            fontSize: 26,
-            fontWeight: 800,
-            color: C.text,
-            lineHeight: 1.1,
-            letterSpacing: "-0.8px",
-            fontFamily: "'DM Sans', sans-serif",
-          }}
+        </PanelCard>
+
+        <PanelCard
+          title="Live wallboard"
+          subtitle="Queue health for supervisors and floor leads."
         >
-          {value}
-        </div>
-        {sub && (
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-            {sub}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {liveWallboard.map((item) => (
+              <DataRow
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                helper={item.detail}
+                tone={item.tone}
+              />
+            ))}
           </div>
-        )}
+        </PanelCard>
       </div>
-      {trend && (
-        <div className="flex items-center gap-1" style={{ marginTop: 6 }}>
-          {trend.up === true && <ChevronUp size={12} color={C.emerald} />}
-          {trend.up === false && <ChevronDown size={12} color={C.rose} />}
-          {trend.up === null && <Minus size={12} color={C.muted} />}
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color:
-                trend.up === true
-                  ? C.emerald
-                  : trend.up === false
-                    ? C.rose
-                    : C.muted,
-            }}
-          >
-            {trend.val}
-          </span>
-          <span style={{ fontSize: 10, color: C.hint }}>vs last week</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
-function FilterChip({
-  label,
-  onClear,
-}: {
-  label: string;
-  onClear: () => void;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        fontSize: 10,
-        fontWeight: 600,
-        padding: "2px 6px 2px 9px",
-        borderRadius: 20,
-        background: `${C.blue}12`,
-        color: C.blue,
-        border: `1px solid ${C.blue}30`,
-        flexShrink: 0,
-      }}
-    >
-      <span>{label}</span>
-      <button
-        onClick={onClear}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: C.blue,
-          padding: "0 2px",
-          lineHeight: 1,
-          fontSize: 13,
-          fontWeight: 700,
-        }}
-      >
-        ×
-      </button>
-    </div>
-  );
-}
-
-function SectionCard({
-  title,
-  titleRight,
-  children,
-  className = "",
-  style = {},
-  noPad = false,
-}: {
-  title?: string;
-  titleRight?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-  noPad?: boolean;
-}) {
-  return (
-    <div
-      className={`flex flex-col ${className}`}
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: 12,
-        overflow: "hidden",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-        ...style,
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = C.border2;
-        (e.currentTarget as HTMLDivElement).style.boxShadow =
-          "0 2px 8px rgba(0,0,0,0.06)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = C.border;
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "";
-      }}
-    >
-      {title && (
-        <div
-          style={{
-            padding: "10px 14px 8px",
-            borderBottom: `1px solid ${C.border}`,
-            fontSize: 11,
-            fontWeight: 700,
-            color: C.muted,
-            textTransform: "uppercase",
-            letterSpacing: "0.6px",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <PanelCard
+          title="Agent activity"
+          subtitle="Calls handled, talk time and resolution quality by agent."
         >
-          <span>{title}</span>
-          {titleRight}
-        </div>
-      )}
-      <div
-        style={
-          noPad
-            ? { flex: 1, minHeight: 0 }
-            : { padding: "10px 14px", flex: 1, minHeight: 0 }
-        }
-      >
-        {children}
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agentActivity} margin={{ left: -16, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="agent" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+                <Bar
+                  dataKey="calls"
+                  name="Calls"
+                  fill={toneClasses.emerald.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Bar
+                  dataKey="resolution"
+                  name="Resolution %"
+                  fill={toneClasses.indigo.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PanelCard>
+
+        <PanelCard
+          title="Follow-up accountability"
+          subtitle="Promised callbacks and ticket follow-ups with owner and due window."
+        >
+          <div className="space-y-3">
+            {followUpQueue.map((item) => (
+              <div
+                key={item.id}
+                className="grid gap-3 rounded-[8px] border border-slate-200 p-3 dark:border-slate-800 md:grid-cols-[1fr_auto] md:items-center"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {item.id}
+                    </span>
+                    <StatusBadge tone={item.tone}>{item.status}</StatusBadge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    {item.customer} assigned to {item.owner}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                  {item.due}
+                </span>
+              </div>
+            ))}
+          </div>
+        </PanelCard>
       </div>
+
+      <PanelCard
+        title="Line and campaign operations"
+        subtitle="Daily line-of-origin performance for staffing, attribution and SLA review."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                <th className="py-3 pr-4 font-medium">Line</th>
+                <th className="py-3 pr-4 font-medium">Calls</th>
+                <th className="py-3 pr-4 font-medium">Contact rate</th>
+                <th className="py-3 pr-4 font-medium">AHT</th>
+                <th className="py-3 pr-4 font-medium">Missed</th>
+                <th className="py-3 pr-4 font-medium">Audience</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linePerformance.map((line) => (
+                <tr
+                  key={line.line}
+                  className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
+                >
+                  <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
+                    {line.line}
+                  </td>
+                  <td className="py-3 pr-4 tabular-nums text-slate-700 dark:text-slate-300">
+                    {line.calls}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {line.contact}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {line.aht}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {line.missed}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {line.owner}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PanelCard>
     </div>
   );
 }
 
-function StatusDot({ color }: { color: string }) {
+function ExecutiveDashboard() {
   return (
-    <span
-      style={{
-        display: "inline-block",
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: color,
-        boxShadow: `0 0 5px ${color}`,
-        animation: "pulse2 2s infinite",
-      }}
-    />
-  );
-}
+    <div className="space-y-4">
+      <MetricsGrid metrics={executiveMetrics} />
 
-function MiniPbar({
-  v,
-  color,
-  h = 4,
-}: {
-  v: number;
-  color: string;
-  h?: number;
-}) {
-  return (
-    <div
-      style={{
-        height: h,
-        borderRadius: h,
-        background: C.border2,
-        overflow: "hidden",
-        width: "100%",
-      }}
-    >
-      <div
-        style={{
-          height: "100%",
-          width: `${v}%`,
-          background: color,
-          borderRadius: h,
-          transition: "width 0.5s",
-        }}
-      />
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <PanelCard
+          title="Calls and tickets executive trend"
+          subtitle="Weekly ratio of logged calls, opened tickets and resolved cases."
+        >
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={ticketVsCallTrend} margin={{ left: -16, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="week" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+                <Bar
+                  dataKey="calls"
+                  name="Calls"
+                  fill={toneClasses.emerald.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="tickets"
+                  name="Tickets"
+                  stroke={toneClasses.indigo.chart}
+                  strokeWidth={3}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="resolved"
+                  name="Resolved"
+                  stroke={toneClasses.sky.chart}
+                  strokeWidth={3}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </PanelCard>
+
+        <PanelCard
+          title="Call KPI scorecard"
+          subtitle="Operational KPIs compared against leadership targets."
+        >
+          <div className="space-y-4">
+            {executiveCallKpis.map((item) => (
+              <div key={item.metric} className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {item.metric}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-slate-50">
+                    {item.actual}% / {item.target}%
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-900">
+                  <div
+                    className={cn(
+                      "h-2 rounded-full",
+                      item.actual >= item.target
+                        ? "bg-emerald-600"
+                        : item.actual >= item.target - 6
+                          ? "bg-amber-500"
+                          : "bg-rose-600",
+                    )}
+                    style={{ width: `${item.actual}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </PanelCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <PanelCard
+          title="Peak call hour heatmap"
+          subtitle="Monthly pattern by day and hour for staffing decisions."
+        >
+          <div className="overflow-x-auto">
+            <div className="min-w-[680px]">
+              <div className="grid grid-cols-[56px_repeat(10,minmax(44px,1fr))] gap-1 text-xs text-slate-600 dark:text-slate-400">
+                <span />
+                {heatmapHours.map((hour) => (
+                  <span key={hour} className="text-center">
+                    {hour}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-2 space-y-1">
+                {peakHourHeatmap.map((row) => (
+                  <div
+                    key={row.day}
+                    className="grid grid-cols-[56px_repeat(10,minmax(44px,1fr))] items-center gap-1"
+                  >
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {row.day}
+                    </span>
+                    {row.values.map((value, index) => (
+                      <div
+                        key={`${row.day}-${heatmapHours[index]}`}
+                        className="flex h-9 items-center justify-center rounded-[6px] text-xs font-semibold text-slate-900"
+                        style={{
+                          backgroundColor: `rgba(5, 150, 105, ${Math.max(
+                            0.12,
+                            value / 90,
+                          )})`,
+                        }}
+                      >
+                        {value}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </PanelCard>
+
+        <PanelCard
+          title="Ticket risk by yard"
+          subtitle="Open workload, overdue count, response time and resolution rate."
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                  <th className="py-3 pr-4 font-medium">Yard</th>
+                  <th className="py-3 pr-4 font-medium">Open</th>
+                  <th className="py-3 pr-4 font-medium">Overdue</th>
+                  <th className="py-3 pr-4 font-medium">Response</th>
+                  <th className="py-3 pr-4 font-medium">Resolution</th>
+                  <th className="py-3 pr-4 font-medium">Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticketRisk.map((yard) => (
+                  <tr
+                    key={yard.yard}
+                    className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
+                  >
+                    <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
+                      {yard.yard}
+                    </td>
+                    <td className="py-3 pr-4 tabular-nums text-slate-700 dark:text-slate-300">
+                      {yard.open}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <StatusBadge tone={yard.overdue > 5 ? "rose" : "amber"}>
+                        {yard.overdue}
+                      </StatusBadge>
+                    </td>
+                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                      {yard.response}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                      {yard.resolution}
+                    </td>
+                    <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
+                      {yard.rate}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </PanelCard>
+      </div>
     </div>
   );
 }
 
 function FunnelBars({
+  title,
   data,
+  tone,
 }: {
-  data: { stage: string; value: number; pct: number }[];
+  title: string;
+  data: typeof leadFunnel;
+  tone: Tone;
 }) {
-  const colors = [C.blue, C.cyan, C.teal, C.emerald];
+  const toneClass = toneClasses[tone];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {data.map((r, i) => (
-        <div key={r.stage}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: 3,
-            }}
-          >
-            <span style={{ fontSize: 11, color: C.muted }}>{r.stage}</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: C.text,
-                  fontFamily: "monospace",
-                }}
-              >
-                {fmt(r.value)}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: colors[i],
-                  fontFamily: "monospace",
-                }}
-              >
-                {r.pct.toFixed(1)}%
-              </span>
-            </div>
+    <div className="space-y-3">
+      <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+        {title}
+      </p>
+      {data.map((item) => (
+        <div key={item.stage} className="space-y-1">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-slate-700 dark:text-slate-300">
+              {item.stage}
+            </span>
+            <span className="font-semibold tabular-nums text-slate-950 dark:text-slate-50">
+              {item.value.toLocaleString()} ({item.pct}%)
+            </span>
           </div>
-          <div
-            style={{
-              height: 6,
-              borderRadius: 3,
-              background: C.border2,
-              overflow: "hidden",
-            }}
-          >
+          <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-900">
             <div
-              style={{
-                height: "100%",
-                width: `${r.pct}%`,
-                background: colors[i],
-                borderRadius: 3,
-              }}
+              className={cn("h-2 rounded-full", toneClass.bg)}
+              style={{ width: `${item.pct}%` }}
             />
           </div>
         </div>
@@ -965,1834 +1037,224 @@ function FunnelBars({
   );
 }
 
-// ─────────────────────────────────────────── TAB: OPERATIONS ──
-
-function PanelOps({ data }: { data: DashboardLiveData }) {
-  const {
-    opsKpis: kpi,
-    liveQueue,
-    activeCalls,
-    agents,
-    calls7d,
-    flashedKeys,
-  } = data;
-  const fulfillPct = Math.round(
-    (kpi.promiseFulfilled / kpi.promiseTotal) * 100,
-  );
-  const ahtStr = `${kpi.ahtMin}:${String(kpi.ahtSec).padStart(2, "0")}`;
-
-  const [filterAgent, setFilterAgent] = useState<string | null>(null);
-
-  const flashStyle = (key: string): React.CSSProperties =>
-    flashedKeys.has(key)
-      ? { animation: "kpiFlash 0.6s ease", animationFillMode: "forwards" }
-      : {};
-
+function MarketingDashboard() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        flex: 1,
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      {/* ROW 1 — KPIs */}
-      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-        <KpiCard
-          label="Total Calls"
-          value={String(kpi.totalCalls)}
-          trend={{ val: "+2 vs yesterday", up: true }}
-          icon={PhoneCall}
-          accent={C.emerald}
-          flashStyle={flashStyle("kpi_totalCalls")}
-        />
-        <KpiCard
-          label="Callback Promises"
-          value={`${kpi.promiseFulfilled}/${kpi.promiseTotal}`}
-          sub={`${fulfillPct}% fulfillment rate`}
-          trend={{ val: "−3% this week", up: false }}
-          icon={CalendarClock}
-          accent={C.amber}
-        />
-        <KpiCard
-          label="Overdue Tickets"
-          value={String(kpi.overdue)}
-          sub={`of ${kpi.openTotal} open total`}
-          trend={{ val: "−4 vs yesterday", up: true }}
-          icon={AlertTriangle}
-          accent={C.rose}
-          flashStyle={flashStyle("kpi_overdue")}
-        />
-        <KpiCard
-          label="Resolution Today"
-          value={`${kpi.resolutionPct}%`}
-          sub="target: 85%"
-          trend={{ val: "+1.2%", up: true }}
-          icon={CheckCircle2}
-          accent={C.blue}
-        />
-        <KpiCard
-          label="Avg AHT"
-          value={ahtStr}
-          sub="minutes per call"
-          trend={{ val: "−8%", up: true }}
-          icon={Timer}
-          accent={C.violet}
-        />
-        <KpiCard
-          label="Pending Voicemails"
-          value={String(kpi.voicemails)}
-          sub="Avg response: 14m"
-          trend={{ val: "+1 vs yesterday", up: false }}
-          icon={Voicemail}
-          accent={C.cyan}
-          flashStyle={flashStyle("kpi_voicemails")}
-        />
-      </div>
+    <div className="space-y-4">
+      <MetricsGrid metrics={marketingMetrics} />
 
-      {/* ROW 2 — Calls + Agent performance */}
-      <div style={{ display: "flex", gap: 8, flex: "0 0 auto", height: 200 }}>
-        {/* Area: 7 day calls */}
-
-        <SectionCard title="Calls — Last 7 Days" style={{ flex: 2 }}>
-          <ResponsiveContainer width="100%" height={140}>
-            <AreaChart
-              data={calls7d}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="gCalls" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.blue} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={C.blue} stopOpacity={0.03} />
-                </linearGradient>
-                <linearGradient id="gResolved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.emerald} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={C.emerald} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="day"
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="calls"
-                stroke={C.blue}
-                strokeWidth={2}
-                fill="url(#gCalls)"
-                name="Calls"
-              />
-              <Area
-                type="monotone"
-                dataKey="resolved"
-                stroke={C.emerald}
-                strokeWidth={2}
-                fill="url(#gResolved)"
-                name="Resolved"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        {/* Priority Action Queue */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            overflow: "hidden",
-          }}
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+        <PanelCard
+          title="Campaign performance"
+          subtitle="Contact rate, conversion, SMS reply rate and ROI by campaign line."
         >
-          <div
-            style={{
-              padding: "10px 14px 8px",
-              borderBottom: `1px solid ${C.border}`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexShrink: 0,
-              background: C.surface,
-            }}
-          >
-            <h3
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: C.text,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                margin: 0,
-              }}
-            >
-              <ShieldAlert size={14} color={C.rose} /> Priority Action Queue
-            </h3>
-            <span
-              style={{
-                background: `${C.rose}15`,
-                color: C.rose,
-                padding: "2px 8px",
-                borderRadius: 20,
-                fontSize: 10,
-                fontWeight: 700,
-              }}
-            >
-              {kpi.overdue} Overdue
-            </span>
-          </div>
-          <div
-            className="[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
-            style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr
-                  style={{
-                    fontSize: 10,
-                    color: C.hint,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    borderBottom: `1px solid ${C.border}`,
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: "8px 0 6px 8px",
-                      fontWeight: 600,
-                      textAlign: "left",
-                    }}
-                  >
-                    Client / ID
-                  </th>
-                  <th
-                    style={{
-                      padding: "8px 0 6px",
-                      fontWeight: 600,
-                      textAlign: "left",
-                    }}
-                  >
-                    Agent
-                  </th>
-                  <th
-                    style={{
-                      padding: "8px 0 6px",
-                      fontWeight: 600,
-                      textAlign: "left",
-                    }}
-                  >
-                    Reason
-                  </th>
-                  <th
-                    style={{
-                      padding: "8px 8px 6px 0",
-                      fontWeight: 600,
-                      textAlign: "right",
-                    }}
-                  >
-                    Delay
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {OVERDUE_ACTIONS.map((action, idx) => (
-                  <tr
-                    key={idx}
-                    style={{
-                      borderBottom: `1px solid ${C.border}`,
-                      transition: "background .15s",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = `${C.rose}08`)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <td style={{ padding: "8px 0 8px 8px" }}>
-                      <div
-                        style={{ fontSize: 11, fontWeight: 700, color: C.text }}
-                      >
-                        {action.client}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 9,
-                          color: C.hint,
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {action.id}
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 0",
-                        fontSize: 11,
-                        color: C.muted,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {action.agent}
-                    </td>
-                    <td style={{ padding: "8px 0" }}>
-                      <Badge
-                        variant="outline"
-                        style={{
-                          fontSize: 9,
-                          background: C.surface,
-                          color: C.muted,
-                          borderColor: C.border2,
-                        }}
-                      >
-                        {action.tag}
-                      </Badge>
-                    </td>
-                    <td
-                      style={{ padding: "8px 8px 8px 0", textAlign: "right" }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          gap: 4,
-                          color: C.rose,
-                          fontWeight: 700,
-                          fontSize: 11,
-                        }}
-                      >
-                        <AlertCircle size={11} />
-                        {action.due}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Live queue pills */}
-        <SectionCard title="Live Queue" style={{ flex: "0 0 160px" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              paddingTop: 4,
-            }}
-          >
-            {liveQueue.map((q) => (
-              <div
-                key={q.label}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <StatusDot color={q.color} />
-                  <span style={{ fontSize: 11, color: C.muted }}>
-                    {q.label}
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: q.color,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {q.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* ROW 3 — Active calls table + agent metrics */}
-      <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
-        {/* Active calls */}
-        <SectionCard
-          title="Active & Queued Calls"
-          titleRight={
-            filterAgent ? (
-              <FilterChip
-                label={filterAgent}
-                onClear={() => setFilterAgent(null)}
-              />
-            ) : undefined
-          }
-          style={{ flex: 1 }}
-          noPad
-        >
-          <div
-            className="[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
-            style={{ overflowY: "auto", maxHeight: "100%", padding: "0 14px" }}
-          >
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 11,
-              }}
-            >
-              <thead>
-                <tr>
-                  {[
-                    "ID",
-                    "Agent",
-                    "Customer",
-                    "Line",
-                    "Duration",
-                    "Status",
-                  ].map((h, i) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "8px 6px 6px",
-                        textAlign: i >= 4 ? "right" : "left",
-                        color: C.hint,
-                        fontWeight: 600,
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        borderBottom: `1px solid ${C.border}`,
-                        position: "sticky",
-                        top: 0,
-                        background: C.card,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(filterAgent
-                  ? activeCalls.filter((r) => r.agent === filterAgent)
-                  : activeCalls
-                ).map((r, i) => (
-                  <tr
-                    key={i}
-                    style={{ borderBottom: `1px solid ${C.border}` }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = C.surface)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <td
-                      style={{
-                        padding: "7px 6px",
-                        fontFamily: "monospace",
-                        color: C.hint,
-                        fontSize: 10,
-                      }}
-                    >
-                      {r.id}
-                    </td>
-                    <td
-                      style={{
-                        padding: "7px 6px",
-                        fontWeight: 600,
-                        color: C.text,
-                      }}
-                    >
-                      {r.agent}
-                    </td>
-                    <td style={{ padding: "7px 6px", color: C.muted }}>
-                      {r.customer}
-                    </td>
-                    <td style={{ padding: "7px 6px", color: C.hint }}>
-                      {r.line}
-                    </td>
-                    <td
-                      style={{
-                        padding: "7px 6px",
-                        textAlign: "right",
-                        fontFamily: "monospace",
-                        color: C.text,
-                      }}
-                    >
-                      {r.dur}
-                    </td>
-                    <td style={{ padding: "7px 6px", textAlign: "right" }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                          background:
-                            r.status === "Active"
-                              ? `${C.emerald}15`
-                              : `${C.amber}15`,
-                          color: r.status === "Active" ? C.emerald : C.amber,
-                          border: `1px solid ${r.status === "Active" ? C.emerald : C.amber}30`,
-                        }}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
-
-        {/* Agent metrics table */}
-        <SectionCard title="Agent Metrics" style={{ flex: 1 }} noPad>
-          <div
-            className="[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
-            style={{ overflowY: "auto", maxHeight: "100%", padding: "0 14px" }}
-          >
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 11,
-              }}
-            >
-              <thead>
-                <tr>
-                  {[
-                    "Agent",
-                    "Calls",
-                    "Talk",
-                    "Resolution",
-                    "Promises",
-                    "Score",
-                  ].map((h, i) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "8px 6px 6px",
-                        textAlign: i >= 1 ? "right" : "left",
-                        color: C.hint,
-                        fontWeight: 600,
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        borderBottom: `1px solid ${C.border}`,
-                        position: "sticky",
-                        top: 0,
-                        background: C.card,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((a, i) => {
-                  const kPct = Math.round((a.kept / a.total) * 100);
-                  const risk = kPct < 70;
-                  const isSelected = filterAgent === a.agent;
-                  return (
-                    <tr
-                      key={i}
-                      style={{
-                        borderBottom: `1px solid ${C.border}`,
-                        background: isSelected ? `${C.blue}0d` : "transparent",
-                        cursor: "pointer",
-                        transition: "background .15s",
-                      }}
-                      onClick={() =>
-                        setFilterAgent(isSelected ? null : a.agent)
-                      }
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = isSelected
-                          ? `${C.blue}18`
-                          : C.surface)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = isSelected
-                          ? `${C.blue}0d`
-                          : "transparent")
-                      }
-                    >
-                      <td
-                        style={{
-                          padding: "7px 6px",
-                          fontWeight: 600,
-                          color: C.text,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          {a.agent}
-                          {risk && (
-                            <span
-                              style={{
-                                fontSize: 9,
-                                padding: "1px 5px",
-                                borderRadius: 3,
-                                background: `${C.rose}15`,
-                                color: C.rose,
-                                border: `1px solid ${C.rose}30`,
-                              }}
-                            >
-                              coaching
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td
-                        style={{
-                          padding: "7px 6px",
-                          textAlign: "right",
-                          fontFamily: "monospace",
-                          color: C.text,
-                        }}
-                      >
-                        {a.calls}
-                      </td>
-                      <td
-                        style={{
-                          padding: "7px 6px",
-                          textAlign: "right",
-                          fontFamily: "monospace",
-                          color: C.muted,
-                          fontSize: 10,
-                        }}
-                      >
-                        {fmtMin(a.talkMin)}
-                      </td>
-                      <td style={{ padding: "7px 6px", textAlign: "right" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "flex-end",
-                            gap: 5,
-                          }}
-                        >
-                          <div style={{ width: 44 }}>
-                            <MiniPbar v={a.res} color={pctColor(a.res)} />
-                          </div>
-                          <span
-                            style={{
-                              fontFamily: "monospace",
-                              color: pctColor(a.res),
-                              fontSize: 10,
-                            }}
-                          >
-                            {a.res}%
-                          </span>
-                        </div>
-                      </td>
-                      <td
-                        style={{
-                          padding: "7px 6px",
-                          textAlign: "right",
-                          fontFamily: "monospace",
-                          color: risk ? C.rose : C.emerald,
-                          fontSize: 10,
-                        }}
-                      >
-                        {a.kept}/{a.total}
-                      </td>
-                      <td style={{ padding: "7px 6px", textAlign: "right" }}>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color:
-                              a.score >= 85
-                                ? C.emerald
-                                : a.score >= 70
-                                  ? C.amber
-                                  : C.rose,
-                          }}
-                        >
-                          {a.score}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────── TAB: EXECUTIVE ──
-
-function PanelExec({ data }: { data: DashboardLiveData }) {
-  const { calls30d, yardsData, opsKpis: kpi } = data;
-  const hmMax = Math.max(...HEATMAP.flat());
-  const fulfillPct = Math.round(
-    (kpi.promiseFulfilled / kpi.promiseTotal) * 100,
-  );
-  const totalCalls7d = SEED_CALLS_7D.reduce((s, d) => s + d.calls, 0);
-  const [filterYard, setFilterYard] = useState<string | null>(null);
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        flex: 1,
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      {/* ROW 1 — KPIs (6 cards, no Target) */}
-      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-        <KpiCard
-          label="7-Day Calls"
-          value={fmt(totalCalls7d)}
-          sub="daily avg: 424"
-          trend={{ val: "+12%", up: true }}
-          icon={Phone}
-          accent={C.blue}
-        />
-        <KpiCard
-          label="Active Tickets"
-          value={String(kpi.openTotal)}
-          sub={`${kpi.overdue} overdue`}
-          trend={{ val: "+4%", up: false }}
-          icon={Activity}
-          accent={C.amber}
-        />
-        <KpiCard
-          label="Average Time"
-          value={`${kpi.ahtMin}:${String(kpi.ahtSec).padStart(2, "0")}`}
-          sub="minutes per call"
-          trend={{ val: "−8%", up: true }}
-          icon={Timer}
-          accent={C.emerald}
-        />
-        <KpiCard
-          label="Utilization"
-          value="78%"
-          sub="target 85%"
-          trend={{ val: "+3%", up: true }}
-          icon={UserCheck}
-          accent={C.violet}
-        />
-        <KpiCard
-          label="Campaign ROI"
-          value="3.1×"
-          sub="monthly average"
-          trend={{ val: "+0.4×", up: true }}
-          icon={TrendingUp}
-          accent={C.cyan}
-        />
-        <KpiCard
-          label="Promises Kept"
-          value={`${fulfillPct}%`}
-          sub={`${kpi.promiseFulfilled} of ${kpi.promiseTotal} this week`}
-          trend={{ val: "−2%", up: false }}
-          icon={Shield}
-          accent={C.rose}
-        />
-      </div>
-
-      {/* ROW 2 — 30 day area + bar yards */}
-      <div style={{ display: "flex", gap: 8, flex: "0 0 auto", height: 200 }}>
-        <SectionCard title="Call Trend — 30 Days " style={{ flex: 2 }}>
-          <ResponsiveContainer width="100%" height={150}>
-            <ComposedChart
-              data={calls30d}
-              margin={{ top: 4, right: 4, left: -22, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="g30" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.blue} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={C.blue} stopOpacity={0.03} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="d"
-                tick={{ fill: C.hint, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                interval={4}
-              />
-              <YAxis
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<LightTooltip />} />
-
-              <ReferenceLine
-                y={450}
-                stroke={C.rose}
-                strokeDasharray="4 4"
-                strokeWidth={1.5}
-                label={{
-                  value: "Target",
-                  position: "insideTopRight",
-                  fill: C.rose,
-                  fontSize: 9,
-                  fontWeight: 600,
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="calls"
-                stroke={C.blue}
-                strokeWidth={2}
-                fill="url(#g30)"
-                name="Calls"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <SectionCard
-          title="Calls by Yard"
-          titleRight={
-            filterYard ? (
-              <FilterChip
-                label={filterYard}
-                onClear={() => setFilterYard(null)}
-              />
-            ) : undefined
-          }
-          style={{ flex: 1 }}
-        >
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart
-              data={yardsData}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-              onClick={(d) => {
-                const y = d?.activePayload?.[0]?.payload?.yard as
-                  | string
-                  | undefined;
-                if (y) setFilterYard(filterYard === y ? null : y);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="yard"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Bar dataKey="calls" radius={[4, 4, 0, 0]} name="Calls">
-                {yardsData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={[C.blue, C.violet, C.cyan, C.indigo, C.teal][i]}
-                    opacity={filterYard && entry.yard !== filterYard ? 0.2 : 1}
-                  />
-                ))}
-                <LabelList
-                  dataKey="calls"
-                  position="top"
-                  style={{ fill: C.hint, fontSize: 9 }}
+          <div className="h-[330px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={campaignRates} margin={{ left: -16, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="campaign" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+                <Bar
+                  dataKey="contact"
+                  name="Contact %"
+                  fill={toneClasses.emerald.chart}
+                  radius={[6, 6, 0, 0]}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <SectionCard title="Active vs Overdue" style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart
-              data={yardsData}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-              barSize={10}
-              onClick={(d) => {
-                const y = d?.activePayload?.[0]?.payload?.yard as
-                  | string
-                  | undefined;
-                if (y) setFilterYard(filterYard === y ? null : y);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="yard"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 10, color: C.muted }} />
-              <Bar
-                dataKey="open"
-                name="Active"
-                fill={C.blue}
-                radius={[3, 3, 0, 0]}
-              >
-                {yardsData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={C.blue}
-                    opacity={filterYard && entry.yard !== filterYard ? 0.2 : 1}
-                  />
-                ))}
-              </Bar>
-              <Bar
-                dataKey="ovd"
-                name="Overdue"
-                fill={C.rose}
-                radius={[3, 3, 0, 0]}
-              >
-                {yardsData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={C.rose}
-                    opacity={filterYard && entry.yard !== filterYard ? 0.2 : 1}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </SectionCard>
-      </div>
-
-      {/* ROW 3 — Heatmap + macro table */}
-      <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
-        <SectionCard
-          title="Heatmap — Call Volume by Hour × Day"
-          style={{ flex: 3 }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "28px repeat(24, 1fr)",
-              gap: "3px",
-            }}
-          >
-            <div />
-            {Array.from({ length: 24 }, (_, h) => (
-              <div
-                key={h}
-                style={{ fontSize: 8, textAlign: "center", color: C.hint }}
-              >
-                {h % 4 === 0 ? `${h}h` : ""}
-              </div>
-            ))}
-            {HEATMAP.map((row, d) => [
-              <div
-                key={`l${d}`}
-                style={{
-                  fontSize: 9,
-                  color: C.muted,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                {HM_DAYS[d]}
-              </div>,
-              ...row.map((v, h) => {
-                const t = v / hmMax;
-                const l = Math.round(95 - t * 60);
-                return (
-                  <div
-                    key={`${d}-${h}`}
-                    title={`${HM_DAYS[d]} ${h}:00 → ${v}`}
-                    style={{
-                      height: 25,
-                      borderRadius: 3,
-                      background: `hsl(210 90% ${l}%)`,
-                      opacity: 0.85 + t * 0.15,
-                    }}
-                  />
-                );
-              }),
-            ])}
+                <Bar
+                  dataKey="conversion"
+                  name="Conversion %"
+                  fill={toneClasses.indigo.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Bar
+                  dataKey="sms"
+                  name="SMS reply %"
+                  fill={toneClasses.sky.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              marginTop: 6,
-              fontSize: 9,
-              color: C.muted,
-            }}
-          >
-            <span>Low</span>
-            {[0.1, 0.3, 0.5, 0.7, 0.9].map((t) => (
-              <div
-                key={t}
-                style={{
-                  width: 18,
-                  height: 7,
-                  borderRadius: 2,
-                  background: `hsl(210 90% ${Math.round(95 - t * 60)}%)`,
-                }}
-              />
-            ))}
-            <span>High</span>
+        </PanelCard>
+
+        <PanelCard
+          title="Campaign funnels"
+          subtitle="Lead and AR funnels prepared for campaign-level attribution."
+        >
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-1">
+            <FunnelBars title="Lead to enrollment" data={leadFunnel} tone="indigo" />
+            <FunnelBars title="AR collection path" data={arFunnel} tone="emerald" />
           </div>
-        </SectionCard>
-
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            minHeight: 0,
-          }}
-        >
-          <SectionCard title="Executive Metrics" style={{ flex: 1 }}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                justifyContent: "space-between",
-              }}
-            >
-              {[
-                {
-                  label: "Avg Resolution Time",
-                  val: "1d 4h",
-                  trend: "−12%",
-                  up: true,
-                },
-                {
-                  label: "Ticket/Call Ratio",
-                  val: "0.31",
-                  trend: "+0.02",
-                  up: false,
-                },
-                {
-                  label: "Resolution Rate",
-                  val: "82%",
-                  trend: "+5%",
-                  up: true,
-                },
-                {
-                  label: "Lead → Enrollment",
-                  val: "17.6%",
-                  trend: "+2.1%",
-                  up: true,
-                },
-                {
-                  label: "Avg Campaign ROI",
-                  val: "3.1×",
-                  trend: "+0.4×",
-                  up: true,
-                },
-                {
-                  label: "Promises Kept (Month)",
-                  val: "69%",
-                  trend: "−2%",
-                  up: false,
-                },
-              ].map((m) => (
-                <div
-                  key={m.label}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "5px 0",
-                    borderBottom: `1px solid ${C.border}`,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: C.muted }}>
-                    {m.label}
-                  </span>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 800,
-                        color: C.text,
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    >
-                      {m.val}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        background: m.up ? `${C.emerald}15` : `${C.rose}15`,
-                        color: m.up ? C.emerald : C.rose,
-                      }}
-                    >
-                      {m.trend}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-          <SectionCard title="Executive SLAs" style={{ flexShrink: 0 }}>
-            <div style={{ display: "flex", gap: 16 }}>
-              {[
-                { label: "Call Response Time", value: "12 seconds", ok: true },
-                {
-                  label: "Ticket Response Time",
-                  value: "45 minutes",
-                  ok: false,
-                },
-              ].map((sla) => (
-                <div
-                  key={sla.label}
-                  style={{
-                    flex: 1,
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: sla.ok ? `${C.emerald}08` : `${C.rose}08`,
-                    border: `1px solid ${sla.ok ? C.emerald : C.rose}25`,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: sla.ok ? C.emerald : C.rose,
-                        display: "inline-block",
-                        boxShadow: `0 0 5px ${sla.ok ? C.emerald : C.rose}`,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: C.muted,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                      }}
-                    >
-                      {sla.label}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 800,
-                      color: sla.ok ? C.emerald : C.rose,
-                      fontFamily: "'DM Sans', sans-serif",
-                      letterSpacing: "-0.5px",
-                    }}
-                  >
-                    {sla.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────── TAB: MARKETING ──
-
-function PanelMkt({ data }: { data: DashboardLiveData }) {
-  const {
-    dispositions,
-    campaignData,
-    leadFunnel,
-    arFunnel,
-    wellnessEnroll,
-    smsData,
-  } = data;
-  const [filterDisp, setFilterDisp] = useState<string | null>(null);
-  const [filterCampaign, setFilterCampaign] = useState<string | null>(null);
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        flex: 1,
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      {/* ROW 1 — KPIs */}
-      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-        <KpiCard
-          label="Calls by Location"
-          value="2,642"
-          sub="Miami leads: 842"
-          trend={{ val: "+7%", up: true }}
-          icon={MapPin}
-          accent={C.blue}
-        />
-        <KpiCard
-          label="Contact Rate"
-          value="58.8%"
-          sub="target: 65%"
-          trend={{ val: "+3%", up: true }}
-          icon={PhoneCall}
-          accent={C.cyan}
-        />
-        <KpiCard
-          label="Missed Call Rate"
-          value="4.2%"
-          sub="Peak window: 12pm-1pm"
-          trend={{ val: "+0.3%", up: false }}
-          icon={Phone}
-          accent={C.violet}
-        />
-        <KpiCard
-          label="Onboarding Compl."
-          value="71%"
-          sub="target: 75%"
-          trend={{ val: "+6%", up: true }}
-          icon={UserCheck}
-          accent={C.emerald}
-        />
-        <KpiCard
-          label="SMS Engagement"
-          value="34%"
-          sub="402 replies W4"
-          trend={{ val: "+4%", up: true }}
-          icon={MessageSquare}
-          accent={C.amber}
-        />
-        <KpiCard
-          label="Lead → Customer"
-          value="17.6%"
-          sub="218 of 1,240 leads"
-          trend={{ val: "+2.1%", up: true }}
-          icon={TrendingUp}
-          accent={C.rose}
-        />
+        </PanelCard>
       </div>
 
-      {/* ROW 2 — Campaign + lead funnel + dispositions */}
-      <div style={{ display: "flex", gap: 8, flex: "0 0 auto", height: 210 }}>
-        {/* Campaign bar */}
-        <SectionCard
-          title="Contact Rate by Campaign"
-          titleRight={
-            filterCampaign ? (
-              <FilterChip
-                label={filterCampaign}
-                onClear={() => setFilterCampaign(null)}
-              />
-            ) : undefined
-          }
-          style={{ flex: 1 }}
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <PanelCard
+          title="SMS engagement"
+          subtitle="Two-way SMS volume, replies and response rate."
         >
-          <ResponsiveContainer width="100%" height={155}>
-            <BarChart
-              data={campaignData}
-              layout="vertical"
-              margin={{ top: 0, right: 40, left: 10, bottom: 0 }}
-              barSize={14}
-              onClick={(d) => {
-                const n = d?.activePayload?.[0]?.payload?.name as
-                  | string
-                  | undefined;
-                if (n) setFilterCampaign(filterCampaign === n ? null : n);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                horizontal={false}
-              />
-              <XAxis
-                type="number"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                domain={[0, 100]}
-                unit="%"
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                width={70}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Bar dataKey="rate" name="Contact rate" radius={[0, 4, 4, 0]}>
-                {campaignData.map((r, i) => (
-                  <Cell
-                    key={i}
-                    fill={
-                      r.rate >= 65 ? C.emerald : r.rate >= 50 ? C.amber : C.rose
-                    }
-                    opacity={
-                      filterCampaign && r.name !== filterCampaign ? 0.2 : 1
-                    }
-                  />
-                ))}
-                <LabelList
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={smsTrend} margin={{ left: -16, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="week" tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" tickLine={false} axisLine={false} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickLine={false}
+                  axisLine={false}
+                  unit="%"
+                />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+                <Bar
+                  yAxisId="left"
+                  dataKey="sent"
+                  name="Sent"
+                  fill={toneClasses.sky.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Bar
+                  yAxisId="left"
+                  dataKey="replies"
+                  name="Replies"
+                  fill={toneClasses.amber.chart}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
                   dataKey="rate"
-                  position="right"
-                  style={{ fill: C.muted, fontSize: 10 }}
-                  formatter={(v: any) => `${v}%`}
+                  name="Reply rate"
+                  stroke={toneClasses.emerald.chart}
+                  strokeWidth={3}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </SectionCard>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </PanelCard>
 
-        {/* Lead funnel */}
-        <SectionCard title="Lead Funnel" style={{ flex: 1 }}>
-          <FunnelBars data={leadFunnel} />
-        </SectionCard>
-
-        {/* AR funnel */}
-        <SectionCard title="AR — Collections" style={{ flex: 1 }}>
-          <FunnelBars data={arFunnel} />
-        </SectionCard>
-
-        {/* New vs Returning Callers Donut */}
-        <SectionCard
-          title="New vs. Returning Callers"
-          style={{ flex: "0 0 190px" }}
+        <PanelCard
+          title="Disposition mix"
+          subtitle="Mandatory outcome tags ready for clean campaign reporting."
         >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              height: "100%",
-              gap: 6,
-            }}
-          >
-            <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
+          <div className="grid gap-4 lg:grid-cols-[240px_1fr] lg:items-center">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={CALLER_TYPE}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={30}
-                    outerRadius={55}
+                    data={dispositionBreakdown}
                     dataKey="value"
+                    nameKey="name"
+                    innerRadius={62}
+                    outerRadius={92}
                     paddingAngle={3}
                   >
-                    {CALLER_TYPE.map((d, i) => (
-                      <Cell
-                        key={i}
-                        fill={d.color}
-                        stroke={C.card}
-                        strokeWidth={2}
-                      />
+                    {dispositionBreakdown.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    content={<LightTooltip />}
-                    formatter={(v: any) => [`${v}%`, ""]}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-              {CALLER_TYPE.map((d) => (
+            <div className="space-y-3">
+              {dispositionBreakdown.map((item) => (
                 <div
-                  key={d.name}
-                  style={{ display: "flex", alignItems: "center", gap: 5 }}
+                  key={item.name}
+                  className="flex items-center justify-between gap-3 rounded-[8px] border border-slate-200 p-3 dark:border-slate-800"
                 >
-                  <div
-                    style={{
-                      width: 9,
-                      height: 9,
-                      borderRadius: 3,
-                      background: d.color,
-                    }}
-                  />
-                  <span style={{ fontSize: 10, color: C.muted }}>{d.name}</span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: C.text,
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    {d.value}%
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span
+                      className="h-3 w-3 rounded-[4px]"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    {item.name}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-slate-50">
+                    {item.value}%
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        </SectionCard>
-
-        {/* Dispositions Pie - FIXED */}
-        <SectionCard
-          title="Lead Disposition"
-          titleRight={
-            filterDisp ? (
-              <FilterChip
-                label={filterDisp}
-                onClear={() => setFilterDisp(null)}
-              />
-            ) : undefined
-          }
-          style={{ flex: "0 0 280px" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-              gap: 12,
-            }}
-          >
-            <div style={{ width: 130, height: 155 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={dispositions}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={35}
-                    outerRadius={60}
-                    dataKey="value"
-                    paddingAngle={2}
-                    onClick={(d) =>
-                      setFilterDisp(filterDisp === d.name ? null : d.name)
-                    }
-                    style={{ cursor: "pointer" }}
-                  >
-                    {dispositions.map((d, i) => (
-                      <Cell
-                        key={i}
-                        fill={d.color}
-                        stroke={C.card}
-                        strokeWidth={2}
-                        opacity={filterDisp && d.name !== filterDisp ? 0.2 : 1}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<LightTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                flex: 1,
-              }}
-            >
-              {dispositions.map((d) => {
-                const total = dispositions.reduce(
-                  (sum, item) => sum + item.value,
-                  0,
-                );
-                const pct = ((d.value / total) * 100).toFixed(1);
-                return (
-                  <div key={d.name}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        marginBottom: 3,
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 3,
-                          background: d.color,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{ fontSize: 11, fontWeight: 600, color: C.text }}
-                      >
-                        {d.name}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: C.muted,
-                          marginLeft: "auto",
-                        }}
-                      >
-                        {pct}%
-                      </span>
-                    </div>
-                    <div style={{ marginLeft: 16 }}>
-                      <span
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: C.text,
-                          fontFamily: "'DM Sans', sans-serif",
-                        }}
-                      >
-                        {fmt(d.value)}
-                      </span>
-                      <span
-                        style={{ fontSize: 10, color: C.hint, marginLeft: 4 }}
-                      >
-                        leads
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </SectionCard>
+        </PanelCard>
       </div>
 
-      {/* ROW 3 — Wellness line + SMS composed + campaign ROI scatter */}
-      <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
-        <SectionCard title="Wellness — Enrollments by Hour" style={{ flex: 1 }}>
+      <PanelCard
+        title="Yard volume and outcomes"
+        subtitle="Location reporting for marketing allocation and operational load."
+      >
+        <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={wellnessEnroll}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="gW" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.rose} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={C.rose} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="h"
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="v"
-                stroke={C.rose}
-                strokeWidth={2}
-                fill="url(#gW)"
-                name="Enrollments"
-                dot={{ fill: C.rose, r: 3, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <SectionCard title="SMS — Sent vs Replies + Rate" style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={smsData}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={C.border}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="week"
-                tick={{ fill: C.muted, fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                yAxisId="left"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                unit="%"
-                domain={[0, 100]}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 10, color: C.muted }} />
+            <BarChart data={yardVolume} margin={{ left: -16, right: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="yard" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend />
               <Bar
-                yAxisId="left"
-                dataKey="sent"
-                name="Sent"
-                fill={C.blue}
-                radius={[3, 3, 0, 0]}
+                dataKey="calls"
+                name="Calls"
+                fill={toneClasses.indigo.chart}
+                radius={[6, 6, 0, 0]}
               />
               <Bar
-                yAxisId="left"
-                dataKey="replied"
-                name="Replied"
-                fill={C.amber}
-                radius={[3, 3, 0, 0]}
+                dataKey="outcomes"
+                name="Positive outcomes"
+                fill={toneClasses.emerald.chart}
+                radius={[6, 6, 0, 0]}
               />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="rate"
-                name="Reply Rate %"
-                stroke={C.cyan}
-                strokeWidth={2}
-                dot={{ fill: C.cyan, r: 3 }}
-              />
-            </ComposedChart>
+            </BarChart>
           </ResponsiveContainer>
-        </SectionCard>
-
-        <SectionCard title="Campaigns — ROI vs Conversions" style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis
-                type="number"
-                dataKey="conv"
-                name="Conversions"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                label={{
-                  value: "Conv.",
-                  fill: C.hint,
-                  fontSize: 9,
-                  position: "insideBottom",
-                  offset: -2,
-                }}
-              />
-              <YAxis
-                type="number"
-                dataKey="roi"
-                name="ROI"
-                tick={{ fill: C.muted, fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                label={{
-                  value: "ROI×",
-                  fill: C.hint,
-                  fontSize: 9,
-                  angle: -90,
-                  position: "insideLeft",
-                }}
-              />
-              <Tooltip content={<LightTooltip />} />
-              <Scatter data={campaignData} name="Campaigns">
-                {campaignData.map((r, i) => (
-                  <Cell
-                    key={i}
-                    fill={[C.blue, C.emerald, C.amber, C.rose][i]}
-                    opacity={
-                      filterCampaign && r.name !== filterCampaign ? 0.15 : 1
-                    }
-                  />
-                ))}
-              </Scatter>
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div
-            style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}
-          >
-            {campaignData.map((r, i) => (
-              <div
-                key={r.name}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  cursor: "pointer",
-                  opacity:
-                    filterCampaign && r.name !== filterCampaign ? 0.3 : 1,
-                  transition: "opacity .15s",
-                }}
-                onClick={() =>
-                  setFilterCampaign(filterCampaign === r.name ? null : r.name)
-                }
-              >
-                <div
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: [C.blue, C.emerald, C.amber, C.rose][i],
-                  }}
-                />
-                <span style={{ fontSize: 9, color: C.muted }}>{r.name}</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
+        </div>
+      </PanelCard>
     </div>
   );
 }
 
-// ─────────────────────────────────────────── PAGE ROOT ───
-
-type Tab = "ops" | "exec" | "mkt";
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "ops", label: "Operations", icon: <Headphones size={13} /> },
-  { id: "exec", label: "Executive", icon: <BarChart3 size={13} /> },
-  { id: "mkt", label: "Marketing", icon: <Sparkles size={13} /> },
-];
-
-export default function DashboardProPage() {
-  const [tab, setTab] = useState<Tab>("ops");
-  const live = useDashboardData();
-
+export default function DashboardPage() {
   return (
-    <div
-      style={{
-        height: "calc(100vh - 64px)",
-        display: "flex",
-        flexDirection: "column",
-        background: C.bg,
-        color: C.text,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-        overflow: "hidden",
-        padding: "10px 12px",
-        gap: 10,
-      }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,800&display=swap');
-        @keyframes pulse2 { 0%,100%{opacity:1;box-shadow: 0 0 5px currentColor} 50%{opacity:.5;box-shadow: 0 0 2px currentColor} }
-        @keyframes kpiFlash { 0%{background:rgba(99,102,241,0.18);} 100%{background:transparent;} }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
-      `}</style>
+    <div className="min-h-[calc(100dvh-5.5rem)] space-y-5 py-5 tracking-normal">
+      <SectionIntro />
 
-      {/* ── NAV BAR ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        {/* Tabs */}
-        <div
-          style={{
-            display: "flex",
-            gap: 2,
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 10,
-            padding: 3,
-          }}
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                transition: "all .18s",
-                background: tab === t.id ? C.card : "transparent",
-                color: tab === t.id ? C.text : C.muted,
-                boxShadow:
-                  tab === t.id
-                    ? "0 1px 4px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(0,0,0,0.05)"
-                    : "none",
-              }}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs defaultValue="operations" className="space-y-4">
+        <TabsList className="grid h-auto w-full grid-cols-1 rounded-[8px] border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-3 lg:w-fit">
+          <TabsTrigger
+            value="operations"
+            className="min-h-10 rounded-[6px] text-sm"
+          >
+            <Headphones className="h-4 w-4" aria-hidden />
+            Operations
+          </TabsTrigger>
+          <TabsTrigger
+            value="executive"
+            className="min-h-10 rounded-[6px] text-sm"
+          >
+            <Users className="h-4 w-4" aria-hidden />
+            Executive
+          </TabsTrigger>
+          <TabsTrigger
+            value="marketing"
+            className="min-h-10 rounded-[6px] text-sm"
+          >
+            <MapPin className="h-4 w-4" aria-hidden />
+            Marketing
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ── PANEL ── */}
-      {tab === "ops" && <PanelOps data={live} />}
-      {tab === "exec" && <PanelExec data={live} />}
-      {tab === "mkt" && <PanelMkt data={live} />}
+        <TabsContent value="operations" className="mt-0">
+          <OperationsDashboard />
+        </TabsContent>
+        <TabsContent value="executive" className="mt-0">
+          <ExecutiveDashboard />
+        </TabsContent>
+        <TabsContent value="marketing" className="mt-0">
+          <MarketingDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
