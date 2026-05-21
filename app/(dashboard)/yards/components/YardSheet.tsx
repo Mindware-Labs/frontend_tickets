@@ -169,12 +169,14 @@ function DialButton({
   dial,
   canDial,
   variant = "header",
+  className,
 }: {
   phone?: string | null;
   yardId: number;
   dial: (phoneNumber: string, ticketId?: number | string) => boolean;
   canDial: boolean;
   variant?: "header" | "compact";
+  className?: string;
 }) {
   const dialable = hasDialablePhone(phone);
   const disabled = !dialable || !canDial;
@@ -214,6 +216,7 @@ function DialButton({
         disabled
           ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600"
           : "border-[#008f68] bg-[#008f68] text-white shadow-sm shadow-emerald-900/10 hover:bg-[#007a5a]",
+        className,
       )}
     >
       <PhoneCall className="h-4 w-4" strokeWidth={2.25} />
@@ -407,15 +410,18 @@ function SheetAction({
   href,
   onClick,
   primary = false,
+  className: actionClassName,
 }: {
   icon: LucideIcon;
   label: string;
   href?: string;
   onClick?: () => void;
   primary?: boolean;
+  className?: string;
 }) {
   const className = cn(
     "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-3 text-[13px] font-semibold transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35",
+    actionClassName,
     primary
       ? "border-[#008f68] bg-[#008f68] text-white shadow-sm shadow-emerald-900/10 hover:bg-[#007a5a]"
       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900",
@@ -1023,37 +1029,43 @@ export function YardSheet({
             </div>
 
             <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <DialButton
-                  phone={data.contactInfo}
-                  yardId={data.id}
-                  dial={dial}
-                  canDial={canDial}
-                />
-                <SheetAction
-                  icon={ActivitiesIcon}
-                  label="Activities"
-                  href={`/calls?yardId=${data.id}`}
-                  onClick={() => onOpenChange(false)}
-                />
-                {!isAgent ? (
+              <div className="flex justify-center">
+                <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-2">
+                  <DialButton
+                    phone={data.contactInfo}
+                    yardId={data.id}
+                    dial={dial}
+                    canDial={canDial}
+                    className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                  />
                   <SheetAction
-                    icon={FileText}
-                    label="Report"
-                    href={`/reports/yards?yardId=${data.id}`}
+                    icon={ActivitiesIcon}
+                    label="Activities"
+                    href={`/calls?yardId=${data.id}`}
                     onClick={() => onOpenChange(false)}
+                    className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
                   />
-                ) : null}
-                {onEdit ? (
-                  <SheetAction
-                    icon={Pencil}
-                    label="Edit"
-                    onClick={() => {
-                      onOpenChange(false);
-                      onEdit(data);
-                    }}
-                  />
-                ) : null}
+                  {!isAgent ? (
+                    <SheetAction
+                      icon={FileText}
+                      label="Report"
+                      href={`/reports/yards?yardId=${data.id}`}
+                      onClick={() => onOpenChange(false)}
+                      className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                    />
+                  ) : null}
+                  {onEdit ? (
+                    <SheetAction
+                      icon={Pencil}
+                      label="Edit"
+                      onClick={() => {
+                        onOpenChange(false);
+                        onEdit(data);
+                      }}
+                      className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                    />
+                  ) : null}
+                </div>
               </div>
             </div>
           </>

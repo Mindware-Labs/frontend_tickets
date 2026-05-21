@@ -138,9 +138,9 @@ function YardPanelNav({
 }) {
   if (stacked) {
     return (
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4 sm:px-6 dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-950/95">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#008f68]">
             Linked yard
           </p>
           <h3 className="mt-0.5 text-[18px] font-bold leading-tight text-slate-950 dark:text-white">
@@ -413,7 +413,7 @@ export function CampaignSheetYardView({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
             {mapsUrl ? (
               <a
                 href={mapsUrl}

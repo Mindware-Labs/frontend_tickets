@@ -4,7 +4,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -29,7 +28,6 @@ import {
   BarChart3,
   Building2,
   CheckCircle2,
-  ChevronLeft,
   Clock,
   DollarSign,
   FileText,
@@ -85,95 +83,6 @@ function normalizePhone(phone: string) {
   return (phone || "").replace(/\D/g, "");
 }
 
-const STACK_PEEK_PX = 108;
-const STACK_TRANSITION =
-  "duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none motion-reduce:transform-none";
-
-function CampaignStackPeek({
-  campaign,
-  loading,
-  onBack,
-}: {
-  campaign: Campaign;
-  loading: boolean;
-  onBack: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onBack}
-      aria-label={`Back to campaign ${campaign.nombre}`}
-      className={cn(
-        "group absolute inset-y-0 left-0 z-[15] flex w-[var(--stack-peek)] flex-col",
-        "rounded-l-[26px] border border-r-0 border-slate-200/90 bg-white text-left",
-        "shadow-[8px_0_32px_-8px_rgba(15,23,42,0.18)] transition-all",
-        "hover:border-[#008f68]/35 hover:shadow-[12px_0_40px_-8px_rgba(0,143,104,0.2)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/40",
-        "dark:border-slate-700 dark:bg-slate-950",
-      )}
-    >
-      <span
-        className="absolute inset-y-4 left-0 w-[3px] rounded-full bg-gradient-to-b from-[#008f68] via-[#00a67a] to-[#007a5a] opacity-90"
-        aria-hidden
-      />
-
-      <div className="flex min-h-0 flex-1 flex-col px-3 pb-4 pt-5">
-        <div className="flex flex-col items-center gap-2.5">
-          <CampaignMark
-            className="h-11 w-11 rounded-xl shadow-sm transition-transform group-hover:scale-[1.03]"
-            iconClassName="h-5 w-5"
-          />
-          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500 dark:bg-slate-800">
-            #{campaign.id}
-          </span>
-        </div>
-
-        <div className="mt-4 min-h-0 flex-1 px-0.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#008f68]">
-            Campaign
-          </p>
-          <p
-            className="mt-2 line-clamp-5 text-[13px] font-bold leading-snug text-slate-900 dark:text-slate-50"
-            title={campaign.nombre}
-          >
-            {campaign.nombre}
-          </p>
-          <p className="mt-2 text-[11px] font-medium text-slate-500">
-            {CAMPAIGN_TYPE_LABELS[campaign.tipo]}
-          </p>
-          <span
-            className={cn(
-              "mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-              campaign.isActive
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 bg-slate-100 text-slate-600",
-            )}
-          >
-            {campaign.isActive ? "Active" : "Inactive"}
-          </span>
-        </div>
-
-        <div className="mt-auto flex flex-col items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-          {loading ? (
-            <RefreshCw className="h-3.5 w-3.5 animate-spin text-slate-400" />
-          ) : (
-            <span className="text-[18px] font-bold leading-none text-[#008f68]">
-              {campaign.ticketCount ?? 0}
-            </span>
-          )}
-          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-            Activities
-          </span>
-          <span className="flex items-center gap-0.5 text-[10px] font-semibold text-[#008f68] opacity-80 group-hover:opacity-100">
-            <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
-            Back
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-}
-
 export function CampaignSheet({
   open,
   onOpenChange,
@@ -195,7 +104,6 @@ export function CampaignSheet({
   const [tickets, setTickets] = useState<CampaignTicket[]>([]);
   const [showTickets, setShowTickets] = useState(false);
   const [ticketSearch, setTicketSearch] = useState("");
-
   useEffect(() => {
     setSheetOpen(open);
     return () => setSheetOpen(false);
@@ -300,19 +208,10 @@ export function CampaignSheet({
         side="right"
         hideClose
         className={cn(
-          "flex h-dvh flex-col gap-0 overflow-hidden p-0 text-slate-900 antialiased",
-          "border-l border-slate-200/80 bg-slate-50 shadow-2xl shadow-slate-900/15",
-          "transition-[width,max-width] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
-          STACK_TRANSITION,
-          showYardPanel
-            ? "w-[min(calc(560px+var(--stack-peek)),calc(100vw-0.5rem))] max-w-none sm:w-[calc(560px+var(--stack-peek))]"
-            : "w-full max-w-[560px] sm:w-[min(560px,calc(100vw-2rem))]",
+          "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-hidden p-0 sm:w-[min(560px,calc(100vw-2rem))]",
+          "border-l border-slate-200/80 bg-slate-50 text-slate-900 antialiased",
+          "shadow-2xl shadow-slate-900/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
         )}
-        style={
-          {
-            "--stack-peek": `${STACK_PEEK_PX}px`,
-          } as CSSProperties
-        }
       >
         {!data ? (
           <>
@@ -330,34 +229,18 @@ export function CampaignSheet({
               <SheetTitle>{data.nombre}</SheetTitle>
               <SheetDescription>
                 {showYardPanel
-                  ? "Campaign and linked yard details."
+                  ? "Linked yard details."
                   : "Campaign profile and metrics."}
               </SheetDescription>
             </SheetHeader>
 
-            <div
-              className={cn(
-                "relative flex h-full min-h-0 w-full overflow-hidden",
-                showYardPanel && "bg-slate-200/40 dark:bg-slate-900/80",
-              )}
-            >
-              {showYardPanel && data ? (
-                <CampaignStackPeek
-                  campaign={data}
-                  loading={loading}
-                  onBack={onCloseYardPanel}
-                />
-              ) : null}
-
-              <div
-                className={cn(
-                  "relative z-0 flex h-full min-h-0 w-[min(560px,100vw)] shrink-0 flex-col bg-slate-50 transition-[opacity,transform]",
-                  STACK_TRANSITION,
-                  showYardPanel &&
-                    "pointer-events-none absolute inset-y-0 left-[var(--stack-peek)] w-[min(560px,calc(100vw-var(--stack-peek)))] opacity-0 max-md:opacity-0",
-                )}
-                aria-hidden={showYardPanel}
-              >
+            {showYardPanel && yardPanelId ? (
+              <CampaignSheetYardView
+                yardId={yardPanelId}
+                onBack={onCloseYardPanel}
+              />
+            ) : (
+              <div className="flex h-full min-h-0 flex-col">
             <div className="relative shrink-0 border-b border-slate-200/70 bg-white dark:border-slate-800 dark:bg-slate-950">
               <SheetClose
                 aria-label="Close campaign details"
@@ -664,28 +547,7 @@ export function CampaignSheet({
               ) : null}
             </div>
               </div>
-
-              <div
-                className={cn(
-                  "absolute inset-y-0 right-0 z-20 flex h-full w-[min(560px,calc(100vw-1rem))] max-w-[560px] flex-col",
-                  "overflow-hidden rounded-l-[26px] border border-slate-200/80 border-l-slate-200/90 bg-white",
-                  "shadow-[-40px_0_80px_-12px_rgba(15,23,42,0.28)] transition-transform",
-                  "dark:border-slate-700 dark:bg-slate-950",
-                  STACK_TRANSITION,
-                  showYardPanel
-                    ? "translate-x-0"
-                    : "pointer-events-none translate-x-full",
-                )}
-              >
-                {yardPanelId ? (
-                  <CampaignSheetYardView
-                    yardId={yardPanelId}
-                    onBack={onCloseYardPanel}
-                    stacked
-                  />
-                ) : null}
-              </div>
-            </div>
+            )}
           </>
         )}
       </SheetContent>

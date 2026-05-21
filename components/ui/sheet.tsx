@@ -51,15 +51,18 @@ function SheetContent({
   children,
   side = "right",
   hideClose = false,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: SheetSide;
   /** Hide the default top-right close button (use a custom SheetClose instead). */
   hideClose?: boolean;
+  /** Optional classes for the backdrop overlay (e.g. stacked panel dimming). */
+  overlayClassName?: string;
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
