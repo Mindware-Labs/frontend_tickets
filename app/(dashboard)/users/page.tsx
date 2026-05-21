@@ -1,85 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { fetchFromBackend } from "@/lib/api-client";
-import { UsersPagination } from "./components/UsersPagination";
-import {
-  Users,
-  Search,
-  Plus,
-  Loader2,
-  MoreVertical,
-  Edit2,
-  Trash2,
-  Shield,
-  UserCog,
-  Mail,
-  CheckCircle2,
-  Ban,
-  UserPlus,
-  Clock,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { User, UserFormData } from "./types";
+import { UsersToolbar } from "./components/UsersToolbar";
+import { UsersGrid } from "./components/UsersGrid";
+import { UsersPagination } from "./components/UsersPagination";
 
-type UserRole = "admin" | "agent";
+const UserFormModal = dynamic(
+  () => import("./components/UserFormModal").then((m) => m.UserFormModal),
+  { ssr: false },
+);
+const DeleteUserModal = dynamic(
+  () => import("./components/DeleteUserModal").then((m) => m.DeleteUserModal),
+  { ssr: false },
+);
+const UserSheet = dynamic(
+  () => import("./components/UserSheet").then((m) => m.UserSheet),
+  { ssr: false },
+);
 
-type User = {
-  id: number;
-  name: string;
-  lastName: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt?: string;
-  lastLogin?: string;
-};
-
-type FormState = {
-  name: string;
-  lastName: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-};
-
-const DEFAULT_FORM: FormState = {
+const DEFAULT_FORM: UserFormData = {
   name: "",
   lastName: "",
   email: "",
@@ -87,21 +33,40 @@ const DEFAULT_FORM: FormState = {
   isActive: true,
 };
 
+const VIEW_TABS = [
+  { key: "all", label: "All Members" },
+  { key: "active", label: "Active" },
+  { key: "blocked", label: "Blocked" },
+  { key: "admin", label: "Admins" },
+  { key: "agent", label: "Agents" },
+] as const;
+
+type UserView = (typeof VIEW_TABS)[number]["key"];
+
 export default function UsersPage() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const userIdParam = searchParams?.get("userId");
+  const userIdFilter = userIdParam ? Number(userIdParam) : null;
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [activeView, setActiveView] = useState<UserView>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(9);
+
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showUserSheet, setShowUserSheet] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<FormState>(DEFAULT_FORM);
+  const [formData, setFormData] = useState<UserFormData>(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6); // Grid view: multiples of 6
 
   const fetchUsers = async () => {
     try {
@@ -109,8 +74,7 @@ export default function UsersPage() {
       const data = await fetchFromBackend("/users?page=1&limit=500");
       const items = Array.isArray(data) ? data : data?.data || [];
       setUsers(items);
-    } catch (error) {
-      console.error("Error fetching users:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load users",
@@ -125,16 +89,39 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // Close all modals when route changes
-  const pathname = usePathname();
   useEffect(() => {
     setShowCreate(false);
     setShowEdit(false);
+    setShowDelete(false);
+    setShowUserSheet(false);
   }, [pathname]);
 
-  const filteredUsers = useMemo(() => {
-    const term = search.toLowerCase();
-    return users.filter((user) => {
+  useEffect(() => {
+    if (!userIdFilter || loading || users.length === 0) return;
+    const match = users.find((u) => u.id === userIdFilter);
+    if (match) {
+      setSelectedUser(match);
+      setShowUserSheet(true);
+    }
+  }, [userIdFilter, loading, users.length]);
+
+  const handleUserSheetOpenChange = (open: boolean) => {
+    setShowUserSheet(open);
+    if (!open) {
+      setSelectedUser(null);
+      if (userIdParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("userId");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      }
+    }
+  };
+
+  const viewCounts = useMemo(() => {
+    const base = users.filter((user) => {
+      const term = search.toLowerCase();
+      if (!term) return true;
       return (
         user.name.toLowerCase().includes(term) ||
         user.lastName.toLowerCase().includes(term) ||
@@ -142,17 +129,51 @@ export default function UsersPage() {
         user.role.toLowerCase().includes(term)
       );
     });
+
+    return {
+      all: base.length,
+      active: base.filter((u) => u.isActive).length,
+      blocked: base.filter((u) => !u.isActive).length,
+      admin: base.filter((u) => u.role === "admin").length,
+      agent: base.filter((u) => u.role === "agent").length,
+    };
   }, [users, search]);
+
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter((user) => {
+        const term = search.toLowerCase();
+        const matchesSearch =
+          !term ||
+          user.name.toLowerCase().includes(term) ||
+          user.lastName.toLowerCase().includes(term) ||
+          user.email.toLowerCase().includes(term) ||
+          user.role.toLowerCase().includes(term);
+
+        const matchesView =
+          activeView === "all" ||
+          (activeView === "active" && user.isActive) ||
+          (activeView === "blocked" && !user.isActive) ||
+          (activeView === "admin" && user.role === "admin") ||
+          (activeView === "agent" && user.role === "agent");
+
+        const matchesQuery = userIdFilter ? user.id === userIdFilter : true;
+
+        return matchesSearch && matchesView && matchesQuery;
+      })
+      .sort((a, b) => a.id - b.id);
+  }, [users, search, activeView, userIdFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, currentPage, itemsPerPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredUsers, currentPage, itemsPerPage]);
+  }, [search, activeView, userIdFilter, itemsPerPage]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearValidationErrors = () => setValidationErrors({});
@@ -162,7 +183,6 @@ export default function UsersPage() {
     if (!formData.name.trim()) errors.name = "Name is required";
     if (!formData.lastName.trim()) errors.lastName = "Last name is required";
     if (!formData.email.trim()) errors.email = "Email is required";
-    if (!formData.role) errors.role = "Role is required";
     return errors;
   };
 
@@ -170,6 +190,11 @@ export default function UsersPage() {
     resetForm();
     clearValidationErrors();
     setShowCreate(true);
+  };
+
+  const handleOpen = (user: User) => {
+    setSelectedUser(user);
+    setShowUserSheet(true);
   };
 
   const handleEdit = (user: User) => {
@@ -191,7 +216,7 @@ export default function UsersPage() {
   };
 
   const handleSubmitCreate = async () => {
-    setValidationErrors({});
+    clearValidationErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -212,20 +237,27 @@ export default function UsersPage() {
 
       const resetCode = response?.reset?.resetCode;
       toast({
-        title: "User created successfully",
-        description: resetCode
-          ? `Reset code (dev): ${resetCode}`
-          : "A reset code has been sent to the user's email.",
+        title: "Success",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>
+              {resetCode
+                ? `User created. Reset code (dev): ${resetCode}`
+                : "User created. A reset code was sent by email."}
+            </span>
+          </div>
+        ),
       });
 
       setShowCreate(false);
       resetForm();
-      fetchUsers();
-    } catch (error: any) {
-      console.error("Error creating user:", error);
+      await fetchUsers();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: err.message || "Failed to create user",
         variant: "destructive",
       });
     } finally {
@@ -235,7 +267,7 @@ export default function UsersPage() {
 
   const handleSubmitEdit = async () => {
     if (!selectedUser) return;
-    setValidationErrors({});
+    clearValidationErrors();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -256,17 +288,22 @@ export default function UsersPage() {
       });
 
       toast({
-        title: "User updated",
-        description: "User details saved successfully.",
+        title: "Success",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>User updated successfully</span>
+          </div>
+        ),
       });
       setShowEdit(false);
       setSelectedUser(null);
-      fetchUsers();
-    } catch (error: any) {
-      console.error("Error updating user:", error);
+      await fetchUsers();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to update user",
+        description: err.message || "Failed to update user",
         variant: "destructive",
       });
     } finally {
@@ -278,21 +315,24 @@ export default function UsersPage() {
     if (!selectedUser) return;
     try {
       setIsSubmitting(true);
-      await fetchFromBackend(`/users/${selectedUser.id}`, {
-        method: "DELETE",
-      });
+      await fetchFromBackend(`/users/${selectedUser.id}`, { method: "DELETE" });
       toast({
-        title: "User deleted",
-        description: "User removed successfully.",
+        title: "Success",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>User deleted successfully</span>
+          </div>
+        ),
       });
       setShowDelete(false);
       setSelectedUser(null);
-      fetchUsers();
-    } catch (error: any) {
-      console.error("Error deleting user:", error);
+      await fetchUsers();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description: err.message || "Failed to delete user",
         variant: "destructive",
       });
     } finally {
@@ -307,495 +347,178 @@ export default function UsersPage() {
         body: JSON.stringify({ isActive: !user.isActive }),
       });
       toast({
-        title: user.isActive ? "User blocked" : "User activated",
-        description: `${user.email} is now ${
-          user.isActive ? "blocked" : "active"
-        }.`,
+        title: "Success",
+        description: `${user.email} is now ${user.isActive ? "blocked" : "active"}.`,
       });
-      fetchUsers();
-    } catch (error: any) {
+      await fetchUsers();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to update user status",
+        description: err.message || "Failed to update user status",
         variant: "destructive",
       });
     }
   };
 
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="p-6 space-y-6 bg-background min-h-screen animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-7 w-7 text-primary" />
+    <div className="flex h-screen flex-col gap-0 px-4 pb-4 pt-2">
+      <div className="flex w-full flex-col justify-between gap-3 border-b border-border px-0.5 pb-5 pt-2 md:flex-row md:items-center">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-50">
             Team Members
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage system access, roles, and account status.
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {today} · Manage access, roles, and account status
           </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              className="pl-9 bg-card border-border focus-visible:ring-primary text-foreground placeholder:text-muted-foreground"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Button onClick={handleCreate} className="gap-2 shadow-sm">
-            <UserPlus className="h-4 w-4" />
-            New User
-          </Button>
         </div>
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-          <Loader2 className="h-10 w-10 animate-spin text-primary/50" />
-          <p>Loading users...</p>
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <Card className="border-dashed border-2 border-muted bg-muted/5">
-          <CardContent className="py-20 flex flex-col items-center text-center gap-4">
-            <div className="p-4 rounded-full bg-muted/50">
-              <Users className="h-10 w-10 text-muted-foreground/50" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-semibold text-lg">No users found</h3>
-              <p className="text-muted-foreground max-w-sm">
-                Try adjusting your search terms or create a new user to get
-                started.
-              </p>
-            </div>
-            {!search && (
-              <Button onClick={handleCreate} variant="outline" className="mt-2">
-                <Plus className="h-4 w-4 mr-2" /> Add First User
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedUsers.map((user) => (
-              <Card
-                key={user.id}
-                className="bg-card border-border hover:border-primary/40 hover:shadow-md transition-all group relative overflow-hidden"
-              >
-                {/* Status Indicator Stripe */}
-                <div
+      <div className="mt-1 flex items-end border-b border-border">
+        <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex px-0.5">
+            {VIEW_TABS.map((tab) => {
+              const isActive = activeView === tab.key;
+              const count = viewCounts[tab.key];
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveView(tab.key)}
                   className={cn(
-                    "absolute top-0 left-0 w-1 h-full",
-                    user.isActive ? "bg-emerald-500" : "bg-destructive",
-                  )}
-                />
-
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 pl-6">
-                  <div className="flex gap-3 items-center">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
-                      {user.name.charAt(0)}
-                      {user.lastName.charAt(0)}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base font-semibold">
-                        {user.name} {user.lastName}
-                      </CardTitle>
-                      <CardDescription className="text-xs mt-0.5 flex items-center gap-1.5">
-                        <Badge
-                          variant="secondary"
-                          className="px-1.5 py-0 h-5 text-[10px] uppercase tracking-wider font-semibold"
-                        >
-                          {user.role}
-                        </Badge>
-                        <span
-                          className={cn(
-                            "text-[10px] font-medium flex items-center gap-1",
-                            user.isActive
-                              ? "text-emerald-600"
-                              : "text-destructive",
-                          )}
-                        >
-                          {user.isActive ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <Ban className="h-3 w-3" />
-                          )}
-                          {user.isActive ? "Active" : "Blocked"}
-                        </span>
-                      </CardDescription>
-                    </div>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 -mr-2"
-                      >
-                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleEdit(user)}>
-                        <Edit2 className="h-4 w-4 mr-2" /> Edit Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleToggleStatus(user)}
-                      >
-                        {user.isActive ? (
-                          <Ban className="h-4 w-4 mr-2" />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                        )}
-                        {user.isActive ? "Block Access" : "Unblock Access"}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(user)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete User
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-
-                <CardContent className="pl-6 pt-2 pb-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded border border-dashed">
-                    <Mail className="h-3.5 w-3.5" />
-                    <span className="truncate">{user.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>
-                      {user.lastLogin
-                        ? `Last login: ${new Date(user.lastLogin).toLocaleString()}`
-                        : "Never logged in"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <UsersPagination
-            totalCount={filteredUsers.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            onItemsPerPageChange={(value) => {
-              setItemsPerPage(value);
-              setCurrentPage(1);
-            }}
-            onPageChange={setCurrentPage}
-          />
-        </>
-      )}
-
-      {/* Create Modal */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-primary" /> Create New User
-            </DialogTitle>
-            <DialogDescription>
-              Add a new member to the team. They will receive a reset code via
-              email.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="create-name">
-                  First Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="create-name"
-                  placeholder="John"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className={cn(validationErrors.name && "border-destructive")}
-                />
-                {validationErrors.name && (
-                  <p className="text-xs text-destructive">
-                    {validationErrors.name}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-lastname">
-                  Last Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="create-lastname"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      lastName: e.target.value,
-                    }))
-                  }
-                  className={cn(
-                    validationErrors.lastName && "border-destructive",
-                  )}
-                />
-                {validationErrors.lastName && (
-                  <p className="text-xs text-destructive">
-                    {validationErrors.lastName}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="create-email">
-                Email Address <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="create-email"
-                type="email"
-                placeholder="john.doe@company.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, email: e.target.value }))
-                }
-                className={cn(validationErrors.email && "border-destructive")}
-              />
-              {validationErrors.email && (
-                <p className="text-xs text-destructive">
-                  {validationErrors.email}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>
-                Role Assignment <span className="text-destructive">*</span>
-              </Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, role: "agent" }))
-                  }
-                  className={cn(
-                    "cursor-pointer border rounded-lg p-3 flex flex-col gap-1 transition-all hover:border-primary/50",
-                    formData.role === "agent"
-                      ? "bg-primary/5 border-primary ring-1 ring-primary/20"
-                      : "bg-card",
+                    "-mb-px mr-4 flex items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors",
+                    isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <UserCog className="h-4 w-4" /> Agent
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Limited access to assigned tasks.
-                  </p>
-                </div>
-                <div
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, role: "admin" }))
-                  }
-                  className={cn(
-                    "cursor-pointer border rounded-lg p-3 flex flex-col gap-1 transition-all hover:border-primary/50",
-                    formData.role === "admin"
-                      ? "bg-primary/5 border-primary ring-1 ring-primary/20"
-                      : "bg-card",
-                  )}
-                >
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Shield className="h-4 w-4" /> Admin
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Full system control.
-                  </p>
-                </div>
-              </div>
-              {validationErrors.role && (
-                <p className="text-xs text-destructive">
-                  {validationErrors.role}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowCreate(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitCreate} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Modal */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit User Details</DialogTitle>
-            <DialogDescription>
-              Update information for {selectedUser?.email}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">First Name</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-lastname">Last Name</Label>
-                <Input
-                  id="edit-lastname"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      lastName: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email Address</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, email: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value: UserRole) =>
-                    setFormData((prev) => ({ ...prev, role: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="agent">Agent</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={formData.isActive ? "active" : "blocked"}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      isActive: value === "active",
-                    }))
-                  }
-                >
-                  <SelectTrigger
+                  {tab.label}
+                  <span
                     className={cn(
-                      formData.isActive
-                        ? "text-emerald-600"
-                        : "text-destructive",
+                      "rounded-full border px-1.5 py-px text-[11px]",
+                      isActive
+                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        : "border-border bg-muted/40 font-medium text-muted-foreground",
                     )}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active" className="text-emerald-600">
-                      Active
-                    </SelectItem>
-                    <SelectItem value="blocked" className="text-destructive">
-                      Blocked
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+        </div>
+        <div className="shrink-0 pb-2 pl-4 pr-2 pt-0.5">
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="flex h-[30px] items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+            style={{ background: "#008f68" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#007a5a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#008f68";
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New User
+          </button>
+        </div>
+      </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEdit(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitEdit} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="mb-2 mt-3">
+        <UsersToolbar search={search} onSearchChange={setSearch} />
+      </div>
 
-      {/* Delete Modal */}
-      <Dialog open={showDelete} onOpenChange={setShowDelete}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center gap-2">
-              <Trash2 className="h-5 w-5" /> Delete User
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete{" "}
-              <span className="font-medium text-foreground">
-                {selectedUser?.name} {selectedUser?.lastName}
-              </span>
-              ?
-              <br />
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDelete(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleSubmitDelete}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Deleting..." : "Delete Permanently"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <UsersGrid
+          loading={loading}
+          users={paginatedUsers}
+          totalFiltered={filteredUsers.length}
+          search={search}
+          onCreate={handleCreate}
+          onOpen={handleOpen}
+          onEdit={handleEdit}
+          onToggleStatus={handleToggleStatus}
+          onDelete={handleDelete}
+        />
+
+        <UsersPagination
+          totalCount={filteredUsers.length}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+          onPageChange={setCurrentPage}
+        />
+      </div>
+
+      <UserFormModal
+        open={showCreate}
+        onOpenChange={(open) => {
+          setShowCreate(open);
+          if (!open) clearValidationErrors();
+        }}
+        mode="create"
+        title="Create new user"
+        description="Add a team member. They will receive a reset code by email."
+        submitLabel="Create user"
+        isSubmitting={isSubmitting}
+        formData={formData}
+        onFormChange={setFormData}
+        validationErrors={validationErrors}
+        onSubmit={handleSubmitCreate}
+        idPrefix="create"
+      />
+
+      <UserFormModal
+        open={showEdit}
+        onOpenChange={(open) => {
+          setShowEdit(open);
+          if (!open) clearValidationErrors();
+        }}
+        mode="edit"
+        title="Edit user"
+        description={
+          selectedUser
+            ? `Update profile for ${selectedUser.email}`
+            : "Update user details"
+        }
+        submitLabel="Save changes"
+        isSubmitting={isSubmitting}
+        formData={formData}
+        onFormChange={setFormData}
+        validationErrors={validationErrors}
+        onSubmit={handleSubmitEdit}
+        idPrefix="edit"
+      />
+
+      <DeleteUserModal
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        user={selectedUser}
+        isSubmitting={isSubmitting}
+        onConfirm={handleSubmitDelete}
+      />
+
+      <UserSheet
+        open={showUserSheet}
+        onOpenChange={handleUserSheetOpenChange}
+        user={selectedUser}
+        onEdit={handleEdit}
+        onToggleStatus={handleToggleStatus}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
