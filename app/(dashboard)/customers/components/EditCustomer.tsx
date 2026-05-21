@@ -25,7 +25,7 @@ import { CampaignOption, Customer, CustomerFormData, CustomerNote } from "../typ
 const DEFAULT_FORM: CustomerFormData = {
   name: "",
   phone: "",
-  note: "",
+  pinnedNote: "",
   pendingNotes: [],
   campaignIds: [],
 };
@@ -78,7 +78,7 @@ export default function EditCustomerPage() {
         setFormData({
           name: customerData.name || "",
           phone: customerData.phone || "",
-          note: customerData.note || "",
+          pinnedNote: customerData.pinnedNote?.trim() || "",
           pendingNotes: [],
           campaignIds: customerData.campaigns?.map((c: any) => c.id.toString()) || [],
         });
@@ -126,7 +126,7 @@ export default function EditCustomerPage() {
       const payload = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        note: formData.note.trim() || undefined,
+        pinnedNote: formData.pinnedNote.trim() || undefined,
         campaignIds: formData.campaignIds.map((id: string) => Number(id)),
       };
 
@@ -314,17 +314,19 @@ export default function EditCustomerPage() {
                 </p>
               </div>
 
-              {/* Note */}
+              {/* Pinned note */}
               <div className="space-y-2">
-                <Label htmlFor="note" className="text-[13px] font-medium">
-                  General Note
+                <Label htmlFor="pinnedNote" className="text-[13px] font-medium">
+                  Pinned note
                 </Label>
                 <Textarea
-                  id="note"
-                  value={formData.note}
-                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  placeholder="Add any relevant information about this customer..."
-                  className="min-h-25 rounded-xl border-slate-200 dark:border-border resize-none"
+                  id="pinnedNote"
+                  value={formData.pinnedNote}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pinnedNote: e.target.value })
+                  }
+                  placeholder="Visible to all agents on this phone number…"
+                  className="min-h-25 rounded-xl border-amber-200 dark:border-border resize-none"
                 />
               </div>
             </CardContent>

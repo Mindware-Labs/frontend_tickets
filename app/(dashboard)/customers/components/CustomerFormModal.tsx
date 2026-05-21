@@ -1,29 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus, Trash2, StickyNote, Loader2, Pencil, Check, X,
-  User, Phone, Search,
+  Plus,
+  Trash2,
+  StickyNote,
+  Loader2,
+  Pencil,
+  Check,
+  X,
+  User,
+  Phone,
+  Search,
+  Pin,
+  RotateCcw,
 } from "lucide-react";
-import { CampaignOption, CustomerFormData, CustomerNote } from "../types";
+import { cn } from "@/lib/utils";
+import {
+  CampaignOption,
+  CustomerFormData,
+  CustomerNote,
+} from "../types";
 import { fetchCustomerNotes, splitCustomerNotes } from "../utils/notes";
 import { CustomerNotesList } from "./CustomerNotesList";
-import { toast } from "@/hooks/use-toast";
 
 interface CustomerFormModalProps {
   open: boolean;
@@ -37,11 +48,54 @@ interface CustomerFormModalProps {
   validationErrors: Record<string, string>;
   onValidationErrorChange: (next: Record<string, string>) => void;
   onSubmit: () => void;
+  onReset?: () => void;
   campaigns: CampaignOption[];
   idPrefix: string;
   customerId?: number;
   existingNotes?: CustomerNote[];
   onNotesChange?: (notes: CustomerNote[]) => void;
+  showPlaceholders?: boolean;
+}
+
+interface FieldShellProps {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  className?: string;
+  children: ReactNode;
+}
+
+function FieldShell({
+  id,
+  label,
+  required,
+  error,
+  hint,
+  className,
+  children,
+}: FieldShellProps) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <label
+        htmlFor={id}
+        className="block text-[13px] font-semibold leading-none text-slate-900 dark:text-slate-100"
+      >
+        {label}
+        {required && <span className="ml-1 text-red-500">*</span>}
+      </label>
+      {children}
+      {hint && !error ? (
+        <p className="text-[12px] text-slate-500 dark:text-slate-400">{hint}</p>
+      ) : null}
+      {error ? (
+        <p className="text-[12px] font-medium text-red-500" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 export function CustomerFormModal({
@@ -56,20 +110,22 @@ export function CustomerFormModal({
   validationErrors,
   onValidationErrorChange,
   onSubmit,
+  onReset,
   campaigns,
   idPrefix,
   customerId,
   existingNotes = [],
   onNotesChange,
+  showPlaceholders = false,
 }: CustomerFormModalProps) {
   const [campaignSearch, setCampaignSearch] = useState("");
   const [newNote, setNewNote] = useState("");
-  const [editingPendingIdx, setEditingPendingIdx] = useState<number | null>(null);
+  const [editingPendingIdx, setEditingPendingIdx] = useState<number | null>(
+    null,
+  );
   const [editingText, setEditingText] = useState("");
   const [editNotes, setEditNotes] = useState<CustomerNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
-
-  const isEdit = !!customerId;
 
   useEffect(() => {
     if (!open || !customerId) {
@@ -84,8 +140,7 @@ export function CustomerFormModal({
     fetchCustomerNotes(customerId)
       .then((fetched) => {
         if (cancelled) return;
-        const next =
-          fetched.length > 0 ? fetched : existingNotes;
+        const next = fetched.length > 0 ? fetched : existingNotes;
         const { audit } = splitCustomerNotes(next);
         setEditNotes(audit);
         if (fetched.length > 0) {
@@ -104,7 +159,7 @@ export function CustomerFormModal({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when modal opens for this customer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, customerId]);
 
   useEffect(() => {
@@ -113,12 +168,8 @@ export function CustomerFormModal({
     }
   }, [open, customerId, existingNotes]);
 
-  const initials = formData.name
-    ? formData.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
-    : null;
-
   const selectedCampaigns = campaigns.filter((c) =>
-    formData.campaignIds.includes(c.id.toString())
+    formData.campaignIds.includes(c.id.toString()),
   );
 
   const handleSavePendingNote = () => {
@@ -131,12 +182,15 @@ export function CustomerFormModal({
   };
 
   const formatPhoneNumber = (value: string) => {
-    if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) return value;
+    if (value.startsWith("+1 ") && /^\+1 \d{3}-\d{3}-\d{4}$/.test(value)) {
+      return value;
+    }
     const numbers = value.replace(/\D/g, "");
     const cleaned = numbers.startsWith("1") ? numbers.slice(1) : numbers;
     if (cleaned.length === 0) return "";
     if (cleaned.length <= 3) return `+1 ${cleaned}`;
-    if (cleaned.length <= 6) return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    if (cleaned.length <= 6)
+      return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
     return `+1 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
   };
 
@@ -146,86 +200,205 @@ export function CustomerFormModal({
     return campaigns.filter((c) => c.nombre.toLowerCase().includes(term));
   }, [campaigns, campaignSearch]);
 
+  const clearError = (key: string) => {
+    if (validationErrors[key]) {
+      onValidationErrorChange({ ...validationErrors, [key]: "" });
+    }
+  };
+
+  const fieldInput =
+    "h-11 rounded-md border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-none transition-colors " +
+    "focus-visible:border-[#008f68] focus-visible:ring-2 focus-visible:ring-[#008f68]/15 " +
+    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500";
+
+  const fieldTextarea =
+    "min-h-[96px] resize-none rounded-md border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-none transition-colors " +
+    "focus-visible:border-[#008f68] focus-visible:ring-2 focus-visible:ring-[#008f68]/15 " +
+    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden rounded-2xl">
-        <VisuallyHidden><DialogTitle>{title}</DialogTitle></VisuallyHidden>
-
-        {/* Header */}
-        <div className="bg-gradient-to-br from-[#008f68]/8 to-slate-50 px-6 pt-6 pb-5 border-b border-border">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12 shrink-0">
-              <AvatarFallback className="bg-[#e2fae9] text-[#008f68] font-bold text-sm">
-                {initials || <User className="h-5 w-5 text-[#008f68]" />}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-              <p className="text-[13px] text-slate-500 mt-0.5">{description}</p>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950">
+        <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <User className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-slate-50">
+                {title}
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+                {description}
+              </DialogDescription>
             </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
-          <div className="px-6 py-5 space-y-5">
-
-            {/* Name + Phone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor={`${idPrefix}-name`} className="text-[13px] font-medium text-slate-700">
-                  Full Name
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <Input
-                    id={`${idPrefix}-name`}
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => {
-                      onFormChange({ ...formData, name: e.target.value });
-                      onValidationErrorChange({ ...validationErrors, name: "" });
-                    }}
-                    className={`pl-9 h-9 text-sm ${validationErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-slate-200"}`}
-                  />
-                </div>
-                {validationErrors.name && (
-                  <p className="text-xs text-red-500">{validationErrors.name}</p>
+        <div className="max-h-[68dvh] overflow-y-auto px-5 py-5 sm:px-6">
+          <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+            <FieldShell
+              id={`${idPrefix}-name`}
+              label="Full Name"
+              error={validationErrors.name}
+            >
+              <Input
+                id={`${idPrefix}-name`}
+                value={formData.name}
+                onChange={(e) => {
+                  onFormChange({ ...formData, name: e.target.value });
+                  clearError("name");
+                }}
+                placeholder={showPlaceholders ? "John Doe" : undefined}
+                className={cn(
+                  fieldInput,
+                  validationErrors.name &&
+                    "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-100",
                 )}
+              />
+            </FieldShell>
+
+            <FieldShell
+              id={`${idPrefix}-phone`}
+              label="Phone"
+              required
+              error={validationErrors.phone}
+            >
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id={`${idPrefix}-phone`}
+                  value={formData.phone}
+                  onChange={(e) => {
+                    onFormChange({
+                      ...formData,
+                      phone: formatPhoneNumber(e.target.value),
+                    });
+                    clearError("phone");
+                  }}
+                  placeholder="+1 XXX-XXX-XXXX"
+                  className={cn(
+                    fieldInput,
+                    "pl-9",
+                    validationErrors.phone &&
+                      "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-100",
+                  )}
+                />
+              </div>
+            </FieldShell>
+
+            <FieldShell
+              id={`${idPrefix}-pinnedNote`}
+              label="Pinned note"
+              className="sm:col-span-2"
+              hint="Visible to all agents on this phone number"
+            >
+              <div className="relative">
+                <Pin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-amber-500" />
+                <Textarea
+                  id={`${idPrefix}-pinnedNote`}
+                  value={formData.pinnedNote}
+                  onChange={(e) =>
+                    onFormChange({ ...formData, pinnedNote: e.target.value })
+                  }
+                  placeholder={
+                    showPlaceholders
+                      ? "Gate code, billing context, or handling instructions…"
+                      : undefined
+                  }
+                  rows={3}
+                  className={cn(fieldTextarea, "border-amber-200/80 pl-9")}
+                />
+              </div>
+            </FieldShell>
+
+            <div className="space-y-2 sm:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="block text-[13px] font-semibold leading-none text-slate-900 dark:text-slate-100">
+                  Campaigns
+                </label>
+                {selectedCampaigns.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedCampaigns.map((c) => (
+                      <Badge
+                        key={c.id}
+                        variant="secondary"
+                        className="border-0 bg-[#e2fae9] pr-1 text-[11px] text-[#008f68]"
+                      >
+                        {c.nombre}
+                        <button
+                          type="button"
+                          className="ml-1 hover:text-red-500"
+                          onClick={() =>
+                            onFormChange({
+                              ...formData,
+                              campaignIds: formData.campaignIds.filter(
+                                (id) => id !== c.id.toString(),
+                              ),
+                            })
+                          }
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor={`${idPrefix}-phone`} className="text-[13px] font-medium text-slate-700">
-                  Phone <span className="text-red-400">*</span>
-                </Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <Input
-                    id={`${idPrefix}-phone`}
-                    placeholder="+1 555-000-0000"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      onFormChange({ ...formData, phone: formatPhoneNumber(e.target.value) });
-                      onValidationErrorChange({ ...validationErrors, phone: "" });
-                    }}
-                    className={`pl-9 h-9 text-sm ${validationErrors.phone ? "border-red-400 focus-visible:ring-red-400" : "border-slate-200"}`}
-                  />
-                </div>
-                {validationErrors.phone && (
-                  <p className="text-xs text-red-500">{validationErrors.phone}</p>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  placeholder="Search campaigns…"
+                  value={campaignSearch}
+                  onChange={(e) => setCampaignSearch(e.target.value)}
+                  className={cn(fieldInput, "pl-9")}
+                />
+              </div>
+
+              <div className="max-h-36 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100 dark:border-slate-700 dark:divide-slate-800">
+                {filteredCampaigns.length === 0 ? (
+                  <p className="px-3 py-3 text-center text-sm text-slate-400">
+                    No campaigns found
+                  </p>
+                ) : (
+                  filteredCampaigns.map((campaign) => {
+                    const value = campaign.id.toString();
+                    const checked = formData.campaignIds.includes(value);
+                    return (
+                      <label
+                        key={campaign.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                          checked && "bg-[#f0fdf8] dark:bg-emerald-950/20",
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(next) => {
+                            const campaignIds = Boolean(next)
+                              ? [...formData.campaignIds, value]
+                              : formData.campaignIds.filter((id) => id !== value);
+                            onFormChange({ ...formData, campaignIds });
+                          }}
+                          className="data-[state=checked]:border-[#008f68] data-[state=checked]:bg-[#008f68]"
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-200">
+                          {campaign.nombre}
+                        </span>
+                      </label>
+                    );
+                  })
                 )}
               </div>
             </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-[13px] font-medium text-slate-700">
-                <StickyNote className="h-3.5 w-3.5 text-slate-400" />
-                Notes
-                <span className="text-[11px] font-normal text-slate-400">
-                  (audit trail)
-                </span>
-              </Label>
-
+            <FieldShell
+              id={`${idPrefix}-auditNotes`}
+              label="Audit notes"
+              className="sm:col-span-2"
+              hint="Internal trail — not shown as the pinned note"
+            >
               {customerId ? (
                 <CustomerNotesList
                   customerId={customerId}
@@ -239,14 +412,15 @@ export function CustomerFormModal({
                   canEdit
                 />
               ) : (
-                <>
-                  <div className="flex gap-2">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <StickyNote className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
                     <Textarea
-                      placeholder="Add a note…"
+                      placeholder="Add an audit note…"
                       value={newNote}
-                      rows={2}
+                      rows={3}
                       onChange={(e) => setNewNote(e.target.value)}
-                      className="flex-1 resize-none border-slate-200 text-sm"
+                      className={cn(fieldTextarea, "pl-9")}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
@@ -263,6 +437,8 @@ export function CustomerFormModal({
                         }
                       }}
                     />
+                  </div>
+                  <div className="flex justify-end">
                     <Button
                       type="button"
                       size="sm"
@@ -280,9 +456,10 @@ export function CustomerFormModal({
                         }
                       }}
                       disabled={!newNote.trim()}
-                      className="h-9 self-end border-slate-200"
+                      className="h-9 border-slate-200"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="mr-1 h-4 w-4" />
+                      Add note
                     </Button>
                   </div>
                   {formData.pendingNotes.length > 0 ? (
@@ -292,7 +469,7 @@ export function CustomerFormModal({
                         return (
                           <div
                             key={`${idx}-${content.slice(0, 8)}`}
-                            className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm"
+                            className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-900/40"
                           >
                             {isEditing ? (
                               <>
@@ -300,7 +477,7 @@ export function CustomerFormModal({
                                   value={editingText}
                                   rows={2}
                                   onChange={(e) => setEditingText(e.target.value)}
-                                  className="flex-1 resize-none text-sm"
+                                  className={cn(fieldTextarea, "min-h-[72px] flex-1")}
                                   autoFocus
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter" && !e.shiftKey) {
@@ -318,48 +495,48 @@ export function CustomerFormModal({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 text-green-600"
+                                    className="h-7 w-7 text-green-600"
                                     onClick={handleSavePendingNote}
                                     disabled={!editingText.trim()}
                                   >
-                                    <Check className="h-3 w-3" />
+                                    <Check className="h-3.5 w-3.5" />
                                   </Button>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-7 w-7"
                                     onClick={() => {
                                       setEditingPendingIdx(null);
                                       setEditingText("");
                                     }}
                                   >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-snug text-slate-700">
+                                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-slate-200">
                                   {content}
                                 </p>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 shrink-0 text-slate-400"
+                                  className="h-7 w-7 shrink-0 text-slate-400"
                                   onClick={() => {
                                     setEditingPendingIdx(idx);
                                     setEditingText(content);
                                   }}
                                 >
-                                  <Pencil className="h-3 w-3" />
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 shrink-0 text-red-400"
+                                  className="h-7 w-7 shrink-0 text-red-400"
                                   onClick={() =>
                                     onFormChange({
                                       ...formData,
@@ -369,7 +546,7 @@ export function CustomerFormModal({
                                     })
                                   }
                                 >
-                                  <Trash2 className="h-3 w-3" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </>
                             )}
@@ -378,85 +555,54 @@ export function CustomerFormModal({
                       })}
                     </div>
                   ) : null}
-                </>
+                </div>
               )}
-            </div>
-
-            {/* Campaigns */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-[13px] font-medium text-slate-700">Campaigns</Label>
-                {selectedCampaigns.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedCampaigns.map((c) => (
-                      <Badge key={c.id} variant="secondary" className="text-[11px] bg-[#e2fae9] text-[#008f68] border-0 pr-1">
-                        {c.nombre}
-                        <button
-                          className="ml-1 hover:text-red-500"
-                          onClick={() => onFormChange({ ...formData, campaignIds: formData.campaignIds.filter((id) => id !== c.id.toString()) })}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                <Input
-                  placeholder="Search campaigns…"
-                  value={campaignSearch}
-                  onChange={(e) => setCampaignSearch(e.target.value)}
-                  className="pl-9 h-9 text-sm border-slate-200"
-                />
-              </div>
-
-              <div className="rounded-lg border border-slate-200 divide-y divide-slate-100 max-h-36 overflow-y-auto">
-                {filteredCampaigns.length === 0 ? (
-                  <p className="px-3 py-3 text-sm text-slate-400 text-center">No campaigns found</p>
-                ) : (
-                  filteredCampaigns.map((campaign) => {
-                    const value = campaign.id.toString();
-                    const checked = formData.campaignIds.includes(value);
-                    return (
-                      <label key={campaign.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors ${checked ? "bg-[#f0fdf8]" : ""}`}>
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(next) => {
-                            const campaignIds = Boolean(next)
-                              ? [...formData.campaignIds, value]
-                              : formData.campaignIds.filter((id) => id !== value);
-                            onFormChange({ ...formData, campaignIds });
-                          }}
-                          className="data-[state=checked]:bg-[#008f68] data-[state=checked]:border-[#008f68]"
-                        />
-                        <span className="text-sm text-slate-700">{campaign.nombre}</span>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+            </FieldShell>
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Footer */}
-        <DialogFooter className="px-6 py-4 border-t border-border bg-slate-50/60">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="border-slate-200 text-slate-600">
+        <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+          >
             Cancel
           </Button>
-          <Button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="bg-[#008f68] hover:bg-[#007a5a] text-white min-w-[120px]"
-          >
-            {isSubmitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />{submitLabel}…</>
-            ) : submitLabel}
-          </Button>
-        </DialogFooter>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {onReset ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onReset}
+                disabled={isSubmitting}
+                className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:bg-white hover:text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-500 dark:hover:text-slate-300"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Data
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              onClick={onSubmit}
+              disabled={isSubmitting}
+              className={cn(
+                "h-11 rounded-lg px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
+                idPrefix === "create"
+                  ? "bg-[#008f68] hover:bg-[#007a5a] dark:bg-[#008f68] dark:hover:bg-[#007a5a]"
+                  : "bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white",
+              )}
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isSubmitting ? "Saving..." : submitLabel}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

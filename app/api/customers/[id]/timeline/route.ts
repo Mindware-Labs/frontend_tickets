@@ -13,11 +13,11 @@ export async function GET(
       "cursor",
       "limit",
       "type",
-      "from",
-      "to",
       "lineId",
-      "agentId",
       "sort",
+      "yardId",
+      "campaignId",
+      "disposition",
     ];
 
     for (const key of passthroughKeys) {

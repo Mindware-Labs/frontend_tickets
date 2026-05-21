@@ -68,7 +68,7 @@ export function CustomersTable({
     <div className="entity-table-root">
       <div className="entity-table-frame">
         <div className="entity-table-scroll">
-          <Table className="relative min-w-[1040px] table-fixed">
+          <Table className="relative min-w-[1180px] table-fixed">
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="w-[250px] pl-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -89,7 +89,7 @@ export function CustomersTable({
                 <TableHead className="w-[130px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Last contact
                 </TableHead>
-                <TableHead className="w-[90px] text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <TableHead className="w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Pinned note
                 </TableHead>
                 <TableHead className="w-[110px] pr-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -259,14 +259,17 @@ export function CustomersTable({
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3 text-center">
+                      <TableCell className="max-w-0 overflow-hidden py-3">
                         {hasPinnedNote ? (
-                          <span
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700"
-                            title="Persistent note exists"
+                          <div
+                            className="flex min-w-0 items-start gap-1.5 rounded-lg border border-amber-200/80 bg-amber-50/90 px-2 py-1.5 dark:border-amber-900/50 dark:bg-amber-950/30"
+                            title={customer.pinnedNote}
                           >
-                            <Pin className="h-3.5 w-3.5" />
-                          </span>
+                            <Pin className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                            <p className="line-clamp-2 text-left text-[12px] font-medium leading-snug text-amber-900 dark:text-amber-100">
+                              {customer.pinnedNote}
+                            </p>
+                          </div>
                         ) : (
                           <span className="text-[13px] text-slate-400">—</span>
                         )}

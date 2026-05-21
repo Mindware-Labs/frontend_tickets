@@ -52,7 +52,7 @@ export function CustomerPinnedNotes({
     } finally {
       setNotesLoading(false);
     }
-  }, [customer.id]);
+  }, [customer.id, customer.notes]);
 
   useEffect(() => {
     if (!editingPinned) {
@@ -97,18 +97,11 @@ export function CustomerPinnedNotes({
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          Notes
-        </p>
-      </div>
-
-      {/* Pinned — always visible */}
-      <div className="border-b border-amber-100/80 bg-amber-50/40 px-3 py-2.5 dark:border-amber-900/30 dark:bg-amber-950/20">
+    <div className="space-y-2">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
-            <Pin className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+            <Pin className="h-3.5 w-3.5" strokeWidth={2.25} />
             Pinned
           </span>
           {canEditPinned && !editingPinned ? (
@@ -118,7 +111,7 @@ export function CustomerPinnedNotes({
                 setPinnedDraft(pinned?.content ?? "");
                 setEditingPinned(true);
               }}
-              className="text-[11px] font-semibold text-[#008f68] hover:underline"
+              className="text-[11px] font-semibold text-[#008f68] transition-colors hover:text-[#007a5a] hover:underline"
             >
               {hasPinned ? "Edit" : "Add"}
             </button>
@@ -126,13 +119,13 @@ export function CustomerPinnedNotes({
         </div>
 
         {editingPinned && canEditPinned ? (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2.5 space-y-2">
             <Textarea
               value={pinnedDraft}
               onChange={(e) => setPinnedDraft(e.target.value)}
-              rows={2}
+              rows={3}
               placeholder="VIP, payment plan, callback…"
-              className="min-h-0 resize-none border-amber-200/80 bg-white text-[13px] focus-visible:ring-amber-400/30 dark:border-amber-900 dark:bg-slate-900"
+              className="min-h-0 resize-none border-slate-200/80 bg-white text-[13px] focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900"
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setPinnedDraft(pinned?.content ?? "");
@@ -172,9 +165,9 @@ export function CustomerPinnedNotes({
           <>
             <p
               className={cn(
-                "mt-1.5 text-[13px] leading-snug",
+                "mt-2 text-[13px] leading-relaxed",
                 hasPinned
-                  ? "font-medium text-slate-800 dark:text-slate-100"
+                  ? "font-medium text-slate-900 dark:text-slate-50"
                   : "italic text-slate-500",
               )}
             >
@@ -183,7 +176,7 @@ export function CustomerPinnedNotes({
                 : "No pinned note — visible to all agents on this number."}
             </p>
             {pinnedMeta ? (
-              <p className="mt-1 text-[10px] tabular-nums text-amber-800/70 dark:text-amber-400/80">
+              <p className="mt-2 text-[10px] tabular-nums text-slate-400">
                 {pinnedMeta}
               </p>
             ) : null}
@@ -191,29 +184,28 @@ export function CustomerPinnedNotes({
         )}
       </div>
 
-      {/* Audit trail — collapsible */}
-      <div className="px-3 py-2">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white dark:border-slate-800 dark:bg-slate-950">
         <button
           type="button"
           onClick={() => setTrailOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+          className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-50/80 active:scale-[0.99] dark:hover:bg-slate-900/50"
         >
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-            <StickyNote className="h-3.5 w-3.5 text-slate-400" />
+          <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+            <StickyNote className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />
             Audit trail
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800">
+            <span className="rounded-md border border-slate-200/80 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900">
               {notesLoading ? "…" : audit.length}
             </span>
           </span>
           <ChevronDown
             className={cn(
-              "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+              "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
               trailOpen && "rotate-180",
             )}
           />
         </button>
         {trailOpen ? (
-          <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+          <div className="border-t border-slate-100 px-3 py-2 dark:border-slate-800">
             <CustomerNotesList
               customerId={customer.id}
               notes={audit}
@@ -230,6 +222,6 @@ export function CustomerPinnedNotes({
           </div>
         ) : null}
       </div>
-    </section>
+    </div>
   );
 }

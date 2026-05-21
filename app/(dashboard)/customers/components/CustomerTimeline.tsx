@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   format,
   formatDistanceToNow,
@@ -9,22 +9,24 @@ import {
 } from "date-fns";
 import { useRouter } from "next/navigation";
 import {
-  ChevronDown,
+  Clock3,
   FileText,
-  Filter,
   Loader2,
+  MapPin,
   MessageSquare,
   PhoneIncoming,
   PhoneMissed,
   PhoneOutgoing,
   RefreshCw,
+  ClipboardList,
   StickyNote,
+  Tag,
   Ticket,
+  UserRound,
   Voicemail,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -37,44 +39,329 @@ import { CallRecordingPlayer } from "@/app/(dashboard)/calls/components/calls/Ca
 import { fetchFromBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type {
-  AgentOption,
+  CampaignOption,
   PhoneLineOption,
   TimelineEntry,
+  TimelineEntryTypeFilter,
   TimelineFilters,
+  YardOption,
 } from "../types";
 
-const DEFAULT_FILTERS: TimelineFilters = {
-  type: "all",
-  sort: "desc",
-  from: "",
-  to: "",
+export const DEFAULT_TIMELINE_FILTERS: TimelineFilters = {
+  entryType: "all",
   lineId: "all",
-  agentId: "all",
+  yardId: "all",
+  campaignId: "all",
+  disposition: "all",
 };
 
-const TYPE_CHIPS: {
-  value: TimelineFilters["type"];
+const ENTRY_TYPE_OPTIONS: {
+  value: TimelineEntryTypeFilter;
   label: string;
-  disabled?: boolean;
 }[] = [
   { value: "all", label: "All" },
   { value: "call", label: "Calls" },
   { value: "ticket", label: "Tickets" },
+  { value: "manual_record", label: "Manual records" },
   { value: "customer_note", label: "Notes" },
-  { value: "sms", label: "SMS", disabled: true },
 ];
 
-interface CustomerTimelineProps {
-  customerId: number;
-  canPlayRecordings: boolean;
-  refreshKey?: number;
-  /** Tighter layout for inline panels */
-  compact?: boolean;
-  /** Wide left sheet — cards, inline recording player */
-  expanded?: boolean;
-  onNavigate?: () => void;
-  onViewCall?: (callId: number) => void;
-  onViewTicket?: (ticketId: number) => void;
+const CALL_DISPOSITIONS = [
+  "RESOLVED",
+  "CALLBACK_REQUIRED",
+  "CALLBACK_SCHEDULED",
+  "VOICEMAIL_LEFT",
+  "NO_ANSWER",
+  "PROMISE_TO_PAY",
+  "DISPUTE",
+  "WRONG_NUMBER",
+  "ENROLLED",
+  "ESCALATED",
+];
+
+export function hasActiveTimelineFilters(filters: TimelineFilters) {
+  return (
+    filters.entryType !== "all" ||
+    filters.lineId !== "all" ||
+    filters.yardId !== "all" ||
+    filters.campaignId !== "all" ||
+    filters.disposition !== "all"
+  );
+}
+
+function EntryTypeFilter({
+  value,
+  onChange,
+}: {
+  value: TimelineEntryTypeFilter;
+  onChange: (value: TimelineEntryTypeFilter) => void;
+}) {
+  return (
+    <div
+      className="flex w-full justify-center"
+      role="tablist"
+      aria-label="Activity type"
+    >
+      <div className="flex w-full flex-wrap justify-center gap-1 rounded-xl bg-slate-100/90 p-1 dark:bg-slate-900/70">
+        {ENTRY_TYPE_OPTIONS.map((option) => {
+          const active = value === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                "min-h-10 min-w-[4.75rem] flex-1 rounded-lg px-3 py-2.5 text-center text-[13px] font-semibold leading-tight transition-colors sm:min-w-[5.5rem] sm:text-sm",
+                active
+                  ? "bg-[#008f68] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-white/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export interface CustomerTimelineToolbarProps {
+  filters: TimelineFilters;
+  onFiltersChange: (filters: TimelineFilters) => void;
+  total: number;
+  lastEventAgo: string | null;
+  loading: boolean;
+  onRefresh: () => void;
+  variant?: "panel" | "inline";
+}
+
+function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="px-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function FilterSelect({
+  value,
+  onValueChange,
+  placeholder,
+  children,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  children: ReactNode;
+}) {
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="h-9 w-full min-w-0 rounded-xl border-border bg-background px-3 text-[13px] font-medium shadow-sm shadow-slate-200/40 focus:ring-[#008f68]/20 dark:shadow-none">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
+  );
+}
+
+export function CustomerTimelineToolbar({
+  filters,
+  onFiltersChange,
+  total,
+  lastEventAgo,
+  loading,
+  onRefresh,
+  variant = "inline",
+}: CustomerTimelineToolbarProps) {
+  const [phoneLines, setPhoneLines] = useState<PhoneLineOption[]>([]);
+  const [yards, setYards] = useState<YardOption[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
+  const isPanel = variant === "panel";
+  const activeFilters = hasActiveTimelineFilters(filters);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchFromBackend("/phone-lines").catch(() => []),
+      fetchFromBackend("/yards?page=1&limit=200").catch(() => []),
+      fetchFromBackend("/campaign?page=1&limit=200").catch(() => []),
+    ]).then(([linesData, yardsData, campaignsData]) => {
+      if (cancelled) return;
+      setPhoneLines(normalizeArray<PhoneLineOption>(linesData));
+      setYards(normalizeArray<YardOption>(yardsData));
+      setCampaigns(normalizeArray<CampaignOption>(campaignsData));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const updateFilter = <K extends keyof TimelineFilters>(
+    key: K,
+    value: TimelineFilters[K],
+  ) => {
+    onFiltersChange({ ...filters, [key]: value });
+  };
+
+  const resetFilters = () => onFiltersChange(DEFAULT_TIMELINE_FILTERS);
+
+  const showLineFilter =
+    filters.entryType === "all" || filters.entryType === "call";
+  const showDispositionFilter =
+    showLineFilter || filters.entryType === "manual_record";
+
+  const filterGrid = (
+    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {showDispositionFilter ? (
+        <FilterField label="Disposition">
+          <FilterSelect
+            value={filters.disposition}
+            onValueChange={(value) => updateFilter("disposition", value)}
+            placeholder="Disposition"
+          >
+            <SelectItem value="all">Any disposition</SelectItem>
+            {CALL_DISPOSITIONS.map((disposition) => (
+              <SelectItem key={disposition} value={disposition}>
+                {formatLabel(disposition)}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+        </FilterField>
+      ) : null}
+
+      {showLineFilter ? (
+        <FilterField label="Line">
+          <FilterSelect
+            value={filters.lineId}
+            onValueChange={(value) => updateFilter("lineId", value)}
+            placeholder="Line"
+          >
+            <SelectItem value="all">All lines</SelectItem>
+            {phoneLines.map((line) => (
+              <SelectItem key={line.id} value={String(line.id)}>
+                {line.label || line.phoneNumber}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+        </FilterField>
+      ) : null}
+
+      <FilterField label="Yard">
+        <FilterSelect
+          value={filters.yardId}
+          onValueChange={(value) => updateFilter("yardId", value)}
+          placeholder="Yard"
+        >
+          <SelectItem value="all">All yards</SelectItem>
+          {yards.map((yard) => (
+            <SelectItem key={yard.id} value={String(yard.id)}>
+              {yard.name}
+            </SelectItem>
+          ))}
+        </FilterSelect>
+      </FilterField>
+
+      <FilterField label="Campaign">
+        <FilterSelect
+          value={filters.campaignId}
+          onValueChange={(value) => updateFilter("campaignId", value)}
+          placeholder="Campaign"
+        >
+          <SelectItem value="all">All campaigns</SelectItem>
+          {campaigns.map((campaign) => (
+            <SelectItem key={campaign.id} value={String(campaign.id)}>
+              {campaign.nombre}
+            </SelectItem>
+          ))}
+        </FilterSelect>
+      </FilterField>
+    </div>
+  );
+
+  const filtersBox = (
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2 dark:border-slate-800 dark:bg-slate-950/40">
+      <div className="flex flex-col items-center gap-1.5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+          Show
+        </span>
+        <EntryTypeFilter
+          value={filters.entryType}
+          onChange={(value) => updateFilter("entryType", value)}
+        />
+      </div>
+      {filterGrid}
+      {activeFilters ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-[11px] font-semibold text-slate-400 transition-colors hover:text-[#008f68]"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  if (isPanel) {
+    return (
+      <div className="shrink-0 border-b border-slate-200/60 bg-white/90 px-3 py-2 sm:px-4 dark:border-slate-800 dark:bg-slate-900/40">
+        {filtersBox}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 text-[13px] text-slate-500">
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+            {loading && total === 0 ? "…" : total}
+          </span>{" "}
+          events
+          {lastEventAgo ? (
+            <span className="text-slate-400"> · {lastEventAgo}</span>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={loading}
+          aria-label="Refresh timeline"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          <RefreshCw
+            className={cn("h-4 w-4", loading && "animate-spin")}
+          />
+        </button>
+      </div>
+
+      {filtersBox}
+
+      {activeFilters ? (
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="text-[11px] font-medium text-slate-400 underline-offset-4 hover:text-[#008f68] hover:underline"
+        >
+          Clear filters
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function normalizeArray<T>(data: unknown): T[] {
@@ -179,14 +466,141 @@ function ticketPriorityBadge(priority?: string) {
   return "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300";
 }
 
-function hasActiveFilters(filters: TimelineFilters) {
+function hasContent(value?: string | null): value is string {
+  return Boolean(value?.trim());
+}
+
+function formatOptionalDate(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "MMM d, HH:mm");
+}
+
+function joinDetailValues(values: Array<string | null | undefined>) {
+  return values.filter(hasContent).join(" / ");
+}
+
+type DetailItem = {
+  label: string;
+  value?: string | null;
+  icon?: ReactNode;
+  tone?: "default" | "green" | "blue" | "amber" | "red";
+  mono?: boolean;
+};
+
+function DetailPills({ items }: { items: DetailItem[] }) {
+  const visibleItems = items.filter((item) => hasContent(item.value));
+  if (visibleItems.length === 0) return null;
+
   return (
-    filters.type !== "all" ||
-    filters.from !== "" ||
-    filters.to !== "" ||
-    filters.lineId !== "all" ||
-    filters.agentId !== "all"
+    <div className="flex flex-wrap gap-1.5">
+      {visibleItems.map((item) => (
+        <span
+          key={`${item.label}-${item.value}`}
+          className={cn(
+            "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold leading-none",
+            item.mono && "font-mono tabular-nums",
+            item.tone === "green"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+              : item.tone === "blue"
+                ? "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300"
+                : item.tone === "amber"
+                  ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                  : item.tone === "red"
+                    ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                    : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300",
+          )}
+          title={`${item.label}: ${item.value}`}
+        >
+          {item.icon ? (
+            <span className="shrink-0 text-current opacity-70">{item.icon}</span>
+          ) : null}
+          <span className="text-[9px] uppercase tracking-[0.08em] opacity-60">
+            {item.label}
+          </span>
+          <span className="truncate">{item.value}</span>
+        </span>
+      ))}
+    </div>
   );
+}
+
+function NotePreview({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value?: string | null;
+  tone?: "slate" | "amber";
+}) {
+  if (!hasContent(value)) return null;
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border px-2.5 py-2",
+        tone === "amber"
+          ? "border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100"
+          : "border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200",
+      )}
+    >
+      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+        <FileText className="h-3 w-3" />
+        {label}
+      </div>
+      <p className="whitespace-pre-wrap text-[12px] leading-relaxed [overflow-wrap:anywhere]">
+        {value.trim()}
+      </p>
+    </div>
+  );
+}
+
+function TimelineAction({
+  children,
+  onClick,
+  muted,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  muted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-[12px] font-bold transition-colors",
+        muted
+          ? "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+          : "bg-[#e8f8f1] text-[#008f68] hover:bg-[#d8f4e8] dark:bg-emerald-950/40 dark:text-emerald-300",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export interface CustomerTimelineMeta {
+  total: number;
+  lastEventAgo: string | null;
+  loading: boolean;
+}
+
+interface CustomerTimelineProps {
+  customerId: number;
+  canPlayRecordings: boolean;
+  refreshKey?: number;
+  compact?: boolean;
+  expanded?: boolean;
+  hideToolbar?: boolean;
+  filters?: TimelineFilters;
+  onFiltersChange?: (filters: TimelineFilters) => void;
+  onMetaChange?: (meta: CustomerTimelineMeta) => void;
+  onNavigate?: () => void;
+  onViewCall?: (callId: number) => void;
+  onViewTicket?: (ticketId: number) => void;
 }
 
 export function CustomerTimeline({
@@ -195,37 +609,34 @@ export function CustomerTimeline({
   refreshKey = 0,
   compact = false,
   expanded = false,
+  hideToolbar = false,
+  filters: controlledFilters,
+  onFiltersChange,
+  onMetaChange,
   onNavigate,
   onViewCall,
   onViewTicket,
 }: CustomerTimelineProps) {
   const isCompact = compact && !expanded;
+  const isPanelEmbed = hideToolbar && expanded;
   const router = useRouter();
-  const [filters, setFilters] = useState<TimelineFilters>(DEFAULT_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [internalFilters, setInternalFilters] = useState<TimelineFilters>(
+    DEFAULT_TIMELINE_FILTERS,
+  );
+  const filters = controlledFilters ?? internalFilters;
+  const applyFilters = useCallback(
+    (next: TimelineFilters) => {
+      if (onFiltersChange) onFiltersChange(next);
+      else setInternalFilters(next);
+    },
+    [onFiltersChange],
+  );
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phoneLines, setPhoneLines] = useState<PhoneLineOption[]>([]);
-  const [agents, setAgents] = useState<AgentOption[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetchFromBackend("/phone-lines").catch(() => []),
-      fetchFromBackend("/agents?page=1&limit=200").catch(() => []),
-    ]).then(([linesData, agentsData]) => {
-      if (cancelled) return;
-      setPhoneLines(normalizeArray<PhoneLineOption>(linesData));
-      setAgents(normalizeArray<AgentOption>(agentsData));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const loadTimeline = useCallback(
     async (cursor?: string) => {
@@ -235,12 +646,18 @@ export function CustomerTimeline({
       setError(null);
 
       try {
-        const params = new URLSearchParams({ limit: "25", sort: filters.sort });
-        if (filters.type !== "all") params.set("type", filters.type);
-        if (filters.from) params.set("from", `${filters.from}T00:00:00`);
-        if (filters.to) params.set("to", `${filters.to}T23:59:59.999`);
+        const params = new URLSearchParams({ limit: "25", sort: "desc" });
+        if (filters.entryType !== "all") {
+          params.set("type", filters.entryType);
+        }
         if (filters.lineId !== "all") params.set("lineId", filters.lineId);
-        if (filters.agentId !== "all") params.set("agentId", filters.agentId);
+        if (filters.yardId !== "all") params.set("yardId", filters.yardId);
+        if (filters.campaignId !== "all") {
+          params.set("campaignId", filters.campaignId);
+        }
+        if (filters.disposition !== "all") {
+          params.set("disposition", filters.disposition);
+        }
         if (cursor) params.set("cursor", cursor);
 
         const data = await fetchFromBackend(
@@ -276,15 +693,6 @@ export function CustomerTimeline({
     loadTimeline();
   }, [loadTimeline, refreshKey]);
 
-  const updateFilter = <K extends keyof TimelineFilters>(
-    key: K,
-    value: TimelineFilters[K],
-  ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const resetFilters = () => setFilters(DEFAULT_FILTERS);
-
   const navigateTo = (href: string) => {
     onNavigate?.();
     router.push(href);
@@ -306,8 +714,6 @@ export function CustomerTimeline({
     navigateTo(`/calls?tab=tickets&id=${ticketId}`);
   };
 
-  const activeFilters = useMemo(() => hasActiveFilters(filters), [filters]);
-
   const lastEventAgo = useMemo(() => {
     const first = entries[0];
     if (!first?.occurredAt) return null;
@@ -316,171 +722,33 @@ export function CustomerTimeline({
     return formatDistanceToNow(d, { addSuffix: true });
   }, [entries]);
 
+  useEffect(() => {
+    onMetaChange?.({ total, lastEventAgo, loading });
+  }, [total, lastEventAgo, loading, onMetaChange]);
+
   return (
     <div
       className={cn(
-        expanded ? "px-5 py-5" : isCompact ? "px-3 py-3" : "px-4 py-4 sm:px-5 sm:py-5",
+        isPanelEmbed
+          ? "px-3 py-2.5 sm:px-4"
+          : expanded
+            ? "px-5 py-5"
+            : isCompact
+              ? "px-3 py-3"
+              : "px-4 py-4 sm:px-5 sm:py-5",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center justify-between gap-2",
-          expanded ? "mb-4" : isCompact ? "mb-2" : "mb-3",
-        )}
-      >
-        <div
-          className={cn(
-            "min-w-0 text-slate-500",
-            expanded ? "text-[13px]" : "text-[11px]",
-          )}
-        >
-          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
-            {loading && entries.length === 0 ? "…" : total}
-          </span>{" "}
-          events
-          {lastEventAgo ? (
-            <span className="text-slate-400"> · {lastEventAgo}</span>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => loadTimeline()}
-          disabled={loading}
-          aria-label="Refresh timeline"
-          className={cn(
-            "flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800",
-            expanded ? "h-9 w-9" : "h-7 w-7",
-          )}
-        >
-          <RefreshCw
-            className={cn(
-              expanded ? "h-4 w-4" : "h-3.5 w-3.5",
-              loading && "animate-spin",
-            )}
-          />
-        </button>
-      </div>
-
-      <div className={cn("space-y-2", expanded ? "mb-5" : isCompact ? "mb-3" : "mb-4")}>
-        <div className="flex flex-wrap items-center gap-2">
-          {TYPE_CHIPS.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              disabled={chip.disabled}
-              onClick={() => !chip.disabled && updateFilter("type", chip.value)}
-              className={cn(
-                "rounded-full font-semibold transition-colors",
-                expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
-                chip.disabled && "cursor-not-allowed opacity-40",
-                filters.type === chip.value
-                  ? "bg-[#008f68] text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300",
-              )}
-            >
-              {chip.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() =>
-              updateFilter("sort", filters.sort === "desc" ? "asc" : "desc")
-            }
-            className={cn(
-              "rounded-full border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
-              expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
-            )}
-          >
-            {filters.sort === "desc" ? "Newest" : "Oldest"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            className={cn(
-              "ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
-              expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
-              !expanded && !isCompact && "lg:hidden",
-            )}
-          >
-            <Filter className="h-3 w-3" />
-            More
-            {activeFilters ? (
-              <span className="h-1.5 w-1.5 rounded-full bg-[#008f68]" />
-            ) : null}
-            <ChevronDown
-              className={cn(
-                "h-3 w-3 transition-transform",
-                filtersOpen && "rotate-180",
-              )}
-            />
-          </button>
-        </div>
-
-        <div
-          className={cn(
-            "grid gap-2 sm:grid-cols-2",
-            expanded ? "grid-cols-2 lg:grid-cols-4" : isCompact ? "grid-cols-2" : "lg:grid-cols-4",
-            expanded || filtersOpen ? "grid" : "hidden lg:grid",
-          )}
-        >
-          <Input
-            type="date"
-            value={filters.from}
-            aria-label="From date"
-            onChange={(e) => updateFilter("from", e.target.value)}
-            className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}
-          />
-          <Input
-            type="date"
-            value={filters.to}
-            aria-label="To date"
-            onChange={(e) => updateFilter("to", e.target.value)}
-            className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}
-          />
-          <Select
-            value={filters.lineId}
-            onValueChange={(value) => updateFilter("lineId", value)}
-          >
-            <SelectTrigger className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}>
-              <SelectValue placeholder="Line" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All lines</SelectItem>
-              {phoneLines.map((line) => (
-                <SelectItem key={line.id} value={String(line.id)}>
-                  {line.label || line.phoneNumber}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={filters.agentId}
-            onValueChange={(value) => updateFilter("agentId", value)}
-          >
-            <SelectTrigger className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}>
-              <SelectValue placeholder="Agent" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All agents</SelectItem>
-              {agents.map((agent) => (
-                <SelectItem key={agent.id} value={String(agent.id)}>
-                  {agent.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {activeFilters ? (
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="text-[11px] font-medium text-slate-400 underline-offset-4 hover:text-[#008f68] hover:underline"
-          >
-            Clear filters
-          </button>
-        ) : null}
-      </div>
+      {!hideToolbar ? (
+        <CustomerTimelineToolbar
+          filters={filters}
+          onFiltersChange={applyFilters}
+          total={total}
+          lastEventAgo={lastEventAgo}
+          loading={loading}
+          onRefresh={() => loadTimeline()}
+          variant="inline"
+        />
+      ) : null}
 
       {/* Timeline body — vertical rail like calls/tickets */}
       {loading && entries.length === 0 ? (
@@ -522,16 +790,24 @@ export function CustomerTimeline({
           ) : null}
           <ol
             className={cn(
-              expanded ? "space-y-4" : isCompact ? "space-y-3" : "space-y-4",
+              isPanelEmbed
+                ? "space-y-2.5"
+                : expanded
+                  ? "space-y-4"
+                  : isCompact
+                    ? "space-y-3"
+                    : "space-y-4",
             )}
           >
             {entries.map((entry) => {
               const dateLabel = formatShortDate(entry.occurredAt);
               const duration = formatDuration(entry.duration);
               const agentName = entry.agentName || entry.assignedAgentName;
-              const entryShell = expanded
-                ? "rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40"
-                : cn("relative", isCompact ? "pl-5" : "pl-7");
+              const entryShell = isPanelEmbed
+                ? "rounded-xl border border-slate-200/70 bg-white p-2.5 shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+                : expanded
+                  ? "rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/40"
+                  : cn("relative", isCompact ? "pl-5" : "pl-7");
 
               if (entry.type === "call") {
                 const meta = callMeta(entry);
@@ -543,83 +819,142 @@ export function CustomerTimeline({
                 return (
                   <li key={entry.id} className={entryShell}>
                     {expanded ? (
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2.5">
                         <span
                           className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 bg-white dark:bg-slate-950",
+                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-slate-950",
+                            isPanelEmbed
+                              ? "h-8 w-8 border-slate-100"
+                              : "h-9 w-9 border-2",
                             meta.ring,
                           )}
                         >
-                          <Icon className={cn("h-5 w-5", meta.color)} />
+                          <Icon
+                            className={cn(
+                              isPanelEmbed ? "h-3.5 w-3.5" : "h-4 w-4",
+                              meta.color,
+                            )}
+                          />
                         </span>
                         <div className="min-w-0 flex-1 space-y-2">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
-                              {dateLabel}
-                            </span>
-                            <span
-                              className={cn(
-                                "text-[15px] font-bold",
-                                meta.color,
-                              )}
-                            >
-                              {meta.label}
-                            </span>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span
+                                  className={cn(
+                                    "font-bold",
+                                    isPanelEmbed ? "text-[13px]" : "text-[14px]",
+                                    meta.color,
+                                  )}
+                                >
+                                  {meta.label} call
+                                </span>
+                                {entry.disposition ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="h-5 rounded-md bg-slate-100 px-1.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                  >
+                                    {formatLabel(entry.disposition)}
+                                  </Badge>
+                                ) : null}
+                                {entry.callStatus ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="h-5 rounded-md bg-white px-1.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-800"
+                                  >
+                                    {formatLabel(entry.callStatus)}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
+                                {dateLabel}
+                              </p>
+                            </div>
                             {duration ? (
-                              <span className="rounded-md bg-slate-200/80 px-2 py-0.5 font-mono text-[12px] font-semibold text-slate-600 dark:bg-slate-800">
+                              <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] font-bold tabular-nums text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                                 {duration}
                               </span>
                             ) : null}
                           </div>
-                          <div className="flex flex-wrap gap-x-2 gap-y-1 text-[13px] text-slate-600 dark:text-slate-300">
-                            {entry.disposition ? (
-                              <span>{formatLabel(entry.disposition)}</span>
-                            ) : null}
-                            {agentName ? <span>{agentName}</span> : null}
-                            {entry.phoneLineLabel ? (
-                              <span className="text-slate-500">
-                                {entry.phoneLineLabel}
-                              </span>
-                            ) : null}
-                          </div>
-                          {entry.yardName ? (
-                            <p className="text-[12px] font-semibold text-orange-600">
-                              {entry.yardName}
-                            </p>
-                          ) : null}
+                          <DetailPills
+                            items={[
+                              {
+                                label: "Agent",
+                                value: agentName,
+                                icon: <UserRound className="h-3 w-3" />,
+                              },
+                              {
+                                label: "Line",
+                                value: entry.phoneLineLabel,
+                                icon: <PhoneOutgoing className="h-3 w-3" />,
+                                tone: "blue",
+                              },
+                              {
+                                label: "Yard",
+                                value: entry.yardName,
+                                icon: <MapPin className="h-3 w-3" />,
+                                tone: "amber",
+                              },
+                              {
+                                label: "Campaign",
+                                value: joinDetailValues([
+                                  entry.campaignName || entry.lastLineOrigin,
+                                  formatLabel(entry.campaignOption),
+                                ]),
+                                icon: <Tag className="h-3 w-3" />,
+                              },
+                              {
+                                label: "Reason",
+                                value: entry.missedCallReason,
+                                tone: "red",
+                              },
+                              {
+                                label: "Started",
+                                value: formatOptionalDate(entry.startedAt),
+                                icon: <Clock3 className="h-3 w-3" />,
+                                mono: true,
+                              },
+                              {
+                                label: "Answered",
+                                value: formatOptionalDate(entry.answeredAt),
+                                mono: true,
+                              },
+                              {
+                                label: "Ended",
+                                value: formatOptionalDate(entry.endedAt),
+                                mono: true,
+                              },
+                            ]}
+                          />
+                          <NotePreview label="Call notes" value={entry.callNotes} />
                           {hasRecording ? (
-                            <div className="rounded-lg border border-slate-200/80 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
-                              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                                Recording
-                              </p>
-                              <CallRecordingPlayer
-                                callId={entry.callId!}
-                                className="h-10 w-full"
-                              />
-                            </div>
+                            <CallRecordingPlayer
+                              callId={entry.callId!}
+                              durationSec={entry.duration}
+                              variant="compact"
+                            />
                           ) : null}
-                          <div className="flex flex-wrap gap-3 pt-1">
+                          <div className="flex flex-wrap gap-2 pt-0.5">
                             {entry.callId ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openCall(entry.callId!)
-                                }
-                                className="text-[13px] font-semibold text-[#008f68] hover:underline"
-                              >
+                              <TimelineAction onClick={() => openCall(entry.callId!)}>
                                 View call
-                              </button>
+                              </TimelineAction>
                             ) : null}
                             {entry.callId && !entry.hasTicket ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openCall(entry.callId!)
-                                }
-                                className="text-[13px] font-semibold text-slate-500 hover:underline"
+                              <TimelineAction
+                                muted
+                                onClick={() => openCall(entry.callId!)}
                               >
                                 Create ticket
-                              </button>
+                              </TimelineAction>
+                            ) : null}
+                            {entry.ticketId ? (
+                              <TimelineAction
+                                muted
+                                onClick={() => openTicket(entry.ticketId!)}
+                              >
+                                View ticket
+                              </TimelineAction>
                             ) : null}
                           </div>
                         </div>
@@ -688,6 +1023,18 @@ export function CustomerTimeline({
                             {entry.yardName}
                           </p>
                         ) : null}
+                        {entry.callNotes ? (
+                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                            {entry.callNotes}
+                          </p>
+                        ) : null}
+                        {entry.campaignName || entry.missedCallReason ? (
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {[entry.campaignName, entry.missedCallReason]
+                              .filter(Boolean)
+                              .join(" / ")}
+                          </p>
+                        ) : null}
                         <div className="mt-1.5 flex flex-wrap gap-2">
                           {entry.callId ? (
                             <button
@@ -723,68 +1070,140 @@ export function CustomerTimeline({
                 return (
                   <li key={entry.id} className={entryShell}>
                     {expanded ? (
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2.5">
                         <span
                           className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 bg-white dark:bg-slate-950",
+                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-slate-950",
+                            isPanelEmbed ? "h-8 w-8" : "h-9 w-9 border-2",
                             ring,
                           )}
                         >
-                          <Ticket className="h-5 w-5 text-blue-600" />
+                          <Ticket
+                            className={cn(
+                              "text-blue-600",
+                              isPanelEmbed ? "h-3.5 w-3.5" : "h-4 w-4",
+                            )}
+                          />
                         </span>
                         <div className="min-w-0 flex-1 space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
-                              {dateLabel}
-                            </span>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {entry.ticketId ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openTicket(entry.ticketId!)}
+                                    className="font-mono text-[13px] font-bold text-[#008f68] hover:underline"
+                                  >
+                                    Ticket #{entry.ticketId}
+                                  </button>
+                                ) : (
+                                  <span className="text-[13px] font-bold text-blue-700">
+                                    Ticket
+                                  </span>
+                                )}
+                                {entry.ticketStatus ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                      "h-5 rounded-md px-1.5 text-[10px] font-bold",
+                                      ticketStatusBadge(entry.ticketStatus),
+                                    )}
+                                  >
+                                    {formatLabel(entry.ticketStatus)}
+                                  </Badge>
+                                ) : null}
+                                {entry.ticketPriority ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                      "h-5 rounded-md px-1.5 text-[10px] font-bold",
+                                      ticketPriorityBadge(entry.ticketPriority),
+                                    )}
+                                  >
+                                    {formatLabel(entry.ticketPriority)}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
+                                {dateLabel}
+                              </p>
+                            </div>
+                          </div>
+                          <DetailPills
+                            items={[
+                              {
+                                label: "Type",
+                                value: formatLabel(entry.ticketType),
+                                icon: <Ticket className="h-3 w-3" />,
+                                tone: "blue",
+                              },
+                              {
+                                label: "Agent",
+                                value: agentName,
+                                icon: <UserRound className="h-3 w-3" />,
+                              },
+                              {
+                                label: "Line",
+                                value: entry.phoneLineLabel,
+                                icon: <PhoneOutgoing className="h-3 w-3" />,
+                                tone: "blue",
+                              },
+                              {
+                                label: "Yard",
+                                value: entry.yardName,
+                                icon: <MapPin className="h-3 w-3" />,
+                                tone: "amber",
+                              },
+                              {
+                                label: "Campaign",
+                                value: joinDetailValues([
+                                  entry.campaignName,
+                                  formatLabel(entry.campaignOption),
+                                ]),
+                                icon: <Tag className="h-3 w-3" />,
+                              },
+                              {
+                                label: "Follow-up",
+                                value: formatOptionalDate(entry.followUpDueDate),
+                                icon: <Clock3 className="h-3 w-3" />,
+                                tone: "amber",
+                                mono: true,
+                              },
+                              {
+                                label: "Resolved",
+                                value: formatOptionalDate(entry.resolvedAt),
+                                tone: "green",
+                                mono: true,
+                              },
+                              {
+                                label: "Call",
+                                value: entry.callId ? `#${entry.callId}` : "",
+                                mono: true,
+                              },
+                            ]}
+                          />
+                          <NotePreview
+                            label="Ticket notes"
+                            value={entry.ticketNotes}
+                            tone="amber"
+                          />
+                          <div className="flex flex-wrap gap-2 pt-0.5">
                             {entry.ticketId ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openTicket(entry.ticketId!)
-                                }
-                                className="font-mono text-[15px] font-bold text-[#008f68] hover:underline"
+                              <TimelineAction
+                                onClick={() => openTicket(entry.ticketId!)}
                               >
-                                Ticket #{entry.ticketId}
-                              </button>
+                                View ticket
+                              </TimelineAction>
                             ) : null}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {entry.ticketStatus ? (
-                              <Badge
-                                variant="secondary"
-                                className={cn(
-                                  "h-6 px-2 text-xs",
-                                  ticketStatusBadge(entry.ticketStatus),
-                                )}
+                            {entry.callId ? (
+                              <TimelineAction
+                                muted
+                                onClick={() => openCall(entry.callId!)}
                               >
-                                {formatLabel(entry.ticketStatus)}
-                              </Badge>
+                                View call
+                              </TimelineAction>
                             ) : null}
-                            {entry.ticketPriority ? (
-                              <Badge
-                                variant="secondary"
-                                className={cn(
-                                  "h-6 px-2 text-xs",
-                                  ticketPriorityBadge(entry.ticketPriority),
-                                )}
-                              >
-                                {formatLabel(entry.ticketPriority)}
-                              </Badge>
-                            ) : null}
-                          </div>
-                          <div className="space-y-1 text-[13px] text-slate-600 dark:text-slate-300">
-                            {entry.ticketType ? (
-                              <p>{formatLabel(entry.ticketType)}</p>
-                            ) : null}
-                            {agentName ? <p>Agent: {agentName}</p> : null}
-                            {[entry.phoneLineLabel, entry.yardName]
-                              .filter(Boolean)
-                              .map((line) => (
-                                <p key={line} className="text-slate-500">
-                                  {line}
-                                </p>
-                              ))}
                           </div>
                         </div>
                       </div>
@@ -874,32 +1293,155 @@ export function CustomerTimeline({
                 );
               }
 
+              if (entry.type === "manual_record") {
+                return (
+                  <li key={entry.id} className={entryShell}>
+                    {expanded ? (
+                      <div className="flex items-start gap-2.5">
+                        <span
+                          className={cn(
+                            "flex shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 shadow-sm dark:border-violet-900 dark:bg-violet-950/40",
+                            isPanelEmbed ? "h-8 w-8" : "h-9 w-9",
+                          )}
+                        >
+                          <ClipboardList className="h-3.5 w-3.5 text-violet-600" />
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[13px] font-bold text-violet-700 dark:text-violet-400">
+                                  Manual record
+                                </span>
+                                {entry.disposition ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="h-5 rounded-md bg-violet-50 px-1.5 text-[10px] font-bold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-900"
+                                  >
+                                    {formatLabel(entry.disposition)}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
+                                {dateLabel}
+                              </p>
+                            </div>
+                          </div>
+                          <DetailPills
+                            items={[
+                              {
+                                label: "Yard",
+                                value: entry.yardName,
+                                icon: <MapPin className="h-3 w-3" />,
+                                tone: "amber",
+                              },
+                              {
+                                label: "Campaign",
+                                value: joinDetailValues([
+                                  entry.campaignName,
+                                  formatLabel(entry.campaignOption),
+                                ]),
+                                icon: <Tag className="h-3 w-3" />,
+                              },
+                            ]}
+                          />
+                          <NotePreview
+                            label="Record notes"
+                            value={entry.manualRecordNotes}
+                            tone="amber"
+                          />
+                          {entry.manualRecordId ? (
+                            <div className="flex flex-wrap gap-2 pt-0.5">
+                              <TimelineAction
+                                onClick={() =>
+                                  navigateTo("/calls?tab=manual-records")
+                                }
+                              >
+                                View manual records
+                              </TimelineAction>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <span
+                          className={cn(
+                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-400 bg-white dark:bg-slate-950",
+                            isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                          )}
+                        >
+                          <ClipboardList
+                            className={cn(
+                              "text-violet-600",
+                              isCompact ? "h-2 w-2" : "h-2.5 w-2.5",
+                            )}
+                          />
+                        </span>
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <span className="text-[11px] font-normal tabular-nums text-slate-500">
+                            {dateLabel}
+                          </span>
+                          <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">
+                            Manual record
+                          </span>
+                          {entry.disposition ? (
+                            <>
+                              <span className="select-none text-gray-300">·</span>
+                              <span className="text-xs text-slate-600">
+                                {formatLabel(entry.disposition)}
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                        {entry.manualRecordNotes ? (
+                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                            {entry.manualRecordNotes}
+                          </p>
+                        ) : null}
+                        {entry.yardName || entry.campaignName ? (
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {[entry.yardName, entry.campaignName]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        ) : null}
+                      </>
+                    )}
+                  </li>
+                );
+              }
+
               if (entry.type === "customer_note") {
                 return (
                   <li key={entry.id} className={entryShell}>
                     {expanded ? (
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40">
-                          <StickyNote className="h-5 w-5 text-amber-600" />
+                      <div className="flex items-start gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 shadow-sm dark:border-amber-900 dark:bg-amber-950/40">
+                          <StickyNote className="h-3.5 w-3.5 text-amber-600" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
-                              {dateLabel}
-                            </span>
-                            <span className="text-[15px] font-bold text-amber-700 dark:text-amber-400">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[13px] font-bold text-amber-700 dark:text-amber-400">
                               Audit note
                             </span>
                             {entry.noteAuthor ? (
-                              <span className="text-[13px] text-slate-600">
+                              <span className="text-[12px] font-semibold text-slate-600">
                                 {entry.noteAuthor}
                               </span>
                             ) : null}
+                            <span className="text-[11px] font-semibold tabular-nums text-slate-500">
+                              {dateLabel}
+                            </span>
                           </div>
                           {entry.noteContent ? (
-                            <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700 dark:text-slate-200">
-                              {entry.noteContent}
-                            </p>
+                            <div className="mt-2">
+                              <NotePreview
+                                label="Audit note"
+                                value={entry.noteContent}
+                                tone="amber"
+                              />
+                            </div>
                           ) : null}
                         </div>
                       </div>
@@ -1029,9 +1571,17 @@ export function CustomerTimeline({
 
 function entrySummaryText(entry: TimelineEntry) {
   if (entry.type === "ticket") {
-    return entry.ticketType
-      ? formatLabel(entry.ticketType)
-      : "";
+    return (
+      entry.ticketNotes ||
+      (entry.ticketType ? formatLabel(entry.ticketType) : "") ||
+      ""
+    );
+  }
+  if (entry.type === "call") {
+    return entry.callNotes || entry.missedCallReason || "";
+  }
+  if (entry.type === "manual_record") {
+    return entry.manualRecordNotes || "";
   }
   return "";
 }

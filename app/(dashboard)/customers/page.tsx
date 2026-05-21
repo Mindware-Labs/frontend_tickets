@@ -42,10 +42,18 @@ const ITEMS_PER_PAGE = 10;
 const DEFAULT_FORM: CustomerFormData = {
   name: "",
   phone: "",
-  note: "",
+  pinnedNote: "",
   pendingNotes: [],
   campaignIds: [],
 };
+
+const getCustomerFormData = (customer: Customer): CustomerFormData => ({
+  name: customer.name ?? "",
+  phone: customer.phone ?? "",
+  pinnedNote: customer.pinnedNote?.trim() ?? "",
+  pendingNotes: [],
+  campaignIds: customer.campaigns?.map((c) => c.id.toString()) ?? [],
+});
 
 export default function CustomersPage() {
   const searchParams = useSearchParams();
@@ -266,7 +274,7 @@ export default function CustomersPage() {
   const buildPayload = (data: CustomerFormData) => ({
     name: data.name.trim() || undefined,
     phone: data.phone.trim(),
-    note: data.note.trim() || undefined,
+    pinnedNote: data.pinnedNote.trim() || undefined,
     campaignIds: data.campaignIds.map(Number),
   });
 
@@ -289,13 +297,7 @@ export default function CustomersPage() {
 
   const handleEdit = async (customer: Customer) => {
     setSelectedCustomer(customer);
-    setFormData({
-      name: customer.name ?? "",
-      phone: customer.phone ?? "",
-      note: customer.note ?? "",
-      pendingNotes: [],
-      campaignIds: customer.campaigns?.map((c) => c.id.toString()) ?? [],
-    });
+    setFormData(getCustomerFormData(customer));
     clearErrors();
     setShowEditModal(true);
 
@@ -309,13 +311,7 @@ export default function CustomersPage() {
         ...base,
         notes: notes.length > 0 ? notes : base.notes ?? [],
       });
-      setFormData({
-        name: base.name ?? "",
-        phone: base.phone ?? "",
-        note: base.note ?? "",
-        pendingNotes: [],
-        campaignIds: base.campaigns?.map((c) => c.id.toString()) ?? [],
-      });
+      setFormData(getCustomerFormData(base));
     } catch {
       // Keep row/sheet data if detail fetch fails
     }
@@ -545,8 +541,13 @@ export default function CustomersPage() {
             validationErrors={validationErrors}
             onValidationErrorChange={setValidationErrors}
             onSubmit={handleSubmitCreate}
+            onReset={() => {
+              resetForm();
+              clearErrors();
+            }}
             campaigns={campaigns}
             idPrefix="create"
+            showPlaceholders
           />
 
           <CustomerFormModal
@@ -556,7 +557,7 @@ export default function CustomersPage() {
               if (!open) clearErrors();
             }}
             title="Edit Customer"
-            description="Update customer details"
+            description="Modify the customer details"
             submitLabel="Save Changes"
             isSubmitting={isSubmitting}
             formData={formData}
@@ -564,6 +565,12 @@ export default function CustomersPage() {
             validationErrors={validationErrors}
             onValidationErrorChange={setValidationErrors}
             onSubmit={handleSubmitEdit}
+            onReset={() => {
+              if (selectedCustomer) {
+                setFormData(getCustomerFormData(selectedCustomer));
+              }
+              clearErrors();
+            }}
             campaigns={campaigns}
             idPrefix="edit"
             customerId={selectedCustomer?.id}

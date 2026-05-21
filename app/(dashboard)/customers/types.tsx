@@ -53,23 +53,43 @@ export interface Customer {
 export interface CustomerFormData {
   name: string;
   phone: string;
-  note: string;
+  pinnedNote: string;
   pendingNotes: string[];
   campaignIds: string[];
 }
 
-export type TimelineEntryType = "call" | "ticket" | "sms" | "customer_note";
+export type TimelineEntryType =
+  | "call"
+  | "ticket"
+  | "sms"
+  | "customer_note"
+  | "manual_record";
+
+export type TimelineEntryTypeFilter =
+  | "all"
+  | "call"
+  | "ticket"
+  | "manual_record"
+  | "customer_note";
 
 export interface TimelineEntry {
   id: string;
   type: TimelineEntryType;
   occurredAt: string;
   direction?: "INBOUND" | "OUTBOUND" | "MISSED" | "VOICEMAIL";
+  callStatus?: string;
   disposition?: string;
   duration?: number;
+  callNotes?: string;
+  missedCallReason?: string;
+  startedAt?: string;
+  answeredAt?: string;
+  endedAt?: string;
   agentName?: string;
   phoneLineLabel?: string;
   yardName?: string;
+  campaignName?: string;
+  campaignOption?: string;
   recordingUrl?: string;
   callId?: number;
   hasTicket?: boolean;
@@ -77,22 +97,25 @@ export interface TimelineEntry {
   ticketStatus?: string;
   ticketPriority?: string;
   ticketType?: string;
+  ticketNotes?: string;
   assignedAgentName?: string;
+  followUpDueDate?: string;
   resolvedAt?: string;
   smsDirection?: "sent" | "received";
   smsBody?: string;
   noteContent?: string;
   noteAuthor?: string;
   lastLineOrigin?: string;
+  manualRecordId?: number;
+  manualRecordNotes?: string;
 }
 
 export interface TimelineFilters {
-  type: "all" | TimelineEntryType;
-  sort: "desc" | "asc";
-  from: string;
-  to: string;
+  entryType: TimelineEntryTypeFilter;
   lineId: string;
-  agentId: string;
+  yardId: string;
+  campaignId: string;
+  disposition: string;
 }
 
 export interface CustomerSummary {

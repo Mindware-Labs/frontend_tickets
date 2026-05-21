@@ -886,7 +886,14 @@ export function CallEditFormContent({
         <div>
           <SectionHeading>Call Recording</SectionHeading>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <CallRecordingPlayer callId={(ticket as any).id} />
+            <CallRecordingPlayer
+              callId={(ticket as any).id}
+              durationSec={
+                (ticket as any).duration
+                  ? parseInt(String((ticket as any).duration), 10)
+                  : null
+              }
+            />
           </div>
         </div>
       )}
