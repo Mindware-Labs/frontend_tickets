@@ -68,16 +68,16 @@ export function CustomersTable({
     <div className="entity-table-root">
       <div className="entity-table-frame">
         <div className="entity-table-scroll">
-          <Table className="relative min-w-[980px] table-fixed">
+          <Table className="relative min-w-[1040px] table-fixed">
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="w-[250px] pl-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="w-[150px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Yard
+                <TableHead className="w-[240px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Yards
                 </TableHead>
-                <TableHead className="w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <TableHead className="w-[150px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Campaigns
                 </TableHead>
                 <TableHead className="w-[80px] text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -144,6 +144,12 @@ export function CustomersTable({
                 customers.map((customer, index) => {
                   const openTickets = customer.openTickets ?? 0;
                   const hasPinnedNote = Boolean(customer.pinnedNote?.trim());
+                  const customerYards =
+                    customer.yards && customer.yards.length > 0
+                      ? customer.yards
+                      : customer.yard
+                        ? [customer.yard]
+                        : [];
 
                   return (
                     <TableRow
@@ -178,15 +184,27 @@ export function CustomersTable({
                       </TableCell>
 
                       <TableCell className="max-w-0 overflow-hidden py-3">
-                        {customer.yard?.name ? (
-                          <Badge
-                            variant="outline"
-                            className="max-w-full gap-1 truncate rounded-full font-medium"
-                            title={customer.yard.name}
+                        {customerYards.length > 0 ? (
+                          <div
+                            className="flex min-w-0 flex-wrap gap-1"
+                            title={customerYards.map((yard) => yard.name).join(", ")}
                           >
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{customer.yard.name}</span>
-                          </Badge>
+                            {customerYards.slice(0, 2).map((yard) => (
+                              <Badge
+                                key={yard.id}
+                                variant="outline"
+                                className="max-w-full gap-1 truncate rounded-full font-medium"
+                              >
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{yard.name}</span>
+                              </Badge>
+                            ))}
+                            {customerYards.length > 2 ? (
+                              <Badge variant="outline" className="rounded-full">
+                                +{customerYards.length - 2}
+                              </Badge>
+                            ) : null}
+                          </div>
                         ) : (
                           <span className="text-[13px] text-slate-400">—</span>
                         )}

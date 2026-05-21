@@ -40,6 +40,7 @@ export interface Customer {
   callCount?: number;
   lastContactAt?: string;
   yard?: { id: number; name: string };
+  yards?: { id: number; name: string }[];
   pinnedNote?: string;
   totalCalls?: number;
   openTickets?: number;

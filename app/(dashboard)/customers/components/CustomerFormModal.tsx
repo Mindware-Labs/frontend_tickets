@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +21,8 @@ import {
   User, Phone, Search,
 } from "lucide-react";
 import { CampaignOption, CustomerFormData, CustomerNote } from "../types";
-import { fetchFromBackend } from "@/lib/api-client";
+import { fetchCustomerNotes } from "../utils/notes";
+import { CustomerNotesList } from "./CustomerNotesList";
 import { toast } from "@/hooks/use-toast";
 
 interface CustomerFormModalProps {
@@ -63,14 +64,53 @@ export function CustomerFormModal({
 }: CustomerFormModalProps) {
   const [campaignSearch, setCampaignSearch] = useState("");
   const [newNote, setNewNote] = useState("");
-  const [addingNote, setAddingNote] = useState(false);
-  const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
-  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingPendingIdx, setEditingPendingIdx] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [savingNote, setSavingNote] = useState(false);
+  const [editNotes, setEditNotes] = useState<CustomerNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
 
   const isEdit = !!customerId;
+
+  useEffect(() => {
+    if (!open || !customerId) {
+      setEditNotes([]);
+      setNotesLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setNotesLoading(true);
+
+    fetchCustomerNotes(customerId)
+      .then((fetched) => {
+        if (cancelled) return;
+        const next =
+          fetched.length > 0 ? fetched : existingNotes;
+        setEditNotes(next);
+        if (fetched.length > 0) {
+          onNotesChange?.(fetched);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEditNotes(existingNotes);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setNotesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when modal opens for this customer
+  }, [open, customerId]);
+
+  useEffect(() => {
+    if (open && customerId && existingNotes.length > 0) {
+      setEditNotes((prev) => (prev.length === 0 ? existingNotes : prev));
+    }
+  }, [open, customerId, existingNotes]);
 
   const initials = formData.name
     ? formData.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
@@ -79,56 +119,6 @@ export function CustomerFormModal({
   const selectedCampaigns = campaigns.filter((c) =>
     formData.campaignIds.includes(c.id.toString())
   );
-
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !customerId) return;
-    setAddingNote(true);
-    try {
-      const created = await fetchFromBackend(`/customers/${customerId}/notes`, {
-        method: "POST",
-        body: JSON.stringify({ content: newNote.trim() }),
-      });
-      setNewNote("");
-      onNotesChange?.([created, ...existingNotes]);
-      toast({ title: "Note added" });
-    } catch {
-      toast({ title: "Error", description: "Failed to add note", variant: "destructive" });
-    } finally {
-      setAddingNote(false);
-    }
-  };
-
-  const handleDeleteNote = async (noteId: number) => {
-    if (!customerId) return;
-    setDeletingNoteId(noteId);
-    try {
-      await fetchFromBackend(`/customers/${customerId}/notes/${noteId}`, { method: "DELETE" });
-      onNotesChange?.(existingNotes.filter((n) => n.id !== noteId));
-      toast({ title: "Note deleted" });
-    } catch {
-      toast({ title: "Error", description: "Failed to delete note", variant: "destructive" });
-    } finally {
-      setDeletingNoteId(null);
-    }
-  };
-
-  const handleSaveExistingNote = async () => {
-    if (!customerId || editingNoteId === null || !editingText.trim()) return;
-    setSavingNote(true);
-    try {
-      const updated = await fetchFromBackend(`/customers/${customerId}/notes/${editingNoteId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ content: editingText.trim() }),
-      });
-      onNotesChange?.(existingNotes.map((n) => n.id === editingNoteId ? { ...n, content: updated.content } : n));
-      setEditingNoteId(null);
-      setEditingText("");
-    } catch {
-      toast({ title: "Error", description: "Failed to update note", variant: "destructive" });
-    } finally {
-      setSavingNote(false);
-    }
-  };
 
   const handleSavePendingNote = () => {
     if (editingPendingIdx === null || !editingText.trim()) return;
@@ -154,8 +144,6 @@ export function CustomerFormModal({
     if (!term) return campaigns;
     return campaigns.filter((c) => c.nombre.toLowerCase().includes(term));
   }, [campaigns, campaignSearch]);
-
-  const notes = customerId ? existingNotes : formData.pendingNotes.map((content, id) => ({ id, content, createdAt: "" }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -229,109 +217,167 @@ export function CustomerFormModal({
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-slate-700 flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5 text-[13px] font-medium text-slate-700">
                 <StickyNote className="h-3.5 w-3.5 text-slate-400" />
                 Notes
-                <span className="text-[11px] font-normal text-slate-400">(initial persistent note)</span>
+                <span className="text-[11px] font-normal text-slate-400">
+                  (audit trail)
+                </span>
               </Label>
 
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Add a note…"
-                  value={newNote}
-                  rows={2}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="flex-1 text-sm resize-none border-slate-200"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (customerId) handleAddNote();
-                      else if (newNote.trim()) {
-                        onFormChange({ ...formData, pendingNotes: [newNote.trim(), ...formData.pendingNotes] });
-                        setNewNote("");
-                      }
-                    }
+              {customerId ? (
+                <CustomerNotesList
+                  customerId={customerId}
+                  notes={editNotes}
+                  loading={notesLoading}
+                  onNotesChange={(notes) => {
+                    setEditNotes(notes);
+                    onNotesChange?.(notes);
                   }}
+                  variant="form"
+                  canEdit
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (customerId) handleAddNote();
-                    else if (newNote.trim()) {
-                      onFormChange({ ...formData, pendingNotes: [newNote.trim(), ...formData.pendingNotes] });
-                      setNewNote("");
-                    }
-                  }}
-                  disabled={addingNote || !newNote.trim()}
-                  className="self-end h-9 border-slate-200"
-                >
-                  {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                </Button>
-              </div>
-
-              {notes.length > 0 && (
-                <div className="space-y-1.5">
-                  {(customerId ? existingNotes : formData.pendingNotes).map((item, idx) => {
-                    const note = typeof item === "string" ? { id: idx, content: item, createdAt: "", createdBy: undefined } : item as CustomerNote;
-                    const isEditing = customerId ? editingNoteId === note.id : editingPendingIdx === idx;
-
-                    return (
-                      <div key={note.id} className="flex items-start gap-2 px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50/60 text-sm">
-                        {isEditing ? (
-                          <>
-                            <Textarea
-                              value={editingText}
-                              rows={2}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              className="flex-1 text-sm resize-none"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  customerId ? handleSaveExistingNote() : handleSavePendingNote();
-                                }
-                                if (e.key === "Escape") { setEditingNoteId(null); setEditingPendingIdx(null); setEditingText(""); }
-                              }}
-                            />
-                            <div className="flex flex-col gap-1">
-                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-green-600"
-                                onClick={() => customerId ? handleSaveExistingNote() : handleSavePendingNote()}
-                                disabled={savingNote || !editingText.trim()}>
-                                {savingNote ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                              </Button>
-                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6"
-                                onClick={() => { setEditingNoteId(null); setEditingPendingIdx(null); setEditingText(""); }}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-slate-700 leading-snug whitespace-pre-wrap break-words">{note.content}</p>
-                              {(note as CustomerNote).createdBy && (
-                                <span className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider">
-                                  {(note as CustomerNote).createdBy}
-                                </span>
-                              )}
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-slate-400 hover:text-slate-700"
-                              onClick={() => { if (customerId) { setEditingNoteId(note.id); } else { setEditingPendingIdx(idx); } setEditingText(note.content); }}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-red-400 hover:text-red-600"
-                              onClick={() => customerId ? handleDeleteNote(note.id) : onFormChange({ ...formData, pendingNotes: formData.pendingNotes.filter((_, i) => i !== idx) })}
-                              disabled={deletingNoteId === note.id}>
-                              {deletingNoteId === note.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Add a note…"
+                      value={newNote}
+                      rows={2}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      className="flex-1 resize-none border-slate-200 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (newNote.trim()) {
+                            onFormChange({
+                              ...formData,
+                              pendingNotes: [
+                                newNote.trim(),
+                                ...formData.pendingNotes,
+                              ],
+                            });
+                            setNewNote("");
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (newNote.trim()) {
+                          onFormChange({
+                            ...formData,
+                            pendingNotes: [
+                              newNote.trim(),
+                              ...formData.pendingNotes,
+                            ],
+                          });
+                          setNewNote("");
+                        }
+                      }}
+                      disabled={!newNote.trim()}
+                      className="h-9 self-end border-slate-200"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {formData.pendingNotes.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {formData.pendingNotes.map((content, idx) => {
+                        const isEditing = editingPendingIdx === idx;
+                        return (
+                          <div
+                            key={`${idx}-${content.slice(0, 8)}`}
+                            className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm"
+                          >
+                            {isEditing ? (
+                              <>
+                                <Textarea
+                                  value={editingText}
+                                  rows={2}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className="flex-1 resize-none text-sm"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleSavePendingNote();
+                                    }
+                                    if (e.key === "Escape") {
+                                      setEditingPendingIdx(null);
+                                      setEditingText("");
+                                    }
+                                  }}
+                                />
+                                <div className="flex flex-col gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-green-600"
+                                    onClick={handleSavePendingNote}
+                                    disabled={!editingText.trim()}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      setEditingPendingIdx(null);
+                                      setEditingText("");
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-snug text-slate-700">
+                                  {content}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0 text-slate-400"
+                                  onClick={() => {
+                                    setEditingPendingIdx(idx);
+                                    setEditingText(content);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0 text-red-400"
+                                  onClick={() =>
+                                    onFormChange({
+                                      ...formData,
+                                      pendingNotes: formData.pendingNotes.filter(
+                                        (_, i) => i !== idx,
+                                      ),
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
 

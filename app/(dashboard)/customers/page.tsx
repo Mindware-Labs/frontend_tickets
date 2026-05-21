@@ -16,6 +16,7 @@ import {
   CustomersListResponse,
   YardOption,
 } from "./types";
+import { fetchCustomerNotes } from "./utils/notes";
 import {
   CustomersToolbar,
   type CustomersFilterState,
@@ -270,7 +271,7 @@ export default function CustomersPage() {
     setShowCreateModal(true);
   };
 
-  const handleEdit = (customer: Customer) => {
+  const handleEdit = async (customer: Customer) => {
     setSelectedCustomer(customer);
     setFormData({
       name: customer.name ?? "",
@@ -281,6 +282,27 @@ export default function CustomersPage() {
     });
     clearErrors();
     setShowEditModal(true);
+
+    try {
+      const [detail, notes] = await Promise.all([
+        fetchFromBackend(`/customers/${customer.id}`),
+        fetchCustomerNotes(customer.id),
+      ]);
+      const base = (detail as { data?: Customer })?.data ?? (detail as Customer);
+      setSelectedCustomer({
+        ...base,
+        notes: notes.length > 0 ? notes : base.notes ?? [],
+      });
+      setFormData({
+        name: base.name ?? "",
+        phone: base.phone ?? "",
+        note: base.note ?? "",
+        pendingNotes: [],
+        campaignIds: base.campaigns?.map((c) => c.id.toString()) ?? [],
+      });
+    } catch {
+      // Keep row/sheet data if detail fetch fails
+    }
   };
 
   const handleDelete = (customer: Customer) => {
@@ -372,9 +394,9 @@ export default function CustomersPage() {
         ),
       });
       setShowEditModal(false);
-      setSelectedCustomer(null);
       resetForm();
       await fetchCustomers();
+      setSelectedCustomer(null);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to update customer";

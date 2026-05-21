@@ -16,6 +16,8 @@ import {
   Check,
   Clock,
   Copy,
+  History,
+  Sparkles,
   Megaphone,
   Pencil,
   Phone,
@@ -33,7 +35,8 @@ import { cn } from "@/lib/utils";
 import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
 import { CustomerPinnedNotes } from "./CustomerPinnedNotes";
-import { CustomerTimeline } from "./CustomerTimeline";
+import { CustomerTimelinePopup } from "./CustomerTimelinePopup";
+import { fetchCustomerNotes, normalizeCustomerNotes } from "../utils/notes";
 
 interface CustomerSheetProps {
   open: boolean;
@@ -124,11 +127,16 @@ export function CustomerSheet({
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   useEffect(() => {
     setSheetOpen(open);
     return () => setSheetOpen(false);
   }, [open, setSheetOpen]);
+
+  useEffect(() => {
+    if (!open) setTimelineOpen(false);
+  }, [open]);
 
   useEffect(() => {
     if (!customer?.id) {
@@ -142,8 +150,19 @@ export function CustomerSheet({
     const load = async () => {
       try {
         setLoading(true);
-        const fetched = await fetchFromBackend(`/customers/${customer.id}`);
-        if (!cancelled) setDetail((fetched as { data?: Customer })?.data ?? fetched);
+        const [fetched, notes] = await Promise.all([
+          fetchFromBackend(`/customers/${customer.id}`),
+          fetchCustomerNotes(customer.id).catch(() => []),
+        ]);
+        if (!cancelled) {
+          const base =
+            (fetched as { data?: Customer })?.data ?? (fetched as Customer);
+          const mergedNotes =
+            notes.length > 0
+              ? notes
+              : normalizeCustomerNotes(base.notes ?? []);
+          setDetail({ ...base, notes: mergedNotes });
+        }
       } catch {
         if (!cancelled) setDetail(customer);
       } finally {
@@ -168,6 +187,12 @@ export function CustomerSheet({
   const callCount = data?.callCount ?? data?.totalCalls ?? 0;
   const ticketCount = data?.ticketCount ?? 0;
   const openCount = data?.openTickets ?? 0;
+  const customerYards =
+    data?.yards && data.yards.length > 0
+      ? data.yards
+      : data?.yard
+        ? [data.yard]
+        : [];
 
   const copyPhone = async () => {
     if (!hasText(data?.phone)) return;
@@ -209,6 +234,7 @@ export function CustomerSheet({
               </SheetDescription>
             </SheetHeader>
 
+            <div className="relative flex h-full min-h-0 flex-col">
             <div className="relative shrink-0 border-b border-slate-200/70 bg-white dark:border-slate-800 dark:bg-slate-950">
               <SheetClose
                 aria-label="Close customer details"
@@ -267,6 +293,28 @@ export function CustomerSheet({
                     helper="Includes closed"
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen(true)}
+                  className="group mt-3 flex w-full items-center gap-3 rounded-xl border-2 border-[#008f68]/40 bg-gradient-to-r from-[#e8faf0] via-[#f0faf5] to-white px-4 py-3.5 text-left shadow-[0_8px_24px_rgba(0,143,104,0.18)] ring-2 ring-[#008f68]/15 transition-all hover:border-[#008f68]/60 hover:shadow-[0_12px_28px_rgba(0,143,104,0.22)] active:scale-[0.99] dark:from-emerald-950/50 dark:via-slate-950 dark:to-slate-950 dark:ring-emerald-500/20"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#008f68] text-white shadow-md">
+                    <History className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-slate-900 dark:text-white">
+                      <Sparkles className="h-3.5 w-3.5 text-[#008f68]" />
+                      View activity timeline
+                    </span>
+                    <p className="mt-0.5 text-[12px] font-medium text-slate-600 dark:text-slate-400">
+                      Calls, tickets & notes — opens in a focused view
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#008f68] px-2.5 py-1 text-[11px] font-bold text-white tabular-nums">
+                    {callCount + ticketCount}
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -275,8 +323,9 @@ export function CustomerSheet({
                 <CustomerPinnedNotes
                   customer={data}
                   canEditPinned={!isAgent}
+                  canManageNotes={!isAgent}
                   onCustomerChange={setDetail}
-                  onActivityChange={() =>
+                  onNotesMutated={() =>
                     setTimelineRefreshKey((value) => value + 1)
                   }
                 />
@@ -309,16 +358,24 @@ export function CustomerSheet({
                         </button>
                       ) : null}
                     </div>
-                    {data.yard ? (
+                    {customerYards.length > 0 ? (
                       <div className="flex gap-3 px-4 py-3.5">
                         <Building2 className="mt-0.5 h-4 w-4 text-orange-600" />
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-semibold uppercase text-slate-400">
-                            Yard
+                            Yards
                           </p>
-                          <p className="text-[13px] font-semibold text-[#008f68]">
-                            {data.yard.name}
-                          </p>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {customerYards.map((yard) => (
+                              <span
+                                key={yard.id}
+                                className="inline-flex max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-[#008f68]"
+                                title={yard.name}
+                              >
+                                <span className="truncate">{yard.name}</span>
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     ) : null}
@@ -341,13 +398,6 @@ export function CustomerSheet({
                     </div>
                   </div>
                 ) : null}
-
-                <CustomerTimeline
-                  customerId={data.id}
-                  canPlayRecordings={canPlayRecordings}
-                  refreshKey={timelineRefreshKey}
-                  onNavigate={() => onOpenChange(false)}
-                />
 
               </div>
             </div>
@@ -415,6 +465,18 @@ export function CustomerSheet({
                   </button>
                 ) : null}
               </div>
+            </div>
+
+            <CustomerTimelinePopup
+              open={timelineOpen}
+              onOpenChange={setTimelineOpen}
+              customerId={data.id}
+              customerName={data.name}
+              eventHint={callCount + ticketCount}
+              canPlayRecordings={canPlayRecordings}
+              refreshKey={timelineRefreshKey}
+              onNavigate={() => onOpenChange(false)}
+            />
             </div>
           </>
         )}
