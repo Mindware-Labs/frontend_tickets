@@ -174,6 +174,7 @@ const emptyForm: CreateSupportTicketFormData = {
   status: SupportTicketStatus.ACTIVE,
   priority: SupportTicketPriority.MEDIUM,
   ticketType: "",
+  disposition: "",
   issueDetail: "",
   followUpDueDate: "",
   followUpAssignedToId: "",
@@ -347,6 +348,7 @@ export function TicketsTab({
       status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
+      disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
@@ -370,6 +372,7 @@ export function TicketsTab({
       status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
+      disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
@@ -392,6 +395,7 @@ export function TicketsTab({
       status: normalizeStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
+      disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)

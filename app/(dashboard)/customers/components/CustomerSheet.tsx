@@ -349,36 +349,6 @@ export function CustomerSheet({
                   onNavigate={() => onOpenChange(false)}
                 />
 
-                {false && data.notes && data.notes.length > 0 ? (
-                  <div>
-                    <SectionLabel>Notes</SectionLabel>
-                    <div className="space-y-2">
-                      {data.notes.map((note) => (
-                        <div
-                          key={note.id}
-                          className="rounded-xl border border-slate-200/70 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                        >
-                          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
-                            {note.content}
-                          </p>
-                          <p className="mt-2 text-[11px] text-slate-400">
-                            {formatDate(note.createdAt)}
-                            {note.createdBy ? ` - ${note.createdBy}` : ""}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : false ? (
-                  <div>
-                    <SectionLabel>Notes</SectionLabel>
-                    <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-                      <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">
-                        {data.note}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
 
