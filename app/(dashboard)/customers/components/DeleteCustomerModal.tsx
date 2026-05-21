@@ -17,6 +17,7 @@ interface DeleteCustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customerName?: string;
+  customerPhone?: string;
   ticketCount?: number;
   isSubmitting: boolean;
   onConfirm: () => void;
@@ -26,13 +27,13 @@ export function DeleteCustomerModal({
   open,
   onOpenChange,
   customerName,
+  customerPhone,
   ticketCount,
   isSubmitting,
   onConfirm,
 }: DeleteCustomerModalProps) {
   const displayName = customerName?.trim() || "this customer";
   const activities = ticketCount ?? 0;
-  const canDelete = activities === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,16 +67,20 @@ export function DeleteCustomerModal({
               <p className="mt-1 text-[14px] font-semibold leading-snug text-slate-900 dark:text-slate-100">
                 {displayName}
               </p>
+              {customerPhone ? (
+                <p className="mt-0.5 font-mono text-[12px] text-slate-500">
+                  {customerPhone}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          {canDelete ? (
-            <p className="text-justify text-[13px] leading-relaxed text-slate-600 dark:text-slate-400">
-              You are about to remove this customer from the system. Linked call
-              history may be affected. Make sure you no longer need this contact
-              before continuing.
-            </p>
-          ) : (
+          <p className="text-justify text-[13px] leading-relaxed text-slate-600 dark:text-slate-400">
+            You are about to remove this customer from active lists. Linked call
+            and ticket history will remain available in their modules.
+          </p>
+
+          {activities > 0 ? (
             <div
               className="rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-4 text-center dark:border-amber-900/40 dark:bg-amber-950/30"
               role="alert"
@@ -84,19 +89,19 @@ export function DeleteCustomerModal({
                 <AlertTriangle className="h-4 w-4" strokeWidth={2.25} />
               </div>
               <p className="mt-3 text-[13px] font-semibold text-amber-950 dark:text-amber-100">
-                Cannot delete this customer
+                Linked activity will be preserved
               </p>
               <p className="mt-2 text-justify text-[13px] leading-relaxed text-amber-900/90 dark:text-amber-200/90">
                 This customer has <span className="font-semibold">{activities}</span>{" "}
-                linked activit{activities === 1 ? "y" : "ies"}. Remove or reassign
-                them first.
+                linked activit{activities === 1 ? "y" : "ies"}. The customer is
+                soft-deleted only.
               </p>
               <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                 <ActivitiesIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 {activities} activit{activities === 1 ? "y" : "ies"}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
@@ -113,7 +118,7 @@ export function DeleteCustomerModal({
             type="button"
             variant="destructive"
             onClick={onConfirm}
-            disabled={isSubmitting || !canDelete}
+            disabled={isSubmitting}
             className={cn(
               "h-10 rounded-lg px-6 text-sm font-semibold shadow-sm disabled:opacity-60",
               "bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700",

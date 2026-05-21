@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
 import {
   Table,
   TableBody,
@@ -8,8 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pencil, Phone, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Clock, MapPin, Pencil, Phone, Pin, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
@@ -18,6 +21,8 @@ interface CustomersTableProps {
   loading: boolean;
   customers: Customer[];
   totalFiltered: number;
+  error?: string | null;
+  onRetry?: () => void;
   onRowClick?: (customer: Customer) => void;
   onEdit?: (customer: Customer) => void;
   onDelete?: (customer: Customer) => void;
@@ -28,10 +33,26 @@ interface CustomersTableProps {
   totalPages?: number;
 }
 
+function formatRelativeDate(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
+function getResultRange(page: number, itemsPerPage: number, total: number) {
+  if (total === 0) return "0 of 0";
+  const start = (page - 1) * itemsPerPage + 1;
+  const end = Math.min(page * itemsPerPage, total);
+  return `${start}-${end} of ${total}`;
+}
+
 export function CustomersTable({
   loading,
   customers,
   totalFiltered,
+  error,
+  onRetry,
   onRowClick,
   onEdit,
   onDelete,
@@ -41,26 +62,37 @@ export function CustomersTable({
   itemsPerPage = 10,
   totalPages = 1,
 }: CustomersTableProps) {
+  const colSpan = 8;
+
   return (
     <div className="entity-table-root">
       <div className="entity-table-frame">
         <div className="entity-table-scroll">
-          <Table className="relative w-full table-fixed">
-            <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
+          <Table className="relative min-w-[980px] table-fixed">
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[32%] max-w-[320px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[250px] pl-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="w-[18%] min-w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
-                  Phone
+                <TableHead className="w-[150px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Yard
                 </TableHead>
-                <TableHead className="w-[28%] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[220px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Campaigns
                 </TableHead>
-                <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500 text-center">
-                  Activities
+                <TableHead className="w-[80px] text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Calls
                 </TableHead>
-                <TableHead className="w-[120px] font-bold text-[11px] tracking-wider uppercase text-slate-500 text-right pr-4">
+                <TableHead className="w-[110px] text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Open tickets
+                </TableHead>
+                <TableHead className="w-[130px] text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Last contact
+                </TableHead>
+                <TableHead className="w-[90px] text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Pinned note
+                </TableHead>
+                <TableHead className="w-[110px] pr-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Actions
                 </TableHead>
               </TableRow>
@@ -68,129 +100,194 @@ export function CustomersTable({
 
             <TableBody>
               {loading ? (
+                Array.from({ length: itemsPerPage }).map((_, index) => (
+                  <TableRow key={index} className="border-b border-border/70">
+                    <TableCell className="pl-4">
+                      <div className="flex items-center gap-2.5">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="flex flex-1 flex-col gap-1.5">
+                          <Skeleton className="h-3.5 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    {Array.from({ length: colSpan - 1 }).map((__, cell) => (
+                      <TableCell key={cell}>
+                        <Skeleton className="h-4 w-full max-w-[120px]" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Loading customers...
+                  <TableCell colSpan={colSpan} className="h-28 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                      <span>{error}</span>
+                      {onRetry ? (
+                        <Button variant="outline" size="sm" onClick={onRetry}>
+                          Retry
+                        </Button>
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : totalFiltered === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={colSpan}
                     className="h-24 text-center text-sm text-muted-foreground"
                   >
                     No customers found.
                   </TableCell>
                 </TableRow>
               ) : (
-                customers.map((customer, i) => (
-                  <TableRow
-                    key={customer.id}
-                    onClick={() => onRowClick?.(customer)}
-                    className={cn(
-                      "group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 transition-all duration-150",
-                      i % 2 === 1
-                        ? "bg-slate-50/60 dark:bg-muted/20"
-                        : "bg-white dark:bg-card",
-                      onRowClick && "cursor-pointer",
-                    )}
-                  >
-                    <TableCell className="max-w-0 overflow-hidden pl-4 py-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <CustomerMark className="h-8 w-8" />
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="truncate font-bold text-[14px] leading-tight text-foreground"
-                            title={customer.name || undefined}
-                          >
-                            {customer.name || "Unknown"}
-                          </p>
-                          {customer.yard?.name ? (
-                            <p
-                              className="mt-0.5 truncate text-[11.5px] text-muted-foreground"
-                              title={customer.yard.name}
-                            >
-                              {customer.yard.name}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </TableCell>
+                customers.map((customer, index) => {
+                  const openTickets = customer.openTickets ?? 0;
+                  const hasPinnedNote = Boolean(customer.pinnedNote?.trim());
 
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="font-mono text-[13px] text-slate-600 font-medium">
-                          {customer.phone || "—"}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="max-w-0 overflow-hidden py-3">
-                      {customer.campaigns && customer.campaigns.length > 0 ? (
-                        <div className="flex min-w-0 flex-wrap gap-1">
-                          {customer.campaigns.slice(0, 2).map((campaign) => (
-                            <span
-                              key={campaign.id}
-                              className="inline-flex max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2 py-px text-[11px] font-medium text-slate-600"
-                              title={campaign.nombre}
-                            >
-                              {campaign.nombre}
-                            </span>
-                          ))}
-                          {customer.campaigns.length > 2 ? (
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-px text-[11px] font-medium text-slate-500">
-                              +{customer.campaigns.length - 2}
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="text-[13px] text-slate-400">—</span>
+                  return (
+                    <TableRow
+                      key={customer.id}
+                      onClick={() => onRowClick?.(customer)}
+                      className={cn(
+                        "group border-b border-border/70 transition-all duration-150 hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50",
+                        index % 2 === 1
+                          ? "bg-slate-50/60 dark:bg-muted/20"
+                          : "bg-white dark:bg-card",
+                        onRowClick && "cursor-pointer",
                       )}
-                    </TableCell>
-
-                    <TableCell className="py-3 text-center">
-                      <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold border border-slate-200">
-                        {customer.ticketCount ?? customer.callCount ?? 0}
-                      </span>
-                    </TableCell>
-
-                    <TableCell
-                      className="py-3 text-right pr-4"
-                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-end gap-1">
-                        {canManage && onEdit ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
-                            title="Edit customer"
-                            aria-label="Edit customer"
-                            onClick={() => onEdit(customer)}
+                      <TableCell className="max-w-0 overflow-hidden py-3 pl-4">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <CustomerMark className="h-8 w-8" />
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="truncate text-[14px] font-bold leading-tight text-foreground"
+                              title={customer.name || undefined}
+                            >
+                              {customer.name || "Unknown"}
+                            </p>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                              <Phone className="h-3 w-3 shrink-0" />
+                              <span className="truncate font-mono">
+                                {customer.phone || "—"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="max-w-0 overflow-hidden py-3">
+                        {customer.yard?.name ? (
+                          <Badge
+                            variant="outline"
+                            className="max-w-full gap-1 truncate rounded-full font-medium"
+                            title={customer.yard.name}
                           >
-                            <Pencil className="h-4 w-4 pointer-events-none" />
-                          </Button>
-                        ) : null}
-                        {canManage && onDelete ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                            title="Delete customer"
-                            aria-label="Delete customer"
-                            onClick={() => onDelete(customer)}
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{customer.yard.name}</span>
+                          </Badge>
+                        ) : (
+                          <span className="text-[13px] text-slate-400">—</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="max-w-0 overflow-hidden py-3">
+                        {customer.campaigns && customer.campaigns.length > 0 ? (
+                          <div className="flex min-w-0 flex-wrap gap-1">
+                            {customer.campaigns.slice(0, 2).map((campaign) => (
+                              <Badge
+                                key={campaign.id}
+                                variant="secondary"
+                                className="max-w-full truncate rounded-full font-medium"
+                                title={campaign.nombre}
+                              >
+                                {campaign.nombre}
+                              </Badge>
+                            ))}
+                            {customer.campaigns.length > 2 ? (
+                              <Badge variant="outline" className="rounded-full">
+                                +{customer.campaigns.length - 2}
+                              </Badge>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-[13px] text-slate-400">—</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="py-3 text-right font-mono text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                        {customer.callCount ?? customer.totalCalls ?? 0}
+                      </TableCell>
+
+                      <TableCell className="py-3 text-center">
+                        <Badge
+                          variant={openTickets > 0 ? "destructive" : "outline"}
+                          className="min-w-8 justify-center rounded-full"
+                        >
+                          {openTickets}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="py-3">
+                        <div
+                          className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500"
+                          title={customer.lastContactAt || undefined}
+                        >
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">
+                            {formatRelativeDate(customer.lastContactAt)}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3 text-center">
+                        {hasPinnedNote ? (
+                          <span
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700"
+                            title="Persistent note exists"
                           >
-                            <Trash2 className="h-4 w-4 pointer-events-none" />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                            <Pin className="h-3.5 w-3.5" />
+                          </span>
+                        ) : (
+                          <span className="text-[13px] text-slate-400">—</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell
+                        className="py-3 pr-4 text-right"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          {canManage && onEdit ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
+                              title="Edit customer"
+                              aria-label="Edit customer"
+                              onClick={() => onEdit(customer)}
+                            >
+                              <Pencil className="h-4 w-4 pointer-events-none" />
+                            </Button>
+                          ) : null}
+                          {canManage && onDelete ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                              title="Delete customer"
+                              aria-label="Delete customer"
+                              onClick={() => onDelete(customer)}
+                            >
+                              <Trash2 className="h-4 w-4 pointer-events-none" />
+                            </Button>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -198,81 +295,55 @@ export function CustomersTable({
       </div>
 
       {totalFiltered > 0 && onPageChange ? (
-        <div className="flex items-center justify-between pt-2 pb-2 px-1">
+        <div className="flex items-center justify-between px-1 pb-2 pt-2">
           <Button
             variant="outline"
-            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageChange(Math.max(currentPage - 1, 1));
-            }}
-            disabled={currentPage === 1}
+            className="h-[36px] rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage === 1 || loading}
           >
-            <svg
-              className="mr-2 h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
             Previous
           </Button>
 
-          <div className="hidden md:flex items-center justify-center gap-1.5">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
-              if (totalPages > 5 && currentPage > 3) {
-                pageNum = currentPage - 2 + i;
-                if (pageNum > totalPages) pageNum = totalPages - 4 + i;
-              }
-              if (pageNum <= 0 || pageNum > totalPages) return null;
-              const active = pageNum === currentPage;
-              return (
-                <button
-                  key={pageNum}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPageChange(pageNum);
-                  }}
-                  className={cn(
-                    "flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors",
-                    active
-                      ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
-                      : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent",
-                  )}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <div className="hidden items-center justify-center gap-1.5 md:flex">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum = i + 1;
+                if (totalPages > 5 && currentPage > 3) {
+                  pageNum = currentPage - 2 + i;
+                  if (pageNum > totalPages) pageNum = totalPages - 4 + i;
+                }
+                if (pageNum <= 0 || pageNum > totalPages) return null;
+                const active = pageNum === currentPage;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => onPageChange(pageNum)}
+                    className={cn(
+                      "flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors",
+                      active
+                        ? "border border-[#a6f0c3] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        : "border border-transparent font-medium text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {getResultRange(currentPage, itemsPerPage, totalFiltered)}
+            </span>
           </div>
 
           <Button
             variant="outline"
-            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageChange(Math.min(currentPage + 1, totalPages));
-            }}
-            disabled={currentPage >= totalPages}
+            className="h-[36px] rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages || loading}
           >
             Next
-            <svg
-              className="ml-2 h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
           </Button>
         </div>
       ) : null}

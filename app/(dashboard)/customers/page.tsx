@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { CheckCircle2, Plus } from "lucide-react";
@@ -13,6 +13,8 @@ import {
   CampaignOption,
   Customer,
   CustomerFormData,
+  CustomersListResponse,
+  YardOption,
 } from "./types";
 import {
   CustomersToolbar,
@@ -52,17 +54,26 @@ export default function CustomersPage() {
 
   const isAgent = role?.toString().toLowerCase() === "agent";
   const canManage = !isAgent;
+  const canDelete = role?.toString().toLowerCase() === "admin";
   const customerIdParam = searchParams?.get("customerId");
-  const customerIdFilter = customerIdParam ? Number(customerIdParam) : null;
+  const deepLinkedCustomerId = customerIdParam ? Number(customerIdParam) : null;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
+  const [yards, setYards] = useState<YardOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filters, setFilters] = useState<CustomersFilterState>({
     campaign: "all",
+    yard: "all",
+    hasOpenTickets: "all",
+    hasPinnedNote: "all",
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -73,21 +84,64 @@ export default function CustomersPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchFromBackend("/customers?page=1&limit=5000");
-      setCustomers(Array.isArray(data) ? data : (data?.data ?? []));
-    } catch {
+      setListError(null);
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(ITEMS_PER_PAGE),
+      });
+      if (debouncedSearch.trim()) {
+        params.set("search", debouncedSearch.trim());
+      }
+      if (filters.campaign !== "all") {
+        params.set("campaignId", filters.campaign);
+      }
+      if (filters.yard !== "all") {
+        params.set("yardId", filters.yard);
+      }
+      if (filters.hasOpenTickets !== "all") {
+        params.set(
+          "hasOpenTickets",
+          filters.hasOpenTickets === "yes" ? "true" : "false",
+        );
+      }
+      if (filters.hasPinnedNote !== "all") {
+        params.set(
+          "hasPinnedNote",
+          filters.hasPinnedNote === "yes" ? "true" : "false",
+        );
+      }
+
+      const data = (await fetchFromBackend(
+        `/customers?${params.toString()}`,
+      )) as CustomersListResponse | Customer[];
+      const normalized = Array.isArray(data)
+        ? {
+            data,
+            total: data.length,
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            totalPages: Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE)),
+          }
+        : data;
+      setCustomers(normalized.data ?? []);
+      setTotalCustomers(normalized.total ?? 0);
+      setTotalPages(Math.max(1, normalized.totalPages ?? 1));
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load customers";
+      setListError(message);
       toast({
         title: "Error",
-        description: "Failed to load customers",
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearch, filters]);
 
   const fetchCampaigns = async () => {
     try {
@@ -98,9 +152,29 @@ export default function CustomersPage() {
     }
   };
 
+  const fetchYards = async () => {
+    try {
+      const data = await fetchFromBackend("/yards?page=1&limit=200");
+      setYards(Array.isArray(data) ? data : (data?.data ?? []));
+    } catch {
+      console.error("Failed to load yards");
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     fetchCustomers();
+  }, [fetchCustomers]);
+
+  useEffect(() => {
     fetchCampaigns();
+    fetchYards();
   }, []);
 
   useEffect(() => {
@@ -111,13 +185,43 @@ export default function CustomersPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!customerIdFilter || loading || customers.length === 0) return;
-    const match = customers.find((c) => c.id === customerIdFilter);
+    if (!deepLinkedCustomerId || Number.isNaN(deepLinkedCustomerId)) return;
+    if (selectedCustomer?.id === deepLinkedCustomerId && showCustomerSheet) return;
+
+    const match = customers.find((customer) => customer.id === deepLinkedCustomerId);
     if (match) {
       setSelectedCustomer(match);
       setShowCustomerSheet(true);
+      return;
     }
-  }, [customerIdFilter, loading, customers.length]);
+
+    let cancelled = false;
+    fetchFromBackend(`/customers/${deepLinkedCustomerId}`)
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const customer = (data as { data?: Customer })?.data ?? (data as Customer);
+        setSelectedCustomer(customer);
+        setShowCustomerSheet(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast({
+            title: "Error",
+            description: "Failed to load customer details",
+            variant: "destructive",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    deepLinkedCustomerId,
+    customers,
+    selectedCustomer?.id,
+    showCustomerSheet,
+  ]);
 
   const handleCustomerSheetOpenChange = (open: boolean) => {
     setShowCustomerSheet(open);
@@ -132,55 +236,21 @@ export default function CustomersPage() {
     }
   };
 
-  const filteredCustomers = useMemo(() => {
-    return customers
-      .filter((customer) => {
-        const term = search.toLowerCase();
-        const campaignsStr =
-          customer.campaigns?.map((c) => c.nombre).join(" ").toLowerCase() ?? "";
-        const matchesSearch =
-          !term ||
-          (customer.name?.toLowerCase() ?? "").includes(term) ||
-          (customer.phone?.toLowerCase() ?? "").includes(term) ||
-          customer.id.toString().includes(term) ||
-          campaignsStr.includes(term);
-
-        const matchesCampaign =
-          filters.campaign === "all" ||
-          customer.campaigns?.some((c) => String(c.id) === filters.campaign);
-
-        const matchesQuery = customerIdFilter
-          ? customer.id === customerIdFilter
-          : true;
-
-        return matchesSearch && matchesCampaign && matchesQuery;
-      })
-      .sort((a, b) => a.id - b.id);
-  }, [customers, search, filters, customerIdFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE));
-
-  const paginatedCustomers = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredCustomers.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredCustomers, currentPage]);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filters, customerIdFilter]);
+  }, [debouncedSearch, filters]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearErrors = () => setValidationErrors({});
 
   const validateForm = (): Record<string, string> => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = "Name is required";
     if (!formData.phone.trim()) errors.phone = "Phone is required";
     return errors;
   };
 
   const buildPayload = (data: CustomerFormData) => ({
-    name: data.name.trim(),
+    name: data.name.trim() || undefined,
     phone: data.phone.trim(),
     note: data.note.trim() || undefined,
     campaignIds: data.campaignIds.map(Number),
@@ -387,21 +457,31 @@ export default function CustomersPage() {
           onSearchChange={setSearch}
           filters={filters}
           onFilterChange={(key, value) =>
-            setFilters((prev) => ({ ...prev, [key]: value }))
+            setFilters((prev) => ({ ...prev, [key]: value }) as CustomersFilterState)
           }
-          onClearFilters={() => setFilters({ campaign: "all" })}
+          onClearFilters={() =>
+            setFilters({
+              campaign: "all",
+              yard: "all",
+              hasOpenTickets: "all",
+              hasPinnedNote: "all",
+            })
+          }
           campaigns={campaigns}
+          yards={yards}
         />
       </div>
 
       <div className="flex-1 min-h-0">
         <CustomersTable
           loading={loading}
-          customers={paginatedCustomers}
-          totalFiltered={filteredCustomers.length}
+          customers={customers}
+          totalFiltered={totalCustomers}
+          error={listError}
+          onRetry={fetchCustomers}
           onRowClick={handleRowClick}
           onEdit={canManage ? handleEdit : undefined}
-          onDelete={canManage ? handleDelete : undefined}
+          onDelete={canDelete ? handleDelete : undefined}
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
@@ -467,6 +547,7 @@ export default function CustomersPage() {
               if (!open) clearErrors();
             }}
             customerName={selectedCustomer?.name}
+            customerPhone={selectedCustomer?.phone}
             ticketCount={selectedCustomer?.ticketCount}
             isSubmitting={isSubmitting}
             onConfirm={handleSubmitDelete}
@@ -479,6 +560,7 @@ export default function CustomersPage() {
         onOpenChange={handleCustomerSheetOpenChange}
         customer={selectedCustomer}
         onEdit={canManage ? handleEdit : undefined}
+        onDelete={canDelete ? handleDelete : undefined}
       />
     </div>
   );

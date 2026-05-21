@@ -5,12 +5,30 @@ import { fetchFromBackendServer } from "@/lib/api-server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = searchParams.get("page") || "1";
-    const limit = searchParams.get("limit") || "100000";
+    const backendParams = new URLSearchParams();
+    const passthroughKeys = [
+      "page",
+      "limit",
+      "search",
+      "campaignId",
+      "yardId",
+      "hasOpenTickets",
+      "hasPinnedNote",
+    ];
+
+    for (const key of passthroughKeys) {
+      const value = searchParams.get(key);
+      if (value !== null && value !== "") {
+        backendParams.set(key, value);
+      }
+    }
+
+    if (!backendParams.has("page")) backendParams.set("page", "1");
+    if (!backendParams.has("limit")) backendParams.set("limit", "10");
 
     const data = await fetchFromBackendServer(
       request,
-      `/customers?page=${page}&limit=${limit}`,
+      `/customers?${backendParams.toString()}`,
     );
 
     return NextResponse.json({

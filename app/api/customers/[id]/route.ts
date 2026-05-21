@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFromBackend } from "@/lib/api-client";
+import { fetchFromBackendServer } from "@/lib/api-server";
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const customer = await fetchFromBackend(`/customers/${id}`);
+    const customer = await fetchFromBackendServer(request, `/customers/${id}`);
     return NextResponse.json(customer);
   } catch (error) {
     console.error("Error fetching customer:", error);
@@ -25,7 +25,7 @@ export async function PATCH(
   const { id } = await params;
   try {
     const body = await request.json();
-    const customer = await fetchFromBackend(`/customers/${id}`, {
+    const customer = await fetchFromBackendServer(request, `/customers/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     });
@@ -45,7 +45,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    await fetchFromBackend(`/customers/${id}`, {
+    await fetchFromBackendServer(request, `/customers/${id}`, {
       method: "DELETE",
     });
     return NextResponse.json({ success: true });

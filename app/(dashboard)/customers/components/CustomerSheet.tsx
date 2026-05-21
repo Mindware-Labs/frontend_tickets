@@ -3,7 +3,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetClose,
@@ -13,21 +12,17 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  AlertCircle,
   Building2,
   Check,
   Clock,
   Copy,
-  Loader2,
   Megaphone,
   Pencil,
   Phone,
   PhoneCall,
-  PhoneIncoming,
-  PhoneMissed,
-  PhoneOutgoing,
   RefreshCw,
   Ticket,
+  Trash2,
   X,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/api-client";
@@ -37,26 +32,15 @@ import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { cn } from "@/lib/utils";
 import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
+import { CustomerPinnedNotes } from "./CustomerPinnedNotes";
+import { CustomerTimeline } from "./CustomerTimeline";
 
 interface CustomerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer: Customer | null;
   onEdit?: (customer: Customer) => void;
-}
-
-interface RecentCall {
-  id: number;
-  direction: string;
-  status: string;
-  disposition?: string;
-  notes?: string;
-  createdAt: string;
-  duration?: number;
-  agent?: { name: string } | null;
-  assignedTo?: { name: string } | null;
-  yard?: { name: string } | null;
-  campaign?: { nombre?: string; name?: string } | null;
+  onDelete?: (customer: Customer) => void;
 }
 
 function hasText(value?: string | null): value is string {
@@ -118,20 +102,13 @@ function MetricTile({
   );
 }
 
-function directionIcon(direction: string) {
-  const dir = direction?.toUpperCase();
-  if (dir === "INBOUND") return <PhoneIncoming className="h-3.5 w-3.5 text-blue-500" />;
-  if (dir === "OUTBOUND") return <PhoneOutgoing className="h-3.5 w-3.5 text-green-500" />;
-  return <PhoneMissed className="h-3.5 w-3.5 text-red-400" />;
-}
-
 export function CustomerSheet({
   open,
   onOpenChange,
   customer,
   onEdit,
+  onDelete,
 }: CustomerSheetProps) {
-  const router = useRouter();
   const { role } = useRole();
   const isAgent = role?.toString().toLowerCase() === "agent";
   const {
@@ -141,12 +118,12 @@ export function CustomerSheet({
     setSheetOpen,
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const canPlayRecordings = !isAgent;
 
   const [detail, setDetail] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
-  const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);
-  const [callsLoading, setCallsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
 
   useEffect(() => {
     setSheetOpen(open);
@@ -156,7 +133,6 @@ export function CustomerSheet({
   useEffect(() => {
     if (!customer?.id) {
       setDetail(null);
-      setRecentCalls([]);
       return;
     }
 
@@ -177,22 +153,6 @@ export function CustomerSheet({
 
     load();
 
-    setCallsLoading(true);
-    fetchFromBackend(`/calls?customerId=${customer.id}&limit=5&page=1`)
-      .then((data: unknown) => {
-        if (cancelled) return;
-        const arr = Array.isArray(data)
-          ? data
-          : ((data as { data?: RecentCall[] })?.data ?? []);
-        setRecentCalls(arr.slice(0, 5));
-      })
-      .catch(() => {
-        if (!cancelled) setRecentCalls([]);
-      })
-      .finally(() => {
-        if (!cancelled) setCallsLoading(false);
-      });
-
     return () => {
       cancelled = true;
     };
@@ -205,7 +165,8 @@ export function CustomerSheet({
   }, [copied]);
 
   const data = detail || customer;
-  const activityTotal = data?.ticketCount ?? 0;
+  const callCount = data?.callCount ?? data?.totalCalls ?? 0;
+  const ticketCount = data?.ticketCount ?? 0;
   const openCount = data?.openTickets ?? 0;
 
   const copyPhone = async () => {
@@ -281,21 +242,17 @@ export function CustomerSheet({
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-xl border border-slate-200/70 bg-white px-3.5 py-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                      Total calls
-                    </p>
-                    <p className="mt-1 text-[14px] font-bold text-[#008f68]">
-                      {data.totalCalls ?? data.callCount ?? 0}
-                    </p>
-                  </div>
+                  <MetricTile
+                    icon={Phone}
+                    label="Total calls"
+                    value={String(callCount)}
+                    helper="All time"
+                  />
                   <MetricTile
                     icon={ActivitiesIcon}
-                    label="Activities"
-                    value={String(activityTotal)}
-                    helper={
-                      openCount > 0 ? `${openCount} open` : "Calls · tickets · manual"
-                    }
+                    label="Open tickets"
+                    value={String(openCount)}
+                    helper={openCount > 0 ? "Needs attention" : "None open"}
                   />
                   <MetricTile
                     icon={Clock}
@@ -303,20 +260,26 @@ export function CustomerSheet({
                     value={formatShortDate(data.lastContactAt)}
                     helper="Most recent touch"
                   />
+                  <MetricTile
+                    icon={Ticket}
+                    label="Total tickets"
+                    value={String(ticketCount)}
+                    helper="Includes closed"
+                  />
                 </div>
               </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
-                {data.pinnedNote ? (
-                  <div className="flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/80 p-3.5 dark:border-amber-900/40 dark:bg-amber-950/30">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <p className="text-[13px] leading-relaxed text-amber-900 dark:text-amber-100">
-                      {data.pinnedNote}
-                    </p>
-                  </div>
-                ) : null}
+                <CustomerPinnedNotes
+                  customer={data}
+                  canEditPinned={!isAgent}
+                  onCustomerChange={setDetail}
+                  onActivityChange={() =>
+                    setTimelineRefreshKey((value) => value + 1)
+                  }
+                />
 
                 <div>
                   <SectionLabel>Contact</SectionLabel>
@@ -379,52 +342,14 @@ export function CustomerSheet({
                   </div>
                 ) : null}
 
-                <div>
-                  <SectionLabel>Recent calls</SectionLabel>
-                  <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    {callsLoading ? (
-                      <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading calls...
-                      </div>
-                    ) : recentCalls.length === 0 ? (
-                      <p className="py-8 text-center text-[13px] text-slate-500">
-                        No calls found.
-                      </p>
-                    ) : (
-                      recentCalls.map((call) => (
-                        <button
-                          key={call.id}
-                          type="button"
-                          onClick={() => {
-                            onOpenChange(false);
-                            router.push(`/calls?id=${call.id}`);
-                          }}
-                          className="flex w-full flex-col gap-1 border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-[#f0faf5]/60 dark:border-slate-800"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              {directionIcon(call.direction)}
-                              <span className="text-[12px] font-semibold capitalize text-slate-700">
-                                {call.direction?.toLowerCase() || "call"}
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-slate-400">
-                              {formatShortDate(call.createdAt)}
-                            </span>
-                          </div>
-                          {call.campaign?.nombre ? (
-                            <p className="text-[11px] text-slate-500">
-                              {call.campaign.nombre}
-                            </p>
-                          ) : null}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <CustomerTimeline
+                  customerId={data.id}
+                  canPlayRecordings={canPlayRecordings}
+                  refreshKey={timelineRefreshKey}
+                  onNavigate={() => onOpenChange(false)}
+                />
 
-                {data.notes && data.notes.length > 0 ? (
+                {false && data.notes && data.notes.length > 0 ? (
                   <div>
                     <SectionLabel>Notes</SectionLabel>
                     <div className="space-y-2">
@@ -438,13 +363,13 @@ export function CustomerSheet({
                           </p>
                           <p className="mt-2 text-[11px] text-slate-400">
                             {formatDate(note.createdAt)}
-                            {note.createdBy ? ` · ${note.createdBy}` : ""}
+                            {note.createdBy ? ` - ${note.createdBy}` : ""}
                           </p>
                         </div>
                       ))}
                     </div>
                   </div>
-                ) : hasText(data.note) ? (
+                ) : false ? (
                   <div>
                     <SectionLabel>Notes</SectionLabel>
                     <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
@@ -461,7 +386,11 @@ export function CustomerSheet({
               <div
                 className={cn(
                   "grid gap-2",
-                  onEdit && !isAgent ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2",
+                  onEdit && onDelete && !isAgent
+                    ? "grid-cols-2 sm:grid-cols-4"
+                    : onEdit && !isAgent
+                      ? "grid-cols-2 sm:grid-cols-3"
+                      : "grid-cols-2",
                 )}
               >
                 <button
@@ -500,6 +429,19 @@ export function CustomerSheet({
                   >
                     <Pencil className="h-4 w-4 shrink-0" />
                     Edit
+                  </button>
+                ) : null}
+                {onDelete && !isAgent ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onDelete(data);
+                    }}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-2 text-[12px] font-semibold text-red-600 shadow-sm hover:bg-red-50 active:scale-[0.98]"
+                  >
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                    Delete
                   </button>
                 ) : null}
               </div>

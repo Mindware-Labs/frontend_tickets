@@ -184,7 +184,7 @@ export function CustomerFormModal({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor={`${idPrefix}-name`} className="text-[13px] font-medium text-slate-700">
-                  Full Name <span className="text-red-400">*</span>
+                  Full Name
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -232,7 +232,7 @@ export function CustomerFormModal({
               <Label className="text-[13px] font-medium text-slate-700 flex items-center gap-1.5">
                 <StickyNote className="h-3.5 w-3.5 text-slate-400" />
                 Notes
-                <span className="text-[11px] font-normal text-slate-400">(shown as alert on every ticket)</span>
+                <span className="text-[11px] font-normal text-slate-400">(initial persistent note)</span>
               </Label>
 
               <div className="flex gap-2">
