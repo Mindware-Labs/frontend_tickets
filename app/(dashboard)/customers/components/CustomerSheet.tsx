@@ -17,7 +17,7 @@ import {
   Clock,
   Copy,
   History,
-  Sparkles,
+  ChevronRight,
   Megaphone,
   Pencil,
   Phone,
@@ -36,7 +36,11 @@ import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
 import { CustomerPinnedNotes } from "./CustomerPinnedNotes";
 import { CustomerTimelinePopup } from "./CustomerTimelinePopup";
-import { fetchCustomerNotes, normalizeCustomerNotes } from "../utils/notes";
+import {
+  fetchCustomerNotes,
+  mergeCustomerNotes,
+  normalizeCustomerNotes,
+} from "../utils/notes";
 
 interface CustomerSheetProps {
   open: boolean;
@@ -161,7 +165,7 @@ export function CustomerSheet({
             notes.length > 0
               ? notes
               : normalizeCustomerNotes(base.notes ?? []);
-          setDetail({ ...base, notes: mergedNotes });
+          setDetail(mergeCustomerNotes({ ...base, notes: mergedNotes }, mergedNotes));
         }
       } catch {
         if (!cancelled) setDetail(customer);
@@ -294,32 +298,11 @@ export function CustomerSheet({
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setTimelineOpen(true)}
-                  className="group mt-3 flex w-full items-center gap-3 rounded-xl border-2 border-[#008f68]/40 bg-gradient-to-r from-[#e8faf0] via-[#f0faf5] to-white px-4 py-3.5 text-left shadow-[0_8px_24px_rgba(0,143,104,0.18)] ring-2 ring-[#008f68]/15 transition-all hover:border-[#008f68]/60 hover:shadow-[0_12px_28px_rgba(0,143,104,0.22)] active:scale-[0.99] dark:from-emerald-950/50 dark:via-slate-950 dark:to-slate-950 dark:ring-emerald-500/20"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#008f68] text-white shadow-md">
-                    <History className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-slate-900 dark:text-white">
-                      <Sparkles className="h-3.5 w-3.5 text-[#008f68]" />
-                      View activity timeline
-                    </span>
-                    <p className="mt-0.5 text-[12px] font-medium text-slate-600 dark:text-slate-400">
-                      Calls, tickets & notes — opens in a focused view
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#008f68] px-2.5 py-1 text-[11px] font-bold text-white tabular-nums">
-                    {callCount + ticketCount}
-                  </span>
-                </button>
               </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
+              <div className="space-y-4 px-4 py-4 pb-8 sm:px-5">
                 <CustomerPinnedNotes
                   customer={data}
                   canEditPinned={!isAgent}
@@ -329,6 +312,28 @@ export function CustomerSheet({
                     setTimelineRefreshKey((value) => value + 1)
                   }
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen(true)}
+                  className="group flex w-full items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5 text-left transition-colors hover:border-[#008f68]/40 hover:bg-[#f0faf5]/80 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-emerald-800"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#008f68]/10 text-[#008f68]">
+                    <History className="h-4 w-4" strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-slate-900 dark:text-white">
+                      Activity timeline
+                    </span>
+                    <span className="block text-[11px] text-slate-500">
+                      Calls, tickets & notes
+                    </span>
+                  </span>
+                  <span className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-700">
+                    {callCount + ticketCount}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-[#008f68]" />
+                </button>
 
                 <div>
                   <SectionLabel>Contact</SectionLabel>

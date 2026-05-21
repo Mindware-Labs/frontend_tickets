@@ -57,7 +57,10 @@ export default function CustomersPage() {
   const canManage = !isAgent;
   const canDelete = role?.toString().toLowerCase() === "admin";
   const customerIdParam = searchParams?.get("customerId");
-  const deepLinkedCustomerId = customerIdParam ? Number(customerIdParam) : null;
+  const deepLinkedCustomerId =
+    customerIdParam && !Number.isNaN(Number(customerIdParam))
+      ? Number(customerIdParam)
+      : null;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
@@ -185,14 +188,24 @@ export default function CustomersPage() {
     setShowCustomerSheet(false);
   }, [pathname]);
 
+  // Sync sheet open + customer load from URL only (avoids reopen race on overlay close).
   useEffect(() => {
-    if (!deepLinkedCustomerId || Number.isNaN(deepLinkedCustomerId)) return;
-    if (selectedCustomer?.id === deepLinkedCustomerId && showCustomerSheet) return;
+    if (!deepLinkedCustomerId) {
+      setShowCustomerSheet(false);
+      return;
+    }
 
-    const match = customers.find((customer) => customer.id === deepLinkedCustomerId);
+    setShowCustomerSheet(true);
+
+    if (selectedCustomer?.id === deepLinkedCustomerId) {
+      return;
+    }
+
+    const match = customers.find(
+      (customer) => customer.id === deepLinkedCustomerId,
+    );
     if (match) {
       setSelectedCustomer(match);
-      setShowCustomerSheet(true);
       return;
     }
 
@@ -202,7 +215,6 @@ export default function CustomersPage() {
         if (cancelled) return;
         const customer = (data as { data?: Customer })?.data ?? (data as Customer);
         setSelectedCustomer(customer);
-        setShowCustomerSheet(true);
       })
       .catch(() => {
         if (!cancelled) {
@@ -217,23 +229,23 @@ export default function CustomersPage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    deepLinkedCustomerId,
-    customers,
-    selectedCustomer?.id,
-    showCustomerSheet,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to URL id / list, not sheet close
+  }, [deepLinkedCustomerId, customers]);
 
   const handleCustomerSheetOpenChange = (open: boolean) => {
-    setShowCustomerSheet(open);
-    if (!open) {
-      setSelectedCustomer(null);
-      if (customerIdParam) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("customerId");
-        const qs = params.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      }
+    if (open) {
+      setShowCustomerSheet(true);
+      return;
+    }
+
+    setShowCustomerSheet(false);
+    setSelectedCustomer(null);
+
+    if (customerIdParam) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("customerId");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     }
   };
 
@@ -258,6 +270,9 @@ export default function CustomersPage() {
   });
 
   const handleRowClick = (customer: Customer) => {
+    if (deepLinkedCustomerId === customer.id && showCustomerSheet) {
+      return;
+    }
     setSelectedCustomer(customer);
     setShowCustomerSheet(true);
     const params = new URLSearchParams(searchParams.toString());

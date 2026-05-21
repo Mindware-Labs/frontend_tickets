@@ -26,6 +26,10 @@ export interface CustomerNote {
   content: string;
   createdBy?: string;
   createdAt: string;
+  updatedBy?: string;
+  updatedAt?: string;
+  /** Persistent client-number note (one per customer) */
+  isPinned?: boolean;
 }
 
 export interface Customer {

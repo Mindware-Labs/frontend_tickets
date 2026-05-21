@@ -68,6 +68,8 @@ interface CustomerTimelineProps {
   customerId: number;
   canPlayRecordings: boolean;
   refreshKey?: number;
+  /** Tighter layout for sheet popup */
+  compact?: boolean;
   onNavigate?: () => void;
 }
 
@@ -187,6 +189,7 @@ export function CustomerTimeline({
   customerId,
   canPlayRecordings,
   refreshKey = 0,
+  compact = false,
   onNavigate,
 }: CustomerTimelineProps) {
   const router = useRouter();
@@ -290,35 +293,36 @@ export function CustomerTimeline({
   }, [entries]);
 
   return (
-    <div className="px-4 py-4 sm:px-5 sm:py-5">
-      {/* Header — matches calls/tickets inline timeline */}
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Activity timeline · {loading && entries.length === 0 ? "…" : total}{" "}
-            {total === 1 ? "event" : "events"}
-          </div>
+    <div className={cn(compact ? "px-3 py-3" : "px-4 py-4 sm:px-5 sm:py-5")}>
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2",
+          compact ? "mb-2" : "mb-3",
+        )}
+      >
+        <div className="min-w-0 text-[11px] text-slate-500">
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+            {loading && entries.length === 0 ? "…" : total}
+          </span>{" "}
+          events
           {lastEventAgo ? (
-            <div className="mt-0.5 text-xs text-slate-400">last {lastEventAgo}</div>
+            <span className="text-slate-400"> · {lastEventAgo}</span>
           ) : null}
         </div>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="h-8"
           onClick={() => loadTimeline()}
           disabled={loading}
+          aria-label="Refresh timeline"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
         >
           <RefreshCw
-            className={cn("mr-1.5 h-3.5 w-3.5", loading && "animate-spin")}
+            className={cn("h-3.5 w-3.5", loading && "animate-spin")}
           />
-          Refresh
-        </Button>
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 space-y-2">
+      <div className={cn("space-y-2", compact ? "mb-3" : "mb-4")}>
         <div className="flex flex-wrap items-center gap-1.5">
           {TYPE_CHIPS.map((chip) => (
             <button
@@ -327,7 +331,7 @@ export function CustomerTimeline({
               disabled={chip.disabled}
               onClick={() => !chip.disabled && updateFilter("type", chip.value)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                "rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors",
                 chip.disabled && "cursor-not-allowed opacity-40",
                 filters.type === chip.value
                   ? "bg-[#008f68] text-white"
@@ -342,14 +346,17 @@ export function CustomerTimeline({
             onClick={() =>
               updateFilter("sort", filters.sort === "desc" ? "asc" : "desc")
             }
-            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900"
+            className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900"
           >
             {filters.sort === "desc" ? "Newest" : "Oldest"}
           </button>
           <button
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
-            className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 lg:hidden dark:border-slate-700 dark:bg-slate-900"
+            className={cn(
+              "ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
+              !compact && "lg:hidden",
+            )}
           >
             <Filter className="h-3 w-3" />
             More
@@ -367,8 +374,15 @@ export function CustomerTimeline({
 
         <div
           className={cn(
-            "grid gap-2 sm:grid-cols-2 lg:grid-cols-4",
-            filtersOpen ? "grid" : "hidden lg:grid",
+            "grid gap-2 sm:grid-cols-2",
+            compact ? "grid-cols-2" : "lg:grid-cols-4",
+            compact
+              ? filtersOpen
+                ? "grid"
+                : "hidden"
+              : filtersOpen
+                ? "grid"
+                : "hidden lg:grid",
           )}
         >
           <Input
@@ -460,8 +474,13 @@ export function CustomerTimeline({
         <p className="py-8 text-center text-sm text-slate-500">No activity found.</p>
       ) : (
         <div className="relative">
-          <div className="absolute top-0 bottom-0 left-[9px] w-0.5 bg-gray-200 dark:bg-slate-700" />
-          <ol className="space-y-4">
+          <div
+            className={cn(
+              "absolute top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700",
+              compact ? "left-[5px]" : "left-[9px]",
+            )}
+          />
+          <ol className={compact ? "space-y-3" : "space-y-4"}>
             {entries.map((entry) => {
               const dateLabel = formatShortDate(entry.occurredAt);
               const duration = formatDuration(entry.duration);
@@ -471,20 +490,35 @@ export function CustomerTimeline({
                 const meta = callMeta(entry);
                 const Icon = meta.Icon;
                 return (
-                  <li key={entry.id} className="relative pl-7">
+                  <li
+                    key={entry.id}
+                    className={cn("relative", compact ? "pl-5" : "pl-7")}
+                  >
                     <span
                       className={cn(
-                        "absolute left-0 top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                        "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
                         meta.ring,
                       )}
                     >
-                      <Icon className={cn("h-2.5 w-2.5", meta.color)} />
+                      <Icon
+                        className={cn(
+                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                          meta.color,
+                        )}
+                      />
                     </span>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span className="text-xs font-normal tabular-nums text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span className="text-[11px] font-normal tabular-nums text-slate-500">
                         {dateLabel}
                       </span>
-                      <span className={cn("text-sm font-semibold", meta.color)}>
+                      <span
+                        className={cn(
+                          compact ? "text-xs" : "text-sm",
+                          "font-semibold",
+                          meta.color,
+                        )}
+                      >
                         {meta.label}
                       </span>
                       {entry.disposition ? (
@@ -565,14 +599,23 @@ export function CustomerTimeline({
               if (entry.type === "ticket") {
                 const ring = ticketStatusRing(entry.ticketStatus);
                 return (
-                  <li key={entry.id} className="relative pl-7">
+                  <li
+                    key={entry.id}
+                    className={cn("relative", compact ? "pl-5" : "pl-7")}
+                  >
                     <span
                       className={cn(
-                        "absolute left-0 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                        "absolute left-0 top-1 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
                         ring,
                       )}
                     >
-                      <Ticket className="h-2.5 w-2.5 text-blue-600" />
+                      <Ticket
+                        className={cn(
+                          "text-blue-600",
+                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                        )}
+                      />
                     </span>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-mono text-xs text-muted-foreground">
@@ -644,15 +687,28 @@ export function CustomerTimeline({
 
               if (entry.type === "customer_note") {
                 return (
-                  <li key={entry.id} className="relative pl-7">
-                    <span className="absolute left-0 top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-slate-950">
-                      <StickyNote className="h-2.5 w-2.5 text-amber-600" />
+                  <li
+                    key={entry.id}
+                    className={cn("relative", compact ? "pl-5" : "pl-7")}
+                  >
+                    <span
+                      className={cn(
+                        "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-slate-950",
+                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                      )}
+                    >
+                      <StickyNote
+                        className={cn(
+                          "text-amber-600",
+                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                        )}
+                      />
                     </span>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span className="text-xs tabular-nums text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span className="text-[11px] tabular-nums text-slate-500">
                         {dateLabel}
                       </span>
-                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                         Note
                       </span>
                       {entry.noteAuthor ? (
@@ -675,13 +731,26 @@ export function CustomerTimeline({
 
               // SMS placeholder
               return (
-                <li key={entry.id} className="relative pl-7">
-                  <span className="absolute left-0 top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-violet-500 bg-white dark:bg-slate-950">
-                    <MessageSquare className="h-2.5 w-2.5 text-violet-600" />
+                <li
+                  key={entry.id}
+                  className={cn("relative", compact ? "pl-5" : "pl-7")}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-500 bg-white dark:bg-slate-950",
+                      compact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                    )}
+                  >
+                    <MessageSquare
+                      className={cn(
+                        "text-violet-600",
+                        compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                      )}
+                    />
                   </span>
-                  <div className="flex flex-wrap items-center gap-x-2">
-                    <span className="text-xs text-slate-500">{dateLabel}</span>
-                    <span className="text-sm font-semibold text-violet-700">
+                  <div className="flex flex-wrap items-center gap-x-1.5">
+                    <span className="text-[11px] text-slate-500">{dateLabel}</span>
+                    <span className="text-xs font-semibold text-violet-700">
                       {entry.smsDirection === "received"
                         ? "SMS received"
                         : "SMS sent"}
@@ -704,7 +773,10 @@ export function CustomerTimeline({
           type="button"
           variant="outline"
           size="sm"
-          className="mt-4 h-8 w-full text-xs"
+          className={cn(
+            "mt-3 h-7 w-full text-[11px]",
+            compact && "mt-2",
+          )}
           onClick={() => loadTimeline(nextCursor)}
           disabled={loadingMore}
         >

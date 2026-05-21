@@ -21,7 +21,7 @@ import {
   User, Phone, Search,
 } from "lucide-react";
 import { CampaignOption, CustomerFormData, CustomerNote } from "../types";
-import { fetchCustomerNotes } from "../utils/notes";
+import { fetchCustomerNotes, splitCustomerNotes } from "../utils/notes";
 import { CustomerNotesList } from "./CustomerNotesList";
 import { toast } from "@/hooks/use-toast";
 
@@ -86,7 +86,8 @@ export function CustomerFormModal({
         if (cancelled) return;
         const next =
           fetched.length > 0 ? fetched : existingNotes;
-        setEditNotes(next);
+        const { audit } = splitCustomerNotes(next);
+        setEditNotes(audit);
         if (fetched.length > 0) {
           onNotesChange?.(fetched);
         }

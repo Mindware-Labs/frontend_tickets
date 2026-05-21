@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { useMemo, useState } from "react";
 import {
   Check,
   Loader2,
@@ -16,7 +15,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { fetchFromBackend } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { fetchCustomerNotes, normalizeCustomerNote } from "../utils/notes";
+import {
+  fetchCustomerNotes,
+  formatNoteMeta,
+  normalizeCustomerNote,
+  splitCustomerNotes,
+} from "../utils/notes";
 import type { CustomerNote } from "../types";
 
 interface CustomerNotesListProps {
@@ -25,15 +29,10 @@ interface CustomerNotesListProps {
   onNotesChange: (notes: CustomerNote[]) => void;
   canEdit?: boolean;
   variant?: "sheet" | "form";
+  /** Tighter layout for customer sheet */
+  compact?: boolean;
   onNotesMutated?: () => void;
   loading?: boolean;
-}
-
-function formatNoteDate(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return formatDistanceToNow(date, { addSuffix: true });
 }
 
 export function CustomerNotesList({
@@ -42,6 +41,7 @@ export function CustomerNotesList({
   onNotesChange,
   canEdit = true,
   variant = "sheet",
+  compact = false,
   onNotesMutated,
   loading = false,
 }: CustomerNotesListProps) {
@@ -54,6 +54,11 @@ export function CustomerNotesList({
 
   const isForm = variant === "form";
   const isSheet = variant === "sheet";
+  const isCompactSheet = isSheet && compact;
+  const displayNotes = useMemo(() => {
+    const { audit } = splitCustomerNotes(notes);
+    return audit;
+  }, [notes]);
 
   const handleAddNote = async () => {
     const content = newNote.trim();
@@ -69,9 +74,12 @@ export function CustomerNotesList({
       );
       if (!note.id && customerId) {
         const refreshed = await fetchCustomerNotes(customerId);
-        onNotesChange(refreshed);
+        onNotesChange(splitCustomerNotes(refreshed).audit);
+      } else if (!note.isPinned) {
+        onNotesChange([note, ...displayNotes]);
       } else {
-        onNotesChange([note, ...notes]);
+        const refreshed = await fetchCustomerNotes(customerId);
+        onNotesChange(splitCustomerNotes(refreshed).audit);
       }
       setNewNote("");
       onNotesMutated?.();
@@ -94,7 +102,7 @@ export function CustomerNotesList({
       await fetchFromBackend(`/customers/${customerId}/notes/${noteId}`, {
         method: "DELETE",
       });
-      onNotesChange(notes.filter((n) => n.id !== noteId));
+      onNotesChange(displayNotes.filter((n) => n.id !== noteId));
       onNotesMutated?.();
       toast({ title: "Note deleted" });
     } catch {
@@ -122,9 +130,14 @@ export function CustomerNotesList({
       const note = normalizeCustomerNote(
         (updated as { data?: CustomerNote })?.data ?? updated,
       );
-      onNotesChange(
-        notes.map((n) => (n.id === editingNoteId ? { ...n, ...note } : n)),
-      );
+      if (note.isPinned) {
+        const refreshed = await fetchCustomerNotes(customerId);
+        onNotesChange(splitCustomerNotes(refreshed).audit);
+      } else {
+        onNotesChange(
+          displayNotes.map((n) => (n.id === editingNoteId ? { ...n, ...note } : n)),
+        );
+      }
       setEditingNoteId(null);
       setEditingText("");
       onNotesMutated?.();
@@ -146,24 +159,26 @@ export function CustomerNotesList({
   };
 
   return (
-    <div className={cn("space-y-3", isForm && "space-y-2")}>
+    <div className={cn("space-y-2", isForm && "space-y-2")}>
       <div
         className={cn(
-          "flex gap-2",
-          isForm ? "flex-row items-end" : "flex-col sm:flex-row sm:items-end",
+          "flex gap-1.5",
+          isForm || isCompactSheet ? "flex-row items-center" : "flex-row items-end",
         )}
       >
         <Textarea
-          placeholder="Add an audit note…"
+          placeholder="Add note…"
           value={newNote}
-          rows={isForm ? 2 : 2}
+          rows={isCompactSheet ? 1 : isForm ? 2 : 2}
           onChange={(e) => setNewNote(e.target.value)}
           disabled={!customerId || loading}
           className={cn(
-            "flex-1 resize-none text-sm",
-            isSheet
-              ? "border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
-              : "border-slate-200",
+            "min-h-0 flex-1 resize-none",
+            isCompactSheet
+              ? "h-8 max-h-20 border-slate-200 py-1.5 text-[12px]"
+              : isSheet
+                ? "border-slate-200/80 bg-white text-sm dark:border-slate-700 dark:bg-slate-900"
+                : "border-slate-200 text-sm",
           )}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -180,42 +195,42 @@ export function CustomerNotesList({
           disabled={addingNote || !newNote.trim() || !customerId || loading}
           className={cn(
             "shrink-0",
-            isForm
-              ? "h-9 border-slate-200"
-              : "h-9 w-full sm:w-auto bg-[#008f68] hover:bg-[#007a5a] text-white",
+            isForm || isCompactSheet
+              ? "h-8 w-8 border-slate-200 p-0"
+              : "h-9 w-auto bg-[#008f68] px-3 text-white hover:bg-[#007a5a]",
           )}
         >
           {addingNote ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <>
-              <Plus className={cn("h-4 w-4", isSheet && "mr-1")} />
-              {isSheet ? <span>Add</span> : null}
-            </>
+            <Plus className="h-3.5 w-3.5" />
           )}
         </Button>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-6 text-[12px] text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin text-[#008f68]" />
-          Loading notes…
+        <div className="flex items-center justify-center gap-1.5 py-4 text-[11px] text-slate-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#008f68]" />
+          Loading…
         </div>
-      ) : notes.length > 0 ? (
+      ) : displayNotes.length > 0 ? (
         isSheet ? (
-          <div className="relative max-h-[min(320px,42vh)] overflow-y-auto overscroll-contain pr-1">
+          <div
+            className={cn(
+              "relative overflow-y-auto overscroll-contain pr-0.5",
+              isCompactSheet ? "max-h-[min(200px,28vh)]" : "max-h-[min(280px,36vh)]",
+            )}
+          >
             <div
-              className="absolute top-1 bottom-1 left-[9px] w-0.5 bg-amber-200/80 dark:bg-amber-900/50"
+              className="absolute top-0.5 bottom-0.5 left-[7px] w-px bg-slate-200 dark:bg-slate-700"
               aria-hidden
             />
-            <ul className="space-y-3">
-              {notes.map((note) => {
+            <ul className={cn(isCompactSheet ? "space-y-2" : "space-y-2.5")}>
+              {displayNotes.map((note) => {
                 const isEditing = editingNoteId === note.id;
                 return (
-                  <li key={note.id} className="relative pl-7">
-                    <span className="absolute left-0 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-slate-950">
-                      <StickyNote className="h-2.5 w-2.5 text-amber-600" />
-                    </span>
+                  <li key={note.id} className="relative pl-5">
+                    <span className="absolute left-0 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
                     {isEditing ? (
                       <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
                         <Textarea
@@ -260,20 +275,17 @@ export function CustomerNotesList({
                       </div>
                     ) : (
                       <div className="group min-w-0">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                          <span className="text-xs tabular-nums text-slate-500">
-                            {formatNoteDate(note.createdAt)}
-                          </span>
-                          {note.createdBy ? (
-                            <>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700/90 dark:text-amber-400">
-                                {note.createdBy}
-                              </span>
-                            </>
-                          ) : null}
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
+                        {formatNoteMeta(note) ? (
+                          <p className="text-[11px] tabular-nums text-slate-500">
+                            {formatNoteMeta(note)}
+                          </p>
+                        ) : null}
+                        <p
+                          className={cn(
+                            "mt-0.5 whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-slate-200",
+                            isCompactSheet ? "text-[12px] line-clamp-3" : "text-[13px]",
+                          )}
+                        >
                           {note.content}
                         </p>
                         {canEdit ? (
@@ -307,7 +319,7 @@ export function CustomerNotesList({
           </div>
         ) : (
           <ul className="space-y-2">
-            {notes.map((note) => {
+            {displayNotes.map((note) => {
               const isEditing = editingNoteId === note.id;
               return (
                 <li
@@ -362,12 +374,11 @@ export function CustomerNotesList({
                         <p className="whitespace-pre-wrap break-words leading-snug text-slate-700">
                           {note.content}
                         </p>
-                        {(note.createdBy || note.createdAt) && (
-                          <p className="mt-1.5 text-[10px] font-medium text-slate-400">
-                            {formatNoteDate(note.createdAt)}
-                            {note.createdBy ? ` · ${note.createdBy}` : ""}
+                        {formatNoteMeta(note) ? (
+                          <p className="mt-1.5 text-[10px] font-medium tabular-nums text-slate-400">
+                            {formatNoteMeta(note)}
                           </p>
-                        )}
+                        ) : null}
                       </div>
                       {canEdit ? (
                         <div className="flex shrink-0 flex-col gap-0.5">
@@ -407,16 +418,8 @@ export function CustomerNotesList({
           </ul>
         )
       ) : (
-        <p
-          className={cn(
-            "rounded-xl border border-dashed px-3 py-4 text-center text-[13px] text-slate-500",
-            isSheet
-              ? "border-amber-200/60 bg-amber-50/30 dark:border-amber-900/40 dark:bg-amber-950/20"
-              : "border-slate-200 bg-slate-50/50",
-          )}
-        >
-          <StickyNote className="mx-auto mb-1.5 h-4 w-4 opacity-50" />
-          No audit notes yet. Notes also appear in the activity timeline.
+        <p className="py-3 text-center text-[11px] text-slate-400">
+          No audit notes yet.
         </p>
       )}
     </div>
