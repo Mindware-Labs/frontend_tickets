@@ -24,10 +24,10 @@ import {
   Phone,
   PhoneCall,
   RefreshCw,
-  Ticket,
   User,
   X,
 } from "lucide-react";
+import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useRole } from "@/components/providers/role-provider";
@@ -186,9 +186,9 @@ function LinkedYardCard({
             </div>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Ticket className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <ActivitiesIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               <p className="text-[12px] font-medium text-slate-700">
-                {ticketTotal} ticket{ticketTotal === 1 ? "" : "s"}
+                {ticketTotal} activit{ticketTotal === 1 ? "y" : "ies"}
               </p>
             </div>
           </div>

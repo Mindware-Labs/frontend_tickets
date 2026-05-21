@@ -1,64 +1,37 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { BarChart3, CheckCircle2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRole } from "@/components/providers/role-provider";
 import { fetchFromBackend } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { ManagementType } from "../calls/types";
-import { Campaign, CampaignFormData, YardSummary } from "./types";
-import { CampaignFormModal } from "./components/CampaignFormModal";
-import { DeleteCampaignModal } from "./components/DeleteCampaignModal";
+import type { Campaign, CampaignFormData, YardSummary } from "./types";
+import {
+  CampaignsToolbar,
+  type CampaignsFilterState,
+} from "./components/CampaignsToolbar";
+import { CampaignsGrid } from "./components/CampaignsGrid";
 import { CampaignsPagination } from "./components/CampaignsPagination";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { CampaignDetailsModal } from "./components/CampaignDetailsModal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ArrowUpRight,
-  CheckCircle2,
-  MapPin,
-  MoreVertical,
-  Plus,
-  Search,
-  Tag,
-  Ticket,
-  Megaphone,
-  XCircle,
-  DollarSign,
-  Ban,
-} from "lucide-react";
 
-type CampaignTicket = {
-  id: number;
-  status?: string | null;
-  createdAt?: string;
-  customer?: { name?: string | null };
-  customerPhone?: string | null;
-  campaignId?: number | null;
-  campaign?: { id?: number | null };
-};
+const CampaignFormModal = dynamic(
+  () => import("./components/CampaignFormModal").then((m) => m.CampaignFormModal),
+  { ssr: false },
+);
+const DeleteCampaignModal = dynamic(
+  () =>
+    import("./components/DeleteCampaignModal").then((m) => m.DeleteCampaignModal),
+  { ssr: false },
+);
+const CampaignSheet = dynamic(
+  () => import("./components/CampaignSheet").then((m) => m.CampaignSheet),
+  { ssr: false },
+);
 
 const DEFAULT_FORM: CampaignFormData = {
   nombre: "",
@@ -68,62 +41,78 @@ const DEFAULT_FORM: CampaignFormData = {
   isActive: true,
 };
 
-const campaignTypeLabels: Record<ManagementType, string> = {
-  [ManagementType.ONBOARDING]: "Onboarding",
-  [ManagementType.AR]: "AR",
-  [ManagementType.OTHER]: "Other",
+const VIEW_TABS = [
+  { key: "all", label: "All Campaigns" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Inactive" },
+  { key: "onboarding", label: "Onboarding" },
+  { key: "ar", label: "AR" },
+] as const;
+
+const DEFAULT_FILTERS: CampaignsFilterState = {
+  type: "all",
+  status: "all",
 };
 
-/** Solo dígitos del teléfono para buscar con o sin formato (+1, guiones, espacios). */
-function normalizePhone(phone: string): string {
-  return (phone || "").replace(/\D/g, "");
-}
+type CampaignView = (typeof VIEW_TABS)[number]["key"];
 
 export default function CampaignsPage() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const { role } = useRole();
-  const normalizedRole = role?.toString().toLowerCase();
-  const isAgent = normalizedRole === "agent";
+
+  const isAgent = role?.toString().toLowerCase() === "agent";
   const canManage = !isAgent;
+
+  const campaignIdParam = searchParams?.get("campaignId");
+  const campaignIdFilter = campaignIdParam ? Number(campaignIdParam) : null;
+  const yardPanelParam = searchParams?.get("yardPanel");
+  const yardPanelId =
+    yardPanelParam && !Number.isNaN(Number(yardPanelParam))
+      ? Number(yardPanelParam)
+      : null;
+
+  const replaceCampaignSearch = (
+    patch: Record<string, string | null | undefined>,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) {
+      if (value == null || value === "") params.delete(key);
+      else params.set(key, value);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [yards, setYards] = useState<YardSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState<ManagementType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
-  const [yardFilter, setYardFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [yardFilter, setYardFilter] = useState("all");
+  const [filters, setFilters] = useState<CampaignsFilterState>(DEFAULT_FILTERS);
+  const [activeView, setActiveView] = useState<CampaignView>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(9);
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
-    null,
-  );
-
-  const [ticketsLoading, setTicketsLoading] = useState(false);
-  const [campaignTickets, setCampaignTickets] = useState<CampaignTicket[]>([]);
-  const [showTicketsPanel, setShowTicketsPanel] = useState(false);
-  const [ticketSearch, setTicketSearch] = useState("");
-
+  const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [showCampaignSheet, setShowCampaignSheet] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [formData, setFormData] = useState<CampaignFormData>(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [formData, setFormData] = useState<CampaignFormData>(DEFAULT_FORM);
 
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const data = await fetchFromBackend("/campaign?page=1&limit=100");
+      const data = await fetchFromBackend("/campaign?page=1&limit=500");
       const items = Array.isArray(data) ? data : data?.data || [];
       setCampaigns(items);
-    } catch (error) {
-      console.error("Error fetching campaigns:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load campaigns",
@@ -139,14 +128,8 @@ export default function CampaignsPage() {
       const data = await fetchFromBackend("/yards?page=1&limit=10000");
       const items = Array.isArray(data) ? data : data?.data || [];
       setYards(items);
-    } catch (error: any) {
-      console.error("Error fetching yards:", error);
-      // Only show toast if it's not a 401 (unauthorized) - those are handled globally
-      if (error?.status !== 401) {
-        console.warn(
-          "Failed to load yards. This might be expected if the yards feature is not enabled.",
-        );
-      }
+    } catch {
+      // Yards are optional for display; failures are non-blocking
     }
   };
 
@@ -155,68 +138,166 @@ export default function CampaignsPage() {
     fetchYards();
   }, []);
 
-  const pathname = usePathname();
   useEffect(() => {
-    setShowCreateModal(false);
-    setShowEditModal(false);
-    setShowDeleteModal(false);
-    setShowDetailsModal(false);
+    setShowCreate(false);
+    setShowEdit(false);
+    setShowDelete(false);
+    setShowCampaignSheet(false);
   }, [pathname]);
 
-  const filteredCampaigns = useMemo(() => {
-    return campaigns.filter((campaign) => {
-      const yardName =
-        campaign.yarda?.name ||
-        yards.find((yard) => yard.id === campaign.yardaId)?.name ||
-        "";
-      const matchesSearch =
-        campaign.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        yardName.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    if (!campaignIdFilter || loading || campaigns.length === 0) return;
+    const match = campaigns.find((c) => c.id === campaignIdFilter);
+    if (match) {
+      setSelectedCampaign(match);
+      setShowCampaignSheet(true);
+    }
+  }, [campaignIdFilter, loading, campaigns]);
 
-      const matchesType = typeFilter === "all" || campaign.tipo === typeFilter;
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && campaign.isActive) ||
-        (statusFilter === "inactive" && !campaign.isActive);
-      const matchesYard =
-        yardFilter === "all" ||
-        campaign.yardaId?.toString() === yardFilter ||
-        campaign.yarda?.id?.toString() === yardFilter;
-
-      return matchesSearch && matchesType && matchesStatus && matchesYard;
+  const handleOpenYardPanel = (yardId: number) => {
+    if (!selectedCampaign?.id) return;
+    setShowCampaignSheet(true);
+    replaceCampaignSearch({
+      campaignId: String(selectedCampaign.id),
+      yardPanel: String(yardId),
     });
-  }, [campaigns, searchTerm, typeFilter, statusFilter, yardFilter, yards]);
+  };
 
-  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+  const handleCloseYardPanel = () => {
+    replaceCampaignSearch({ yardPanel: null });
+  };
+
+  const handleCampaignSheetOpenChange = (open: boolean) => {
+    setShowCampaignSheet(open);
+    if (!open) {
+      setSelectedCampaign(null);
+      if (campaignIdParam || yardPanelParam) {
+        replaceCampaignSearch({ campaignId: null, yardPanel: null });
+      }
+    }
+  };
+
+  const getYardName = (campaign: Campaign) =>
+    campaign.yarda?.name ||
+    yards.find((y) => y.id === campaign.yardaId)?.name ||
+    "";
+
+  const matchesSearch = (campaign: Campaign) => {
+    const term = search.toLowerCase();
+    if (!term) return true;
+    return (
+      campaign.nombre.toLowerCase().includes(term) ||
+      getYardName(campaign).toLowerCase().includes(term)
+    );
+  };
+
+  const matchesYard = (campaign: Campaign) =>
+    yardFilter === "all" ||
+    campaign.yardaId?.toString() === yardFilter ||
+    campaign.yarda?.id?.toString() === yardFilter;
+
+  const matchesTypeFilter = (campaign: Campaign) =>
+    filters.type === "all" || campaign.tipo === filters.type;
+
+  const matchesStatusFilter = (campaign: Campaign) =>
+    filters.status === "all" ||
+    (filters.status === "active" && campaign.isActive) ||
+    (filters.status === "inactive" && !campaign.isActive);
+
+  const matchesView = (campaign: Campaign) => {
+    switch (activeView) {
+      case "active":
+        return campaign.isActive;
+      case "inactive":
+        return !campaign.isActive;
+      case "onboarding":
+        return campaign.tipo === ManagementType.ONBOARDING;
+      case "ar":
+        return campaign.tipo === ManagementType.AR;
+      default:
+        return true;
+    }
+  };
+
+  const viewCounts = useMemo(() => {
+    const base = campaigns.filter((c) => {
+      if (campaignIdFilter && c.id !== campaignIdFilter) return false;
+      return matchesSearch(c);
+    });
+    return {
+      all: base.length,
+      active: base.filter((c) => c.isActive).length,
+      inactive: base.filter((c) => !c.isActive).length,
+      onboarding: base.filter((c) => c.tipo === ManagementType.ONBOARDING)
+        .length,
+      ar: base.filter((c) => c.tipo === ManagementType.AR).length,
+    };
+  }, [campaigns, search, campaignIdFilter, yards]);
+
+  const filteredCampaigns = useMemo(() => {
+    return campaigns
+      .filter((campaign) => {
+        const matchesQuery = campaignIdFilter
+          ? campaign.id === campaignIdFilter
+          : true;
+        return (
+          matchesSearch(campaign) &&
+          matchesYard(campaign) &&
+          matchesTypeFilter(campaign) &&
+          matchesStatusFilter(campaign) &&
+          matchesView(campaign) &&
+          matchesQuery
+        );
+      })
+      .sort((a, b) => b.id - a.id);
+  }, [campaigns, search, yardFilter, filters, activeView, campaignIdFilter, yards]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCampaigns.length / itemsPerPage),
+  );
+
   const paginatedCampaigns = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredCampaigns.slice(startIndex, startIndex + itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredCampaigns.slice(start, start + itemsPerPage);
   }, [filteredCampaigns, currentPage, itemsPerPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, statusFilter, yardFilter]);
+  }, [search, yardFilter, filters, activeView, campaignIdFilter, itemsPerPage]);
 
-  const getStatusColor = (isActive: boolean) =>
-    isActive
-      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
-      : "bg-amber-500/10 text-amber-700 border-amber-500/20";
-
-  const getYardLabel = (campaign: Campaign) => {
-    return (
-      campaign.yarda?.name ||
-      yards.find((yard) => yard.id === campaign.yardaId)?.name ||
-      "No yard"
-    );
+  const handleFilterChange = (
+    key: keyof CampaignsFilterState,
+    value: string,
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearValidationErrors = () => setValidationErrors({});
 
+  const buildPayload = (data: CampaignFormData) => ({
+    ...data,
+    yardaId: data.yardaId ?? undefined,
+    duracion: data.duracion.trim() ? data.duracion.trim() : undefined,
+  });
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.nombre.trim()) errors.nombre = "Please enter the campaign name.";
+    if (!formData.tipo) errors.tipo = "Please select a campaign type.";
+    return errors;
+  };
+
   const handleCreate = () => {
     resetForm();
     clearValidationErrors();
-    setShowCreateModal(true);
+    setShowCreate(true);
+  };
+
+  const handleOpen = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setShowCampaignSheet(true);
   };
 
   const handleEdit = (campaign: Campaign) => {
@@ -229,79 +310,21 @@ export default function CampaignsPage() {
       isActive: campaign.isActive,
     });
     clearValidationErrors();
-    setShowEditModal(true);
+    setShowEdit(true);
   };
 
   const handleDelete = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
-    setShowDeleteModal(true);
+    setShowDelete(true);
   };
-
-  const handleDetails = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setShowDetailsModal(true);
-    setShowTicketsPanel(false);
-    setTicketSearch("");
-    setCampaignTickets([]);
-  };
-
-  const fetchTicketsForCampaign = async (campaignId: number) => {
-    try {
-      setTicketsLoading(true);
-      const response = await fetchFromBackend("/tickets?page=1&limit=500");
-      const items: CampaignTicket[] = response?.data || response || [];
-      const filtered = items.filter(
-        (ticket) =>
-          ticket.campaignId === campaignId ||
-          ticket.campaign?.id === campaignId,
-      );
-      setCampaignTickets(filtered);
-    } catch (error) {
-      console.error("Error fetching tickets:", error);
-      setCampaignTickets([]);
-    } finally {
-      setTicketsLoading(false);
-    }
-  };
-
-  const filteredTickets = useMemo(() => {
-    const term = ticketSearch.toLowerCase();
-    const termDigits = normalizePhone(ticketSearch);
-    return campaignTickets.filter((ticket) => {
-      const name = ticket.customer?.name?.toLowerCase() || "";
-      const phone = (ticket.customerPhone || "").toLowerCase();
-      const phoneDigits = normalizePhone(ticket.customerPhone || "");
-      const id = `#${ticket.id}`;
-      const matchesPhoneFormatted = phone.includes(term);
-      const matchesPhoneDigits =
-        termDigits.length > 0 && phoneDigits.includes(termDigits);
-      return (
-        name.includes(term) ||
-        matchesPhoneFormatted ||
-        matchesPhoneDigits ||
-        id.toLowerCase().includes(term)
-      );
-    });
-  }, [campaignTickets, ticketSearch]);
-
-  const buildPayload = (data: CampaignFormData) => ({
-    ...data,
-    yardaId: data.yardaId ?? undefined,
-    duracion: data.duracion.trim() ? data.duracion.trim() : undefined,
-  });
 
   const handleSubmitCreate = async () => {
-    setValidationErrors({});
-    const errors: Record<string, string> = {};
-    if (!formData.nombre.trim())
-      errors.nombre = "Please enter the campaign name.";
-    if (!formData.tipo) errors.tipo = "Please select a campaign type.";
-
+    const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       toast({
         title: "Missing fields",
-        description: "Please review fields.",
+        description: "Please review the form.",
         variant: "destructive",
       });
       return;
@@ -322,13 +345,14 @@ export default function CampaignsPage() {
           </div>
         ),
       });
-      setShowCreateModal(false);
-      fetchCampaigns();
+      setShowCreate(false);
       resetForm();
-    } catch (error: any) {
+      await fetchCampaigns();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to create.",
+        description: err.message || "Failed to create campaign",
         variant: "destructive",
       });
     } finally {
@@ -338,17 +362,12 @@ export default function CampaignsPage() {
 
   const handleSubmitEdit = async () => {
     if (!selectedCampaign) return;
-    setValidationErrors({});
-    const errors: Record<string, string> = {};
-    if (!formData.nombre.trim())
-      errors.nombre = "Please enter the campaign name.";
-    if (!formData.tipo) errors.tipo = "Please select a campaign type.";
-
+    const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       toast({
         title: "Missing fields",
-        description: "Please review fields.",
+        description: "Please review the form.",
         variant: "destructive",
       });
       return;
@@ -369,14 +388,15 @@ export default function CampaignsPage() {
           </div>
         ),
       });
-      setShowEditModal(false);
-      fetchCampaigns();
-      resetForm();
+      setShowEdit(false);
       setSelectedCampaign(null);
-    } catch (error: any) {
+      resetForm();
+      await fetchCampaigns();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to update.",
+        description: err.message || "Failed to update campaign",
         variant: "destructive",
       });
     } finally {
@@ -400,13 +420,15 @@ export default function CampaignsPage() {
           </div>
         ),
       });
-      setShowDeleteModal(false);
-      fetchCampaigns();
+      setShowDelete(false);
+      setShowCampaignSheet(false);
       setSelectedCampaign(null);
-    } catch (error: any) {
+      await fetchCampaigns();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       toast({
         title: "Error",
-        description: error.message || "Failed to delete.",
+        description: err.message || "Failed to delete campaign",
         variant: "destructive",
       });
     } finally {
@@ -414,308 +436,149 @@ export default function CampaignsPage() {
     }
   };
 
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Megaphone className="h-8 w-8 text-primary" /> Campaigns
-          </h1>
-          <p className="text-muted-foreground">Manage initiatives.</p>
+    <div className="flex h-screen flex-col gap-0 px-4 pb-4 pt-2">
+      <div className="flex w-full flex-col justify-between gap-3 border-b border-border px-0.5 pb-5 pt-2 md:flex-row md:items-center">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-50">
+            Campaigns
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {today} · Track initiatives, yards, and ticket performance
+          </p>
         </div>
-        {canManage && (
+
+        {!isAgent && (
           <Button
-            className="bg-primary hover:bg-primary/90 gap-2"
-            onClick={handleCreate}
+            asChild
+            variant="outline"
+            className="h-9 rounded-xl border-border px-4 text-[13px] font-medium shadow-sm hover:border-[#008f68]/40 hover:bg-[#f0faf5] hover:text-[#008f68]"
           >
-            <Plus className="h-4 w-4" /> New Campaign
+            <Link href="/reports/campaigns">
+              <BarChart3 className="mr-1.5 h-4 w-4" />
+              Campaign Reports
+            </Link>
           </Button>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="mt-1 flex items-end border-b border-border">
+        <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex px-0.5">
+            {VIEW_TABS.map((tab) => {
+              const isActive = activeView === tab.key;
+              const count = viewCounts[tab.key];
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveView(tab.key)}
+                  className={cn(
+                    "-mb-px mr-4 flex items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors",
+                    isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      "rounded-full border px-1.5 py-px text-[11px]",
+                      isActive
+                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        : "border-border bg-muted/40 font-medium text-muted-foreground",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-
-        <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {Object.entries(campaignTypeLabels).map(([v, l]) => (
-              <SelectItem key={v} value={v}>
-                {l}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={statusFilter}
-          onValueChange={(v: any) => setStatusFilter(v)}
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={yardFilter} onValueChange={(v) => setYardFilter(v)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Yard" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Yards</SelectItem>
-            {yards.map((y) => (
-              <SelectItem key={y.id} value={y.id.toString()} title={y.name}>
-                <span className="truncate block max-w-[180px]">{y.name}</span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="outline"
-          onClick={() => {
-            setTypeFilter("all");
-            setStatusFilter("all");
-            setYardFilter("all");
-            setSearchTerm("");
-          }}
-        >
-          Clear
-        </Button>
+        {canManage && (
+          <div className="shrink-0 pb-2 pl-4 pr-2 pt-0.5">
+            <button
+              type="button"
+              onClick={handleCreate}
+              className="flex h-[30px] items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+              style={{ background: "#008f68" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#007a5a";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#008f68";
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Campaign
+            </button>
+          </div>
+        )}
       </div>
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {paginatedCampaigns.map((campaign) => (
-              <Card
-                key={campaign.id}
-                className="group relative flex flex-col justify-between overflow-hidden border border-border/60 bg-gradient-to-b from-card to-card/50 text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/20"
-              >
-                {campaign.isActive && (
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-emerald-600 opacity-80" />
-                )}
+      <div className="mb-2 mt-3">
+        <CampaignsToolbar
+          search={search}
+          onSearchChange={setSearch}
+          yardFilter={yardFilter}
+          onYardFilterChange={setYardFilter}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          yards={yards}
+          onClearFilters={() => {
+            setSearch("");
+            setYardFilter("all");
+            setFilters(DEFAULT_FILTERS);
+          }}
+        />
+      </div>
 
-                <CardHeader className="pb-4 pt-5 pl-7">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1 flex-1 min-w-0">
-                      {/* TÍTULO CON TRUNCAMIENTO */}
-                      <CardTitle className="text-lg font-bold flex items-center gap-2">
-                        <span
-                          className="truncate block max-w-[200px]"
-                          title={campaign.nombre}
-                        >
-                          {campaign.nombre}
-                        </span>
-                        {campaign.isActive && (
-                          <span className="relative flex h-2.5 w-2.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                          </span>
-                        )}
-                      </CardTitle>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <CampaignsGrid
+          loading={loading}
+          campaigns={paginatedCampaigns}
+          yards={yards}
+          totalFiltered={filteredCampaigns.length}
+          search={search}
+          canManage={canManage}
+          onCreate={handleCreate}
+          onOpen={handleOpen}
+          onEdit={canManage ? handleEdit : undefined}
+          onDelete={canManage ? handleDelete : undefined}
+        />
 
-                      <CardDescription className="flex items-center gap-2 text-xs">
-                        <span className="font-mono text-primary/70">
-                          #{campaign.id}
-                        </span>
-                        <span>
-                          {new Date(campaign.createdAt).toLocaleDateString()}
-                        </span>
-                      </CardDescription>
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleDetails(campaign)}
-                        >
-                          View Details
-                        </DropdownMenuItem>
-                        {canManage && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(campaign)}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDelete(campaign)}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-6 pb-6 pl-7 pr-6">
-                  <div className="grid grid-cols-2 gap-4 rounded-xl bg-muted/40 p-3 border border-border/30">
-                    <div className="space-y-0.5">
-                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        <Ticket className="h-3 w-3" />
-                        Tickets
-                      </span>
-                      <p className="text-2xl font-bold">
-                        {campaign.ticketCount ?? 0}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1 border-l border-border/40 pl-4 flex flex-col justify-center">
-                      {/* CONTADORES CON ESTILO DE CHIPS/BADGES */}
-                      {campaign.tipo === ManagementType.ONBOARDING ? (
-                        <>
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <Badge
-                              variant="outline"
-                              className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm"
-                            >
-                              <CheckCircle2 className="h-3 w-3 mr-1" />{" "}
-                              Registered
-                            </Badge>
-                            <span className="font-bold text-foreground text-sm">
-                              {campaign.registeredCount ?? 0}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <Badge
-                              variant="outline"
-                              className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm"
-                            >
-                              <XCircle className="h-3 w-3 mr-1" /> Not
-                              Registered
-                            </Badge>
-                            <span className="font-bold text-foreground text-sm">
-                              {campaign.notRegisteredCount ?? 0}
-                            </span>
-                          </div>
-                        </>
-                      ) : campaign.tipo === ManagementType.AR ? (
-                        <>
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <Badge
-                              variant="outline"
-                              className="h-5 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-md font-medium shadow-sm"
-                            >
-                              <DollarSign className="h-3 w-3 mr-1" /> Paid
-                            </Badge>
-                            <span className="font-bold text-foreground text-sm">
-                              {campaign.paidCount ?? 0}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <Badge
-                              variant="outline"
-                              className="h-5 px-1.5 bg-red-500/10 text-red-700 border-red-500/20 rounded-md font-medium shadow-sm"
-                            >
-                              <Ban className="h-3 w-3 mr-1" /> Not Paid
-                            </Badge>
-                            <span className="font-bold text-foreground text-sm">
-                              {campaign.notPaidCount ?? 0}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                            Duration
-                          </span>
-                          <p className="text-lg font-semibold truncate">
-                            {campaign.duracion || "—"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Badge
-                      variant="outline"
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/5 text-blue-700 border-blue-200/40 hover:bg-blue-500/10 dark:text-blue-400 dark:border-blue-900/40 transition-colors"
-                    >
-                      <Tag className="h-3 w-3" />
-                      <span
-                        className="truncate block max-w-[100px]"
-                        title={campaignTypeLabels[campaign.tipo]}
-                      >
-                        {campaignTypeLabels[campaign.tipo]}
-                      </span>
-                    </Badge>
-
-                    {/* BADGE DEL YARD CON TRUNCAMIENTO */}
-                    <Badge
-                      variant="outline"
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/5 text-orange-700 border-orange-200/40 hover:bg-orange-500/10 dark:text-orange-400 dark:border-orange-900/40 transition-colors"
-                    >
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span
-                        className="truncate block max-w-[100px]"
-                        title={getYardLabel(campaign)}
-                      >
-                        {getYardLabel(campaign)}
-                      </span>
-                    </Badge>
-                  </div>
-                </CardContent>
-
-                <CardFooter className="border-t bg-muted/30 px-6 py-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-between text-xs"
-                    onClick={() => handleDetails(campaign)}
-                  >
-                    View Full Report <ArrowUpRight className="h-3 w-3" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-
-          <CampaignsPagination
-            totalCount={filteredCampaigns.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            onItemsPerPageChange={setItemsPerPage}
-            onPageChange={setCurrentPage}
-          />
-        </>
-      )}
+        <CampaignsPagination
+          totalCount={filteredCampaigns.length}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={(value) => {
+            setItemsPerPage(value);
+            setCurrentPage(1);
+          }}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       {canManage && (
         <>
           <CampaignFormModal
-            open={showCreateModal}
-            onOpenChange={setShowCreateModal}
-            title="Create"
-            description=""
-            submitLabel="Create"
+            open={showCreate}
+            mode="create"
+            onOpenChange={(open) => {
+              setShowCreate(open);
+              if (!open) clearValidationErrors();
+            }}
+            title="Create campaign"
+            description="Add a new initiative linked to a yard and type."
+            submitLabel="Create campaign"
             isSubmitting={isSubmitting}
             formData={formData}
             onFormChange={setFormData}
@@ -727,11 +590,19 @@ export default function CampaignsPage() {
           />
 
           <CampaignFormModal
-            open={showEditModal}
-            onOpenChange={setShowEditModal}
-            title="Edit"
-            description=""
-            submitLabel="Save"
+            open={showEdit}
+            mode="edit"
+            onOpenChange={(open) => {
+              setShowEdit(open);
+              if (!open) clearValidationErrors();
+            }}
+            title="Edit campaign"
+            description={
+              selectedCampaign
+                ? `Update settings for ${selectedCampaign.nombre}`
+                : "Update campaign details"
+            }
+            submitLabel="Save changes"
             isSubmitting={isSubmitting}
             formData={formData}
             onFormChange={setFormData}
@@ -743,8 +614,8 @@ export default function CampaignsPage() {
           />
 
           <DeleteCampaignModal
-            open={showDeleteModal}
-            onOpenChange={setShowDeleteModal}
+            open={showDelete}
+            onOpenChange={setShowDelete}
             campaignName={selectedCampaign?.nombre}
             ticketCount={selectedCampaign?.ticketCount}
             isSubmitting={isSubmitting}
@@ -753,25 +624,16 @@ export default function CampaignsPage() {
         </>
       )}
 
-      <CampaignDetailsModal
-        open={showDetailsModal}
-        onOpenChange={setShowDetailsModal}
+      <CampaignSheet
+        open={showCampaignSheet}
+        onOpenChange={handleCampaignSheetOpenChange}
         campaign={selectedCampaign}
-        campaignTypeLabels={campaignTypeLabels}
-        getStatusColor={getStatusColor}
-        getYardLabel={getYardLabel}
-        showTicketsPanel={showTicketsPanel}
-        ticketsLoading={ticketsLoading}
-        tickets={filteredTickets}
-        ticketSearch={ticketSearch}
-        setTicketSearch={setTicketSearch}
-        onViewTickets={async () => {
-          if (selectedCampaign) {
-            if (!showTicketsPanel)
-              await fetchTicketsForCampaign(selectedCampaign.id);
-            setShowTicketsPanel(true);
-          }
-        }}
+        yards={yards}
+        yardPanelId={yardPanelId}
+        onOpenYardPanel={handleOpenYardPanel}
+        onCloseYardPanel={handleCloseYardPanel}
+        onEdit={canManage ? handleEdit : undefined}
+        onDelete={canManage ? handleDelete : undefined}
       />
     </div>
   );

@@ -103,7 +103,7 @@ export function YardsTable({
                   Status
                 </TableHead>
                 <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500 text-center">
-                  Tickets
+                  Activities
                 </TableHead>
                 <TableHead className="w-[120px] font-bold text-[11px] tracking-wider uppercase text-slate-500 text-right pr-4">
                   Actions

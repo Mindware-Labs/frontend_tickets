@@ -9,7 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Loader2, Ticket, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { YardMark } from "./YardMark";
 
 interface DeleteYardModalProps {
@@ -89,13 +90,12 @@ export function DeleteYardModal({
               </p>
               <p className="mt-2 text-justify text-[13px] leading-relaxed text-amber-900/90 dark:text-amber-200/90">
                 This yard has <span className="font-semibold">{tickets}</span>{" "}
-                linked ticket
-                {tickets === 1 ? "" : "s"}. Deactivate the yard instead of
-                deleting it.
+                linked activit{tickets === 1 ? "y" : "ies"}. Deactivate the yard
+                instead of deleting it.
               </p>
               <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                <Ticket className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                {tickets} ticket{tickets === 1 ? "" : "s"}
+                <ActivitiesIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                {tickets} activit{tickets === 1 ? "y" : "ies"}
               </div>
             </div>
           )}

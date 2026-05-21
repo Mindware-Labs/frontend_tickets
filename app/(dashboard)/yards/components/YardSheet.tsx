@@ -32,10 +32,10 @@ import {
   Phone,
   PhoneCall,
   RefreshCw,
-  Ticket,
   User,
   X,
 } from "lucide-react";
+import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useRole } from "@/components/providers/role-provider";
@@ -642,7 +642,7 @@ export function YardSheet({
   const openTicketLabel =
     typeof data?.openTickets === "number"
       ? `${data.openTickets} open`
-      : "Total tickets";
+      : "Calls · tickets · manual";
   const lastActivityLabel = formatActivityDate(data?.lastActivity);
   const yardLinkUrl = normalizeExternalUrl(data?.yardLink);
   const mapsUrl = getMapsUrl(data?.propertyAddress);
@@ -741,8 +741,8 @@ export function YardSheet({
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <MetricTile
-                    icon={Ticket}
-                    label="Tickets"
+                    icon={ActivitiesIcon}
+                    label="Activities"
                     value={String(ticketTotal)}
                     helper={openTicketLabel}
                   />
@@ -1031,8 +1031,8 @@ export function YardSheet({
                   canDial={canDial}
                 />
                 <SheetAction
-                  icon={Ticket}
-                  label="Tickets"
+                  icon={ActivitiesIcon}
+                  label="Activities"
                   href={`/calls?yardId=${data.id}`}
                   onClick={() => onOpenChange(false)}
                 />

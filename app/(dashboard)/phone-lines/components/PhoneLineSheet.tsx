@@ -20,9 +20,9 @@ import {
   PhoneCall,
   RefreshCw,
   Tag,
-  Ticket,
   X,
 } from "lucide-react";
+import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useRole } from "@/components/providers/role-provider";
@@ -561,8 +561,8 @@ export function PhoneLineSheet({
                   canDial={canDial}
                 />
                 <SheetAction
-                  icon={Ticket}
-                  label="Tickets"
+                  icon={ActivitiesIcon}
+                  label="Activities"
                   href={`/calls?phoneLineId=${data.id}`}
                   onClick={() => onOpenChange(false)}
                 />
