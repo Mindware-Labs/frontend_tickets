@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import {
@@ -35,7 +36,7 @@ import { cn } from "@/lib/utils";
 import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
 import { CustomerPinnedNotes } from "./CustomerPinnedNotes";
-import { CustomerTimelinePopup } from "./CustomerTimelinePopup";
+import { CustomerTimelinePanel } from "./CustomerTimelinePanel";
 import {
   fetchCustomerNotes,
   mergeCustomerNotes,
@@ -46,6 +47,8 @@ interface CustomerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer: Customer | null;
+  /** Re-open timeline panel when returning from /calls?returnTo=...&timeline=1 */
+  openTimelineFromUrl?: boolean;
   onEdit?: (customer: Customer) => void;
   onDelete?: (customer: Customer) => void;
 }
@@ -74,9 +77,43 @@ function formatShortDate(value?: string | null) {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
       {children}
     </p>
+  );
+}
+
+function DetailsCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+      {children}
+    </div>
+  );
+}
+
+function DetailsRow({
+  icon: Icon,
+  label,
+  children,
+  iconClassName,
+}: {
+  icon: LucideIcon;
+  label: string;
+  children: ReactNode;
+  iconClassName?: string;
+}) {
+  return (
+    <div className="flex gap-3 border-b border-slate-100 px-3.5 py-3 last:border-b-0 dark:border-slate-800">
+      <Icon
+        className={cn("mt-0.5 h-4 w-4 shrink-0 text-slate-400", iconClassName)}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+          {label}
+        </p>
+        <div className="mt-1">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -92,18 +129,18 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex items-center gap-2 text-slate-400">
-        <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em]">
+    <div className="min-w-0 rounded-lg border border-slate-200/70 bg-white px-2 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex items-center gap-1 text-slate-400">
+        <Icon className="h-3 w-3 shrink-0" strokeWidth={2} />
+        <p className="truncate text-[9px] font-bold uppercase tracking-[0.06em]">
           {label}
         </p>
       </div>
-      <p className="mt-1.5 text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-50">
+      <p className="mt-0.5 text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-50">
         {value}
       </p>
       {helper ? (
-        <p className="mt-0.5 text-[11px] font-medium text-slate-500">{helper}</p>
+        <p className="text-[9px] font-medium text-slate-500">{helper}</p>
       ) : null}
     </div>
   );
@@ -113,9 +150,11 @@ export function CustomerSheet({
   open,
   onOpenChange,
   customer,
+  openTimelineFromUrl = false,
   onEdit,
   onDelete,
 }: CustomerSheetProps) {
+  const router = useRouter();
   const { role } = useRole();
   const isAgent = role?.toString().toLowerCase() === "agent";
   const {
@@ -141,6 +180,37 @@ export function CustomerSheet({
   useEffect(() => {
     if (!open) setTimelineOpen(false);
   }, [open]);
+
+  useEffect(() => {
+    if (open && openTimelineFromUrl) {
+      setTimelineOpen(true);
+    }
+  }, [open, openTimelineFromUrl]);
+
+  const buildReturnTo = useCallback(() => {
+    const id = detail?.id ?? customer?.id;
+    if (!id) return "/customers";
+    const params = new URLSearchParams();
+    params.set("customerId", String(id));
+    params.set("timeline", "1");
+    return `/customers?${params.toString()}`;
+  }, [detail?.id, customer?.id]);
+
+  const goToCall = useCallback(
+    (callId: number) => {
+      const returnTo = encodeURIComponent(buildReturnTo());
+      router.push(`/calls?id=${callId}&returnTo=${returnTo}`);
+    },
+    [buildReturnTo, router],
+  );
+
+  const goToTicket = useCallback(
+    (ticketId: number) => {
+      const returnTo = encodeURIComponent(buildReturnTo());
+      router.push(`/calls?tab=tickets&id=${ticketId}&returnTo=${returnTo}`);
+    },
+    [buildReturnTo, router],
+  );
 
   useEffect(() => {
     if (!customer?.id) {
@@ -214,11 +284,33 @@ export function CustomerSheet({
         side="right"
         hideClose
         className={cn(
-          "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-hidden p-0 sm:w-[min(560px,calc(100vw-2rem))]",
+          "flex h-dvh flex-row gap-0 overflow-hidden p-0",
           "border-l border-slate-200/80 bg-slate-50 text-slate-900 antialiased",
           "shadow-2xl shadow-slate-900/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          timelineOpen
+            ? "w-[min(1280px,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]"
+            : "w-full max-w-[560px] sm:w-[min(560px,calc(100vw-2rem))]",
         )}
       >
+        {timelineOpen && data ? (
+          <CustomerTimelinePanel
+            customerId={data.id}
+            customerName={data.name}
+            eventHint={callCount + ticketCount}
+            canPlayRecordings={canPlayRecordings}
+            refreshKey={timelineRefreshKey}
+            onClose={() => setTimelineOpen(false)}
+            onViewCall={goToCall}
+            onViewTicket={goToTicket}
+          />
+        ) : null}
+
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            timelineOpen && "w-[min(520px,42%)] shrink-0",
+          )}
+        >
         {!data ? (
           <>
             <SheetHeader className="sr-only">
@@ -271,38 +363,121 @@ export function CustomerSheet({
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-3 grid grid-cols-4 gap-1.5 sm:gap-2">
                   <MetricTile
                     icon={Phone}
-                    label="Total calls"
+                    label="Calls"
                     value={String(callCount)}
                     helper="All time"
                   />
                   <MetricTile
                     icon={ActivitiesIcon}
-                    label="Open tickets"
+                    label="Open"
                     value={String(openCount)}
-                    helper={openCount > 0 ? "Needs attention" : "None open"}
+                    helper={openCount > 0 ? "Active" : "None"}
                   />
                   <MetricTile
                     icon={Clock}
-                    label="Last contact"
+                    label="Last"
                     value={formatShortDate(data.lastContactAt)}
-                    helper="Most recent touch"
+                    helper="Contact"
                   />
                   <MetricTile
                     icon={Ticket}
-                    label="Total tickets"
+                    label="Tickets"
                     value={String(ticketCount)}
-                    helper="Includes closed"
+                    helper="Total"
                   />
                 </div>
 
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTimelineOpen(true);
+                  }}
+                  className={cn(
+                    "group mt-3 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
+                    timelineOpen
+                      ? "border-[#008f68] bg-[#e8faf0] ring-2 ring-[#008f68]/20 dark:bg-emerald-950/50"
+                      : "border-[#008f68]/25 bg-[#f0faf5]/60 hover:border-[#008f68]/45 hover:bg-[#e8faf0] dark:border-emerald-800/50 dark:bg-emerald-950/30",
+                  )}
+                >
+                  <History className="h-4 w-4 shrink-0 text-[#008f68]" strokeWidth={2} />
+                  <span className="min-w-0 flex-1 text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+                    Activity timeline
+                  </span>
+                  <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#008f68] ring-1 ring-[#008f68]/20 dark:bg-slate-900">
+                    {callCount + ticketCount}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-[#008f68]" />
+                </button>
               </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <div className="space-y-4 px-4 py-4 pb-8 sm:px-5">
+              <div className="space-y-3 px-4 py-3 pb-8 sm:px-5">
+                <div>
+                  <SectionLabel>Customer details</SectionLabel>
+                  <DetailsCard>
+                    <DetailsRow icon={Phone} label="Phone">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-mono text-[13px] font-semibold text-slate-900 dark:text-slate-50">
+                          {data.phone || "—"}
+                        </p>
+                        {hasText(data.phone) ? (
+                          <button
+                            type="button"
+                            onClick={copyPhone}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700"
+                            aria-label="Copy phone"
+                          >
+                            {copied ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        ) : null}
+                      </div>
+                    </DetailsRow>
+                    {customerYards.length > 0 ? (
+                      <DetailsRow
+                        icon={Building2}
+                        label="Yards"
+                        iconClassName="text-orange-600"
+                      >
+                        <div className="flex flex-wrap gap-1">
+                          {customerYards.map((yard) => (
+                            <span
+                              key={yard.id}
+                              className="inline-flex max-w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-[#008f68] dark:border-slate-700 dark:bg-slate-900"
+                              title={yard.name}
+                            >
+                              <span className="truncate">{yard.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </DetailsRow>
+                    ) : null}
+                    {data.campaigns && data.campaigns.length > 0 ? (
+                      <DetailsRow icon={Megaphone} label="Campaigns">
+                        <div className="flex flex-wrap gap-1">
+                          {data.campaigns.map((camp) => (
+                            <span
+                              key={camp.id}
+                              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                              {camp.nombre}
+                            </span>
+                          ))}
+                        </div>
+                      </DetailsRow>
+                    ) : null}
+                  </DetailsCard>
+                </div>
+
                 <CustomerPinnedNotes
                   customer={data}
                   canEditPinned={!isAgent}
@@ -312,98 +487,6 @@ export function CustomerSheet({
                     setTimelineRefreshKey((value) => value + 1)
                   }
                 />
-
-                <button
-                  type="button"
-                  onClick={() => setTimelineOpen(true)}
-                  className="group flex w-full items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5 text-left transition-colors hover:border-[#008f68]/40 hover:bg-[#f0faf5]/80 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-emerald-800"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#008f68]/10 text-[#008f68]">
-                    <History className="h-4 w-4" strokeWidth={2} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-slate-900 dark:text-white">
-                      Activity timeline
-                    </span>
-                    <span className="block text-[11px] text-slate-500">
-                      Calls, tickets & notes
-                    </span>
-                  </span>
-                  <span className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-700">
-                    {callCount + ticketCount}
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-[#008f68]" />
-                </button>
-
-                <div>
-                  <SectionLabel>Contact</SectionLabel>
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="flex gap-3 px-4 py-3.5">
-                      <Phone className="mt-0.5 h-4 w-4 text-slate-400" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold uppercase text-slate-400">
-                          Phone
-                        </p>
-                        <p className="font-mono text-[13px] font-medium">
-                          {data.phone || "—"}
-                        </p>
-                      </div>
-                      {hasText(data.phone) ? (
-                        <button
-                          type="button"
-                          onClick={copyPhone}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-                          aria-label="Copy phone"
-                        >
-                          {copied ? (
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                      ) : null}
-                    </div>
-                    {customerYards.length > 0 ? (
-                      <div className="flex gap-3 px-4 py-3.5">
-                        <Building2 className="mt-0.5 h-4 w-4 text-orange-600" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-semibold uppercase text-slate-400">
-                            Yards
-                          </p>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {customerYards.map((yard) => (
-                              <span
-                                key={yard.id}
-                                className="inline-flex max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-[#008f68]"
-                                title={yard.name}
-                              >
-                                <span className="truncate">{yard.name}</span>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                {data.campaigns && data.campaigns.length > 0 ? (
-                  <div>
-                    <SectionLabel>Campaigns</SectionLabel>
-                    <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                      {data.campaigns.map((camp) => (
-                        <span
-                          key={camp.id}
-                          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] font-medium text-slate-700"
-                        >
-                          <Megaphone className="h-3 w-3 text-slate-400" />
-                          {camp.nombre}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
               </div>
             </div>
 
@@ -472,19 +555,10 @@ export function CustomerSheet({
               </div>
             </div>
 
-            <CustomerTimelinePopup
-              open={timelineOpen}
-              onOpenChange={setTimelineOpen}
-              customerId={data.id}
-              customerName={data.name}
-              eventHint={callCount + ticketCount}
-              canPlayRecordings={canPlayRecordings}
-              refreshKey={timelineRefreshKey}
-              onNavigate={() => onOpenChange(false)}
-            />
             </div>
           </>
         )}
+        </div>
       </SheetContent>
     </Sheet>
   );

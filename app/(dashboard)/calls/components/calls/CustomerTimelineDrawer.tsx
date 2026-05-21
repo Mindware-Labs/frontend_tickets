@@ -37,6 +37,7 @@ import {
   Clock,
   Hash,
   ArrowDownLeft,
+  ArrowLeft,
   Mic,
   Phone,
   Timer,
@@ -100,6 +101,9 @@ export interface CustomerCallGroup {
 interface CustomerTimelineDrawerProps {
   open: boolean;
   onClose: () => void;
+  /** Descriptive label, e.g. "Back to Fredrick Allen timeline" */
+  returnToLabel?: string;
+  onBackToReturn?: () => void;
   group: CustomerCallGroup | null;
   selectedCall: Ticket | null;
   onSelectCall: (call: Ticket) => void;
@@ -409,6 +413,8 @@ function TimelineCard({
 export function CustomerTimelineDrawer({
   open,
   onClose,
+  returnToLabel,
+  onBackToReturn,
   group,
   selectedCall,
   onSelectCall,
@@ -1260,6 +1266,18 @@ export function CustomerTimelineDrawer({
 
           {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
           <div className="shrink-0 bg-white border-b border-slate-100">
+            {onBackToReturn && returnToLabel ? (
+              <div className="border-b border-[#008f68]/15 bg-[#f0faf5] px-4 py-2.5">
+                <button
+                  type="button"
+                  onClick={onBackToReturn}
+                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#008f68]/25 bg-white px-3 py-2 text-left text-[12px] font-semibold text-[#008f68] shadow-sm transition-colors hover:border-[#008f68]/45 hover:bg-[#e8faf0]"
+                >
+                  <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                  <span className="truncate">{returnToLabel}</span>
+                </button>
+              </div>
+            ) : null}
             {/* Row 1: avatar · name+phone · note-trigger · call-count · actions */}
             <div className="flex items-center gap-3 px-4 py-3">
               {/* 1. Avatar */}

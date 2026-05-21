@@ -16,8 +16,6 @@ import {
 } from "../utils/notes";
 import { CustomerNotesList } from "./CustomerNotesList";
 
-type NotesTab = "pinned" | "trail";
-
 interface CustomerPinnedNotesProps {
   customer: Customer;
   canEditPinned: boolean;
@@ -33,16 +31,16 @@ export function CustomerPinnedNotes({
   onCustomerChange,
   onNotesMutated,
 }: CustomerPinnedNotesProps) {
-  const [tab, setTab] = useState<NotesTab>("pinned");
   const [editingPinned, setEditingPinned] = useState(false);
   const [pinnedDraft, setPinnedDraft] = useState("");
   const [savingPinned, setSavingPinned] = useState(false);
   const [notes, setNotes] = useState<CustomerNote[]>(customer.notes ?? []);
   const [notesLoading, setNotesLoading] = useState(false);
-  const [trailOpen, setTrailOpen] = useState(true);
+  const [trailOpen, setTrailOpen] = useState(false);
 
   const { pinned, audit } = useMemo(() => splitCustomerNotes(notes), [notes]);
   const hasPinned = Boolean(pinned?.content?.trim());
+  const pinnedMeta = formatNoteMeta(pinned);
 
   const loadNotes = useCallback(async () => {
     setNotesLoading(true);
@@ -98,165 +96,139 @@ export function CustomerPinnedNotes({
     onCustomerChange(mergeCustomerNotes(customer, next));
   };
 
-  const pinnedMeta = formatNoteMeta(pinned);
-
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400">
-            <Pin className="h-3.5 w-3.5" strokeWidth={2.25} />
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-50">
-              Client notes
-            </h3>
-            <p className="text-[11px] text-slate-500">Pinned + audit trail</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-900">
-          <button
-            type="button"
-            onClick={() => setTab("pinned")}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
-              tab === "pinned"
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                : "text-slate-500 hover:text-slate-700",
-            )}
-          >
-            Pinned
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("trail")}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
-              tab === "trail"
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                : "text-slate-500 hover:text-slate-700",
-            )}
-          >
-            Trail {notesLoading ? "…" : audit.length}
-          </button>
-        </div>
+      <div className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+          Notes
+        </p>
       </div>
 
-      <div className="p-3">
-        {tab === "pinned" ? (
-          <div className="space-y-2">
-            {editingPinned && canEditPinned ? (
-              <>
-                <Textarea
-                  value={pinnedDraft}
-                  onChange={(e) => setPinnedDraft(e.target.value)}
-                  rows={3}
-                  placeholder="VIP, payment plan, callback window…"
-                  className="min-h-0 resize-none border-slate-200 text-[13px] focus-visible:ring-amber-400/30"
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setPinnedDraft(pinned?.content ?? "");
-                      setEditingPinned(false);
-                    }
-                  }}
-                />
-                <div className="flex justify-end gap-1.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => {
-                      setPinnedDraft(pinned?.content ?? "");
-                      setEditingPinned(false);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={savingPinned}
-                    onClick={savePinned}
-                    className="h-7 bg-[#008f68] px-3 text-xs text-white hover:bg-[#007a5a]"
-                  >
-                    {savingPinned ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      "Save"
-                    )}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div
-                className={cn(
-                  "rounded-lg px-2.5 py-2 text-[13px] leading-snug",
-                  hasPinned
-                    ? "bg-amber-50/80 text-slate-800 ring-1 ring-amber-200/60 dark:bg-amber-950/30 dark:text-amber-50 dark:ring-amber-900/50"
-                    : "bg-slate-50 text-slate-500 ring-1 ring-dashed ring-slate-200 dark:bg-slate-900/50 dark:ring-slate-700",
-                )}
-              >
-                {hasPinned ? (
-                  <p className="line-clamp-4 whitespace-pre-wrap break-words">
-                    {pinned?.content}
-                  </p>
-                ) : (
-                  <p className="text-[12px] italic">No pinned note for this number.</p>
-                )}
-              </div>
-            )}
-            {!editingPinned && pinnedMeta ? (
-              <p className="text-[10px] font-medium text-slate-400">{pinnedMeta}</p>
-            ) : null}
-            {canEditPinned && !editingPinned ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setPinnedDraft(pinned?.content ?? "");
-                  setEditingPinned(true);
-                }}
-                className="text-[11px] font-semibold text-[#008f68] hover:underline"
-              >
-                {hasPinned ? "Edit pinned note" : "Add pinned note"}
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <div>
+      {/* Pinned — always visible */}
+      <div className="border-b border-amber-100/80 bg-amber-50/40 px-3 py-2.5 dark:border-amber-900/30 dark:bg-amber-950/20">
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+            <Pin className="h-3 w-3" />
+            Pinned
+          </span>
+          {canEditPinned && !editingPinned ? (
             <button
               type="button"
-              onClick={() => setTrailOpen((v) => !v)}
-              className="mb-2 flex w-full items-center justify-between text-[11px] font-medium text-slate-500"
+              onClick={() => {
+                setPinnedDraft(pinned?.content ?? "");
+                setEditingPinned(true);
+              }}
+              className="text-[11px] font-semibold text-[#008f68] hover:underline"
             >
-              <span className="inline-flex items-center gap-1">
-                <StickyNote className="h-3 w-3" />
-                Audit entries
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform",
-                  trailOpen && "rotate-180",
-                )}
-              />
+              {hasPinned ? "Edit" : "Add"}
             </button>
-            {trailOpen ? (
-              <CustomerNotesList
-                customerId={customer.id}
-                notes={audit}
-                canEdit={canManageNotes}
-                variant="sheet"
-                compact
-                loading={notesLoading}
-                onNotesChange={handleAuditChange}
-                onNotesMutated={() => {
-                  loadNotes();
-                  onNotesMutated?.();
+          ) : null}
+        </div>
+
+        {editingPinned && canEditPinned ? (
+          <div className="mt-2 space-y-2">
+            <Textarea
+              value={pinnedDraft}
+              onChange={(e) => setPinnedDraft(e.target.value)}
+              rows={2}
+              placeholder="VIP, payment plan, callback…"
+              className="min-h-0 resize-none border-amber-200/80 bg-white text-[13px] focus-visible:ring-amber-400/30 dark:border-amber-900 dark:bg-slate-900"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setPinnedDraft(pinned?.content ?? "");
+                  setEditingPinned(false);
+                }
+              }}
+            />
+            <div className="flex justify-end gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => {
+                  setPinnedDraft(pinned?.content ?? "");
+                  setEditingPinned(false);
                 }}
-              />
-            ) : null}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={savingPinned}
+                onClick={savePinned}
+                className="h-7 bg-[#008f68] px-3 text-xs text-white hover:bg-[#007a5a]"
+              >
+                {savingPinned ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </div>
           </div>
+        ) : (
+          <>
+            <p
+              className={cn(
+                "mt-1.5 text-[13px] leading-snug",
+                hasPinned
+                  ? "font-medium text-slate-800 dark:text-slate-100"
+                  : "italic text-slate-500",
+              )}
+            >
+              {hasPinned
+                ? pinned?.content
+                : "No pinned note — visible to all agents on this number."}
+            </p>
+            {pinnedMeta ? (
+              <p className="mt-1 text-[10px] tabular-nums text-amber-800/70 dark:text-amber-400/80">
+                {pinnedMeta}
+              </p>
+            ) : null}
+          </>
         )}
+      </div>
+
+      {/* Audit trail — collapsible */}
+      <div className="px-3 py-2">
+        <button
+          type="button"
+          onClick={() => setTrailOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+        >
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+            <StickyNote className="h-3.5 w-3.5 text-slate-400" />
+            Audit trail
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800">
+              {notesLoading ? "…" : audit.length}
+            </span>
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+              trailOpen && "rotate-180",
+            )}
+          />
+        </button>
+        {trailOpen ? (
+          <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+            <CustomerNotesList
+              customerId={customer.id}
+              notes={audit}
+              canEdit={canManageNotes}
+              variant="sheet"
+              compact
+              loading={notesLoading}
+              onNotesChange={handleAuditChange}
+              onNotesMutated={() => {
+                loadNotes();
+                onNotesMutated?.();
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     </section>
   );

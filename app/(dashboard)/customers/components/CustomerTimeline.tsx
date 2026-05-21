@@ -17,7 +17,6 @@ import {
   PhoneIncoming,
   PhoneMissed,
   PhoneOutgoing,
-  Play,
   RefreshCw,
   StickyNote,
   Ticket,
@@ -34,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CallRecordingPlayer } from "@/app/(dashboard)/calls/components/calls/CallRecordingPlayer";
 import { fetchFromBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type {
@@ -68,9 +68,13 @@ interface CustomerTimelineProps {
   customerId: number;
   canPlayRecordings: boolean;
   refreshKey?: number;
-  /** Tighter layout for sheet popup */
+  /** Tighter layout for inline panels */
   compact?: boolean;
+  /** Wide left sheet — cards, inline recording player */
+  expanded?: boolean;
   onNavigate?: () => void;
+  onViewCall?: (callId: number) => void;
+  onViewTicket?: (ticketId: number) => void;
 }
 
 function normalizeArray<T>(data: unknown): T[] {
@@ -190,8 +194,12 @@ export function CustomerTimeline({
   canPlayRecordings,
   refreshKey = 0,
   compact = false,
+  expanded = false,
   onNavigate,
+  onViewCall,
+  onViewTicket,
 }: CustomerTimelineProps) {
+  const isCompact = compact && !expanded;
   const router = useRouter();
   const [filters, setFilters] = useState<TimelineFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -282,6 +290,22 @@ export function CustomerTimeline({
     router.push(href);
   };
 
+  const openCall = (callId: number) => {
+    if (onViewCall) {
+      onViewCall(callId);
+      return;
+    }
+    navigateTo(`/calls?id=${callId}`);
+  };
+
+  const openTicket = (ticketId: number) => {
+    if (onViewTicket) {
+      onViewTicket(ticketId);
+      return;
+    }
+    navigateTo(`/calls?tab=tickets&id=${ticketId}`);
+  };
+
   const activeFilters = useMemo(() => hasActiveFilters(filters), [filters]);
 
   const lastEventAgo = useMemo(() => {
@@ -293,14 +317,23 @@ export function CustomerTimeline({
   }, [entries]);
 
   return (
-    <div className={cn(compact ? "px-3 py-3" : "px-4 py-4 sm:px-5 sm:py-5")}>
+    <div
+      className={cn(
+        expanded ? "px-5 py-5" : isCompact ? "px-3 py-3" : "px-4 py-4 sm:px-5 sm:py-5",
+      )}
+    >
       <div
         className={cn(
           "flex items-center justify-between gap-2",
-          compact ? "mb-2" : "mb-3",
+          expanded ? "mb-4" : isCompact ? "mb-2" : "mb-3",
         )}
       >
-        <div className="min-w-0 text-[11px] text-slate-500">
+        <div
+          className={cn(
+            "min-w-0 text-slate-500",
+            expanded ? "text-[13px]" : "text-[11px]",
+          )}
+        >
           <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
             {loading && entries.length === 0 ? "…" : total}
           </span>{" "}
@@ -314,16 +347,22 @@ export function CustomerTimeline({
           onClick={() => loadTimeline()}
           disabled={loading}
           aria-label="Refresh timeline"
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+          className={cn(
+            "flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800",
+            expanded ? "h-9 w-9" : "h-7 w-7",
+          )}
         >
           <RefreshCw
-            className={cn("h-3.5 w-3.5", loading && "animate-spin")}
+            className={cn(
+              expanded ? "h-4 w-4" : "h-3.5 w-3.5",
+              loading && "animate-spin",
+            )}
           />
         </button>
       </div>
 
-      <div className={cn("space-y-2", compact ? "mb-3" : "mb-4")}>
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className={cn("space-y-2", expanded ? "mb-5" : isCompact ? "mb-3" : "mb-4")}>
+        <div className="flex flex-wrap items-center gap-2">
           {TYPE_CHIPS.map((chip) => (
             <button
               key={chip.value}
@@ -331,7 +370,8 @@ export function CustomerTimeline({
               disabled={chip.disabled}
               onClick={() => !chip.disabled && updateFilter("type", chip.value)}
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors",
+                "rounded-full font-semibold transition-colors",
+                expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
                 chip.disabled && "cursor-not-allowed opacity-40",
                 filters.type === chip.value
                   ? "bg-[#008f68] text-white"
@@ -346,7 +386,10 @@ export function CustomerTimeline({
             onClick={() =>
               updateFilter("sort", filters.sort === "desc" ? "asc" : "desc")
             }
-            className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900"
+            className={cn(
+              "rounded-full border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
+              expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
+            )}
           >
             {filters.sort === "desc" ? "Newest" : "Oldest"}
           </button>
@@ -354,8 +397,9 @@ export function CustomerTimeline({
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
             className={cn(
-              "ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
-              !compact && "lg:hidden",
+              "ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900",
+              expanded ? "px-3 py-1.5 text-xs" : "px-2 py-0.5 text-[10px]",
+              !expanded && !isCompact && "lg:hidden",
             )}
           >
             <Filter className="h-3 w-3" />
@@ -375,14 +419,8 @@ export function CustomerTimeline({
         <div
           className={cn(
             "grid gap-2 sm:grid-cols-2",
-            compact ? "grid-cols-2" : "lg:grid-cols-4",
-            compact
-              ? filtersOpen
-                ? "grid"
-                : "hidden"
-              : filtersOpen
-                ? "grid"
-                : "hidden lg:grid",
+            expanded ? "grid-cols-2 lg:grid-cols-4" : isCompact ? "grid-cols-2" : "lg:grid-cols-4",
+            expanded || filtersOpen ? "grid" : "hidden lg:grid",
           )}
         >
           <Input
@@ -390,20 +428,20 @@ export function CustomerTimeline({
             value={filters.from}
             aria-label="From date"
             onChange={(e) => updateFilter("from", e.target.value)}
-            className="h-8 text-xs"
+            className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}
           />
           <Input
             type="date"
             value={filters.to}
             aria-label="To date"
             onChange={(e) => updateFilter("to", e.target.value)}
-            className="h-8 text-xs"
+            className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}
           />
           <Select
             value={filters.lineId}
             onValueChange={(value) => updateFilter("lineId", value)}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}>
               <SelectValue placeholder="Line" />
             </SelectTrigger>
             <SelectContent>
@@ -419,7 +457,7 @@ export function CustomerTimeline({
             value={filters.agentId}
             onValueChange={(value) => updateFilter("agentId", value)}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className={cn(expanded ? "h-9 text-sm" : "h-8 text-xs")}>
               <SelectValue placeholder="Agent" />
             </SelectTrigger>
             <SelectContent>
@@ -473,125 +511,209 @@ export function CustomerTimeline({
       ) : entries.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-500">No activity found.</p>
       ) : (
-        <div className="relative">
-          <div
+        <div className={cn(!expanded && "relative")}>
+          {!expanded ? (
+            <div
+              className={cn(
+                "absolute top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700",
+                isCompact ? "left-[5px]" : "left-[9px]",
+              )}
+            />
+          ) : null}
+          <ol
             className={cn(
-              "absolute top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700",
-              compact ? "left-[5px]" : "left-[9px]",
+              expanded ? "space-y-4" : isCompact ? "space-y-3" : "space-y-4",
             )}
-          />
-          <ol className={compact ? "space-y-3" : "space-y-4"}>
+          >
             {entries.map((entry) => {
               const dateLabel = formatShortDate(entry.occurredAt);
               const duration = formatDuration(entry.duration);
               const agentName = entry.agentName || entry.assignedAgentName;
+              const entryShell = expanded
+                ? "rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40"
+                : cn("relative", isCompact ? "pl-5" : "pl-7");
 
               if (entry.type === "call") {
                 const meta = callMeta(entry);
                 const Icon = meta.Icon;
+                const hasRecording =
+                  Boolean(entry.recordingUrl && entry.callId) &&
+                  canPlayRecordings;
+
                 return (
-                  <li
-                    key={entry.id}
-                    className={cn("relative", compact ? "pl-5" : "pl-7")}
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
-                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
-                        meta.ring,
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
-                          meta.color,
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span className="text-[11px] font-normal tabular-nums text-slate-500">
-                        {dateLabel}
-                      </span>
-                      <span
-                        className={cn(
-                          compact ? "text-xs" : "text-sm",
-                          "font-semibold",
-                          meta.color,
-                        )}
-                      >
-                        {meta.label}
-                      </span>
-                      {entry.disposition ? (
-                        <>
-                          <span className="select-none text-gray-300">·</span>
-                          <span className="text-xs text-slate-600">
-                            {formatLabel(entry.disposition)}
-                          </span>
-                        </>
-                      ) : null}
-                      {duration ? (
-                        <span className="text-xs tabular-nums text-gray-400">
-                          {duration}
+                  <li key={entry.id} className={entryShell}>
+                    {expanded ? (
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 bg-white dark:bg-slate-950",
+                            meta.ring,
+                          )}
+                        >
+                          <Icon className={cn("h-5 w-5", meta.color)} />
                         </span>
-                      ) : null}
-                      {agentName ? (
-                        <>
-                          <span className="select-none text-gray-300">·</span>
-                          <span className="text-xs text-gray-700 dark:text-slate-300">
-                            {agentName}
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
+                              {dateLabel}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-[15px] font-bold",
+                                meta.color,
+                              )}
+                            >
+                              {meta.label}
+                            </span>
+                            {duration ? (
+                              <span className="rounded-md bg-slate-200/80 px-2 py-0.5 font-mono text-[12px] font-semibold text-slate-600 dark:bg-slate-800">
+                                {duration}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap gap-x-2 gap-y-1 text-[13px] text-slate-600 dark:text-slate-300">
+                            {entry.disposition ? (
+                              <span>{formatLabel(entry.disposition)}</span>
+                            ) : null}
+                            {agentName ? <span>{agentName}</span> : null}
+                            {entry.phoneLineLabel ? (
+                              <span className="text-slate-500">
+                                {entry.phoneLineLabel}
+                              </span>
+                            ) : null}
+                          </div>
+                          {entry.yardName ? (
+                            <p className="text-[12px] font-semibold text-orange-600">
+                              {entry.yardName}
+                            </p>
+                          ) : null}
+                          {hasRecording ? (
+                            <div className="rounded-lg border border-slate-200/80 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+                              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                Recording
+                              </p>
+                              <CallRecordingPlayer
+                                callId={entry.callId!}
+                                className="h-10 w-full"
+                              />
+                            </div>
+                          ) : null}
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            {entry.callId ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openCall(entry.callId!)
+                                }
+                                className="text-[13px] font-semibold text-[#008f68] hover:underline"
+                              >
+                                View call
+                              </button>
+                            ) : null}
+                            {entry.callId && !entry.hasTicket ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openCall(entry.callId!)
+                                }
+                                className="text-[13px] font-semibold text-slate-500 hover:underline"
+                              >
+                                Create ticket
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <span
+                          className={cn(
+                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                            isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                            meta.ring,
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              isCompact ? "h-2 w-2" : "h-2.5 w-2.5",
+                              meta.color,
+                            )}
+                          />
+                        </span>
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <span className="text-[11px] font-normal tabular-nums text-slate-500">
+                            {dateLabel}
                           </span>
-                        </>
-                      ) : null}
-                      {entry.phoneLineLabel ? (
-                        <>
-                          <span className="select-none text-gray-300">·</span>
-                          <span className="text-xs text-slate-500">
-                            {entry.phoneLineLabel}
+                          <span
+                            className={cn(
+                              isCompact ? "text-xs" : "text-sm",
+                              "font-semibold",
+                              meta.color,
+                            )}
+                          >
+                            {meta.label}
                           </span>
-                        </>
-                      ) : null}
-                    </div>
-                    {entry.yardName ? (
-                      <p className="mt-0.5 text-[11px] font-medium text-orange-600/90">
-                        {entry.yardName}
-                      </p>
-                    ) : null}
-                    <div className="mt-1.5 flex flex-wrap gap-2">
-                      {entry.callId ? (
-                        <button
-                          type="button"
-                          onClick={() => navigateTo(`/calls?id=${entry.callId}`)}
-                          className="text-xs font-semibold text-[#008f68] hover:underline"
-                        >
-                          View call
-                        </button>
-                      ) : null}
-                      {entry.callId && !entry.hasTicket ? (
-                        <button
-                          type="button"
-                          onClick={() => navigateTo(`/calls?id=${entry.callId}`)}
-                          className="text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline dark:hover:text-slate-200"
-                        >
-                          Create ticket
-                        </button>
-                      ) : null}
-                      {entry.recordingUrl && entry.callId && canPlayRecordings ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            window.open(
-                              `/api/calls/${entry.callId}/recording`,
-                              "_blank",
-                              "noopener,noreferrer",
-                            )
-                          }
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:underline"
-                        >
-                          <Play className="h-3 w-3" />
-                          Recording
-                        </button>
-                      ) : null}
-                    </div>
+                          {entry.disposition ? (
+                            <>
+                              <span className="select-none text-gray-300">·</span>
+                              <span className="text-xs text-slate-600">
+                                {formatLabel(entry.disposition)}
+                              </span>
+                            </>
+                          ) : null}
+                          {duration ? (
+                            <span className="text-xs tabular-nums text-gray-400">
+                              {duration}
+                            </span>
+                          ) : null}
+                          {agentName ? (
+                            <>
+                              <span className="select-none text-gray-300">·</span>
+                              <span className="text-xs text-gray-700 dark:text-slate-300">
+                                {agentName}
+                              </span>
+                            </>
+                          ) : null}
+                          {entry.phoneLineLabel ? (
+                            <>
+                              <span className="select-none text-gray-300">·</span>
+                              <span className="text-xs text-slate-500">
+                                {entry.phoneLineLabel}
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                        {entry.yardName ? (
+                          <p className="mt-0.5 text-[11px] font-medium text-orange-600/90">
+                            {entry.yardName}
+                          </p>
+                        ) : null}
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {entry.callId ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openCall(entry.callId!)
+                              }
+                              className="text-xs font-semibold text-[#008f68] hover:underline"
+                            >
+                              View call
+                            </button>
+                          ) : null}
+                          {entry.callId && !entry.hasTicket ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openCall(entry.callId!)
+                              }
+                              className="text-xs font-semibold text-slate-500 hover:underline"
+                            >
+                              Create ticket
+                            </button>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
                   </li>
                 );
               }
@@ -599,21 +721,86 @@ export function CustomerTimeline({
               if (entry.type === "ticket") {
                 const ring = ticketStatusRing(entry.ticketStatus);
                 return (
-                  <li
-                    key={entry.id}
-                    className={cn("relative", compact ? "pl-5" : "pl-7")}
-                  >
+                  <li key={entry.id} className={entryShell}>
+                    {expanded ? (
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 bg-white dark:bg-slate-950",
+                            ring,
+                          )}
+                        >
+                          <Ticket className="h-5 w-5 text-blue-600" />
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
+                              {dateLabel}
+                            </span>
+                            {entry.ticketId ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openTicket(entry.ticketId!)
+                                }
+                                className="font-mono text-[15px] font-bold text-[#008f68] hover:underline"
+                              >
+                                Ticket #{entry.ticketId}
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {entry.ticketStatus ? (
+                              <Badge
+                                variant="secondary"
+                                className={cn(
+                                  "h-6 px-2 text-xs",
+                                  ticketStatusBadge(entry.ticketStatus),
+                                )}
+                              >
+                                {formatLabel(entry.ticketStatus)}
+                              </Badge>
+                            ) : null}
+                            {entry.ticketPriority ? (
+                              <Badge
+                                variant="secondary"
+                                className={cn(
+                                  "h-6 px-2 text-xs",
+                                  ticketPriorityBadge(entry.ticketPriority),
+                                )}
+                              >
+                                {formatLabel(entry.ticketPriority)}
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <div className="space-y-1 text-[13px] text-slate-600 dark:text-slate-300">
+                            {entry.ticketType ? (
+                              <p>{formatLabel(entry.ticketType)}</p>
+                            ) : null}
+                            {agentName ? <p>Agent: {agentName}</p> : null}
+                            {[entry.phoneLineLabel, entry.yardName]
+                              .filter(Boolean)
+                              .map((line) => (
+                                <p key={line} className="text-slate-500">
+                                  {line}
+                                </p>
+                              ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
                     <span
                       className={cn(
                         "absolute left-0 top-1 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
-                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                        isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                         ring,
                       )}
                     >
                       <Ticket
                         className={cn(
                           "text-blue-600",
-                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                          isCompact ? "h-2 w-2" : "h-2.5 w-2.5",
                         )}
                       />
                     </span>
@@ -661,7 +848,7 @@ export function CustomerTimeline({
                         <button
                           type="button"
                           onClick={() =>
-                            navigateTo(`/calls?tab=tickets&id=${entry.ticketId}`)
+                            openTicket(entry.ticketId!)
                           }
                           className="text-xs font-semibold text-[#008f68] hover:underline"
                         >
@@ -681,26 +868,53 @@ export function CustomerTimeline({
                           .join(" · ")}
                       </p>
                     ) : null}
+                      </>
+                    )}
                   </li>
                 );
               }
 
               if (entry.type === "customer_note") {
                 return (
-                  <li
-                    key={entry.id}
-                    className={cn("relative", compact ? "pl-5" : "pl-7")}
-                  >
+                  <li key={entry.id} className={entryShell}>
+                    {expanded ? (
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40">
+                          <StickyNote className="h-5 w-5 text-amber-600" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[13px] font-semibold tabular-nums text-slate-500">
+                              {dateLabel}
+                            </span>
+                            <span className="text-[15px] font-bold text-amber-700 dark:text-amber-400">
+                              Audit note
+                            </span>
+                            {entry.noteAuthor ? (
+                              <span className="text-[13px] text-slate-600">
+                                {entry.noteAuthor}
+                              </span>
+                            ) : null}
+                          </div>
+                          {entry.noteContent ? (
+                            <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700 dark:text-slate-200">
+                              {entry.noteContent}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
                     <span
                       className={cn(
                         "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-slate-950",
-                        compact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                        isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                       )}
                     >
                       <StickyNote
                         className={cn(
                           "text-amber-600",
-                          compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                          isCompact ? "h-2 w-2" : "h-2.5 w-2.5",
                         )}
                       />
                     </span>
@@ -725,26 +939,46 @@ export function CustomerTimeline({
                         {entry.noteContent}
                       </p>
                     ) : null}
+                      </>
+                    )}
                   </li>
                 );
               }
 
               // SMS placeholder
               return (
-                <li
-                  key={entry.id}
-                  className={cn("relative", compact ? "pl-5" : "pl-7")}
-                >
+                <li key={entry.id} className={entryShell}>
+                  {expanded ? (
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-white dark:bg-slate-950">
+                        <MessageSquare className="h-5 w-5 text-violet-600" />
+                      </span>
+                      <div>
+                        <p className="text-[13px] text-slate-500">{dateLabel}</p>
+                        <p className="text-[15px] font-bold text-violet-700">
+                          {entry.smsDirection === "received"
+                            ? "SMS received"
+                            : "SMS sent"}
+                        </p>
+                        {entry.smsBody ? (
+                          <p className="mt-2 text-[14px] text-slate-600">
+                            {entry.smsBody}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                   <span
                     className={cn(
                       "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-500 bg-white dark:bg-slate-950",
-                      compact ? "h-3 w-3" : "h-[18px] w-[18px]",
+                      isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                     )}
                   >
                     <MessageSquare
                       className={cn(
                         "text-violet-600",
-                        compact ? "h-2 w-2" : "h-2.5 w-2.5",
+                        isCompact ? "h-2 w-2" : "h-2.5 w-2.5",
                       )}
                     />
                   </span>
@@ -761,6 +995,8 @@ export function CustomerTimeline({
                       {entry.smsBody}
                     </p>
                   ) : null}
+                    </>
+                  )}
                 </li>
               );
             })}
@@ -774,8 +1010,9 @@ export function CustomerTimeline({
           variant="outline"
           size="sm"
           className={cn(
-            "mt-3 h-7 w-full text-[11px]",
-            compact && "mt-2",
+            "w-full",
+            expanded ? "mt-4 h-10 text-sm" : "mt-3 h-7 text-[11px]",
+            isCompact && "mt-2",
           )}
           onClick={() => loadTimeline(nextCursor)}
           disabled={loadingMore}

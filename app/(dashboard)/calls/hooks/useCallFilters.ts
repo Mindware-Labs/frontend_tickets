@@ -91,11 +91,21 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     setActiveView(view);
   };
 
+  const focusCallId = searchParams.get("id");
+
+  // Deep link ?id= — list only that call in the table
+  useEffect(() => {
+    if (!focusCallId) return;
+    setSearch(focusCallId);
+    setActiveView("all");
+    setCurrentPage(1);
+  }, [focusCallId]);
+
   // Build SWR URL
   const ticketsApiUrl = useMemo(() => {
     const params = new URLSearchParams();
     const currentCustomerIdParam = searchParams.get("customerId");
-    const normalizedSearch = deferredSearch.trim();
+    const normalizedSearch = (focusCallId || deferredSearch).trim();
     const directionValue = directionFilter?.trim();
     const dateFrom = dateRange?.from ? startOfDay(dateRange.from) : null;
     const dateTo = dateRange?.from
@@ -107,7 +117,7 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     params.set("limit", String(Math.max(1, Math.min(itemsPerPage, 500))));
     params.set("includeTotal", "true");
     params.set("includeViewCounts", "true");
-    params.set("view", activeView);
+    params.set("view", focusCallId ? "all" : activeView);
     params.set("groupBy", "customer");
 
     if (normalizedSearch) params.set("search", normalizedSearch);
@@ -134,6 +144,7 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     return `/api/calls?${params.toString()}`;
   }, [
     searchParams,
+    focusCallId,
     deferredSearch,
     activeView,
     statusFilter,
@@ -212,5 +223,6 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     ticketsApiUrl,
     deferredSearch,
     searchParams,
+    focusCallId,
   };
 }

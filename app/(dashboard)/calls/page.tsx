@@ -569,38 +569,99 @@ export default function TicketsPage() {
   const processedTicketIdRef = useRef<string | null>(null);
   const ticketIdParam = searchParams.get("id");
   const customerIdParam = searchParams.get("customerId");
+  const returnToParam = searchParams.get("returnTo");
+
+  const safeReturnPath = useMemo(() => {
+    if (!returnToParam) return null;
+    try {
+      const decoded = decodeURIComponent(returnToParam);
+      if (decoded.startsWith("/customers") || decoded.startsWith("/calls")) {
+        return decoded;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [returnToParam]);
+
+  const returnBackLabel = useMemo(() => {
+    if (!safeReturnPath) return null;
+    try {
+      const url = new URL(safeReturnPath, "http://localhost");
+      if (url.searchParams.get("timeline") === "1") {
+        const customerId = url.searchParams.get("customerId");
+        const match = refData.customers.find(
+          (c) => String(c.id) === customerId,
+        );
+        if (match?.name?.trim()) {
+          return `Back to ${match.name.trim()} timeline`;
+        }
+        return "Back to customer timeline";
+      }
+      return "Back to customers";
+    } catch {
+      return "Back to previous page";
+    }
+  }, [safeReturnPath, refData.customers]);
+
+  const handleBackToReturn = () => {
+    if (!safeReturnPath) return;
+    setShowTimelineDrawer(false);
+    processedTicketIdRef.current = null;
+    router.push(safeReturnPath);
+  };
 
   useEffect(() => {
-    if (!tickets.length && !ticketIdParam) return;
-
+    const tab = searchParams.get("tab");
+    if (tab && ["calls", "tickets", "manual-records"].includes(tab)) {
+      setActiveTab(tab);
+    }
     if (ticketIdParam) {
-      if (processedTicketIdRef.current === ticketIdParam) return;
+      setActiveTab("calls");
+    }
+  }, [searchParams, ticketIdParam]);
 
-      const ticket = tickets.find(
+  useEffect(() => {
+    if (!ticketIdParam) {
+      processedTicketIdRef.current = null;
+      return;
+    }
+
+    if (processedTicketIdRef.current === ticketIdParam) return;
+
+    let cancelled = false;
+
+    const openFromUrl = async () => {
+      const fromList = tickets.find(
         (t: Call) => t.id.toString() === ticketIdParam,
       );
-      if (ticket) {
+      if (fromList) {
+        if (cancelled) return;
         processedTicketIdRef.current = ticketIdParam;
-        openTicketModal(ticket);
-      } else {
-        fetch(`/api/calls/${ticketIdParam}`)
-          .then(async (response) => {
-            if (!response.ok) throw new Error("Not found");
-            return response.json();
-          })
-          .then((ticketData) => {
-            const resolvedTicket = ticketData?.data ?? ticketData;
-            if (!resolvedTicket) return;
-            processedTicketIdRef.current = ticketIdParam;
-            openTicketModal(resolvedTicket);
-          })
-          .catch(() => {});
+        openTicketModal(fromList);
+        return;
       }
-    } else {
-      processedTicketIdRef.current = null;
-    }
+
+      try {
+        const response = await fetch(`/api/calls/${ticketIdParam}`);
+        if (!response.ok || cancelled) return;
+        const ticketData = await response.json();
+        const resolvedTicket = ticketData?.data ?? ticketData;
+        if (!resolvedTicket || cancelled) return;
+        processedTicketIdRef.current = ticketIdParam;
+        openTicketModal(resolvedTicket);
+      } catch {
+        // ignore — call may not exist or user lacks access
+      }
+    };
+
+    void openFromUrl();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketIdParam, customerIdParam, tickets.length]);
+  }, [ticketIdParam, tickets]);
 
   // ---- Helpers ----
   /** Build a minimal CustomerCallGroup from a single Call so the timeline drawer can open */
@@ -1087,6 +1148,7 @@ export default function TicketsPage() {
         <TabsContent value="calls" className="flex-1 flex flex-col gap-0 mt-0">
           <OverdueCallsBanner />
 
+          {!ticketIdParam ? (
           <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
             {[
               {
@@ -1144,10 +1206,12 @@ export default function TicketsPage() {
               );
             })}
           </div>
+          ) : null}
 
           <GroupedCallsTable
             tickets={tickets}
             isLoading={isLoading}
+            focusCallId={ticketIdParam}
             search={ticketFilters.search}
             onSearchChange={ticketFilters.setSearch}
             dateRange={ticketFilters.dateRange}
@@ -1243,6 +1307,10 @@ export default function TicketsPage() {
           <CustomerTimelineDrawer
             open={showTimelineDrawer}
             onClose={() => setShowTimelineDrawer(false)}
+            returnToLabel={returnBackLabel ?? undefined}
+            onBackToReturn={
+              safeReturnPath ? handleBackToReturn : undefined
+            }
             group={timelineGroup}
             activeFilters={ticketFilters.filters}
             selectedCall={selectedTicket}

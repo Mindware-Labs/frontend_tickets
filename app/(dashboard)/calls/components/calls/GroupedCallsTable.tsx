@@ -39,6 +39,7 @@ import {
   ChevronRight,
   Radio,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useLiveCalls } from "@/components/providers/CallSocketProvider";
 import { format } from "date-fns";
@@ -235,6 +236,8 @@ function DirectionChip({
 interface GroupedCallsTableProps {
   tickets: Call[];
   isLoading: boolean;
+  /** When set via ?id= deep link, table shows only this call */
+  focusCallId?: string | null;
   search: string;
   onSearchChange: (value: string) => void;
   dateRange: DateRange | undefined;
@@ -258,6 +261,7 @@ interface GroupedCallsTableProps {
 export function GroupedCallsTable({
   tickets,
   isLoading,
+  focusCallId,
   search,
   onSearchChange,
   dateRange,
@@ -285,6 +289,13 @@ export function GroupedCallsTable({
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
   const { liveCallIds } = useLiveCalls();
+  const scopedTickets = useMemo(() => {
+    if (!focusCallId?.trim()) return tickets;
+    return tickets.filter((t) => String(t.id) === focusCallId.trim());
+  }, [tickets, focusCallId]);
+
+  const isFocusMode = Boolean(focusCallId?.trim());
+
   // ── Client-side grouping ─────────────────────────────────────────────────────
   const groups = useMemo<CustomerCallGroup[]>(() => {
     const map = new Map<
@@ -299,7 +310,7 @@ export function GroupedCallsTable({
       }
     >();
 
-    for (const ticket of tickets) {
+    for (const ticket of scopedTickets) {
       const phone = getClientPhone(ticket);
       const name = getClientName(ticket);
       const cid =
@@ -342,7 +353,7 @@ export function GroupedCallsTable({
           a.latestCall.callDate || a.latestCall.createdAt || 0,
         ).getTime(),
     );
-  }, [tickets]);
+  }, [scopedTickets]);
 
   // ── Server-side pagination: tickets are already the current page ────────
   // Grouping happens on the current page of calls.
@@ -350,6 +361,13 @@ export function GroupedCallsTable({
 
   return (
     <div className="flex-1 flex flex-col gap-1">
+      {isFocusMode ? (
+        <div className="mt-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] px-3 py-2 text-[12px] text-slate-700">
+          Showing call{" "}
+          <span className="font-mono font-bold text-[#008f68]">#{focusCallId}</span>
+          {" "}only — clear search or use back in the call panel to see all calls.
+        </div>
+      ) : null}
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
         <div className="relative flex-1 max-w-[320px]">
@@ -358,14 +376,17 @@ export function GroupedCallsTable({
             placeholder="Search calls, numbers, or customers..."
             className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            readOnly={isFocusMode}
+            onChange={(e) => {
+              if (!isFocusMode) onSearchChange(e.target.value);
+            }}
           />
           <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
             /
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center gap-3", isFocusMode && "opacity-60 pointer-events-none")}>
           <Popover>
             <PopoverTrigger asChild>
               <Button

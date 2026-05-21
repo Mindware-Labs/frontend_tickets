@@ -57,6 +57,7 @@ export default function CustomersPage() {
   const canManage = !isAgent;
   const canDelete = role?.toString().toLowerCase() === "admin";
   const customerIdParam = searchParams?.get("customerId");
+  const openTimelineFromUrl = searchParams?.get("timeline") === "1";
   const deepLinkedCustomerId =
     customerIdParam && !Number.isNaN(Number(customerIdParam))
       ? Number(customerIdParam)
@@ -596,6 +597,7 @@ export default function CustomersPage() {
         open={showCustomerSheet}
         onOpenChange={handleCustomerSheetOpenChange}
         customer={selectedCustomer}
+        openTimelineFromUrl={openTimelineFromUrl}
         onEdit={canManage ? handleEdit : undefined}
         onDelete={canDelete ? handleDelete : undefined}
       />
