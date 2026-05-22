@@ -26,12 +26,12 @@ import {
   ManagementType,
   OnboardingOption,
   SupportTicketPriority,
-  SupportTicketStatus,
   SupportTicketType,
   type AgentOption,
   type CampaignOption,
   type YardOption,
 } from "../../types";
+import { TicketStatusToggle } from "./TicketStatusToggle";
 import type {
   TicketFilterKey,
   TicketFilters,
@@ -239,6 +239,7 @@ export function TicketFiltersBar({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
+          hideClose
           className="flex flex-col w-full sm:w-100 p-0 gap-0"
         >
           <SheetHeader className="flex flex-row items-center justify-between px-5 py-4 border-b shrink-0">
@@ -256,24 +257,13 @@ export function TicketFiltersBar({
 
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2">
                 <FilterLabel>Status</FilterLabel>
-                <Select
-                  value={draft.status}
-                  onValueChange={(value) => setDraftKey("status", value)}
-                >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {Object.values(SupportTicketStatus).map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {formatLabel(status)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TicketStatusToggle
+                  value={draft.status || "all"}
+                  onChange={(value) => setDraftKey("status", value)}
+                  includeAll
+                />
               </div>
 
               <div className="space-y-1.5">

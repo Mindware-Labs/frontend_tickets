@@ -60,6 +60,7 @@ import {
   type CreateSupportTicketFormData,
 } from "../../types";
 import { cn } from "@/lib/utils";
+import { TicketStatusToggle } from "./TicketStatusToggle";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 // ---------------------------------------------------------------------------
@@ -573,31 +574,20 @@ export function EditTicketModal({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Status */}
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Activity className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Status
                   </Label>
-                  <Select
+                  <TicketStatusToggle
                     value={form.status}
-                    onValueChange={(v) =>
+                    onChange={(v) =>
                       setForm((f) => ({
                         ...f,
                         status: v as SupportTicketStatus,
                       }))
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(SupportTicketStatus).map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {formatLabel(s)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
 
                 {/* Priority */}

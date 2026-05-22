@@ -15,9 +15,6 @@ import { SelectItem } from "@/components/ui/select";
 import {
   X,
   PhoneOutgoing,
-  PhoneIncoming,
-  PhoneMissed,
-  Phone,
   Loader2,
   StickyNote,
   Activity,
@@ -36,7 +33,6 @@ import {
   Download,
   AlertCircle,
   Clock,
-  ChevronDown,
 } from "lucide-react";
 import {
   SupportTicketStatus,
@@ -54,11 +50,19 @@ import {
   fmtDate,
   fmtRelative,
 } from "../../utils/call-helpers";
+import { TicketPropertiesCard } from "../tickets/TicketPropertiesCard";
+import { LogTicketUpdateForm } from "../tickets/LogTicketUpdateForm";
+import { TicketActivityTimeline } from "../tickets/TicketActivityTimeline";
+import type { TicketUpdateRecord } from "../../types";
 import {
   InspLabel,
   InspectorSelect,
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
+import { TicketStatusToggle } from "../tickets/TicketStatusToggle";
+import { CallPeekPanel } from "./CallPeekPanel";
+import { SourceCallPreviewTrigger } from "./SourceCallPreviewTrigger";
+import type { Ticket } from "@/lib/mock-data";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -114,32 +118,6 @@ const PRIORITY_PILL: Record<
     label: "Emergency",
   },
 };
-
-// ── Mock timeline entries ─────────────────────────────────────────────────────
-
-const MOCK_TIMELINE = [
-  {
-    id: 1,
-    icon: TicketIcon,
-    color: "#008f68",
-    title: "Ticket created",
-    time: "Auto-generated",
-  },
-  {
-    id: 2,
-    icon: StickyNote,
-    color: "#c47a00",
-    title: "Note added",
-    time: "by Agent",
-  },
-  {
-    id: 3,
-    icon: Activity,
-    color: "#7c3aed",
-    title: "Status updated",
-    time: "via form",
-  },
-];
 
 // ── Ticket Card (COL1) ────────────────────────────────────────────────────────
 
@@ -234,710 +212,6 @@ function TicketCard({
   );
 }
 
-// ── Props ──────────────────────────────────────────────────────────────────────
-
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 pt-1">
-      {children}
-    </p>
-  );
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-      {children}
-    </p>
-  );
-}
-
-function TicketPropertiesCard({
-  editFormData,
-  setEditFormData,
-  customers,
-  yards,
-  agents,
-  campaigns,
-  phoneLines,
-  campaignOptionValues,
-  followUpDateDisplay,
-  mainCustomerOpen,
-  setMainCustomerOpen,
-  mainCustomerSearch,
-  setMainCustomerSearch,
-  mainFilteredCustomers,
-  mainCalendarOpen,
-  setMainCalendarOpen,
-}: {
-  editFormData: CreateSupportTicketFormData;
-  setEditFormData: React.Dispatch<
-    React.SetStateAction<CreateSupportTicketFormData>
-  >;
-  customers: any[];
-  yards: any[];
-  agents: any[];
-  campaigns: any[];
-  phoneLines: { id: number; label: string | null; phoneNumber: string }[];
-  campaignOptionValues: string[];
-  followUpDateDisplay: string | null;
-  mainCustomerOpen: boolean;
-  setMainCustomerOpen: (open: boolean) => void;
-  mainCustomerSearch: string;
-  setMainCustomerSearch: (search: string) => void;
-  mainFilteredCustomers: any[];
-  mainCalendarOpen: boolean;
-  setMainCalendarOpen: (open: boolean) => void;
-}) {
-  const [timeHourInput, setTimeHourInput] = useState("12");
-  const [timeMinuteInput, setTimeMinuteInput] = useState("00");
-  const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
-
-  useEffect(() => {
-    if (editFormData.followUpDueDate) {
-      const d = new Date(editFormData.followUpDueDate);
-      const h24 = d.getHours();
-      const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
-      setTimeHourInput(String(h12).padStart(2, "0"));
-      setTimeMinuteInput(String(d.getMinutes()).padStart(2, "0"));
-      setTimePeriod(h24 < 12 ? "AM" : "PM");
-    } else {
-      setTimeHourInput("12");
-      setTimeMinuteInput("00");
-      setTimePeriod("AM");
-    }
-  }, [editFormData.followUpDueDate]);
-
-  return (
-    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-      <div className="flex items-center gap-2 px-5 pt-3 pb-3 border-b border-slate-50">
-        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-          <TicketIcon className="w-3 h-3 text-slate-500" />
-        </div>
-        <span className="text-[12px] font-bold text-slate-700">
-          Ticket Details &amp; Properties
-        </span>
-      </div>
-
-      <div className="p-6 space-y-6">
-        {/* SECTION 1: CAMPAIGN & LOCATION */}
-        <div>
-          <SectionHeading>Campaign &amp; Location</SectionHeading>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {/* Campaign */}
-            <div>
-              <FieldLabel>Campaign</FieldLabel>
-              <InspectorCombobox
-                value={editFormData.campaignId || ""}
-                onChange={(v) => {
-                  const camp = campaigns.find(
-                    (c: any) => c.id.toString() === v,
-                  );
-                  setEditFormData((f) => ({
-                    ...f,
-                    campaignId: v,
-                    ...(camp?.yardaId
-                      ? { yardId: camp.yardaId.toString() }
-                      : {}),
-                  }));
-                }}
-                placeholder="Campaign"
-                searchPlaceholder="Search campaign..."
-                noneLabel="None"
-                items={campaigns.map((c: any) => ({
-                  value: c.id.toString(),
-                  label: c.nombre,
-                }))}
-              />
-            </div>
-
-            {/* Yard */}
-            <div>
-              <FieldLabel>Yard</FieldLabel>
-              <InspectorCombobox
-                value={editFormData.yardId || ""}
-                onChange={(v) => setEditFormData((f) => ({ ...f, yardId: v }))}
-                placeholder="Yard"
-                searchPlaceholder="Search yard..."
-                noneLabel="None"
-                items={yards.map((y: any) => ({
-                  value: y.id.toString(),
-                  label: y.name,
-                }))}
-              />
-            </div>
-
-            {campaignOptionValues.length > 0 && (
-              <div className="col-span-2 animate-in fade-in slide-in-from-left-2">
-                <FieldLabel>Campaign Option</FieldLabel>
-                <InspectorSelect
-                  value={editFormData.campaignOption || ""}
-                  onChange={(v) =>
-                    setEditFormData((f) => ({
-                      ...f,
-                      campaignOption: v === "none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Option"
-                >
-                  <SelectItem value="none">None</SelectItem>
-                  {campaignOptionValues.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {formatEnumLabel(v)}
-                    </SelectItem>
-                  ))}
-                </InspectorSelect>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* SECTION 2: CUSTOMER INFORMATION */}
-        <div>
-          <SectionHeading>Customer Information</SectionHeading>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {/* Customer */}
-            <div>
-              <FieldLabel>
-                Customer <span className="text-red-400 normal-case">*</span>
-              </FieldLabel>
-              <Popover
-                open={mainCustomerOpen}
-                onOpenChange={(isOpen) => {
-                  setMainCustomerOpen(isOpen);
-                  if (!isOpen) setMainCustomerSearch("");
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full h-8 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 rounded-lg transition-colors text-left"
-                  >
-                    <span className="truncate text-slate-800 font-medium">
-                      {editFormData.customerId
-                        ? customers.find(
-                            (c: any) =>
-                              c.id.toString() === editFormData.customerId,
-                          )?.name || editFormData.customerId
-                        : "Select customer..."}
-                    </span>
-                    <ChevronsUpDown className="w-3 h-3 text-slate-400 shrink-0" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-0" align="start">
-                  <div className="flex flex-col">
-                    <div className="px-3 py-2 border-b">
-                      <Input
-                        placeholder="Search customer..."
-                        value={mainCustomerSearch}
-                        onChange={(e) => setMainCustomerSearch(e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                    <div className="max-h-52 overflow-y-auto p-1">
-                      {mainFilteredCustomers.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400">
-                          No customer found.
-                        </div>
-                      ) : (
-                        mainFilteredCustomers.map((c: any) => (
-                          <div
-                            key={c.id}
-                            className={cn(
-                              "flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-slate-100",
-                              editFormData.customerId === c.id.toString() &&
-                                "bg-slate-100",
-                            )}
-                            onClick={() => {
-                              setEditFormData((f) => ({
-                                ...f,
-                                customerId: c.id.toString(),
-                              }));
-                              setMainCustomerSearch("");
-                              setMainCustomerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "w-3.5 h-3.5 shrink-0",
-                                editFormData.customerId === c.id.toString()
-                                  ? "opacity-100 text-[#008f68]"
-                                  : "opacity-0",
-                              )}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{c.name}</p>
-                              {c.phone && (
-                                <p className="text-slate-400 truncate">
-                                  {c.phone}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Phone Line */}
-            <div>
-              <FieldLabel>Phone Line</FieldLabel>
-              <InspectorSelect
-                value={editFormData.phoneLineId || ""}
-                onChange={(v) =>
-                  setEditFormData((f) => ({
-                    ...f,
-                    phoneLineId: v === "none" ? "" : v,
-                  }))
-                }
-                placeholder="Select line"
-              >
-                <SelectItem value="none">None</SelectItem>
-                {phoneLines.map((pl) => (
-                  <SelectItem key={pl.id} value={pl.id.toString()}>
-                    {pl.label
-                      ? `${pl.label} (${pl.phoneNumber})`
-                      : pl.phoneNumber}
-                  </SelectItem>
-                ))}
-              </InspectorSelect>
-            </div>
-
-            {/* Assign Agent — spans full row */}
-            <div className="col-span-2">
-              <FieldLabel>Assign Agent</FieldLabel>
-              <InspectorCombobox
-                value={editFormData.agentId || ""}
-                onChange={(v) => setEditFormData((f) => ({ ...f, agentId: v }))}
-                placeholder="Unassigned"
-                searchPlaceholder="Search agent..."
-                noneLabel="Unassigned"
-                items={agents.map((a: any) => ({
-                  value: a.id.toString(),
-                  label: a.name,
-                }))}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 3: TICKET STATUS & CLASSIFICATION */}
-        <div>
-          <SectionHeading>Status &amp; Classification</SectionHeading>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {/* Status */}
-            <div>
-              <FieldLabel>Status</FieldLabel>
-              <InspectorSelect
-                value={editFormData.status || ""}
-                onChange={(v) =>
-                  setEditFormData((f) => ({
-                    ...f,
-                    status: v as SupportTicketStatus,
-                  }))
-                }
-                placeholder="Status"
-              >
-                {Object.values(SupportTicketStatus).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {formatEnumLabel(s)}
-                  </SelectItem>
-                ))}
-              </InspectorSelect>
-            </div>
-
-            {/* Priority */}
-            <div>
-              <FieldLabel>Priority</FieldLabel>
-              <InspectorSelect
-                value={editFormData.priority || ""}
-                onChange={(v) =>
-                  setEditFormData((f) => ({
-                    ...f,
-                    priority: v as SupportTicketPriority,
-                  }))
-                }
-                placeholder="Priority"
-              >
-                {Object.values(SupportTicketPriority).map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {formatEnumLabel(p)}
-                  </SelectItem>
-                ))}
-              </InspectorSelect>
-            </div>
-
-            {/* Type */}
-            <div className="col-span-2">
-              <FieldLabel>Type</FieldLabel>
-              <InspectorSelect
-                value={editFormData.ticketType || ""}
-                onChange={(v) =>
-                  setEditFormData((f) => ({
-                    ...f,
-                    ticketType: v === "none" ? "" : v,
-                  }))
-                }
-                placeholder="Type"
-              >
-                <SelectItem value="none">None</SelectItem>
-                {Object.values(SupportTicketType).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {formatEnumLabel(t)}
-                  </SelectItem>
-                ))}
-              </InspectorSelect>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 4: FOLLOW-UP (conditional on PENDING_FOLLOWUP status) */}
-        {editFormData.status === SupportTicketStatus.PENDING_FOLLOWUP && (
-          <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-2 gap-3 rounded-xl p-3 bg-amber-50 border border-amber-200/70">
-              {/* Follow-up Due Date */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <FieldLabel>Follow-up Date</FieldLabel>
-                  <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
-                    Follow-up
-                  </span>
-                </div>
-                <Popover
-                  open={mainCalendarOpen}
-                  onOpenChange={setMainCalendarOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="w-full h-8 flex items-center gap-2 px-2.5 text-xs rounded-lg border bg-white border-amber-300 hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-300/30 transition-colors text-left"
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                      <span
-                        className={
-                          followUpDateDisplay
-                            ? "text-slate-800 font-semibold text-xs"
-                            : "text-amber-400 text-xs"
-                        }
-                      >
-                        {followUpDateDisplay || "Pick date…"}
-                      </span>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-0 shadow-xl border-slate-200"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={
-                        editFormData.followUpDueDate
-                          ? new Date(editFormData.followUpDueDate)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (!date) return;
-                        const h = parseInt(timeHourInput) || 12;
-                        const m = parseInt(timeMinuteInput) || 0;
-                        const h24 =
-                          timePeriod === "AM"
-                            ? h === 12
-                              ? 0
-                              : h
-                            : h === 12
-                              ? 12
-                              : h + 12;
-                        const d = new Date(date);
-                        d.setHours(h24, m, 0, 0);
-                        setEditFormData((f) => ({
-                          ...f,
-                          followUpDueDate: d.toISOString(),
-                        }));
-                      }}
-                      disabled={{ before: new Date() }}
-                      initialFocus
-                    />
-                    {/* Time picker */}
-                    <div className="px-3 pb-3 border-t border-slate-100 pt-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="text"
-                            maxLength={2}
-                            value={timeHourInput}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, "");
-                              setTimeHourInput(v);
-                            }}
-                            onBlur={() => {
-                              const h = Math.min(
-                                12,
-                                Math.max(1, parseInt(timeHourInput) || 12),
-                              );
-                              setTimeHourInput(String(h).padStart(2, "0"));
-                            }}
-                            className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
-                          />
-                          <span className="text-slate-500 text-xs font-bold">
-                            :
-                          </span>
-                          <input
-                            type="text"
-                            maxLength={2}
-                            value={timeMinuteInput}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, "");
-                              setTimeMinuteInput(v);
-                            }}
-                            onBlur={() => {
-                              const m = Math.min(
-                                59,
-                                Math.max(0, parseInt(timeMinuteInput) || 0),
-                              );
-                              setTimeMinuteInput(String(m).padStart(2, "0"));
-                            }}
-                            className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
-                          />
-                        </div>
-                        {/* AM/PM toggle */}
-                        <div className="flex rounded-md border border-slate-200 overflow-hidden">
-                          {(["AM", "PM"] as const).map((p) => (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => setTimePeriod(p)}
-                              className={cn(
-                                "px-2 h-7 text-[10px] font-bold transition-colors",
-                                timePeriod === p
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-white text-slate-500 hover:bg-slate-50",
-                              )}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                        </div>
-                        {/* Apply time button */}
-                        {editFormData.followUpDueDate && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const d = editFormData.followUpDueDate
-                                ? new Date(editFormData.followUpDueDate)
-                                : new Date();
-                              const h = parseInt(timeHourInput) || 12;
-                              const m = parseInt(timeMinuteInput) || 0;
-                              const h24 =
-                                timePeriod === "AM"
-                                  ? h === 12
-                                    ? 0
-                                    : h
-                                  : h === 12
-                                    ? 12
-                                    : h + 12;
-                              d.setHours(h24, m, 0, 0);
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpDueDate: d.toISOString(),
-                              }));
-                              setMainCalendarOpen(false);
-                            }}
-                            className="ml-auto text-[10px] font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
-                          >
-                            Done
-                          </button>
-                        )}
-                      </div>
-                      {editFormData.followUpDueDate && (
-                        <div className="mt-2 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpDueDate: "",
-                              }));
-                              setMainCalendarOpen(false);
-                            }}
-                            className="text-xs text-red-500 hover:text-red-600"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Follow-up Assignee */}
-              <div>
-                <FieldLabel>Assignee</FieldLabel>
-                <InspectorSelect
-                  value={editFormData.followUpAssignedToId || ""}
-                  onChange={(v) =>
-                    setEditFormData((f) => ({
-                      ...f,
-                      followUpAssignedToId: v === "none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Assign…"
-                >
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {agents.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </InspectorSelect>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-// ── Source Call Section ────────────────────────────────────────────────────────
-
-type CallSnippet = SupportTicketRecord["call"];
-
-function formatCallDuration(seconds?: number | null): string {
-  if (!seconds || seconds <= 0) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function CallDirIcon({ direction }: { direction?: string | null }) {
-  const d = (direction ?? "").toUpperCase();
-  if (d === "INBOUND") return <PhoneIncoming className="w-3 h-3" />;
-  if (d === "OUTBOUND") return <PhoneOutgoing className="w-3 h-3" />;
-  if (d === "MISSED") return <PhoneMissed className="w-3 h-3" />;
-  return <Phone className="w-3 h-3" />;
-}
-
-function SourceCallSection({
-  call,
-  callId,
-}: {
-  call: CallSnippet;
-  callId: number;
-}) {
-  const [open, setOpen] = useState(true);
-
-  const direction = (call?.direction ?? "").toUpperCase();
-  const dirLabel =
-    direction === "INBOUND"
-      ? "Inbound"
-      : direction === "OUTBOUND"
-        ? "Outbound"
-        : direction === "MISSED"
-          ? "Missed"
-          : call?.direction || "—";
-
-  const dirColor =
-    direction === "INBOUND"
-      ? { bg: "#eff6ff", fg: "#1d4ed8", border: "#bfdbfe" }
-      : direction === "OUTBOUND"
-        ? { bg: "#f0fdf4", fg: "#15803d", border: "#bbf7d0" }
-        : direction === "MISSED"
-          ? { bg: "#fef2f2", fg: "#b91c1c", border: "#fecaca" }
-          : { bg: "#f1f5f9", fg: "#475569", border: "#e2e8f0" };
-
-  return (
-    <section className="bg-white rounded-2xl border border-blue-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-      {/* Header */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-5 pt-3 pb-3 border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
-      >
-        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-          <Phone className="w-3 h-3 text-blue-500" />
-        </div>
-        <span className="text-[12px] font-bold text-slate-700 flex-1 text-left">
-          Source Call
-        </span>
-        <span className="text-[10px] font-mono text-slate-400 mr-1">
-          #{callId}
-        </span>
-        <ChevronDown
-          className={cn(
-            "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
-            open ? "rotate-180" : "",
-          )}
-        />
-      </button>
-
-      {/* Body */}
-      {open && (
-        <div className="px-5 py-4 space-y-3">
-          {/* Direction + Agent row */}
-          <div className="flex flex-wrap gap-2">
-            <span
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg border"
-              style={{
-                color: dirColor.fg,
-                background: dirColor.bg,
-                borderColor: dirColor.border,
-              }}
-            >
-              <CallDirIcon direction={call?.direction} />
-              {dirLabel}
-            </span>
-            {call?.agent?.name && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
-                <span className="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500 shrink-0">
-                  {call.agent.name.charAt(0).toUpperCase()}
-                </span>
-                {call.agent.name}
-              </span>
-            )}
-          </div>
-
-          {/* Date + Duration row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Date
-              </p>
-              <p className="text-[12px] text-slate-700 font-medium">
-                {call?.startedAt ? fmtDate(call.startedAt) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Duration
-              </p>
-              <p className="text-[12px] text-slate-700 font-medium tabular-nums">
-                {formatCallDuration(call?.duration)}
-              </p>
-            </div>
-          </div>
-
-          {/* Disposition */}
-          {call?.disposition && (
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Disposition
-              </p>
-              <p className="text-[12px] text-slate-700 font-medium">
-                {formatEnumLabel(call.disposition)}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
-
 interface CustomerTicketDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -951,7 +225,9 @@ interface CustomerTicketDrawerProps {
   pendingFiles: File[];
   onFilesChange: (files: File[]) => void;
   isUpdating: boolean;
-  onUpdate: () => void;
+  onSaveProperties: () => void;
+  onActivityLogged?: (ticket: SupportTicketRecord) => void;
+  onActivityError?: (message: string) => void;
   customers: any[];
   yards: any[];
   agents: any[];
@@ -982,7 +258,9 @@ export function CustomerTicketDrawer({
   pendingFiles,
   onFilesChange,
   isUpdating,
-  onUpdate,
+  onSaveProperties,
+  onActivityLogged,
+  onActivityError,
   customers,
   yards,
   agents,
@@ -1001,6 +279,53 @@ export function CustomerTicketDrawer({
   const [customerSearch, setCustomerSearch] = useState("");
   const [mainCustomerSearch, setMainCustomerSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Source call peek (CallPeekPanel) ───────────────────────────────────────
+  const [sourcePeekCallId, setSourcePeekCallId] = useState<number | null>(null);
+  const { data: sourcePeekData, isLoading: isSourcePeekLoading } = useSWR(
+    sourcePeekCallId ? `/api/calls/${sourcePeekCallId}` : null,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+  const sourcePeekCall: Ticket | null =
+    sourcePeekData?.success && sourcePeekData.data
+      ? (sourcePeekData.data as Ticket)
+      : null;
+
+  useEffect(() => {
+    setSourcePeekCallId(null);
+  }, [selectedTicket?.id]);
+
+  const updatesUrl = useMemo(
+    () =>
+      open && selectedTicket?.id
+        ? `/api/tickets/${selectedTicket.id}/updates`
+        : null,
+    [open, selectedTicket?.id],
+  );
+
+  const {
+    data: updatesData,
+    isLoading: isLoadingUpdates,
+    mutate: mutateUpdates,
+  } = useSWR(updatesUrl, fetcher, { revalidateOnFocus: false });
+
+  const ticketUpdates = useMemo<TicketUpdateRecord[]>(() => {
+    if (updatesData?.success && Array.isArray(updatesData.data)) {
+      return updatesData.data as TicketUpdateRecord[];
+    }
+    return [];
+  }, [updatesData]);
+
+  const handleActivityLogged = (result: {
+    ticket: SupportTicketRecord;
+    updates: TicketUpdateRecord[];
+  }) => {
+    void mutateUpdates();
+    if (result.ticket) {
+      onActivityLogged?.(result.ticket);
+    }
+  };
 
   // ── Sheet-anchored success toast ──────────────────────────────────────────
   const [toastActive, setToastActive] = useState(false);
@@ -1195,6 +520,12 @@ export function CustomerTicketDrawer({
 
   return (
     <>
+      <CallPeekPanel
+        call={sourcePeekCall}
+        isLoading={sourcePeekCallId !== null && isSourcePeekLoading}
+        onClose={() => setSourcePeekCallId(null)}
+      />
+
       {/* ── Sheet-anchored error toast ───────────────────────────────────────── */}
       {errorToastActive && (
         <div
@@ -1294,14 +625,16 @@ export function CustomerTicketDrawer({
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
         <SheetContent
           side="right"
-          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
+          hideClose
+          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] overflow-hidden border-l border-slate-200/80"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             const originalTarget = e.detail?.originalEvent
               ?.target as HTMLElement | null;
             if (
               originalTarget?.closest?.("[data-aircall-fab='true']") ||
-              originalTarget?.closest?.("[data-aircall-panel='true']")
+              originalTarget?.closest?.("[data-aircall-panel='true']") ||
+              originalTarget?.closest?.("[data-peek-panel='true']")
             ) {
               e.preventDefault();
             }
@@ -1367,13 +700,6 @@ export function CustomerTicketDrawer({
                   <PhoneOutgoing className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Call</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
             </div>
 
@@ -1437,7 +763,7 @@ export function CustomerTicketDrawer({
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Ticket History
+                    Other tickets
                   </p>
                 </div>
                 {isLoadingHistory ? (
@@ -1481,8 +807,21 @@ export function CustomerTicketDrawer({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto px-4 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-                  {/* ── Issue Detail ── */}
+                <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                  {selectedTicket.callId && (
+                    <SourceCallPreviewTrigger
+                      callId={selectedTicket.callId}
+                      call={selectedTicket.call ?? null}
+                      isActive={sourcePeekCallId === selectedTicket.callId}
+                      onClick={() => {
+                        const id = selectedTicket.callId!;
+                        setSourcePeekCallId(
+                          sourcePeekCallId === id ? null : id,
+                        );
+                      }}
+                    />
+                  )}
+
                   <TicketPropertiesCard
                     editFormData={editFormData}
                     setEditFormData={setEditFormData}
@@ -1500,10 +839,42 @@ export function CustomerTicketDrawer({
                     mainFilteredCustomers={mainFilteredCustomers}
                     mainCalendarOpen={mainCalendarOpen}
                     setMainCalendarOpen={setMainCalendarOpen}
+                    activityMode
                   />
 
+                  <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                    <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
+                      <div className="w-5 h-5 rounded-md bg-violet-50 flex items-center justify-center shrink-0">
+                        <Activity className="w-3 h-3 text-violet-500" />
+                      </div>
+                      <span className="text-[12px] font-bold text-slate-700 leading-tight">
+                        Activity
+                      </span>
+                    </div>
+                    <div className="px-3.5 py-3 space-y-3">
+                      <LogTicketUpdateForm
+                        ticket={selectedTicket}
+                        agents={agents.map((a: { id: number; name: string }) => ({
+                          id: a.id,
+                          name: a.name,
+                        }))}
+                        onLogged={handleActivityLogged}
+                        onError={onActivityError}
+                      />
+                      <div className="border-t border-slate-100 pt-2">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
+                          Timeline
+                        </p>
+                        <TicketActivityTimeline
+                          updates={ticketUpdates}
+                          isLoading={isLoadingUpdates}
+                        />
+                      </div>
+                    </div>
+                  </section>
+
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                       Issue Detail
                     </p>
                     <div className="space-y-1.5">
@@ -1522,7 +893,7 @@ export function CustomerTicketDrawer({
                       <div className="hidden">
                         <button
                           type="button"
-                          onClick={onUpdate}
+                          onClick={onSaveProperties}
                           disabled={isUpdating}
                           className="flex items-center gap-1.5 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                           style={{ background: "#008f68" }}
@@ -1766,14 +1137,6 @@ export function CustomerTicketDrawer({
                     </div>
                   </section>
 
-                  {/* ── Source Call ── */}
-                  {selectedTicket.callId && (
-                    <SourceCallSection
-                      call={selectedTicket.call ?? null}
-                      callId={selectedTicket.callId}
-                    />
-                  )}
-
                   {/* ── Customer Notes banner ── */}
                   {((selectedTicket.customer?.notes &&
                     selectedTicket.customer.notes.length > 0) ||
@@ -1797,7 +1160,7 @@ export function CustomerTicketDrawer({
                 <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
                   <button
                     type="button"
-                    onClick={onUpdate}
+                    onClick={onSaveProperties}
                     disabled={isUpdating}
                     className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-[13px] font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 bg-[#008f68] hover:bg-[#007a5a] shadow-sm"
                   >
@@ -1806,7 +1169,7 @@ export function CustomerTicketDrawer({
                     ) : (
                       <CheckCircle2 className="w-4 h-4" />
                     )}
-                    {isUpdating ? "Saving..." : "Save Changes"}
+                    {isUpdating ? "Saving..." : "Save properties"}
                   </button>
                 </div>
               )}
@@ -1829,7 +1192,7 @@ export function CustomerTicketDrawer({
                   <div className="space-y-2">
                     <div>
                       <InspLabel>Status</InspLabel>
-                      <InspectorSelect
+                      <TicketStatusToggle
                         value={editFormData.status || ""}
                         onChange={(v) =>
                           setEditFormData((f) => ({
@@ -1837,55 +1200,51 @@ export function CustomerTicketDrawer({
                             status: v as SupportTicketStatus,
                           }))
                         }
-                        placeholder="Status"
-                      >
-                        <SelectItem value="none">—</SelectItem>
-                        {Object.values(SupportTicketStatus).map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {formatEnumLabel(s)}
-                          </SelectItem>
-                        ))}
-                      </InspectorSelect>
+                        className="mt-1"
+                        compact
+                      />
                     </div>
-                    <div>
-                      <InspLabel>Priority</InspLabel>
-                      <InspectorSelect
-                        value={editFormData.priority || ""}
-                        onChange={(v) =>
-                          setEditFormData((f) => ({
-                            ...f,
-                            priority: v as SupportTicketPriority,
-                          }))
-                        }
-                        placeholder="Priority"
-                      >
-                        <SelectItem value="none">—</SelectItem>
-                        {Object.values(SupportTicketPriority).map((p) => (
-                          <SelectItem key={p} value={p}>
-                            {formatEnumLabel(p)}
-                          </SelectItem>
-                        ))}
-                      </InspectorSelect>
-                    </div>
-                    <div>
-                      <InspLabel>Type</InspLabel>
-                      <InspectorSelect
-                        value={editFormData.ticketType || ""}
-                        onChange={(v) =>
-                          setEditFormData((f) => ({
-                            ...f,
-                            ticketType: v,
-                          }))
-                        }
-                        placeholder="Type"
-                      >
-                        <SelectItem value="none">None</SelectItem>
-                        {Object.values(SupportTicketType).map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {formatEnumLabel(t)}
-                          </SelectItem>
-                        ))}
-                      </InspectorSelect>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <InspLabel>Priority</InspLabel>
+                        <InspectorSelect
+                          value={editFormData.priority || ""}
+                          onChange={(v) =>
+                            setEditFormData((f) => ({
+                              ...f,
+                              priority: v as SupportTicketPriority,
+                            }))
+                          }
+                          placeholder="Priority"
+                        >
+                          <SelectItem value="none">—</SelectItem>
+                          {Object.values(SupportTicketPriority).map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {formatEnumLabel(p)}
+                            </SelectItem>
+                          ))}
+                        </InspectorSelect>
+                      </div>
+                      <div>
+                        <InspLabel>Type</InspLabel>
+                        <InspectorSelect
+                          value={editFormData.ticketType || ""}
+                          onChange={(v) =>
+                            setEditFormData((f) => ({
+                              ...f,
+                              ticketType: v,
+                            }))
+                          }
+                          placeholder="Type"
+                        >
+                          <SelectItem value="none">None</SelectItem>
+                          {Object.values(SupportTicketType).map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {formatEnumLabel(t)}
+                            </SelectItem>
+                          ))}
+                        </InspectorSelect>
+                      </div>
                     </div>
                     <div>
                       <InspLabel>Yard</InspLabel>
@@ -2192,7 +1551,7 @@ export function CustomerTicketDrawer({
                 {/* ── Save Button ── */}
                 <button
                   type="button"
-                  onClick={onUpdate}
+                  onClick={onSaveProperties}
                   disabled={isUpdating}
                   className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
                   style={{ background: "#008f68" }}
@@ -2208,7 +1567,7 @@ export function CustomerTicketDrawer({
                   ) : (
                     <CheckCircle2 className="w-4 h-4" />
                   )}
-                  {isUpdating ? "Saving…" : "Save Changes"}
+                  {isUpdating ? "Saving…" : "Save properties"}
                 </button>
               </div>
             </div>

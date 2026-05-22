@@ -309,6 +309,25 @@ export interface CreateSupportTicketFormData {
 
 export type UpdateSupportTicketFormData = Partial<CreateSupportTicketFormData>;
 
+export type TicketUpdateType =
+  | "CREATED"
+  | "NOTE"
+  | "STATUS_CHANGE"
+  | "FOLLOW_UP_SET";
+
+export interface TicketUpdateRecord {
+  id: number;
+  ticketId: number;
+  agentId?: number | null;
+  agent?: AgentOption | null;
+  type: TicketUpdateType;
+  note?: string | null;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 // ── Manual Records ─────────────────────────────────────────────────────────
 
 export interface ManualRecord {

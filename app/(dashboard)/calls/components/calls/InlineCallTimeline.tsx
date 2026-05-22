@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
   Voicemail,
-  Loader2,
+  History,
+  UserRound,
 } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import type { Call } from "@/lib/mock-data";
@@ -14,22 +15,13 @@ import type { AgentOption } from "../../types";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { getTicketAssignee, getAssigneeName } from "../../utils/call-helpers";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";
-import { useToast } from "@/hooks/use-toast";
-import { fetchFromBackend } from "@/lib/api-client";
 
 interface InlineCallTimelineProps {
   group: CustomerCallGroup;
   agents: AgentOption[];
+  onOpenTimeline?: (group: CustomerCallGroup) => void;
 }
 
 function formatShortDate(date: Date): string {
@@ -43,31 +35,35 @@ function directionMeta(direction?: string) {
   if (d === "outbound") {
     return {
       label: "Outbound",
-      color: "text-blue-600",
-      ring: "border-blue-500",
+      color: "#2563eb",
+      bg: "#eff6ff",
+      ring: "border-blue-400",
       Icon: PhoneOutgoing,
     };
   }
   if (d === "missed") {
     return {
       label: "Missed",
-      color: "text-rose-600",
-      ring: "border-rose-500",
+      color: "#c0392b",
+      bg: "#fde8e6",
+      ring: "border-rose-400",
       Icon: PhoneMissed,
     };
   }
   if (d === "voicemail") {
     return {
       label: "Voicemail",
-      color: "text-amber-600",
-      ring: "border-amber-500",
+      color: "#c47a00",
+      bg: "#fef3d6",
+      ring: "border-amber-400",
       Icon: Voicemail,
     };
   }
   return {
     label: "Inbound",
-    color: "text-emerald-600",
-    ring: "border-emerald-500",
+    color: "#008f68",
+    bg: "#e6f5f0",
+    ring: "border-emerald-400",
     Icon: PhoneIncoming,
   };
 }
@@ -90,14 +86,24 @@ function resolveAgentName(call: Call, agents: AgentOption[]): string | null {
   return null;
 }
 
-export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
-  const { dial, status, isLoggedIn } = useAircall();
-  const { toast } = useToast();
-  const canDial = status === "ready" && isLoggedIn;
+/** Skip empty or placeholder-only note fragments (e.g. a lone `"`). */
+function notePreview(call: Call): string | null {
+  const raw =
+    (call.notes as string | undefined) ||
+    ((call as any).issueDetail as string | undefined);
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed || /^["'`]+$/.test(trimmed)) return null;
+  return trimmed;
+}
 
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [noteContent, setNoteContent] = useState("");
-  const [noteSaving, setNoteSaving] = useState(false);
+export function InlineCallTimeline({
+  group,
+  agents,
+  onOpenTimeline,
+}: InlineCallTimelineProps) {
+  const { dial, status, isLoggedIn } = useAircall();
+  const canDial = status === "ready" && isLoggedIn;
 
   const sortedCalls = useMemo(() => {
     return [...group.calls].sort((a, b) => {
@@ -117,207 +123,189 @@ export function InlineCallTimeline({ group, agents }: InlineCallTimelineProps) {
 
   const latestCallId = sortedCalls[0]?.id;
   const hasPhone = !!group.customerPhone && group.customerPhone !== "unknown";
-  const canAddNote = !!group.customerId;
+  const latestMeta = sortedCalls[0]
+    ? directionMeta(sortedCalls[0].direction)
+    : null;
 
   const handleCallBack = () => {
     if (!hasPhone) return;
     dial(group.customerPhone, latestCallId);
   };
 
-  const handleSaveNote = async () => {
-    const content = noteContent.trim();
-    if (!content || !group.customerId) return;
-    setNoteSaving(true);
-    try {
-      await fetchFromBackend(`/customers/${group.customerId}/notes`, {
-        method: "POST",
-        body: JSON.stringify({ content }),
-      });
-      toast({
-        title: "Note added",
-        description: `Saved to ${group.customerName || "customer"}.`,
-      });
-      setNoteContent("");
-      setNoteOpen(false);
-    } catch (err: any) {
-      toast({
-        title: "Failed to add note",
-        description: err?.message || "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setNoteSaving(false);
-    }
-  };
-
   return (
-    <div className="px-4 py-3">
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">
-            Call Timeline · {sortedCalls.length}{" "}
-            {sortedCalls.length === 1 ? "event" : "events"}
+    <div className="mx-2 mb-2 rounded-xl border border-slate-200/80 bg-[#f8f9fb] shadow-sm">
+      {/* Summary strip */}
+      <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border-b border-slate-100 rounded-t-xl overflow-hidden">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
+            <UserRound className="w-4 h-4 text-[#008f68]" />
           </div>
-          {lastEventAgo && (
-            <div className="text-xs text-slate-400 mt-0.5">
-              last {lastEventAgo}
-            </div>
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold text-slate-800 truncate">
+              {group.customerName || "Unknown"}
+            </p>
+            {hasPhone && (
+              <p className="text-[10.5px] font-mono text-slate-500 truncate tabular-nums">
+                {group.customerPhone}
+              </p>
+            )}
+          </div>
+        </div>
+        {latestMeta && (
+          <span
+            className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md"
+            style={{
+              color: latestMeta.color,
+              background: latestMeta.bg,
+            }}
+          >
+            <latestMeta.Icon className="w-3 h-3" />
+            Latest: {latestMeta.label}
+          </span>
+        )}
+      </div>
+
+      <div className="px-3 py-3">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Call timeline · {sortedCalls.length}{" "}
+              {sortedCalls.length === 1 ? "event" : "events"}
+            </p>
+            {lastEventAgo && (
+              <p className="text-[10.5px] text-slate-400 mt-0.5">
+                Last activity {lastEventAgo}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative rounded-lg border border-slate-100 bg-white px-3 py-2.5">
+          <div className="absolute top-3 bottom-3 left-[1.15rem] w-px bg-slate-200" />
+          <ol className="space-y-2.5">
+            {sortedCalls.map((call, index) => {
+              const meta = directionMeta(call.direction);
+              const date = new Date(call.callDate || call.createdAt || 0);
+              const dateLabel = isNaN(date.getTime())
+                ? "—"
+                : formatShortDate(date);
+              const duration = formatDuration(call.duration ?? undefined);
+              const agentName = resolveAgentName(call, agents);
+              const notes = notePreview(call);
+              const Icon = meta.Icon;
+              const isLatest = index === 0;
+              const relatedCallId = (call as any).relatedCallId as
+                | number
+                | string
+                | null
+                | undefined;
+
+              return (
+                <li
+                  key={call.id}
+                  className={cn(
+                    "relative pl-8 min-w-0",
+                    isLatest && "rounded-md px-2 py-1 bg-slate-50/80",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border-2",
+                      meta.ring,
+                    )}
+                  >
+                    <Icon
+                      className="h-2.5 w-2.5"
+                      style={{ color: meta.color }}
+                    />
+                  </span>
+
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-[10.5px] text-slate-500 tabular-nums whitespace-nowrap">
+                      {dateLabel}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
+                      <span
+                        className="text-[11.5px] font-semibold shrink-0"
+                        style={{ color: meta.color }}
+                      >
+                        {meta.label}
+                      </span>
+                      {call.duration != null && call.duration > 0 && (
+                        <span className="text-[10.5px] font-mono text-slate-400 tabular-nums shrink-0">
+                          {duration}
+                        </span>
+                      )}
+                      {agentName && (
+                        <>
+                          <span className="text-slate-300 select-none shrink-0">
+                            ·
+                          </span>
+                          <span className="text-[10.5px] text-slate-600 truncate max-w-[10rem]">
+                            {agentName}
+                          </span>
+                        </>
+                      )}
+                      {isLatest && (
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#008f68] bg-[#008f68]/10 px-1.5 py-px rounded shrink-0">
+                          Latest
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {relatedCallId && (
+                    <p className="mt-1 text-[10px] font-medium text-violet-600">
+                      Linked to call #{relatedCallId}
+                    </p>
+                  )}
+
+                  {notes && (
+                    <p className="mt-1 text-[10.5px] text-slate-500 leading-snug line-clamp-2 border-l-2 border-slate-200 pl-2">
+                      {notes}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 px-3.5 bg-[#008f68] hover:bg-[#007a5c] text-white text-[12px] font-semibold rounded-lg shadow-sm"
+            onClick={handleCallBack}
+            disabled={!hasPhone || !canDial}
+            title={
+              !hasPhone
+                ? "No phone number on file"
+                : !canDial
+                  ? "Aircall is not connected"
+                  : `Call ${group.customerPhone}`
+            }
+          >
+            <PhoneOutgoing className="h-3.5 w-3.5 mr-1.5" />
+            Call back
+          </Button>
+          {onOpenTimeline && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 px-3.5 text-[12px] font-semibold rounded-lg border-slate-200 text-[#008f68] hover:bg-[#008f68]/8 hover:border-[#008f68]/40"
+              onClick={() => onOpenTimeline(group)}
+            >
+              <History className="h-3.5 w-3.5 mr-1.5" />
+              Open timeline
+            </Button>
           )}
         </div>
       </div>
-
-      {/* ── Timeline ────────────────────────────────────────────── */}
-      <div className="relative">
-        {/* Vertical guide line */}
-        <div className="absolute top-0 bottom-0 left-2.25 w-0.5 bg-gray-200" />
-        <ol className="space-y-3">
-          {sortedCalls.map((call) => {
-            const meta = directionMeta(call.direction);
-            const date = new Date(call.callDate || call.createdAt || 0);
-            const dateLabel = isNaN(date.getTime())
-              ? "—"
-              : formatShortDate(date);
-            const duration = formatDuration(call.duration ?? undefined);
-            const agentName = resolveAgentName(call, agents);
-            const notes =
-              (call.notes as string | undefined) ||
-              ((call as any).issueDetail as string | undefined);
-            const Icon = meta.Icon;
-
-            return (
-              <li key={call.id} className="relative pl-7">
-                {/* Circle */}
-                <span
-                  className={`absolute left-0 top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white border-2 ${meta.ring}`}
-                >
-                  <Icon className={`h-2.5 w-2.5 ${meta.color}`} />
-                </span>
-
-                {/* Metadata row */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  <span className="text-slate-500 text-xs font-normal tabular-nums">
-                    {dateLabel}
-                  </span>
-                  <span className={`font-semibold text-sm ${meta.color}`}>
-                    {meta.label}
-                  </span>
-                  {call.duration !== undefined &&
-                    call.duration !== null &&
-                    call.duration > 0 && (
-                      <span className="text-gray-400 text-xs tabular-nums">
-                        {duration}
-                      </span>
-                    )}
-                  {agentName && (
-                    <>
-                      <span className="text-gray-300 select-none">·</span>
-                      <span className="text-gray-700 text-xs">{agentName}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Notes */}
-                {notes && (
-                  <p className="mt-1 text-gray-600 text-xs leading-snug line-clamp-2 max-w-prose wrap-break-word">
-                    {notes}
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      {/* ── Actions ─────────────────────────────────────────────── */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={handleCallBack}
-          disabled={!hasPhone || !canDial}
-          title={
-            !hasPhone
-              ? "No phone number on file"
-              : !canDial
-                ? "Aircall is not connected"
-                : `Call ${group.customerPhone}`
-          }
-        >
-          <PhoneOutgoing className="h-4 w-4 mr-2" />
-          Call back
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-          onClick={() => setNoteOpen(true)}
-          disabled={!canAddNote}
-          title={
-            canAddNote
-              ? "Add a note to this customer"
-              : "Customer not linked yet"
-          }
-        >
-          Add note
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-        >
-          Reassign
-        </Button>
-      </div>
-
-      {/* ── Add note dialog ──────────────────────────────────────── */}
-      <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add note</DialogTitle>
-            <DialogDescription>
-              {group.customerName
-                ? `Saved on ${group.customerName}'s profile.`
-                : "Saved on this customer's profile."}
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            autoFocus
-            value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            placeholder="Type your note…"
-            rows={5}
-            disabled={noteSaving}
-          />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setNoteOpen(false)}
-              disabled={noteSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSaveNote}
-              disabled={!noteContent.trim() || noteSaving}
-            >
-              {noteSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                "Save note"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

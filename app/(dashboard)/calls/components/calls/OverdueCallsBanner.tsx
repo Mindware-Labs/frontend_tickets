@@ -44,7 +44,7 @@ export function OverdueCallsBanner({
     return new Set(
       overdueCallsPayload.data
         .map((id: unknown) => Number(id))
-        .filter((id) => Number.isFinite(id)),
+        .filter((id: number) => Number.isFinite(id)),
     );
   }, [overdueCallsPayload?.data]);
 

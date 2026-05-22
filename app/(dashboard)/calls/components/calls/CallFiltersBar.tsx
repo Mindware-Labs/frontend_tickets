@@ -229,6 +229,7 @@ export function CallFiltersBar({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
+          hideClose
           className="flex flex-col w-full sm:w-100 p-0 gap-0"
         >
           {/* Header */}
