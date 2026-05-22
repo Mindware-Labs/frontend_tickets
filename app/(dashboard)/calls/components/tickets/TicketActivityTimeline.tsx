@@ -78,7 +78,15 @@ export function TicketActivityTimeline({
       {updates.map((u, idx) => {
         const meta = TYPE_META[u.type] || TYPE_META.NOTE;
         const Icon = meta.icon;
-        const agentName = u.agent?.name || (u.agentId ? `Agent #${u.agentId}` : "System");
+        const metaName =
+          typeof u.metadata?.userName === "string"
+            ? u.metadata.userName
+            : null;
+        const agentName =
+          u.authorName ||
+          u.agent?.name ||
+          metaName ||
+          (u.agentId ? `Agent #${u.agentId}` : "System");
 
         return (
           <div key={u.id} className="relative flex gap-2.5 pl-1">
@@ -99,7 +107,7 @@ export function TicketActivityTimeline({
                 {meta.label(u)}
               </p>
               {u.note?.trim() && (
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed whitespace-pre-wrap">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed whitespace-pre-wrap select-text pointer-events-auto">
                   {u.note.trim()}
                 </p>
               )}

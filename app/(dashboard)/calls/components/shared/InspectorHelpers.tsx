@@ -36,11 +36,13 @@ export function InspectorSelect({
   onChange,
   placeholder,
   children,
+  contentClassName,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   children: React.ReactNode;
+  contentClassName?: string;
 }) {
   return (
     <Select
@@ -50,7 +52,7 @@ export function InspectorSelect({
       <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>{children}</SelectContent>
+      <SelectContent className={contentClassName}>{children}</SelectContent>
     </Select>
   );
 }

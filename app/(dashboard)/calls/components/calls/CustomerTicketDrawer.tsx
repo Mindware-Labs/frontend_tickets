@@ -51,8 +51,8 @@ import {
   fmtRelative,
 } from "../../utils/call-helpers";
 import { TicketPropertiesCard } from "../tickets/TicketPropertiesCard";
-import { LogTicketUpdateForm } from "../tickets/LogTicketUpdateForm";
-import { TicketActivityTimeline } from "../tickets/TicketActivityTimeline";
+import { TicketUpdatePeekPanel } from "../tickets/TicketUpdatePeekPanel";
+import { TicketSheetActivitySection } from "../tickets/TicketSheetActivitySection";
 import type { TicketUpdateRecord } from "../../types";
 import {
   InspLabel,
@@ -228,6 +228,7 @@ interface CustomerTicketDrawerProps {
   onSaveProperties: () => void;
   onActivityLogged?: (ticket: SupportTicketRecord) => void;
   onActivityError?: (message: string) => void;
+  currentAgentId?: number | null;
   customers: any[];
   yards: any[];
   agents: any[];
@@ -261,6 +262,7 @@ export function CustomerTicketDrawer({
   onSaveProperties,
   onActivityLogged,
   onActivityError,
+  currentAgentId,
   customers,
   yards,
   agents,
@@ -273,7 +275,6 @@ export function CustomerTicketDrawer({
   onErrorToastDismiss,
 }: CustomerTicketDrawerProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [mainCalendarOpen, setMainCalendarOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [mainCustomerOpen, setMainCustomerOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -282,6 +283,7 @@ export function CustomerTicketDrawer({
 
   // ── Source call peek (CallPeekPanel) ───────────────────────────────────────
   const [sourcePeekCallId, setSourcePeekCallId] = useState<number | null>(null);
+  const [showUpdatePeek, setShowUpdatePeek] = useState(false);
   const { data: sourcePeekData, isLoading: isSourcePeekLoading } = useSWR(
     sourcePeekCallId ? `/api/calls/${sourcePeekCallId}` : null,
     fetcher,
@@ -294,6 +296,7 @@ export function CustomerTicketDrawer({
 
   useEffect(() => {
     setSourcePeekCallId(null);
+    setShowUpdatePeek(false);
   }, [selectedTicket?.id]);
 
   const updatesUrl = useMemo(
@@ -505,6 +508,13 @@ export function CustomerTicketDrawer({
   }, [customers, mainCustomerSearch]);
 
   // Status/priority pills for selected ticket
+  const isOutsidePeekTarget = (target: HTMLElement | null | undefined) =>
+    !!(
+      target?.closest?.("[data-aircall-fab='true']") ||
+      target?.closest?.("[data-aircall-panel='true']") ||
+      target?.closest?.("[data-peek-panel='true']")
+    );
+
   const sp = STATUS_PILL[normalizeStatusKey(selectedTicket?.status)] || null;
   const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
 
@@ -524,6 +534,19 @@ export function CustomerTicketDrawer({
         call={sourcePeekCall}
         isLoading={sourcePeekCallId !== null && isSourcePeekLoading}
         onClose={() => setSourcePeekCallId(null)}
+      />
+
+      <TicketUpdatePeekPanel
+        open={showUpdatePeek && !!selectedTicket}
+        ticket={selectedTicket}
+        agents={agents.map((a: { id: number; name: string }) => ({
+          id: a.id,
+          name: a.name,
+        }))}
+        actorAgentId={currentAgentId}
+        onClose={() => setShowUpdatePeek(false)}
+        onLogged={handleActivityLogged}
+        onError={onActivityError}
       />
 
       {/* ── Sheet-anchored error toast ───────────────────────────────────────── */}
@@ -622,7 +645,7 @@ export function CustomerTicketDrawer({
         </div>
       )}
 
-      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <Sheet open={open} onOpenChange={(v) => !v && onClose()} modal={false}>
         <SheetContent
           side="right"
           hideClose
@@ -631,11 +654,19 @@ export function CustomerTicketDrawer({
           onPointerDownOutside={(e) => {
             const originalTarget = e.detail?.originalEvent
               ?.target as HTMLElement | null;
-            if (
-              originalTarget?.closest?.("[data-aircall-fab='true']") ||
-              originalTarget?.closest?.("[data-aircall-panel='true']") ||
-              originalTarget?.closest?.("[data-peek-panel='true']")
-            ) {
+            if (isOutsidePeekTarget(originalTarget)) {
+              e.preventDefault();
+            }
+          }}
+          onFocusOutside={(e) => {
+            if (isOutsidePeekTarget(e.target as HTMLElement | null)) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            const originalTarget = e.detail?.originalEvent
+              ?.target as HTMLElement | null;
+            if (isOutsidePeekTarget(originalTarget)) {
               e.preventDefault();
             }
           }}
@@ -815,6 +846,7 @@ export function CustomerTicketDrawer({
                       isActive={sourcePeekCallId === selectedTicket.callId}
                       onClick={() => {
                         const id = selectedTicket.callId!;
+                        setShowUpdatePeek(false);
                         setSourcePeekCallId(
                           sourcePeekCallId === id ? null : id,
                         );
@@ -831,47 +863,19 @@ export function CustomerTicketDrawer({
                     campaigns={campaigns}
                     phoneLines={phoneLines}
                     campaignOptionValues={campaignOptionValues}
-                    followUpDateDisplay={followUpDateDisplay}
                     mainCustomerOpen={mainCustomerOpen}
                     setMainCustomerOpen={setMainCustomerOpen}
                     mainCustomerSearch={mainCustomerSearch}
                     setMainCustomerSearch={setMainCustomerSearch}
                     mainFilteredCustomers={mainFilteredCustomers}
-                    mainCalendarOpen={mainCalendarOpen}
-                    setMainCalendarOpen={setMainCalendarOpen}
                     activityMode
                   />
 
-                  <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-                    <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
-                      <div className="w-5 h-5 rounded-md bg-violet-50 flex items-center justify-center shrink-0">
-                        <Activity className="w-3 h-3 text-violet-500" />
-                      </div>
-                      <span className="text-[12px] font-bold text-slate-700 leading-tight">
-                        Activity
-                      </span>
-                    </div>
-                    <div className="px-3.5 py-3 space-y-3">
-                      <LogTicketUpdateForm
-                        ticket={selectedTicket}
-                        agents={agents.map((a: { id: number; name: string }) => ({
-                          id: a.id,
-                          name: a.name,
-                        }))}
-                        onLogged={handleActivityLogged}
-                        onError={onActivityError}
-                      />
-                      <div className="border-t border-slate-100 pt-2">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                          Timeline
-                        </p>
-                        <TicketActivityTimeline
-                          updates={ticketUpdates}
-                          isLoading={isLoadingUpdates}
-                        />
-                      </div>
-                    </div>
-                  </section>
+                  <TicketSheetActivitySection
+                    ticket={selectedTicket}
+                    updates={ticketUpdates}
+                    isLoading={isLoadingUpdates}
+                  />
 
                   <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
@@ -1157,20 +1161,38 @@ export function CustomerTicketDrawer({
                 </div>
               )}
               {selectedTicket && (
-                <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
-                  <button
-                    type="button"
-                    onClick={onSaveProperties}
-                    disabled={isUpdating}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-white text-[13px] font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 bg-[#008f68] hover:bg-[#007a5a] shadow-sm"
-                  >
-                    {isUpdating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                    {isUpdating ? "Saving..." : "Save properties"}
-                  </button>
+                <div className="shrink-0 px-4 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={onSaveProperties}
+                      disabled={isUpdating}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 text-white text-[13px] font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 bg-[#008f68] hover:bg-[#007a5a] shadow-sm"
+                    >
+                      {isUpdating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                      {isUpdating ? "Saving..." : "Save properties"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourcePeekCallId(null);
+                        setShowUpdatePeek(true);
+                      }}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-xl border transition-all active:scale-[0.98]",
+                        showUpdatePeek
+                          ? "border-violet-300 bg-violet-50 text-violet-800 ring-2 ring-violet-100"
+                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50 hover:border-violet-300",
+                      )}
+                    >
+                      <Activity className="w-4 h-4" />
+                      Log update
+                    </button>
+                  </div>
                 </div>
               )}
             </main>

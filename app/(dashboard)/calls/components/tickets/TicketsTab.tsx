@@ -1388,6 +1388,7 @@ export function TicketsTab({
           setDrawerErrorMessage(msg);
           setShowDrawerError(true);
         }}
+        currentAgentId={refData.currentAgent?.id ?? null}
         customers={refData.customers}
         yards={refData.yards}
         agents={refData.agents}

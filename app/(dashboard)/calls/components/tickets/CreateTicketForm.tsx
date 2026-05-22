@@ -7,7 +7,6 @@ import {
   ArOption,
   type CreateSupportTicketFormData,
 } from "../../types";
-import { fmtDate } from "../../utils/call-helpers";
 import { TicketPropertiesCard } from "./TicketPropertiesCard";
 import {
   Paperclip,
@@ -45,8 +44,6 @@ export function CreateTicketForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mainCustomerOpen, setMainCustomerOpen] = useState(false);
   const [mainCustomerSearch, setMainCustomerSearch] = useState("");
-  const [mainCalendarOpen, setMainCalendarOpen] = useState(false);
-
   const campaignOptionValues = useMemo(() => {
     if (!form.campaignId) return [];
     const camp = campaigns.find((c) => c.id.toString() === form.campaignId);
@@ -55,11 +52,6 @@ export function CreateTicketForm({
     if (type === ManagementType.AR) return Object.values(ArOption);
     return [];
   }, [campaigns, form.campaignId]);
-
-  const followUpDateDisplay = useMemo(
-    () => (form.followUpDueDate ? fmtDate(form.followUpDueDate) : null),
-    [form.followUpDueDate],
-  );
 
   const mainFilteredCustomers = useMemo(() => {
     if (!mainCustomerSearch.trim()) return customers;
@@ -107,14 +99,11 @@ export function CreateTicketForm({
         campaigns={campaigns}
         showPhoneLine={false}
         campaignOptionValues={campaignOptionValues}
-        followUpDateDisplay={followUpDateDisplay}
         mainCustomerOpen={mainCustomerOpen}
         setMainCustomerOpen={setMainCustomerOpen}
         mainCustomerSearch={mainCustomerSearch}
         setMainCustomerSearch={setMainCustomerSearch}
         mainFilteredCustomers={mainFilteredCustomers}
-        mainCalendarOpen={mainCalendarOpen}
-        setMainCalendarOpen={setMainCalendarOpen}
       />
 
       <div>

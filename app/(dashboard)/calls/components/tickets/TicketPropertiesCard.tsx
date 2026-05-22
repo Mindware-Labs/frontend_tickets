@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SelectItem } from "@/components/ui/select";
 import {
@@ -8,11 +8,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Ticket as TicketIcon,
   CalendarIcon,
-  Clock,
   ChevronsUpDown,
   Check,
 } from "lucide-react";
@@ -30,6 +28,7 @@ import {
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
 import { TicketStatusToggle } from "./TicketStatusToggle";
+import { TicketFollowUpFields } from "./TicketFollowUpFields";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -58,15 +57,14 @@ export interface TicketPropertiesCardProps {
   campaigns: any[];
   phoneLines?: { id: number; label: string | null; phoneNumber: string }[];
   campaignOptionValues: string[];
-  followUpDateDisplay: string | null;
   mainCustomerOpen: boolean;
   setMainCustomerOpen: (open: boolean) => void;
   mainCustomerSearch: string;
   setMainCustomerSearch: (search: string) => void;
   mainFilteredCustomers: any[];
-  mainCalendarOpen: boolean;
-  setMainCalendarOpen: (open: boolean) => void;
   showPhoneLine?: boolean;
+  popoverClassName?: string;
+  selectContentClassName?: string;
   /** Hide status & follow-up (handled via activity log in drawer) */
   activityMode?: boolean;
 }
@@ -80,36 +78,16 @@ export function TicketPropertiesCard({
   campaigns,
   phoneLines = [],
   campaignOptionValues,
-  followUpDateDisplay,
   mainCustomerOpen,
   setMainCustomerOpen,
   mainCustomerSearch,
   setMainCustomerSearch,
   mainFilteredCustomers,
-  mainCalendarOpen,
-  setMainCalendarOpen,
   showPhoneLine = true,
   activityMode = false,
+  popoverClassName,
+  selectContentClassName,
 }: TicketPropertiesCardProps) {
-  const [timeHourInput, setTimeHourInput] = useState("12");
-  const [timeMinuteInput, setTimeMinuteInput] = useState("00");
-  const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
-
-  useEffect(() => {
-    if (editFormData.followUpDueDate) {
-      const d = new Date(editFormData.followUpDueDate);
-      const h24 = d.getHours();
-      const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
-      setTimeHourInput(String(h12).padStart(2, "0"));
-      setTimeMinuteInput(String(d.getMinutes()).padStart(2, "0"));
-      setTimePeriod(h24 < 12 ? "AM" : "PM");
-    } else {
-      setTimeHourInput("12");
-      setTimeMinuteInput("00");
-      setTimePeriod("AM");
-    }
-  }, [editFormData.followUpDueDate]);
-
   return (
     <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
       <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
@@ -393,200 +371,25 @@ export function TicketPropertiesCard({
         {!activityMode &&
           editFormData.status === SupportTicketStatus.PENDING_FOLLOWUP && (
           <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-2 gap-2 rounded-lg p-2.5 bg-amber-50 border border-amber-200/70">
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <FieldLabel>Follow-up Date</FieldLabel>
-                  <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
-                    Follow-up
-                  </span>
-                </div>
-                <Popover
-                  open={mainCalendarOpen}
-                  onOpenChange={setMainCalendarOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="w-full h-8 flex items-center gap-2 px-2.5 text-xs rounded-lg border bg-white border-amber-300 hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-300/30 transition-colors text-left"
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                      <span
-                        className={
-                          followUpDateDisplay
-                            ? "text-slate-800 font-semibold text-xs"
-                            : "text-amber-400 text-xs"
-                        }
-                      >
-                        {followUpDateDisplay || "Pick date…"}
-                      </span>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-0 shadow-xl border-slate-200"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={
-                        editFormData.followUpDueDate
-                          ? new Date(editFormData.followUpDueDate)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (!date) return;
-                        const h = parseInt(timeHourInput) || 12;
-                        const m = parseInt(timeMinuteInput) || 0;
-                        const h24 =
-                          timePeriod === "AM"
-                            ? h === 12
-                              ? 0
-                              : h
-                            : h === 12
-                              ? 12
-                              : h + 12;
-                        const d = new Date(date);
-                        d.setHours(h24, m, 0, 0);
-                        setEditFormData((f) => ({
-                          ...f,
-                          followUpDueDate: d.toISOString(),
-                        }));
-                      }}
-                      disabled={{ before: new Date() }}
-                      initialFocus
-                    />
-                    <div className="px-3 pb-3 border-t border-slate-100 pt-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="text"
-                            maxLength={2}
-                            value={timeHourInput}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, "");
-                              setTimeHourInput(v);
-                            }}
-                            onBlur={() => {
-                              const h = Math.min(
-                                12,
-                                Math.max(1, parseInt(timeHourInput) || 12),
-                              );
-                              setTimeHourInput(String(h).padStart(2, "0"));
-                            }}
-                            className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
-                          />
-                          <span className="text-slate-500 text-xs font-bold">
-                            :
-                          </span>
-                          <input
-                            type="text"
-                            maxLength={2}
-                            value={timeMinuteInput}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, "");
-                              setTimeMinuteInput(v);
-                            }}
-                            onBlur={() => {
-                              const m = Math.min(
-                                59,
-                                Math.max(0, parseInt(timeMinuteInput) || 0),
-                              );
-                              setTimeMinuteInput(String(m).padStart(2, "0"));
-                            }}
-                            className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
-                          />
-                        </div>
-                        <div className="flex rounded-md border border-slate-200 overflow-hidden">
-                          {(["AM", "PM"] as const).map((p) => (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => setTimePeriod(p)}
-                              className={cn(
-                                "px-2 h-7 text-[10px] font-bold transition-colors",
-                                timePeriod === p
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-white text-slate-500 hover:bg-slate-50",
-                              )}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                        </div>
-                        {editFormData.followUpDueDate && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const d = editFormData.followUpDueDate
-                                ? new Date(editFormData.followUpDueDate)
-                                : new Date();
-                              const h = parseInt(timeHourInput) || 12;
-                              const m = parseInt(timeMinuteInput) || 0;
-                              const h24 =
-                                timePeriod === "AM"
-                                  ? h === 12
-                                    ? 0
-                                    : h
-                                  : h === 12
-                                    ? 12
-                                    : h + 12;
-                              d.setHours(h24, m, 0, 0);
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpDueDate: d.toISOString(),
-                              }));
-                              setMainCalendarOpen(false);
-                            }}
-                            className="ml-auto text-[10px] font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
-                          >
-                            Done
-                          </button>
-                        )}
-                      </div>
-                      {editFormData.followUpDueDate && (
-                        <div className="mt-2 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditFormData((f) => ({
-                                ...f,
-                                followUpDueDate: "",
-                              }));
-                              setMainCalendarOpen(false);
-                            }}
-                            className="text-xs text-red-500 hover:text-red-600"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <FieldLabel>Assignee</FieldLabel>
-                <InspectorSelect
-                  value={editFormData.followUpAssignedToId || ""}
-                  onChange={(v) =>
-                    setEditFormData((f) => ({
-                      ...f,
-                      followUpAssignedToId: v === "none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Assign…"
-                >
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {agents.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </InspectorSelect>
-              </div>
-            </div>
+            <TicketFollowUpFields
+              followUpDueDate={editFormData.followUpDueDate || ""}
+              followUpAssignedToId={editFormData.followUpAssignedToId || ""}
+              onFollowUpDueDateChange={(iso) =>
+                setEditFormData((f) => ({ ...f, followUpDueDate: iso }))
+              }
+              onFollowUpAssignedToIdChange={(id) =>
+                setEditFormData((f) => ({
+                  ...f,
+                  followUpAssignedToId: id,
+                }))
+              }
+              agents={agents.map((a: { id: number; name: string }) => ({
+                id: a.id,
+                name: a.name,
+              }))}
+              popoverClassName={popoverClassName}
+              selectContentClassName={selectContentClassName}
+            />
           </div>
         )}
       </div>

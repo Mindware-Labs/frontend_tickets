@@ -43,12 +43,15 @@ export function TicketStatusToggle({
   className,
   includeAll = false,
   compact = false,
+  readOnly = false,
 }: {
   value: string;
   onChange: (status: string) => void;
   className?: string;
   includeAll?: boolean;
   compact?: boolean;
+  /** Display only — no status changes from this control */
+  readOnly?: boolean;
 }) {
   const activeKey =
     includeAll && (!value || value === "all")
@@ -79,13 +82,19 @@ export function TicketStatusToggle({
           <button
             key={key}
             type="button"
-            onClick={() => onChange(key)}
+            disabled={readOnly}
+            onClick={readOnly ? undefined : () => onChange(key)}
             className={cn(
               "font-semibold rounded-lg border transition-all leading-tight px-1",
               compact ? "h-7 text-[9.5px]" : "h-8 text-[10px]",
+              readOnly && !isActive && "opacity-50 cursor-default",
+              readOnly && isActive && "cursor-default",
               isActive
                 ? "shadow-sm"
-                : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50",
+                : "bg-white border-slate-200 text-slate-500",
+              !readOnly &&
+                !isActive &&
+                "hover:border-slate-300 hover:bg-slate-50",
             )}
             style={
               isActive

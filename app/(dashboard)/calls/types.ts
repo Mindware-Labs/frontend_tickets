@@ -320,6 +320,7 @@ export interface TicketUpdateRecord {
   ticketId: number;
   agentId?: number | null;
   agent?: AgentOption | null;
+  authorName?: string | null;
   type: TicketUpdateType;
   note?: string | null;
   fromStatus?: string | null;

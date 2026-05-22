@@ -1,27 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
-import { SelectItem } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
 import {
   SupportTicketStatus,
   type SupportTicketRecord,
   type TicketUpdateRecord,
 } from "../../types";
 import { TicketStatusToggle } from "./TicketStatusToggle";
-import { InspectorSelect } from "../shared/InspectorHelpers";
-import { formatEnumLabel } from "../../utils/call-helpers";
+import { TicketFollowUpFields } from "./TicketFollowUpFields";
 
 interface LogTicketUpdateFormProps {
   ticket: SupportTicketRecord;
   agents: { id: number; name: string }[];
+  /** Logged-in agent (fallback for author when JWT user has no agent link) */
+  actorAgentId?: number | null;
   onLogged?: (result: {
     ticket: SupportTicketRecord;
     updates: TicketUpdateRecord[];
@@ -29,9 +22,12 @@ interface LogTicketUpdateFormProps {
   onError?: (message: string) => void;
 }
 
+const PEEK_OVERLAY_Z = "z-[120]";
+
 export function LogTicketUpdateForm({
   ticket,
   agents,
+  actorAgentId,
   onLogged,
   onError,
 }: LogTicketUpdateFormProps) {
@@ -43,7 +39,6 @@ export function LogTicketUpdateForm({
   const [followUpAssignedToId, setFollowUpAssignedToId] = useState(
     ticket.followUpAssignedToId?.toString() || "",
   );
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,23 +46,16 @@ export function LogTicketUpdateForm({
     setStatus(ticket.status || "");
     setFollowUpDueDate(ticket.followUpDueDate || "");
     setFollowUpAssignedToId(ticket.followUpAssignedToId?.toString() || "");
-  }, [ticket.id, ticket.status, ticket.followUpDueDate, ticket.followUpAssignedToId]);
-
-  const followUpDateDisplay = useMemo(() => {
-    if (!followUpDueDate) return null;
-    const d = new Date(followUpDueDate);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  }, [followUpDueDate]);
+  }, [
+    ticket.id,
+    ticket.status,
+    ticket.followUpDueDate,
+    ticket.followUpAssignedToId,
+  ]);
 
   const statusChanged =
-    status.trim().toUpperCase() !== (ticket.status || "").toString().toUpperCase();
+    status.trim().toUpperCase() !==
+    (ticket.status || "").toString().toUpperCase();
   const followUpChanged =
     (followUpDueDate || "") !== (ticket.followUpDueDate || "") ||
     (followUpAssignedToId || "") !==
@@ -79,12 +67,11 @@ export function LogTicketUpdateForm({
       onError?.("A note is required to log an update.");
       return;
     }
-    if (statusChanged && !trimmed) {
-      onError?.("A note is required when changing status.");
-      return;
-    }
 
     const payload: Record<string, unknown> = { note: trimmed };
+    if (actorAgentId) {
+      payload.actorAgentId = actorAgentId;
+    }
 
     if (statusChanged) {
       payload.status = status;
@@ -132,16 +119,27 @@ export function LogTicketUpdateForm({
     ticket.status === SupportTicketStatus.PENDING_FOLLOWUP;
 
   return (
-    <div className="space-y-2.5">
+    <form
+      className="space-y-2.5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit();
+      }}
+    >
       <div>
-        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <label
+          htmlFor={`ticket-update-note-${ticket.id}`}
+          className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block"
+        >
           Note <span className="text-red-400">*</span>
-        </p>
+        </label>
         <textarea
+          id={`ticket-update-note-${ticket.id}`}
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What happened on this ticket?"
+          autoComplete="off"
           className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed"
         />
       </div>
@@ -158,73 +156,19 @@ export function LogTicketUpdateForm({
       </div>
 
       {showFollowUp && (
-        <div className="grid grid-cols-2 gap-2 rounded-lg p-2.5 bg-amber-50 border border-amber-200/70">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              Follow-up date
-            </p>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="w-full h-8 flex items-center gap-2 px-2.5 text-xs rounded-lg border bg-white border-amber-300 text-left"
-                >
-                  <CalendarIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span
-                    className={
-                      followUpDateDisplay
-                        ? "text-slate-800 font-semibold"
-                        : "text-amber-500"
-                    }
-                  >
-                    {followUpDateDisplay || "Pick date…"}
-                  </span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={
-                    followUpDueDate ? new Date(followUpDueDate) : undefined
-                  }
-                  onSelect={(date) => {
-                    if (!date) return;
-                    const d = new Date(date);
-                    d.setHours(12, 0, 0, 0);
-                    setFollowUpDueDate(d.toISOString());
-                    setCalendarOpen(false);
-                  }}
-                  disabled={{ before: new Date() }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              Assignee
-            </p>
-            <InspectorSelect
-              value={followUpAssignedToId || ""}
-              onChange={(v) =>
-                setFollowUpAssignedToId(v === "none" ? "" : v)
-              }
-              placeholder="Assign…"
-            >
-              <SelectItem value="none">Unassigned</SelectItem>
-              {agents.map((a) => (
-                <SelectItem key={a.id} value={a.id.toString()}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </InspectorSelect>
-          </div>
-        </div>
+        <TicketFollowUpFields
+          followUpDueDate={followUpDueDate}
+          followUpAssignedToId={followUpAssignedToId}
+          onFollowUpDueDateChange={setFollowUpDueDate}
+          onFollowUpAssignedToIdChange={setFollowUpAssignedToId}
+          agents={agents}
+          popoverClassName={PEEK_OVERLAY_Z}
+          selectContentClassName={PEEK_OVERLAY_Z}
+        />
       )}
 
       <button
-        type="button"
-        onClick={handleSubmit}
+        type="submit"
         disabled={isSubmitting || !note.trim()}
         className="w-full flex items-center justify-center gap-2 py-2 text-white text-[12px] font-semibold rounded-xl bg-[#008f68] hover:bg-[#007a5a] disabled:opacity-50 transition-colors"
       >
@@ -235,6 +179,6 @@ export function LogTicketUpdateForm({
         )}
         {isSubmitting ? "Logging…" : "Log update"}
       </button>
-    </div>
+    </form>
   );
 }
