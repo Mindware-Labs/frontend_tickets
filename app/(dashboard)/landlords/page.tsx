@@ -409,8 +409,7 @@ export default function LandlordsPage() {
         <LandlordsToolbar search={search} onSearchChange={setSearch} />
       </div>
 
-      <div className="flex-1 min-h-0">
-        <LandlordsTable
+      <LandlordsTable
           loading={loading}
           landlords={paginatedLandlords}
           totalFiltered={filteredLandlords.length}
@@ -424,7 +423,6 @@ export default function LandlordsPage() {
           itemsPerPage={ITEMS_PER_PAGE}
           totalPages={totalPages}
         />
-      </div>
 
       <LandlordFormModal
         open={showCreateModal}

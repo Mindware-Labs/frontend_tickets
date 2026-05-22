@@ -1,16 +1,18 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Phone, Tag, CircleDot, Loader2 } from "lucide-react";
+import { Phone } from "lucide-react";
+import {
+  EntityFormCard,
+  EntityFormDialogFooter,
+  EntityFormDialogShell,
+  EntityFormField,
+  EntityFormSectionHeading,
+  entityFormInputClassName,
+  entityFormInputErrorClass,
+} from "@/components/forms/entity-form-layout";
 import { PhoneLineFormData } from "../types";
 
 interface PhoneLineFormModalProps {
@@ -56,107 +58,83 @@ export function PhoneLineFormModal({
   idPrefix,
 }: PhoneLineFormModalProps) {
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    onFormChange({ ...formData, phoneNumber: formatted });
+    onFormChange({ ...formData, phoneNumber: formatPhoneNumber(value) });
     if (validationErrors.phoneNumber) {
       onValidationErrorChange({ ...validationErrors, phoneNumber: "" });
     }
   };
 
-  const fieldInput = (
-    "h-9 rounded-lg border-[#e2e8f0] bg-white text-[13px] text-slate-700 placeholder:text-slate-300 shadow-none " +
-    "focus-visible:ring-1 focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40 " +
-    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-600"
-  );
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 rounded-xl border-[#e2e8f0] shadow-xl overflow-hidden dark:border-slate-700">
-        {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-4 border-b border-[#e2e8f0] dark:border-slate-700">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800 dark:text-slate-100">
-            {title}
-          </DialogTitle>
-          <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
-        </DialogHeader>
-
-        {/* Body */}
-        <div className="px-5 py-4 space-y-3.5">
-          {/* Phone Number */}
-          <div className="space-y-1">
-            <label htmlFor={`${idPrefix}-phone`} className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
-              <Phone className="h-3 w-3" />
-              Phone Number <span className="text-red-400">*</span>
-            </label>
+    <EntityFormDialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      icon={Phone}
+      maxWidthClass="sm:max-w-[520px]"
+      footer={
+        <EntityFormDialogFooter
+          onCancel={() => onOpenChange(false)}
+          onSubmit={onSubmit}
+          submitLabel={submitLabel}
+          isSubmitting={isSubmitting}
+          submitVariant="create"
+        />
+      }
+    >
+      <EntityFormCard title="Phone Line Details" icon={Phone}>
+        <EntityFormSectionHeading>Line Information</EntityFormSectionHeading>
+        <div className="space-y-2.5">
+          <EntityFormField
+            id={`${idPrefix}-phone`}
+            label="Phone Number"
+            required
+            error={validationErrors.phoneNumber}
+          >
             <Input
               id={`${idPrefix}-phone`}
               placeholder="+1 XXX-XXX-XXXX"
               value={formData.phoneNumber}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              className={cn(fieldInput, "font-mono", validationErrors.phoneNumber && "border-red-400 focus-visible:ring-red-200")}
+              className={cn(
+                entityFormInputClassName,
+                "font-mono",
+                entityFormInputErrorClass(!!validationErrors.phoneNumber),
+              )}
             />
-            {validationErrors.phoneNumber && (
-              <p className="text-[10.5px] text-red-500 mt-0.5">{validationErrors.phoneNumber}</p>
-            )}
-          </div>
+          </EntityFormField>
 
-          {/* Label */}
-          <div className="space-y-1">
-            <label htmlFor={`${idPrefix}-label`} className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
-              <Tag className="h-3 w-3" />
-              Label
-            </label>
+          <EntityFormField id={`${idPrefix}-label`} label="Label">
             <Input
               id={`${idPrefix}-label`}
               placeholder="e.g. Rig Hut – Main Office"
               value={formData.label}
-              onChange={(e) => onFormChange({ ...formData, label: e.target.value })}
-              className={fieldInput}
-            />
-          </div>
-
-          {/* Active toggle */}
-          <div className="flex items-center justify-between rounded-lg border border-[#e2e8f0] p-3.5 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
-            <div className="space-y-0.5">
-              <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">
-                <CircleDot className="h-3 w-3" />
-                Active
-              </label>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Inactive lines won't generate tickets from Aircall
-              </p>
-            </div>
-            <Switch
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                onFormChange({ ...formData, isActive: checked })
+              onChange={(e) =>
+                onFormChange({ ...formData, label: e.target.value })
               }
+              className={entityFormInputClassName}
             />
-          </div>
+          </EntityFormField>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-center gap-2 px-5 py-3.5 border-t border-[#e2e8f0] bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-            className="h-9 px-6 rounded-lg text-[13px] font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="h-9 px-8 rounded-lg text-[13px] font-medium bg-[#008f68] hover:bg-[#007a5a] text-white shadow-sm"
-          >
-            {isSubmitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-            {isSubmitting ? "Saving..." : submitLabel}
-          </Button>
+        <EntityFormSectionHeading>Status</EntityFormSectionHeading>
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Active
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              Inactive lines won&apos;t generate tickets from Aircall
+            </p>
+          </div>
+          <Switch
+            checked={formData.isActive}
+            onCheckedChange={(checked) =>
+              onFormChange({ ...formData, isActive: checked })
+            }
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+      </EntityFormCard>
+    </EntityFormDialogShell>
   );
 }

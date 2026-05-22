@@ -135,12 +135,12 @@ export function LogTicketUpdateForm({
         </label>
         <textarea
           id={`ticket-update-note-${ticket.id}`}
-          rows={3}
+          rows={7}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What happened on this ticket?"
           autoComplete="off"
-          className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed"
+          className="w-full min-h-[160px] text-sm text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed"
         />
       </div>
 

@@ -43,6 +43,10 @@ import {
   TableCampaignBadge,
   TableYardBadge,
 } from "@/components/entity-table-badges";
+import {
+  TableCallStatusPill,
+  TableDispositionPill,
+} from "@/components/entity-table-pills";
 import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useLiveCalls } from "@/components/providers/CallSocketProvider";
@@ -70,96 +74,6 @@ import {
 } from "../../utils/call-helpers";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { InlineCallTimeline } from "./InlineCallTimeline";
-
-const STATUS_CONFIG: Record<
-  string,
-  {
-    label: string;
-    dotColor: string;
-    bgColor: string;
-    textColor: string;
-    borderColor: string;
-  }
-> = {
-  ACTIVE: {
-    label: "Active",
-    dotColor: "bg-[#22c55e]",
-    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
-    textColor: "text-[#15803d] dark:text-emerald-400",
-    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
-  },
-  OPEN: {
-    label: "Active",
-    dotColor: "bg-[#22c55e]",
-    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
-    textColor: "text-[#15803d] dark:text-emerald-400",
-    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
-  },
-  IN_PROGRESS: {
-    label: "Active",
-    dotColor: "bg-[#22c55e]",
-    bgColor: "bg-[#dcfce7] dark:bg-emerald-500/15",
-    textColor: "text-[#15803d] dark:text-emerald-400",
-    borderColor: "border-[#bbf7d0] dark:border-emerald-500/30",
-  },
-  PENDING_FOLLOWUP: {
-    label: "Pending",
-    dotColor: "bg-[#f59e0b]",
-    bgColor: "bg-[#fef3c7] dark:bg-amber-500/15",
-    textColor: "text-[#b45309] dark:text-amber-400",
-    borderColor: "border-[#fde68a] dark:border-amber-500/30",
-  },
-  PENDING: {
-    label: "Pending",
-    dotColor: "bg-[#f59e0b]",
-    bgColor: "bg-[#fef3c7] dark:bg-amber-500/15",
-    textColor: "text-[#b45309] dark:text-amber-400",
-    borderColor: "border-[#fde68a] dark:border-amber-500/30",
-  },
-  OVERDUE: {
-    label: "Overdue",
-    dotColor: "bg-[#ef4444]",
-    bgColor: "bg-[#fee2e2] dark:bg-red-500/15",
-    textColor: "text-[#b91c1c] dark:text-red-400",
-    borderColor: "border-[#fecaca] dark:border-red-500/30",
-  },
-  COMPLETED: {
-    label: "Closed",
-    dotColor: "bg-[#94a3b8]",
-    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
-    textColor: "text-[#475569] dark:text-slate-400",
-    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
-  },
-  CLOSED: {
-    label: "Closed",
-    dotColor: "bg-[#94a3b8]",
-    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
-    textColor: "text-[#475569] dark:text-slate-400",
-    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
-  },
-  RESOLVED: {
-    label: "Closed",
-    dotColor: "bg-[#94a3b8]",
-    bgColor: "bg-[#f1f5f9] dark:bg-slate-500/15",
-    textColor: "text-[#475569] dark:text-slate-400",
-    borderColor: "border-[#e2e8f0] dark:border-slate-500/30",
-  },
-};
-
-function StatusPill({ status }: { status: string }) {
-  const key = status?.toString().toUpperCase().replace(/\s+/g, "_") || "ACTIVE";
-  const cfg = STATUS_CONFIG[key] || STATUS_CONFIG.CLOSED;
-  return (
-    <span
-      className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-bold leading-none ${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor}`}
-    >
-      <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotColor}`}
-      />
-      <span className="truncate">{cfg.label}</span>
-    </span>
-  );
-}
 
 const DIRECTION_CONFIG: Record<
   string,
@@ -475,28 +389,28 @@ export function GroupedCallsTable({
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Calls
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Line
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Disposition
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Dir.
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
               </TableRow>
@@ -657,24 +571,13 @@ export function GroupedCallsTable({
                         </TableCell>
 
                         {/* Disposition */}
-                        <TableCell className="px-2 py-1.5 align-middle">
-                          {t.disposition ? (
-                            <span
-                              className="inline-flex max-w-full items-center truncate rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-600"
-                              title={formatEnumLabel(t.disposition)}
-                            >
-                              {formatEnumLabel(t.disposition)}
-                            </span>
-                          ) : (
-                            <span className="text-[10.5px] text-amber-600">
-                              —
-                            </span>
-                          )}
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableDispositionPill disposition={t.disposition} />
                         </TableCell>
 
                         {/* Status */}
-                        <TableCell className="px-1 py-1.5 align-middle">
-                          <StatusPill status={t.status} />
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableCallStatusPill status={t.status} />
                         </TableCell>
 
                         {/* Direction */}

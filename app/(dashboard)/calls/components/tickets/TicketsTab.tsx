@@ -45,6 +45,12 @@ import {
   TableCampaignBadge,
   TableYardBadge,
 } from "@/components/entity-table-badges";
+import {
+  TableDispositionPill,
+  TablePriorityPill,
+  TableSupportStatusPill,
+  normalizeSupportStatusKey,
+} from "@/components/entity-table-pills";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useTicketFilters } from "../../hooks/useTicketFilters";
@@ -80,36 +86,6 @@ const fetcher = async (url: string) => {
   return result.data;
 };
 
-const STATUS_PILL: Record<
-  string,
-  { dot: string; bg: string; fg: string; label: string }
-> = {
-  ACTIVE: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
-  OPEN: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Active" },
-  IN_PROGRESS: {
-    dot: "#008f68",
-    bg: "#e6f5f0",
-    fg: "#006d50",
-    label: "Active",
-  },
-  PENDING_FOLLOWUP: {
-    dot: "#d97706",
-    bg: "#fef3c7",
-    fg: "#b45309",
-    label: "Follow-up",
-  },
-  OVERDUE: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c", label: "Overdue" },
-  RESOLVED: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50", label: "Resolved" },
-  CLOSED: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569", label: "Closed" },
-};
-
-const PRIORITY_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
-  LOW: { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
-  MEDIUM: { dot: "#f59e0b", bg: "#fef3c7", fg: "#b45309" },
-  HIGH: { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
-  EMERGENCY: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
-};
-
 // Map status/priority to Tailwind classes for Badge styling
 const statusColors: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -134,52 +110,6 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const normalizeStatusKey = (status?: string | null) => {
-  const key = (status || "").toString().toUpperCase().replace(/\s+/g, "_");
-  return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
-};
-
-function TicketStatusPill({ status }: { status: string }) {
-  const key = normalizeStatusKey(status);
-  const sp = STATUS_PILL[key] || STATUS_PILL.CLOSED;
-  return (
-    <span
-      className="inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10.5px] font-bold leading-none"
-      style={{
-        color: sp.fg,
-        background: sp.bg,
-        borderColor: sp.bg,
-      }}
-    >
-      <span
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: sp.dot }}
-      />
-      <span className="truncate">{sp.label}</span>
-    </span>
-  );
-}
-
-function TicketPriorityPill({ priority }: { priority: string }) {
-  const pp = PRIORITY_PILL[priority] || PRIORITY_PILL.LOW;
-  return (
-    <span
-      className="inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10.5px] font-bold leading-none"
-      style={{
-        color: pp.fg,
-        background: pp.bg,
-        borderColor: pp.bg,
-      }}
-    >
-      <span
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: pp.dot }}
-      />
-      <span className="truncate">{formatLabel(priority)}</span>
-    </span>
-  );
-}
-
 const TICKET_STATUS_VIEW_TABS = [
   { key: "all", label: "All Tickets", countKey: "all" },
   { key: "active_status", label: "Active", countKey: "active_status" },
@@ -190,7 +120,6 @@ const TICKET_STATUS_VIEW_TABS = [
   },
   { key: "overdue", label: "Overdue", countKey: "overdue", isOverdue: true },
   { key: "resolved", label: "Resolved", countKey: "resolved" },
-  { key: "closed", label: "Closed", countKey: "closed" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -350,7 +279,7 @@ export function TicketsTab({
         ...emptyForm,
         ...initialCreateData,
         status: (initialCreateData.status
-          ? normalizeStatusKey(initialCreateData.status)
+          ? normalizeSupportStatusKey(initialCreateData.status)
           : emptyForm.status) as SupportTicketStatus,
       });
       setShowCreate(true);
@@ -378,7 +307,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: normalizeStatusKey(t.status) as SupportTicketStatus,
+      status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
@@ -402,7 +331,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: normalizeStatusKey(t.status) as SupportTicketStatus,
+      status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
@@ -425,7 +354,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: normalizeStatusKey(t.status) as SupportTicketStatus,
+      status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
@@ -591,7 +520,7 @@ export function TicketsTab({
       agentId: t.agentId?.toString() || "",
       phoneLineId: t.phoneLineId?.toString() || "",
       callId: t.callId?.toString() || "",
-      status: normalizeStatusKey(t.status) as SupportTicketStatus,
+      status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
       priority: t.priority,
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
@@ -833,47 +762,51 @@ export function TicketsTab({
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative w-full table-fixed text-[12px]">
             <colgroup>
-              <col className="w-[6%]" />
+              <col className="w-[5%]" />
               <col className="w-[17%]" />
               <col className="w-[5%]" />
+              <col className="w-[8%]" />
+              <col className="w-[8%]" />
               <col className="w-[9%]" />
-              <col className="w-[9%]" />
-              <col className="w-[10%]" />
               <col className="w-[11%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
-              <col className="w-[5%]" />
+              <col className="w-[10%]" />
+              <col className="w-[9%]" />
+              <col className="w-[11%]" />
+              <col className="w-[7%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   ID
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Tickets
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Priority
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Type
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Disposition
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
                 </TableHead>
               </TableRow>
@@ -881,14 +814,14 @@ export function TicketsTab({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center">
+                  <TableCell colSpan={11} className="h-24 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
                   </TableCell>
                 </TableRow>
               ) : ticketGroups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={11}
                     className="h-24 text-center text-slate-400 text-sm"
                   >
                     No tickets found
@@ -917,7 +850,7 @@ export function TicketsTab({
                         )}
                         onClick={() => openView(t)}
                       >
-                        <TableCell className="px-2 py-1.5 align-middle">
+                        <TableCell className="px-2 py-1 align-middle">
                           <span className="text-[11px] font-mono font-semibold text-slate-500 tabular-nums">
                             #{t.id}
                           </span>
@@ -927,7 +860,7 @@ export function TicketsTab({
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="px-2 py-1.5 align-middle">
+                        <TableCell className="px-2 py-1 align-middle">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
@@ -980,7 +913,7 @@ export function TicketsTab({
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="px-1 py-1.5 text-center align-middle">
+                        <TableCell className="px-2 py-1 text-center align-middle">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1004,14 +937,14 @@ export function TicketsTab({
                             </span>
                           </button>
                         </TableCell>
-                        <TableCell className="px-1 py-1.5 align-middle">
-                          <TicketStatusPill status={t.status} />
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableSupportStatusPill status={t.status} />
                         </TableCell>
-                        <TableCell className="px-1 py-1.5 align-middle">
-                          <TicketPriorityPill priority={t.priority} />
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TablePriorityPill priority={t.priority} />
                         </TableCell>
                         <TableCell
-                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] font-medium text-slate-600"
+                          className="max-w-0 px-2 py-1 align-middle text-[11px] font-medium text-slate-600"
                           title={
                             t.ticketType ? formatLabel(t.ticketType) : undefined
                           }
@@ -1021,26 +954,29 @@ export function TicketsTab({
                           </span>
                         </TableCell>
                         <TableCell
-                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] text-slate-600"
+                          className="max-w-0 px-2 py-1 align-middle text-[11px] text-slate-600"
                           title={agentName(t)}
                         >
                           <span className="block truncate font-medium">
                             {agentName(t)}
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-0 px-2 py-1.5 align-middle">
+                        <TableCell className="px-2 py-1 align-middle">
                           <TableYardBadge
                             compact
                             name={t.yard?.commonName || t.yard?.name}
                           />
                         </TableCell>
-                        <TableCell className="max-w-0 px-2 py-1.5 align-middle">
+                        <TableCell className="px-2 py-1 align-middle">
                           <TableCampaignBadge
                             compact
                             name={t.campaign?.nombre}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1.5 align-middle text-[10.5px] text-slate-500 font-mono tabular-nums">
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableDispositionPill disposition={t.disposition} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-2 py-1 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
                           {createdLabel}
                         </TableCell>
                       </TableRow>
@@ -1049,7 +985,7 @@ export function TicketsTab({
                           key={`${group.key}-timeline`}
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
-                          <TableCell colSpan={10} className="border-t-0 py-1.5 px-0">
+                          <TableCell colSpan={11} className="border-t-0 py-1.5 px-0">
                             <InlineTicketTimeline
                               group={group}
                               agents={refData.agents}
@@ -1200,10 +1136,10 @@ export function TicketsTab({
                     <Badge
                       variant="secondary"
                       className={
-                        statusColors[normalizeStatusKey(selected.status)] || ""
+                        statusColors[normalizeSupportStatusKey(selected.status)] || ""
                       }
                     >
-                      {formatLabel(normalizeStatusKey(selected.status))}
+                      {formatLabel(normalizeSupportStatusKey(selected.status))}
                     </Badge>
                   </div>
                 </div>
@@ -1372,6 +1308,8 @@ export function TicketsTab({
         open={showDrawer}
         onClose={() => {
           setShowDrawer(false);
+          setShowDrawerSuccess(false);
+          setShowDrawerError(false);
           resetForm();
         }}
         group={drawerGroup}

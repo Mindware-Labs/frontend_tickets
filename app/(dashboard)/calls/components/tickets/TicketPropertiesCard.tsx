@@ -27,7 +27,10 @@ import {
   InspectorSelect,
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
-import { TicketStatusToggle } from "./TicketStatusToggle";
+import {
+  CREATE_TICKET_STATUSES,
+  TicketStatusToggle,
+} from "./TicketStatusToggle";
 import { TicketFollowUpFields } from "./TicketFollowUpFields";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -67,6 +70,8 @@ export interface TicketPropertiesCardProps {
   selectContentClassName?: string;
   /** Hide status & follow-up (handled via activity log in drawer) */
   activityMode?: boolean;
+  /** Manual create form: Active, Follow-up, Overdue only */
+  forCreateForm?: boolean;
 }
 
 export function TicketPropertiesCard({
@@ -85,6 +90,7 @@ export function TicketPropertiesCard({
   mainFilteredCustomers,
   showPhoneLine = true,
   activityMode = false,
+  forCreateForm = false,
   popoverClassName,
   selectContentClassName,
 }: TicketPropertiesCardProps) {
@@ -319,6 +325,9 @@ export function TicketPropertiesCard({
                       ...f,
                       status: v as SupportTicketStatus,
                     }))
+                  }
+                  statuses={
+                    forCreateForm ? CREATE_TICKET_STATUSES : undefined
                   }
                   className="mt-0.5"
                 />

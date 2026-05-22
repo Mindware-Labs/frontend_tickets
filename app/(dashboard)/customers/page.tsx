@@ -506,8 +506,7 @@ export default function CustomersPage() {
         />
       </div>
 
-      <div className="flex-1 min-h-0">
-        <CustomersTable
+      <CustomersTable
           loading={loading}
           customers={customers}
           totalFiltered={totalCustomers}
@@ -522,7 +521,6 @@ export default function CustomersPage() {
           itemsPerPage={ITEMS_PER_PAGE}
           totalPages={totalPages}
         />
-      </div>
 
       {canManage ? (
         <>

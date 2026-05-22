@@ -30,7 +30,7 @@ export function TableYardBadge({
       variant="outline"
       className={cn(
         compact
-          ? "flex h-auto w-full min-w-0 max-w-full items-center shadow-none"
+          ? "inline-flex h-auto w-fit max-w-full items-center shadow-none"
           : "inline-flex h-auto max-w-full items-center shadow-none",
         compact
           ? "gap-0.5 rounded-full border-slate-200 px-1.5 py-0.5 text-[10.5px] font-medium leading-tight"
@@ -104,7 +104,7 @@ export function TableCampaignBadge({
       variant="secondary"
       className={cn(
         compact
-          ? "flex h-auto w-full min-w-0 max-w-full shadow-none hover:bg-[#e2fae9]"
+          ? "inline-flex h-auto w-fit max-w-full shadow-none hover:bg-[#e2fae9]"
           : "inline-flex h-auto max-w-full shadow-none hover:bg-[#e2fae9]",
         compact
           ? "rounded-full bg-[#e2fae9] px-1.5 py-0.5 text-[10.5px] font-medium leading-tight text-[#006d50]"

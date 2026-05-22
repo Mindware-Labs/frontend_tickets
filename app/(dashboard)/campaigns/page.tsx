@@ -540,7 +540,7 @@ export default function CampaignsPage() {
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+      <div className="flex flex-col gap-4">
         <CampaignsGrid
           loading={loading}
           campaigns={paginatedCampaigns}

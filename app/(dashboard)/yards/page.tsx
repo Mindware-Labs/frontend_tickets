@@ -501,8 +501,7 @@ export default function YardsPage() {
         />
       </div>
 
-      <div className="flex-1 min-h-0">
-        <YardsTable
+      <YardsTable
           loading={loading}
           yards={paginatedYards}
           totalFiltered={filteredYards.length}
@@ -515,7 +514,6 @@ export default function YardsPage() {
           itemsPerPage={ITEMS_PER_PAGE}
           totalPages={totalPages}
         />
-      </div>
 
       <YardFormModal
         open={showCreateModal}

@@ -1,33 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Trash2,
-  StickyNote,
-  Loader2,
-  Pencil,
-  Check,
-  X,
-  User,
-  Phone,
-  Search,
-  Pin,
-  RotateCcw,
-} from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, User, Search, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  EntityFormCard,
+  EntityFormDialogFooter,
+  EntityFormDialogShell,
+  EntityFormField,
+  EntityFormGrid,
+  EntityFormSectionHeading,
+  entityFormInputClassName,
+  entityFormInputErrorClass,
+  entityFormTextareaClassName,
+} from "@/components/forms/entity-form-layout";
 import {
   CampaignOption,
   CustomerFormData,
@@ -55,47 +46,6 @@ interface CustomerFormModalProps {
   existingNotes?: CustomerNote[];
   onNotesChange?: (notes: CustomerNote[]) => void;
   showPlaceholders?: boolean;
-}
-
-interface FieldShellProps {
-  id: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  className?: string;
-  children: ReactNode;
-}
-
-function FieldShell({
-  id,
-  label,
-  required,
-  error,
-  hint,
-  className,
-  children,
-}: FieldShellProps) {
-  return (
-    <div className={cn("space-y-2", className)}>
-      <label
-        htmlFor={id}
-        className="block text-[13px] font-semibold leading-none text-slate-900 dark:text-slate-100"
-      >
-        {label}
-        {required && <span className="ml-1 text-red-500">*</span>}
-      </label>
-      {children}
-      {hint && !error ? (
-        <p className="text-[12px] text-slate-500 dark:text-slate-400">{hint}</p>
-      ) : null}
-      {error ? (
-        <p className="text-[12px] font-medium text-red-500" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
 }
 
 export function CustomerFormModal({
@@ -206,38 +156,29 @@ export function CustomerFormModal({
     }
   };
 
-  const fieldInput =
-    "h-11 rounded-md border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-none transition-colors " +
-    "focus-visible:border-[#008f68] focus-visible:ring-2 focus-visible:ring-[#008f68]/15 " +
-    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500";
-
-  const fieldTextarea =
-    "min-h-[96px] resize-none rounded-md border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 shadow-none transition-colors " +
-    "focus-visible:border-[#008f68] focus-visible:ring-2 focus-visible:ring-[#008f68]/15 " +
-    "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500";
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950">
-        <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              <User className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-slate-50">
-                {title}
-              </DialogTitle>
-              <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
-                {description}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="max-h-[68dvh] overflow-y-auto px-5 py-5 sm:px-6">
-          <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
-            <FieldShell
+    <EntityFormDialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      icon={User}
+      footer={
+        <EntityFormDialogFooter
+          onCancel={() => onOpenChange(false)}
+          onSubmit={onSubmit}
+          submitLabel={submitLabel}
+          isSubmitting={isSubmitting}
+          onReset={onReset}
+          resetLabel="Reset Data"
+          submitVariant={idPrefix === "create" ? "create" : "edit"}
+        />
+      }
+    >
+      <EntityFormCard title="Customer Details & Properties" icon={User}>
+        <EntityFormSectionHeading>Customer Information</EntityFormSectionHeading>
+        <EntityFormGrid>
+            <EntityFormField
               id={`${idPrefix}-name`}
               label="Full Name"
               error={validationErrors.name}
@@ -251,22 +192,19 @@ export function CustomerFormModal({
                 }}
                 placeholder={showPlaceholders ? "John Doe" : undefined}
                 className={cn(
-                  fieldInput,
-                  validationErrors.name &&
-                    "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-100",
+                  entityFormInputClassName,
+                  entityFormInputErrorClass(!!validationErrors.name),
                 )}
               />
-            </FieldShell>
+            </EntityFormField>
 
-            <FieldShell
+            <EntityFormField
               id={`${idPrefix}-phone`}
               label="Phone"
               required
               error={validationErrors.phone}
             >
-              <div className="relative">
-                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
+              <Input
                   id={`${idPrefix}-phone`}
                   value={formData.phone}
                   onChange={(e) => {
@@ -278,23 +216,18 @@ export function CustomerFormModal({
                   }}
                   placeholder="+1 XXX-XXX-XXXX"
                   className={cn(
-                    fieldInput,
-                    "pl-9",
-                    validationErrors.phone &&
-                      "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-100",
+                    entityFormInputClassName,
+                    entityFormInputErrorClass(!!validationErrors.phone),
                   )}
                 />
-              </div>
-            </FieldShell>
+            </EntityFormField>
 
-            <FieldShell
+            <EntityFormField
               id={`${idPrefix}-pinnedNote`}
               label="Pinned note"
-              className="sm:col-span-2"
+              className="col-span-2"
               hint="Visible to all agents on this phone number"
             >
-              <div className="relative">
-                <Pin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-amber-500" />
                 <Textarea
                   id={`${idPrefix}-pinnedNote`}
                   value={formData.pinnedNote}
@@ -307,16 +240,17 @@ export function CustomerFormModal({
                       : undefined
                   }
                   rows={3}
-                  className={cn(fieldTextarea, "border-amber-200/80 pl-9")}
+                  className={cn(entityFormTextareaClassName, "border-amber-200/60")}
                 />
-              </div>
-            </FieldShell>
+            </EntityFormField>
+        </EntityFormGrid>
 
-            <div className="space-y-2 sm:col-span-2">
+        <EntityFormSectionHeading>Campaigns</EntityFormSectionHeading>
+            <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="block text-[13px] font-semibold leading-none text-slate-900 dark:text-slate-100">
-                  Campaigns
-                </label>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Linked campaigns
+                </span>
                 {selectedCampaigns.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {selectedCampaigns.map((c) => (
@@ -346,17 +280,14 @@ export function CustomerFormModal({
                 ) : null}
               </div>
 
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  placeholder="Search campaigns…"
-                  value={campaignSearch}
-                  onChange={(e) => setCampaignSearch(e.target.value)}
-                  className={cn(fieldInput, "pl-9")}
-                />
-              </div>
+              <Input
+                placeholder="Search campaigns…"
+                value={campaignSearch}
+                onChange={(e) => setCampaignSearch(e.target.value)}
+                className={entityFormInputClassName}
+              />
 
-              <div className="max-h-36 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100 dark:border-slate-700 dark:divide-slate-800">
+              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-100 divide-y divide-slate-50 dark:border-slate-800">
                 {filteredCampaigns.length === 0 ? (
                   <p className="px-3 py-3 text-center text-sm text-slate-400">
                     No campaigns found
@@ -393,10 +324,10 @@ export function CustomerFormModal({
               </div>
             </div>
 
-            <FieldShell
+        <EntityFormSectionHeading>Notes</EntityFormSectionHeading>
+            <EntityFormField
               id={`${idPrefix}-auditNotes`}
-              label="Audit notes"
-              className="sm:col-span-2"
+              label="Audit Notes"
               hint="Internal trail — not shown as the pinned note"
             >
               {customerId ? (
@@ -413,14 +344,12 @@ export function CustomerFormModal({
                 />
               ) : (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <StickyNote className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
                     <Textarea
                       placeholder="Add an audit note…"
                       value={newNote}
                       rows={3}
                       onChange={(e) => setNewNote(e.target.value)}
-                      className={cn(fieldTextarea, "pl-9")}
+                      className={entityFormTextareaClassName}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
@@ -437,7 +366,6 @@ export function CustomerFormModal({
                         }
                       }}
                     />
-                  </div>
                   <div className="flex justify-end">
                     <Button
                       type="button"
@@ -477,7 +405,7 @@ export function CustomerFormModal({
                                   value={editingText}
                                   rows={2}
                                   onChange={(e) => setEditingText(e.target.value)}
-                                  className={cn(fieldTextarea, "min-h-[72px] flex-1")}
+                                  className={cn(entityFormTextareaClassName, "min-h-[72px] flex-1")}
                                   autoFocus
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter" && !e.shiftKey) {
@@ -557,53 +485,8 @@ export function CustomerFormModal({
                   ) : null}
                 </div>
               )}
-            </FieldShell>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
-          >
-            Cancel
-          </Button>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {onReset ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onReset}
-                disabled={isSubmitting}
-                className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:bg-white hover:text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-500 dark:hover:text-slate-300"
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Data
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              onClick={onSubmit}
-              disabled={isSubmitting}
-              className={cn(
-                "h-11 rounded-lg px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
-                idPrefix === "create"
-                  ? "bg-[#008f68] hover:bg-[#007a5a] dark:bg-[#008f68] dark:hover:bg-[#007a5a]"
-                  : "bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white",
-              )}
-            >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isSubmitting ? "Saving..." : submitLabel}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+            </EntityFormField>
+      </EntityFormCard>
+    </EntityFormDialogShell>
   );
 }

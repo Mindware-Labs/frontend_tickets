@@ -13,6 +13,15 @@ export async function GET(request: NextRequest) {
       "customerId",
       "campaignId",
       "yardId",
+      "campaignOption",
+      "disposition",
+      "createdByAgentId",
+      "status",
+      "view",
+      "search",
+      "startDate",
+      "endDate",
+      "includeViewCounts",
     ];
 
     for (const key of passthroughKeys) {

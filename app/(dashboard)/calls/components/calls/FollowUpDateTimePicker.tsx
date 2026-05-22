@@ -143,6 +143,7 @@ export function FollowUpDateTimePicker({
       </PopoverTrigger>
 
       <PopoverContent
+        data-ticket-sheet-overlay="true"
         align="start"
         sideOffset={6}
         className="w-[280px] overflow-hidden rounded-xl border border-slate-200/90 p-0 shadow-xl"

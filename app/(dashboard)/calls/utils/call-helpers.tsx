@@ -22,6 +22,17 @@ export function fmtDate(iso?: string | null): string {
   }
 }
 
+export function fmtDateTime(iso?: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return format(d, "MMM d, yyyy · h:mm a");
+  } catch {
+    return "—";
+  }
+}
+
 export function fmtRelative(iso?: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -291,11 +302,21 @@ export function getYardBadgeName(
   return null;
 }
 
-export function getAttachmentUrl(value: string, apiBase: string): string {
+export type AttachmentEntity = "tickets" | "manual-records" | "calls";
+
+export function getAttachmentUrl(
+  value: string,
+  apiBase: string,
+  entity: AttachmentEntity = "tickets",
+): string {
   if (!value) return "";
   if (value.startsWith("http")) return value;
   if (value.startsWith("s3://")) {
-    return `${apiBase}/tickets/attachments/download?fileUrl=${encodeURIComponent(value)}`;
+    if (entity === "calls") {
+      const encoded = encodeURIComponent(value);
+      return `${apiBase}/calls/0/attachments/download/${encoded}`;
+    }
+    return `${apiBase}/${entity}/attachments/download?fileUrl=${encodeURIComponent(value)}`;
   }
   const normalized = value.startsWith("/") ? value : `/${value}`;
   return `${apiBase}${normalized}`;

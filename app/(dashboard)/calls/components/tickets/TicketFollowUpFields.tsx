@@ -10,7 +10,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fmtDate } from "../../utils/call-helpers";
+import { fmtDateTime } from "../../utils/call-helpers";
 import { InspectorSelect } from "../shared/InspectorHelpers";
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -47,7 +47,7 @@ export function TicketFollowUpFields({
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
 
   const followUpDateDisplay = useMemo(
-    () => (followUpDueDate ? fmtDate(followUpDueDate) : null),
+    () => (followUpDueDate ? fmtDateTime(followUpDueDate) : null),
     [followUpDueDate],
   );
 
@@ -66,15 +66,33 @@ export function TicketFollowUpFields({
     }
   }, [followUpDueDate]);
 
-  const applyDateTime = (date: Date, closePopover = false) => {
-    const h = parseInt(timeHourInput) || 12;
-    const m = parseInt(timeMinuteInput) || 0;
+  const applyDateTime = (
+    date: Date,
+    closePopover = false,
+    overrides?: {
+      hourInput?: string;
+      minuteInput?: string;
+      period?: "AM" | "PM";
+    },
+  ) => {
+    const h = parseInt(overrides?.hourInput ?? timeHourInput) || 12;
+    const m = parseInt(overrides?.minuteInput ?? timeMinuteInput) || 0;
+    const period = overrides?.period ?? timePeriod;
     const h24 =
-      timePeriod === "AM" ? (h === 12 ? 0 : h) : h === 12 ? 12 : h + 12;
+      period === "AM" ? (h === 12 ? 0 : h) : h === 12 ? 12 : h + 12;
     const d = new Date(date);
     d.setHours(h24, m, 0, 0);
     onFollowUpDueDateChange(d.toISOString());
     if (closePopover) setCalendarOpen(false);
+  };
+
+  const commitTimeIfDateSet = (overrides?: {
+    hourInput?: string;
+    minuteInput?: string;
+    period?: "AM" | "PM";
+  }) => {
+    if (!followUpDueDate) return;
+    applyDateTime(new Date(followUpDueDate), false, overrides);
   };
 
   return (
@@ -94,17 +112,19 @@ export function TicketFollowUpFields({
             >
               <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
               <span
-                className={
+                className={cn(
+                  "min-w-0 truncate",
                   followUpDateDisplay
                     ? "text-slate-800 font-semibold text-xs"
-                    : "text-amber-400 text-xs"
-                }
+                    : "text-amber-400 text-xs",
+                )}
               >
                 {followUpDateDisplay || "Pick date…"}
               </span>
             </button>
           </PopoverTrigger>
           <PopoverContent
+            data-ticket-sheet-overlay="true"
             className={cn(
               "w-auto p-0 shadow-xl border-slate-200",
               popoverClassName,
@@ -139,7 +159,9 @@ export function TicketFollowUpFields({
                         12,
                         Math.max(1, parseInt(timeHourInput) || 12),
                       );
-                      setTimeHourInput(String(h).padStart(2, "0"));
+                      const normalized = String(h).padStart(2, "0");
+                      setTimeHourInput(normalized);
+                      commitTimeIfDateSet({ hourInput: normalized });
                     }}
                     className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
                   />
@@ -156,7 +178,9 @@ export function TicketFollowUpFields({
                         59,
                         Math.max(0, parseInt(timeMinuteInput) || 0),
                       );
-                      setTimeMinuteInput(String(m).padStart(2, "0"));
+                      const normalized = String(m).padStart(2, "0");
+                      setTimeMinuteInput(normalized);
+                      commitTimeIfDateSet({ minuteInput: normalized });
                     }}
                     className="w-9 h-7 text-center text-xs font-semibold border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-400"
                   />
@@ -166,7 +190,12 @@ export function TicketFollowUpFields({
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setTimePeriod(p)}
+                      onClick={() => {
+                        setTimePeriod(p);
+                        if (followUpDueDate) {
+                          commitTimeIfDateSet({ period: p });
+                        }
+                      }}
                       className={cn(
                         "px-2 h-7 text-[10px] font-bold transition-colors",
                         timePeriod === p

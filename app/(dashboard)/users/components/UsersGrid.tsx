@@ -30,7 +30,7 @@ export function UsersGrid({
 }: UsersGridProps) {
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-slate-500">
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
         <Loader2 className="h-8 w-8 animate-spin text-[#008f68]" />
         <p className="text-sm font-medium">Loading team members...</p>
       </div>
@@ -39,7 +39,7 @@ export function UsersGrid({
 
   if (totalFiltered === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-950">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68]">
           <Users className="h-6 w-6" strokeWidth={1.75} />
         </div>

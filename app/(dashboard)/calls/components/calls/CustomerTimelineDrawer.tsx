@@ -87,6 +87,8 @@ import {
 } from "../shared/InspectorHelpers";
 import type { Filters } from "../../hooks/useCallFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
+import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
+import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -481,6 +483,9 @@ export function CustomerTimelineDrawer({
   );
   const peekCall: Ticket | null =
     peekData?.success && peekData.data ? (peekData.data as Ticket) : null;
+
+  const closeCallPeek = useCallback(() => setPeekCallId(null), []);
+  useTicketPeekAircallExclusion(peekCallId !== null, closeCallPeek);
 
   // ── Sheet-anchored success toast ──────────────────────────────────────────
   // toastActive  → controls whether the element is in the DOM
@@ -1179,7 +1184,7 @@ export function CustomerTimelineDrawer({
       />
 
       {/* ── Sheet-anchored error toast ───────────────────────────────────── */}
-      {errorToastActive && (
+      {open && errorToastActive && (
         <div
           role="alert"
           aria-live="assertive"
@@ -1225,7 +1230,7 @@ export function CustomerTimelineDrawer({
           overlaps the "Save Changes" button.  z-40 keeps it below z-50 of the
           Sheet, giving the illusion that it slides out from behind the panel.
       ── */}
-      {toastActive && (
+      {open && toastActive && (
         <div
           role="alert"
           aria-live="polite"
@@ -1286,13 +1291,17 @@ export function CustomerTimelineDrawer({
           className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
-            const originalTarget = e.detail?.originalEvent
-              ?.target as HTMLElement | null;
-            if (
-              originalTarget?.closest?.("[data-aircall-fab='true']") ||
-              originalTarget?.closest?.("[data-aircall-panel='true']") ||
-              originalTarget?.closest?.("[data-peek-panel='true']")
-            ) {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
+              e.preventDefault();
+            }
+          }}
+          onFocusOutside={(e) => {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
               e.preventDefault();
             }
           }}

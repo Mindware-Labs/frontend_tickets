@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import useSWR from "swr";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Table,
   TableBody,
@@ -23,25 +23,31 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
   Search,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   X,
-  SlidersHorizontal,
   ClipboardList,
   Trash2,
-  Pencil,
+  CalendarIcon,
+  PhoneOutgoing,
+  ChevronDown,
+  RotateCcw,
 } from "lucide-react";
+import { ManualRecordFiltersBar } from "./ManualRecordFiltersBar";
+import { ManualRecordForm } from "./ManualRecordForm";
+import {
+  InlineManualRecordTimeline,
+  type CustomerManualRecordGroup,
+} from "./InlineManualRecordTimeline";
+import { CustomerManualRecordDrawer } from "./CustomerManualRecordDrawer";
+import { useAircall } from "@/components/providers/AircallProvider";
+import { DataTablePagination } from "../shared/DataTablePagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,19 +62,20 @@ import {
   TableCampaignBadge,
   TableYardBadge,
 } from "@/components/entity-table-badges";
+import {
+  TableDispositionPill,
+  TableSupportStatusPill,
+  normalizeSupportStatusKey,
+} from "@/components/entity-table-pills";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useReferenceData } from "../../hooks/useReferenceData";
 import { useManualRecordFilters } from "../../hooks/useManualRecordFilters";
+import { getAttachmentUrl } from "../../utils/call-helpers";
 import {
-  CallDisposition,
-  CampaignOptionEnum,
-  ManagementType,
-  OnboardingOption,
-  ArOption,
+  SupportTicketStatus,
   type ManualRecord,
   type CreateManualRecordFormData,
-  type CampaignOption,
 } from "../../types";
 
 // ---------------------------------------------------------------------------
@@ -87,18 +94,22 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const DISP_PILL: Record<string, { dot: string; bg: string; fg: string }> = {
-  RESOLVED:          { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50" },
-  CALLBACK_REQUIRED: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309" },
-  CALLBACK_SCHEDULED:{ dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8" },
-  NO_ANSWER:         { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
-  VOICEMAIL_LEFT:    { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },
-  PROMISE_TO_PAY:    { dot: "#7c3aed", bg: "#ede9fe", fg: "#6d28d9" },
-  DISPUTE:           { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
-  WRONG_NUMBER:      { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
-  ENROLLED:          { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50" },
-  ESCALATED:         { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
-};
+const MANUAL_RECORD_STATUS_VIEW_TABS = [
+  { key: "all", label: "All Records", countKey: "all" },
+  { key: "active_status", label: "Active", countKey: "active_status" },
+  {
+    key: "pending_followup",
+    label: "Pending Follow-up",
+    countKey: "pending_followup",
+  },
+  { key: "overdue", label: "Overdue", countKey: "overdue", isOverdue: true },
+  { key: "resolved", label: "Resolved", countKey: "resolved" },
+] as const;
+
+const recordAgentName = (record: ManualRecord) =>
+  record.createdBy?.name?.trim() ||
+  record.createdByName?.trim() ||
+  (record.createdByAgentId ? `Agent #${record.createdByAgentId}` : "—");
 
 const emptyForm: CreateManualRecordFormData = {
   customerId: "",
@@ -106,6 +117,7 @@ const emptyForm: CreateManualRecordFormData = {
   campaignId: "",
   campaignOption: "",
   disposition: "",
+  status: SupportTicketStatus.ACTIVE,
   notes: "",
 };
 
@@ -139,88 +151,143 @@ export function ManualRecordsTab() {
     pageData?.totalPages ??
     Math.max(1, Math.ceil(totalCount / filters.itemsPerPage));
 
-  // ---- Filter bar ----
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const viewCounts = pageData?.viewCounts as Record<string, number> | undefined;
 
-  const activeFilterCount = useMemo(() => {
-    return Object.values(filters.filters).filter((v) => v !== "all").length;
-  }, [filters.filters]);
+  const { dial, status: aircallStatus, isLoggedIn: aircallLoggedIn, setSheetOpen } =
+    useAircall();
+  const canDial = aircallStatus === "ready" && aircallLoggedIn;
 
-  // ---- Campaign options based on selected campaign type ----
-  const selectedCampaignTipo = useMemo(() => {
-    if (filters.filters.campaign === "all") return null;
-    const found = refData.campaigns.find(
-      (c) => c.id.toString() === filters.filters.campaign,
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const recordGroups = useMemo<CustomerManualRecordGroup[]>(() => {
+    const map = new Map<
+      string,
+      {
+        key: string;
+        customerId?: number;
+        customerName: string;
+        customerPhone: string;
+        records: ManualRecord[];
+        latestRecord: ManualRecord;
+      }
+    >();
+
+    for (const r of records) {
+      const cid = r.customerId != null ? Number(r.customerId) : undefined;
+      const phone = r.customer?.phone || "unknown";
+      const name = r.customer?.name || (cid ? `Customer #${cid}` : "Unknown");
+      const groupKey = cid != null ? `cid:${cid}` : `phone:${phone}`;
+
+      const existing = map.get(groupKey);
+      if (!existing) {
+        map.set(groupKey, {
+          key: groupKey,
+          customerId: cid,
+          customerName: name,
+          customerPhone: phone,
+          records: [r],
+          latestRecord: r,
+        });
+      } else {
+        existing.records.push(r);
+        const existingDate = new Date(
+          existing.latestRecord.createdAt || 0,
+        ).getTime();
+        const thisDate = new Date(r.createdAt || 0).getTime();
+        if (thisDate > existingDate) {
+          existing.latestRecord = r;
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort(
+      (a, b) =>
+        new Date(b.latestRecord.createdAt || 0).getTime() -
+        new Date(a.latestRecord.createdAt || 0).getTime(),
     );
-    return found?.tipo ?? null;
-  }, [filters.filters.campaign, refData.campaigns]);
+  }, [records]);
 
-  const availableCampaignOptions: string[] = useMemo(() => {
-    if (selectedCampaignTipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (selectedCampaignTipo === ManagementType.AR)
-      return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [selectedCampaignTipo]);
-
-  // Get campaign options for the form based on selected campaign
-  const getFormCampaignOptions = (campaignId: string): string[] => {
-    if (!campaignId) return Object.values(CampaignOptionEnum);
-    const found = refData.campaigns.find(
-      (c) => c.id.toString() === campaignId,
-    );
-    if (!found) return Object.values(CampaignOptionEnum);
-    if (found.tipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (found.tipo === ManagementType.AR) return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  };
-
-  // ---- Customer search state for combobox ----
-  const [customerSearch, setCustomerSearch] = useState("");
-  const filteredCustomers = useMemo(() => {
-    const term = customerSearch.toLowerCase();
-    return refData.customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        (c.phone || "").includes(term),
-    );
-  }, [refData.customers, customerSearch]);
-
-  // ---- Modal state ----
+  // ---- Modal / sheet state ----
   const [showCreate, setShowCreate] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [drawerGroup, setDrawerGroup] = useState<CustomerManualRecordGroup | null>(
+    null,
+  );
   const [showDelete, setShowDelete] = useState(false);
   const [selected, setSelected] = useState<ManualRecord | null>(null);
+  const [showDrawerSuccess, setShowDrawerSuccess] = useState(false);
+  const [showDrawerError, setShowDrawerError] = useState(false);
+  const [drawerErrorMessage, setDrawerErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<CreateManualRecordFormData>({
     ...emptyForm,
   });
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
-  const resetForm = () => setForm({ ...emptyForm });
+  const resetForm = () => {
+    setForm({ ...emptyForm });
+    setPendingFiles([]);
+  };
 
-  const setField = (key: keyof CreateManualRecordFormData, value: string) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const resolveAttachmentUrl = (value: string) =>
+    getAttachmentUrl(value, refData.apiBase, "manual-records");
+
+  useEffect(() => {
+    setSheetOpen(showDrawer);
+    return () => setSheetOpen(false);
+  }, [showDrawer, setSheetOpen]);
+
+  const uploadPendingAttachments = async (recordId: number) => {
+    if (pendingFiles.length === 0) return 0;
+    let uploadErrors = 0;
+    for (const file of pendingFiles) {
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        const upRes = await fetch(`/api/manual-records/${recordId}/attachments`, {
+          method: "POST",
+          body: fd,
+        });
+        const upResult = await upRes.json();
+        if (!upResult.success) uploadErrors++;
+      } catch {
+        uploadErrors++;
+      }
+    }
+    return uploadErrors;
+  };
 
   // ---- Open handlers ----
   const openCreate = () => {
     resetForm();
-    setCustomerSearch("");
     setShowCreate(true);
   };
 
-  const openEdit = (record: ManualRecord) => {
-    setSelected(record);
+  const populateFormFromRecord = (record: ManualRecord) => {
     setForm({
       customerId: record.customerId?.toString() || "",
       yardId: record.yardId?.toString() || "",
       campaignId: record.campaignId?.toString() || "",
       campaignOption: record.campaignOption || "",
       disposition: record.disposition || "",
+      status:
+        normalizeSupportStatusKey(record.status) || SupportTicketStatus.ACTIVE,
       notes: record.notes || "",
     });
-    setCustomerSearch("");
-    setShowEdit(true);
+    setPendingFiles([]);
+  };
+
+  const openView = (record: ManualRecord) => {
+    const group =
+      recordGroups.find((g) => g.records.some((r) => r.id === record.id)) ?? null;
+    setSelected(record);
+    setDrawerGroup(group);
+    populateFormFromRecord(record);
+    setShowDrawer(true);
+  };
+
+  const handleSelectRecord = (record: ManualRecord) => {
+    setSelected(record);
+    populateFormFromRecord(record);
   };
 
   const openDelete = (record: ManualRecord) => {
@@ -246,6 +313,9 @@ export function ManualRecordsTab() {
       if (form.campaignOption) payload.campaignOption = form.campaignOption;
       if (form.disposition) payload.disposition = form.disposition;
       if (form.notes.trim()) payload.notes = form.notes.trim();
+      if (refData.currentAgent?.id) {
+        payload.createdByAgentId = refData.currentAgent.id;
+      }
 
       const res = await fetch("/api/manual-records", {
         method: "POST",
@@ -254,6 +324,17 @@ export function ManualRecordsTab() {
       });
       const result = await res.json();
       if (result.success) {
+        const recordId = result.data?.id;
+        if (recordId && pendingFiles.length > 0) {
+          const uploadErrors = await uploadPendingAttachments(recordId);
+          if (uploadErrors > 0) {
+            toast({
+              title: "Warning",
+              description: `${uploadErrors} file(s) failed to upload`,
+              variant: "destructive",
+            });
+          }
+        }
         toast({ title: "Record created successfully" });
         setShowCreate(false);
         resetForm();
@@ -289,6 +370,7 @@ export function ManualRecordsTab() {
       payload.campaignOption = form.campaignOption || null;
       payload.disposition = form.disposition || null;
       payload.notes = form.notes.trim() || null;
+      if (form.status) payload.status = form.status;
 
       const res = await fetch(`/api/manual-records/${selected.id}`, {
         method: "PATCH",
@@ -297,9 +379,21 @@ export function ManualRecordsTab() {
       });
       const result = await res.json();
       if (result.success) {
-        toast({ title: "Record updated successfully" });
-        setShowEdit(false);
-        resetForm();
+        if (pendingFiles.length > 0) {
+          const uploadErrors = await uploadPendingAttachments(selected.id);
+          if (uploadErrors > 0) {
+            toast({
+              title: "Warning",
+              description: `${uploadErrors} file(s) failed to upload`,
+              variant: "destructive",
+            });
+          }
+        }
+        setShowDrawerSuccess(true);
+        if (result.data) {
+          setSelected(result.data);
+          populateFormFromRecord(result.data);
+        }
         await mutate();
       } else {
         toast({
@@ -309,11 +403,8 @@ export function ManualRecordsTab() {
         });
       }
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update record",
-        variant: "destructive",
-      });
+      setDrawerErrorMessage("Failed to update record");
+      setShowDrawerError(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -330,7 +421,10 @@ export function ManualRecordsTab() {
       if (result.success) {
         toast({ title: "Record deleted" });
         setShowDelete(false);
+        setShowDrawer(false);
         setSelected(null);
+        setDrawerGroup(null);
+        resetForm();
         await mutate();
       } else {
         toast({
@@ -350,488 +444,487 @@ export function ManualRecordsTab() {
     }
   };
 
-  // ---- Shared form fields (reused in create & edit) ----
-  const renderFormFields = () => (
-    <div className="grid gap-4 py-4">
-      {/* Customer */}
-      <div className="grid gap-1.5">
-        <Label htmlFor="mr-customerId">
-          Customer <span className="text-destructive">*</span>
-        </Label>
-        <div className="space-y-1.5">
-          <Input
-            placeholder="Search customer..."
-            value={customerSearch}
-            onChange={(e) => setCustomerSearch(e.target.value)}
-            className="h-9"
-          />
-          <Select
-            value={form.customerId}
-            onValueChange={(v) => setField("customerId", v)}
-          >
-            <SelectTrigger id="mr-customerId" className="h-9">
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              <ScrollArea className="h-48">
-                {filteredCustomers.slice(0, 80).map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.name}
-                    {c.phone ? (
-                      <span className="ml-1 text-muted-foreground text-xs">
-                        {c.phone}
-                      </span>
-                    ) : null}
-                  </SelectItem>
-                ))}
-              </ScrollArea>
-            </SelectContent>
-          </Select>
+  const createDialogContent = (
+    <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px]">
+      <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68]">
+            <ClipboardList className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950">
+              New Manual Record
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500">
+              Fill in the details to log a manual record.
+            </DialogDescription>
+          </div>
         </div>
-      </div>
-
-      {/* Yard */}
-      <div className="grid gap-1.5">
-        <Label htmlFor="mr-yardId">Yard</Label>
-        <Select
-          value={form.yardId || "none"}
-          onValueChange={(v) => setField("yardId", v === "none" ? "" : v)}
-        >
-          <SelectTrigger id="mr-yardId" className="h-9">
-            <SelectValue placeholder="Select yard" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— None —</SelectItem>
-            {refData.yards.map((y) => (
-              <SelectItem key={y.id} value={y.id.toString()}>
-                {y.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Campaign */}
-      <div className="grid gap-1.5">
-        <Label htmlFor="mr-campaignId">Campaign</Label>
-        <Select
-          value={form.campaignId || "none"}
-          onValueChange={(v) => {
-            setField("campaignId", v === "none" ? "" : v);
-            setField("campaignOption", ""); // reset option when campaign changes
-          }}
-        >
-          <SelectTrigger id="mr-campaignId" className="h-9">
-            <SelectValue placeholder="Select campaign" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— None —</SelectItem>
-            {refData.campaigns.map((c) => (
-              <SelectItem key={c.id} value={c.id.toString()}>
-                {c.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Campaign Option */}
-      {form.campaignId && (
-        <div className="grid gap-1.5">
-          <Label htmlFor="mr-campaignOption">Campaign Option</Label>
-          <Select
-            value={form.campaignOption || "none"}
-            onValueChange={(v) =>
-              setField("campaignOption", v === "none" ? "" : v)
-            }
-          >
-            <SelectTrigger id="mr-campaignOption" className="h-9">
-              <SelectValue placeholder="Select option" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— None —</SelectItem>
-              {getFormCampaignOptions(form.campaignId).map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {formatLabel(opt)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Disposition */}
-      <div className="grid gap-1.5">
-        <Label htmlFor="mr-disposition">Disposition</Label>
-        <Select
-          value={form.disposition || "none"}
-          onValueChange={(v) =>
-            setField("disposition", v === "none" ? "" : v)
-          }
-        >
-          <SelectTrigger id="mr-disposition" className="h-9">
-            <SelectValue placeholder="Select disposition" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— None —</SelectItem>
-            {Object.values(CallDisposition).map((d) => (
-              <SelectItem key={d} value={d}>
-                {formatLabel(d)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Notes */}
-      <div className="grid gap-1.5">
-        <Label htmlFor="mr-notes">Notes</Label>
-        <Textarea
-          id="mr-notes"
-          value={form.notes}
-          onChange={(e) => setField("notes", e.target.value)}
-          placeholder="Add notes..."
-          rows={3}
-          className="resize-none"
+      </DialogHeader>
+      <div className="max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200">
+        <ManualRecordForm
+          form={form}
+          setForm={setForm}
+          customers={refData.customers}
+          yards={refData.yards}
+          campaigns={refData.campaigns}
+          mode="create"
+          pendingFiles={pendingFiles}
+          onFilesChange={setPendingFiles}
+          getAttachmentUrl={resolveAttachmentUrl}
         />
       </div>
-    </div>
+      <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowCreate(false)}
+          disabled={isSubmitting}
+          className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          Cancel
+        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetForm}
+            disabled={isSubmitting}
+            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:text-slate-600"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+          <Button
+            type="button"
+            onClick={handleCreate}
+            disabled={isSubmitting}
+            className="h-11 rounded-lg bg-[#008f68] px-6 text-sm font-semibold text-white shadow-sm hover:bg-[#007a5a] disabled:opacity-60"
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Creating..." : "Create Record"}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
   );
 
   // ---- Render ----
   return (
-    <div className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-border">
-        <div />
+    <div className="flex-1 flex flex-col gap-1">
+      {/* View Tabs */}
+      <div className="flex items-end border-b border-border">
+        <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex px-0.5">
+            {MANUAL_RECORD_STATUS_VIEW_TABS.map((tab) => {
+              const isActive = filters.activeView === tab.key;
+              const count = viewCounts?.[tab.countKey] ?? 0;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => filters.handleViewChange(tab.key)}
+                  className={`-mb-px mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors ${
+                    isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`rounded-full border px-[7px] py-[1px] text-[11px] ${
+                      isActive
+                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        : "border-border bg-muted/40 font-medium text-muted-foreground"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                  {"isOverdue" in tab && tab.isOverdue && count > 0 && (
+                    <div className="-ml-0.5 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <button
           type="button"
           onClick={openCreate}
-          className="flex items-center gap-1.5 h-8 px-3.5 text-white text-xs font-semibold rounded-lg transition-colors"
+          className="mb-1 ml-2 flex h-[30px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
           style={{ background: "#008f68" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="h-3.5 w-3.5" />
           New Record
         </button>
       </div>
 
       {/* Filters row */}
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
+          <div className="relative flex-1 max-w-[320px]">
+            <Search className="absolute left-3 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by customer..."
+              placeholder="Search customers or notes..."
               value={filters.search}
               onChange={(e) => filters.setSearch(e.target.value)}
-              className="pl-8 h-9"
+              className="h-[30px] rounded-full border-border bg-muted/30 pl-[34px] pr-8 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30"
+            />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-background px-1.5 py-[1px] font-mono text-[10px] text-muted-foreground">
+              /
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex h-[30px] items-center rounded-full border-border px-3 text-[12.5px] font-medium shadow-none",
+                    !filters.dateRange?.from && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-[14px] w-[14px] shrink-0" />
+                  {filters.dateRange?.from ? (
+                    filters.dateRange.to ? (
+                      <span className="truncate">
+                        {format(filters.dateRange.from, "MMM d")} -{" "}
+                        {format(filters.dateRange.to, "MMM d, yyyy")}
+                      </span>
+                    ) : (
+                      <span>
+                        {format(filters.dateRange.from, "MMM d, yyyy")}
+                      </span>
+                    )
+                  ) : (
+                    <span>Select dates</span>
+                  )}
+                  <ChevronDown className="ml-2 h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="space-y-3 p-3">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    selected={filters.dateRange}
+                    onSelect={filters.setDateRange}
+                    numberOfMonths={1}
+                    disabled={{ after: new Date() }}
+                    className="rounded-md"
+                  />
+                  {filters.dateRange?.from && (
+                    <div className="flex justify-end px-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => filters.setDateRange(undefined)}
+                      >
+                        <X className="mr-1 h-3 w-3" />
+                        Clear dates
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <ManualRecordFiltersBar
+              filters={filters.filters}
+              onFilterChange={filters.setFilter}
+              agents={refData.agents}
+              campaigns={refData.campaigns}
+              yards={refData.yards}
             />
           </div>
-
-          <Button
-            variant={
-              filtersOpen || activeFilterCount > 0 ? "secondary" : "outline"
-            }
-            size="sm"
-            className="h-9 text-xs"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-            More Filters
-            {activeFilterCount > 0 && (
-              <Badge
-                variant="default"
-                className="ml-1.5 h-4 min-w-4 px-1 text-[10px] leading-none"
-              >
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-
-          {activeFilterCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 text-xs text-muted-foreground"
-              onClick={filters.clearAllFilters}
-            >
-              <X className="mr-1 h-3 w-3" />
-              Clear all
-            </Button>
-          )}
         </div>
-
-        {/* Expanded filters */}
-        {filtersOpen && (
-          <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
-            {/* Yard */}
-            <div className="min-w-35 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Yard
-              </span>
-              <Select
-                value={filters.filters.yard}
-                onValueChange={(v) => filters.setFilter("yard", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Yards</SelectItem>
-                  {refData.yards.map((y) => (
-                    <SelectItem key={y.id} value={y.id.toString()}>
-                      {y.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Campaign */}
-            <div className="min-w-40 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Campaign
-              </span>
-              <Select
-                value={filters.filters.campaign}
-                onValueChange={(v) => filters.setFilter("campaign", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Campaigns</SelectItem>
-                  {refData.campaigns.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Disposition */}
-            <div className="min-w-40 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Disposition
-              </span>
-              <Select
-                value={filters.filters.disposition}
-                onValueChange={(v) => filters.setFilter("disposition", v)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {Object.values(CallDisposition).map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {formatLabel(d)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">ID</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Customer</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Yard</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Campaign Option</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Disposition</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</TableHead>
-              <TableHead className="w-20 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
-                </TableCell>
+      <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
+        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+          <Table className="relative w-full table-fixed text-[12px]">
+            <colgroup>
+              <col className="w-[5%]" />
+              <col className="w-[22%]" />
+              <col className="w-[5%]" />
+              <col className="w-[9%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[7%]" />
+            </colgroup>
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
+              <TableRow className="border-none hover:bg-transparent">
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  ID
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Customer
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Records
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Status
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Agent
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Yard
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Campaign
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Disposition
+                </TableHead>
+                <TableHead className="h-auto px-2 py-1 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Created
+                </TableHead>
               </TableRow>
-            ) : records.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center text-slate-400 text-sm">
-                  No records found
-                </TableCell>
-              </TableRow>
-            ) : (
-              records.map((record) => {
-                const initials = (record.customer?.name || "?").substring(0, 2).toUpperCase();
-                const dp = record.disposition ? (DISP_PILL[record.disposition] || { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" }) : null;
-                return (
-                  <TableRow key={record.id} className="group border-b border-slate-100 last:border-0 hover:bg-[#f8fafc]">
-                    <TableCell className="text-[11px] font-mono text-slate-400">#{record.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{ background: "transparent", border: "1px solid #d1d5db", color: "#111827" }}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-24 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
+                  </TableCell>
+                </TableRow>
+              ) : recordGroups.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    className="h-24 text-center text-sm text-slate-400"
+                  >
+                    No records found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recordGroups.map((group, i) => {
+                  const r = group.latestRecord;
+                  const initials = (group.customerName || "?")
+                    .substring(0, 2)
+                    .toUpperCase();
+                  const createdDate = new Date(r.createdAt || "");
+                  const createdLabel = isNaN(createdDate.getTime())
+                    ? "—"
+                    : createdDate.toDateString() === new Date().toDateString()
+                      ? format(createdDate, "HH:mm")
+                      : format(createdDate, "MMM d");
+                  const phone =
+                    group.customerPhone && group.customerPhone !== "unknown"
+                      ? group.customerPhone
+                      : r.customer?.phone;
+                  return (
+                    <React.Fragment key={group.key}>
+                      <TableRow
+                        className={cn(
+                          "relative cursor-pointer border-b border-border/70 transition-all duration-150 hover:bg-[#f0faf5]/60",
+                          i % 2 === 1 ? "bg-slate-50/60" : "bg-white",
+                        )}
+                        onClick={() => openView(r)}
+                      >
+                        <TableCell className="px-2 py-1 align-middle">
+                          <span className="font-mono text-[11px] font-semibold tabular-nums text-slate-500">
+                            #{r.id}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-2 py-1 align-middle">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <Avatar className="h-6 w-6 shrink-0 rounded-full">
+                              <AvatarFallback
+                                className="rounded-full text-[10px] font-bold"
+                                style={{
+                                  background: "transparent",
+                                  border: "1px solid #d1d5db",
+                                  color: "#111827",
+                                }}
+                              >
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p
+                                className="truncate text-[12px] font-bold leading-tight text-foreground"
+                                title={group.customerName}
+                              >
+                                {group.customerName}
+                              </p>
+                              {phone && (
+                                <div className="flex min-w-0 items-center gap-0.5">
+                                  <p
+                                    className="truncate font-mono text-[10px] tabular-nums text-slate-500"
+                                    title={phone}
+                                  >
+                                    {phone}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-[#e6f5f0] disabled:opacity-40"
+                                    style={{ color: "#008f68" }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      dial(phone, r.id);
+                                    }}
+                                    disabled={!canDial}
+                                    aria-label="Call customer"
+                                  >
+                                    <PhoneOutgoing className="h-2.5 w-2.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-2 py-1 text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedKey((prev) =>
+                                prev === group.key ? null : group.key,
+                              );
+                            }}
+                            className={cn(
+                              "inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors",
+                              expandedKey === group.key
+                                ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
+                                : "border-slate-200 bg-slate-100 text-slate-600 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]",
+                            )}
+                            aria-label="Toggle record timeline"
+                            title="View record timeline"
+                          >
+                            <ClipboardList className="h-2.5 w-2.5" />
+                            <span className="font-mono tabular-nums">
+                              {group.records.length}
+                            </span>
+                          </button>
+                        </TableCell>
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableSupportStatusPill
+                            status={r.status || SupportTicketStatus.ACTIVE}
+                          />
+                        </TableCell>
+                        <TableCell className="px-2 py-1 align-middle">
+                          <span
+                            className="block truncate text-[11px] font-medium text-slate-700"
+                            title={recordAgentName(r)}
+                          >
+                            {recordAgentName(r)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableYardBadge
+                            compact
+                            name={r.yard?.commonName || r.yard?.name}
+                          />
+                        </TableCell>
+                        <TableCell
+                          className="px-2 py-1 align-middle"
+                          title={[
+                            r.campaign
+                              ? (r.campaign as { nombre?: string }).nombre
+                              : null,
+                            r.campaignOption
+                              ? formatLabel(r.campaignOption)
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         >
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-slate-800 truncate">{record.customer?.name || `#${record.customerId}`}</p>
-                          {record.customer?.phone && (
-                            <p className="text-[11px] text-slate-400 font-mono">{record.customer.phone}</p>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="w-[200px] min-w-[180px] py-3 align-middle">
-                      <TableYardBadge
-                        name={
-                          record.yard?.commonName || record.yard?.name
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="w-[180px] min-w-[150px] py-3 align-middle">
-                      <TableCampaignBadge
-                        name={
-                          record.campaign
-                            ? (record.campaign as { nombre?: string }).nombre
-                            : null
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="text-[12px] text-slate-600">
-                      {record.campaignOption ? formatLabel(record.campaignOption) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {dp ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border"
-                          style={{ color: dp.fg, background: dp.bg, borderColor: dp.bg }}>
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dp.dot }} />
-                          {formatLabel(record.disposition!)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-xs">—</span>
+                          <TableCampaignBadge
+                            compact
+                            name={
+                              r.campaign
+                                ? (r.campaign as { nombre?: string }).nombre
+                                : r.campaignOption
+                                  ? formatLabel(r.campaignOption)
+                                  : null
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="px-2 py-1 align-middle">
+                          <TableDispositionPill disposition={r.disposition} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-2 py-1 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
+                          {createdLabel}
+                        </TableCell>
+                      </TableRow>
+                      {expandedKey === group.key && (
+                        <TableRow
+                          key={`${group.key}-timeline`}
+                          className="bg-slate-50/50 hover:bg-slate-50/50"
+                        >
+                          <TableCell colSpan={9} className="border-t-0 px-0 py-1.5">
+                            <InlineManualRecordTimeline
+                              group={group}
+                              onOpenRecord={openView}
+                            />
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </TableCell>
-                    <TableCell className="max-w-48 truncate text-[12px] text-slate-500">{record.notes || "—"}</TableCell>
-                    <TableCell className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
-                      {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" onClick={() => openEdit(record)} title="Edit"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button type="button" onClick={() => openDelete(record)} title="Delete"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-1">
-        <span className="text-[11px] text-slate-500">
-          Page <span className="font-semibold text-slate-700">{filters.currentPage}</span> of {totalPages} · {totalCount} record{totalCount !== 1 ? "s" : ""}
-        </span>
-        <div className="flex items-center gap-2">
-          <Select value={String(filters.itemsPerPage)} onValueChange={(v) => filters.setItemsPerPage(Number(v))}>
-            <SelectTrigger className="h-7 w-20 text-[11px] border-slate-200 rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[8, 10, 25, 50].map((n) => (
-                <SelectItem key={n} value={String(n)}>{n} / page</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-1">
-            <button type="button"
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-              disabled={filters.currentPage <= 1}
-              onClick={() => filters.setCurrentPage((p) => p - 1)}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <button type="button"
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-              disabled={filters.currentPage >= totalPages}
-              onClick={() => filters.setCurrentPage((p) => p + 1)}>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
+      <DataTablePagination
+        currentPage={filters.currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={filters.setCurrentPage}
+      />
+
       {/* ── Create Dialog ── */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>New Manual Record</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[65vh] pr-2">
-            {renderFormFields()}
-          </ScrollArea>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowCreate(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create Record
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog
+        open={showCreate}
+        onOpenChange={(o) => {
+          setShowCreate(o);
+          if (!o) resetForm();
+        }}
+      >
+        {createDialogContent}
       </Dialog>
 
-      {/* ── Edit Dialog ── */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              Edit Record{selected ? ` #${selected.id}` : ""}
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[65vh] pr-2">
-            {renderFormFields()}
-          </ScrollArea>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEdit(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CustomerManualRecordDrawer
+        open={showDrawer}
+        onClose={() => {
+          setShowDrawer(false);
+          setSelected(null);
+          setDrawerGroup(null);
+          resetForm();
+        }}
+        group={drawerGroup}
+        selectedRecord={selected}
+        onSelectRecord={handleSelectRecord}
+        form={form}
+        setForm={setForm}
+        pendingFiles={pendingFiles}
+        onFilesChange={setPendingFiles}
+        isSaving={isSubmitting}
+        onSave={handleUpdate}
+        onDelete={() => setShowDelete(true)}
+        getAttachmentUrl={resolveAttachmentUrl}
+        customers={refData.customers}
+        yards={refData.yards}
+        campaigns={refData.campaigns}
+        showSuccessToast={showDrawerSuccess}
+        onSuccessToastDismiss={() => setShowDrawerSuccess(false)}
+        showErrorToast={showDrawerError}
+        errorToastMessage={drawerErrorMessage}
+        onErrorToastDismiss={() => setShowDrawerError(false)}
+      />
 
       {/* ── Delete Confirmation ── */}
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>

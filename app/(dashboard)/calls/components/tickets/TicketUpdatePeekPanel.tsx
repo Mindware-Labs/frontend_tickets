@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -63,6 +63,12 @@ export function TicketUpdatePeekPanel({
 
   if (!mounted || !active || !ticket) return null;
 
+  const handleClose = (e?: MouseEvent | PointerEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    onClose();
+  };
+
   const accent = "#7c3aed";
 
   const mobileClasses = cn(
@@ -108,7 +114,7 @@ export function TicketUpdatePeekPanel({
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none",
           )}
-          onClick={onClose}
+          onClick={handleClose}
           aria-hidden="true"
         />
       )}
@@ -118,8 +124,10 @@ export function TicketUpdatePeekPanel({
         aria-modal="true"
         aria-label={`Log update for ticket #${ticket.id}`}
         data-peek-panel="true"
+        data-ticket-log-update-panel="true"
         className={containerClass}
         style={containerStyle}
+        onPointerDownCapture={(e) => e.stopPropagation()}
       >
         {isMobile && (
           <div className="shrink-0 flex justify-center pt-3 pb-1 bg-white rounded-t-2xl">
@@ -151,7 +159,8 @@ export function TicketUpdatePeekPanel({
           <button
             type="button"
             aria-label="Close"
-            onClick={onClose}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={handleClose}
             className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -175,6 +184,7 @@ export function TicketUpdatePeekPanel({
             actorAgentId={actorAgentId}
             onLogged={(result) => {
               onLogged?.(result);
+              onClose();
             }}
             onError={onError}
           />

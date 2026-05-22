@@ -17,12 +17,19 @@ export const TICKET_STATUS_COLORS: Record<
   RESOLVED: { text: "#006d50", bg: "#e6f5f0", label: "Resolved" },
 };
 
-/** Statuses available in create/edit toggles (CLOSED excluded). */
+/** Statuses available in edit / log-update toggles (CLOSED excluded). */
 export const SELECTABLE_TICKET_STATUSES = [
   SupportTicketStatus.ACTIVE,
   SupportTicketStatus.PENDING_FOLLOWUP,
   SupportTicketStatus.OVERDUE,
   SupportTicketStatus.RESOLVED,
+] as const;
+
+/** Statuses for manual ticket create (no RESOLVED or CLOSED). */
+export const CREATE_TICKET_STATUSES = [
+  SupportTicketStatus.ACTIVE,
+  SupportTicketStatus.PENDING_FOLLOWUP,
+  SupportTicketStatus.OVERDUE,
 ] as const;
 
 const ALL_OPTION = {
@@ -44,6 +51,7 @@ export function TicketStatusToggle({
   includeAll = false,
   compact = false,
   readOnly = false,
+  statuses = SELECTABLE_TICKET_STATUSES,
 }: {
   value: string;
   onChange: (status: string) => void;
@@ -52,6 +60,8 @@ export function TicketStatusToggle({
   compact?: boolean;
   /** Display only — no status changes from this control */
   readOnly?: boolean;
+  /** Override which statuses appear (e.g. create form omits Resolved). */
+  statuses?: readonly string[];
 }) {
   const activeKey =
     includeAll && (!value || value === "all")
@@ -59,18 +69,22 @@ export function TicketStatusToggle({
       : normalizeStatusKey(value);
 
   const keys = includeAll
-    ? (["all", ...SELECTABLE_TICKET_STATUSES] as const)
-    : SELECTABLE_TICKET_STATUSES;
+    ? (["all", ...statuses] as const)
+    : statuses;
 
   return (
     <div
       className={cn(
         "grid gap-1.5",
         compact
-          ? "grid-cols-2 sm:grid-cols-4"
+          ? statuses.length <= 3
+            ? "grid-cols-3"
+            : "grid-cols-2 sm:grid-cols-4"
           : includeAll
             ? "grid-cols-3 sm:grid-cols-5"
-            : "grid-cols-2 sm:grid-cols-4",
+            : statuses.length <= 3
+              ? "grid-cols-3"
+              : "grid-cols-2 sm:grid-cols-4",
         className,
       )}
     >

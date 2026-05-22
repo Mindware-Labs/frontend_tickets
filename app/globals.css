@@ -217,17 +217,17 @@
   text-wrap: balance;
 }
 
-/* Entity list tables — fill viewport; avoid height jump when filters reduce rows */
+/* Entity list tables — height follows row count; scroll when tall (same as Tickets tab) */
 .entity-table-root {
-  @apply flex h-full min-h-0 flex-1 flex-col gap-3;
+  @apply flex flex-col gap-3;
 }
 
 .entity-table-frame {
-  @apply flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/80 shadow-sm;
+  @apply overflow-hidden rounded-xl border border-border/80 shadow-sm;
 }
 
 .entity-table-scroll {
-  @apply min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&_[data-slot=table-container]]:overflow-x-clip;
+  @apply max-h-[calc(100vh-12rem)] overflow-y-auto [scrollbar-gutter:stable] [&_[data-slot=table-container]]:overflow-x-clip;
 }
 
 /* Custom Scrollbar */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -64,6 +64,8 @@ import { CallPeekPanel } from "./CallPeekPanel";
 import { SourceCallPreviewTrigger } from "./SourceCallPreviewTrigger";
 import type { Ticket } from "@/lib/mock-data";
 import { useAircall } from "@/components/providers/AircallProvider";
+import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
+import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -299,6 +301,26 @@ export function CustomerTicketDrawer({
     setShowUpdatePeek(false);
   }, [selectedTicket?.id]);
 
+  const suppressSheetDismissRef = useRef(false);
+
+  const closeLogUpdatePeek = useCallback(() => {
+    suppressSheetDismissRef.current = true;
+    setShowUpdatePeek(false);
+    window.setTimeout(() => {
+      suppressSheetDismissRef.current = false;
+    }, 150);
+  }, []);
+
+  const closeTicketPeeks = useCallback(() => {
+    setSourcePeekCallId(null);
+    setShowUpdatePeek(false);
+  }, []);
+
+  const ticketPeekOpen =
+    sourcePeekCallId !== null || showUpdatePeek;
+
+  useTicketPeekAircallExclusion(ticketPeekOpen, closeTicketPeeks);
+
   const updatesUrl = useMemo(
     () =>
       open && selectedTicket?.id
@@ -325,6 +347,7 @@ export function CustomerTicketDrawer({
     updates: TicketUpdateRecord[];
   }) => {
     void mutateUpdates();
+    closeLogUpdatePeek();
     if (result.ticket) {
       onActivityLogged?.(result.ticket);
     }
@@ -333,6 +356,17 @@ export function CustomerTicketDrawer({
   // ── Sheet-anchored success toast ──────────────────────────────────────────
   const [toastActive, setToastActive] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const toastUnmountRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissSuccessToast = useCallback(() => {
+    setToastVisible(false);
+    if (toastUnmountRef.current) clearTimeout(toastUnmountRef.current);
+    toastUnmountRef.current = setTimeout(() => {
+      setToastActive(false);
+      onSuccessToastDismiss?.();
+      toastUnmountRef.current = null;
+    }, 300);
+  }, [onSuccessToastDismiss]);
 
   useEffect(() => {
     if (!showSuccessToast) {
@@ -362,6 +396,19 @@ export function CustomerTicketDrawer({
   // ── Sheet-anchored error toast ────────────────────────────────────────────
   const [errorToastActive, setErrorToastActive] = useState(false);
   const [errorToastVisible, setErrorToastVisible] = useState(false);
+  const errorToastUnmountRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const dismissErrorToast = useCallback(() => {
+    setErrorToastVisible(false);
+    if (errorToastUnmountRef.current) clearTimeout(errorToastUnmountRef.current);
+    errorToastUnmountRef.current = setTimeout(() => {
+      setErrorToastActive(false);
+      onErrorToastDismiss?.();
+      errorToastUnmountRef.current = null;
+    }, 300);
+  }, [onErrorToastDismiss]);
 
   useEffect(() => {
     if (!showErrorToast) {
@@ -387,6 +434,32 @@ export function CustomerTicketDrawer({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showErrorToast]);
+
+  const dismissSheetToasts = useCallback(() => {
+    setToastVisible(false);
+    setErrorToastVisible(false);
+    if (toastUnmountRef.current) clearTimeout(toastUnmountRef.current);
+    if (errorToastUnmountRef.current) clearTimeout(errorToastUnmountRef.current);
+    const unmount = setTimeout(() => {
+      setToastActive(false);
+      setErrorToastActive(false);
+      onSuccessToastDismiss?.();
+      onErrorToastDismiss?.();
+      toastUnmountRef.current = null;
+      errorToastUnmountRef.current = null;
+    }, 300);
+    toastUnmountRef.current = unmount;
+    errorToastUnmountRef.current = unmount;
+  }, [onSuccessToastDismiss, onErrorToastDismiss]);
+
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    if (prevOpenRef.current && !open) {
+      dismissSheetToasts();
+      closeTicketPeeks();
+    }
+    prevOpenRef.current = open;
+  }, [open, dismissSheetToasts, closeTicketPeeks]);
 
   const {
     dial,
@@ -507,14 +580,6 @@ export function CustomerTicketDrawer({
     });
   }, [customers, mainCustomerSearch]);
 
-  // Status/priority pills for selected ticket
-  const isOutsidePeekTarget = (target: HTMLElement | null | undefined) =>
-    !!(
-      target?.closest?.("[data-aircall-fab='true']") ||
-      target?.closest?.("[data-aircall-panel='true']") ||
-      target?.closest?.("[data-peek-panel='true']")
-    );
-
   const sp = STATUS_PILL[normalizeStatusKey(selectedTicket?.status)] || null;
   const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
 
@@ -544,13 +609,13 @@ export function CustomerTicketDrawer({
           name: a.name,
         }))}
         actorAgentId={currentAgentId}
-        onClose={() => setShowUpdatePeek(false)}
+        onClose={closeLogUpdatePeek}
         onLogged={handleActivityLogged}
         onError={onActivityError}
       />
 
       {/* ── Sheet-anchored error toast ───────────────────────────────────────── */}
-      {errorToastActive && (
+      {open && errorToastActive && (
         <div
           role="alert"
           aria-live="assertive"
@@ -583,13 +648,7 @@ export function CustomerTicketDrawer({
           <button
             type="button"
             aria-label="Dismiss notification"
-            onClick={() => {
-              setErrorToastVisible(false);
-              setTimeout(() => {
-                setErrorToastActive(false);
-                onErrorToastDismiss?.();
-              }, 300);
-            }}
+            onClick={dismissErrorToast}
             className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -598,7 +657,7 @@ export function CustomerTicketDrawer({
       )}
 
       {/* ── Sheet-anchored success toast ─────────────────────────────────────── */}
-      {toastActive && (
+      {open && toastActive && (
         <div
           role="alert"
           aria-live="polite"
@@ -631,13 +690,7 @@ export function CustomerTicketDrawer({
           <button
             type="button"
             aria-label="Dismiss notification"
-            onClick={() => {
-              setToastVisible(false);
-              setTimeout(() => {
-                setToastActive(false);
-                onSuccessToastDismiss?.();
-              }, 300);
-            }}
+            onClick={dismissSuccessToast}
             className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -645,28 +698,33 @@ export function CustomerTicketDrawer({
         </div>
       )}
 
-      <Sheet open={open} onOpenChange={(v) => !v && onClose()} modal={false}>
+      <Sheet
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) {
+            if (suppressSheetDismissRef.current) return;
+            onClose();
+          }
+        }}
+        modal={false}
+      >
         <SheetContent
           side="right"
           hideClose
           className="w-svw sm:w-[80vw] p-0 gap-0 flex flex-col bg-white overflow-hidden border-l border-slate-200/80"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
-            const originalTarget = e.detail?.originalEvent
-              ?.target as HTMLElement | null;
-            if (isOutsidePeekTarget(originalTarget)) {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
               e.preventDefault();
             }
           }}
           onFocusOutside={(e) => {
-            if (isOutsidePeekTarget(e.target as HTMLElement | null)) {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
               e.preventDefault();
             }
           }}
           onInteractOutside={(e) => {
-            const originalTarget = e.detail?.originalEvent
-              ?.target as HTMLElement | null;
-            if (isOutsidePeekTarget(originalTarget)) {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) {
               e.preventDefault();
             }
           }}

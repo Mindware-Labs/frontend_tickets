@@ -437,7 +437,7 @@ export default function UsersPage() {
         <UsersToolbar search={search} onSearchChange={setSearch} />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+      <div className="flex flex-col gap-4">
         <UsersGrid
           loading={loading}
           users={paginatedUsers}

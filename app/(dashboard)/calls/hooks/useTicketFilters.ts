@@ -144,6 +144,11 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
     dateRange?.to?.getTime(),
   ]);
 
+  // Closed view tab removed — fall back if URL/state still references it
+  useEffect(() => {
+    if (activeView === "closed") setActiveView("all");
+  }, [activeView]);
+
   // Reset page on filter change
   useEffect(() => {
     setCurrentPage(1);

@@ -341,6 +341,11 @@ export interface ManualRecord {
   campaign?: CampaignOption | null;
   campaignOption?: string | null;
   disposition?: CallDisposition | string | null;
+  status?: SupportTicketStatus | string | null;
+  createdByAgentId?: number | null;
+  createdBy?: AgentOption | null;
+  createdByName?: string | null;
+  attachments?: string[] | null;
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -352,6 +357,7 @@ export interface CreateManualRecordFormData {
   campaignId: string;
   campaignOption: string;
   disposition: string;
+  status: string;
   notes: string;
 }
 

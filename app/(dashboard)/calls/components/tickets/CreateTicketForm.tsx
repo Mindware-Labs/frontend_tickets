@@ -98,6 +98,7 @@ export function CreateTicketForm({
         agents={agents}
         campaigns={campaigns}
         showPhoneLine={false}
+        forCreateForm
         campaignOptionValues={campaignOptionValues}
         mainCustomerOpen={mainCustomerOpen}
         setMainCustomerOpen={setMainCustomerOpen}

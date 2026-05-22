@@ -66,6 +66,8 @@ interface AircallContextValue {
   /** True when a right-side sheet/drawer is open — moves the FAB to the bottom edge. */
   sheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
+  /** Register a callback to close ticket peek panels when the phone opens. */
+  registerCloseTicketPeeks: (close: () => void) => () => void;
 }
 
 const AircallContext = createContext<AircallContextValue | null>(null);
@@ -100,12 +102,45 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [agent, setAgent] = useState<AircallAgent | null>(null);
   const [dockOpen, setDockOpen] = useState(false);
+  const closeTicketPeeksRef = useRef(new Set<() => void>());
+
+  const registerCloseTicketPeeks = useCallback((close: () => void) => {
+    closeTicketPeeksRef.current.add(close);
+    return () => {
+      closeTicketPeeksRef.current.delete(close);
+    };
+  }, []);
+
   const [mountMode, setMountMode] = useState<AircallMountMode>("dock");
   const [fullscreenContainer, setFullscreenContainer] =
     useState<HTMLElement | null>(null);
   const [lastIncomingCall, setLastIncomingCall] =
     useState<IncomingCallState | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const prevDockOpenRef = useRef(dockOpen);
+  const prevMountModeRef = useRef(mountMode);
+
+  // Close ticket peek panels after the phone opens (never during another setState).
+  useEffect(() => {
+    const dockJustOpened = dockOpen && !prevDockOpenRef.current;
+    const fullscreenJustEntered =
+      mountMode === "fullscreen" &&
+      prevMountModeRef.current !== "fullscreen";
+
+    if (dockJustOpened || fullscreenJustEntered) {
+      closeTicketPeeksRef.current.forEach((close) => {
+        try {
+          close();
+        } catch {
+          /* ignore listener errors */
+        }
+      });
+    }
+
+    prevDockOpenRef.current = dockOpen;
+    prevMountModeRef.current = mountMode;
+  }, [dockOpen, mountMode]);
 
   // Stable pub/sub so consumers can subscribe once
   const dispatchEvent = useCallback((event: string, data: any) => {
@@ -324,7 +359,9 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
 
   // ── Context value ───────────────────────────────────────────────────────
   const openDock = useCallback(() => setDockOpen(true), []);
+
   const closeDock = useCallback(() => setDockOpen(false), []);
+
   const toggleDock = useCallback(() => setDockOpen((v) => !v), []);
 
   const value = useMemo<AircallContextValue>(
@@ -345,6 +382,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       lastIncomingCall,
       sheetOpen,
       setSheetOpen,
+      registerCloseTicketPeeks,
     }),
     [
       status,
@@ -360,6 +398,7 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
       toggleDock,
       on,
       lastIncomingCall,
+      registerCloseTicketPeeks,
     ],
   );
 

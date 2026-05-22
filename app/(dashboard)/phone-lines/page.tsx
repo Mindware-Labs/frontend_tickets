@@ -413,8 +413,7 @@ export default function PhoneLinesPage() {
         <PhoneLinesToolbar search={search} onSearchChange={setSearch} />
       </div>
 
-      <div className="flex-1 min-h-0">
-        <PhoneLinesTable
+      <PhoneLinesTable
           loading={loading}
           lines={paginatedLines}
           totalFiltered={filteredLines.length}
@@ -427,7 +426,6 @@ export default function PhoneLinesPage() {
           itemsPerPage={ITEMS_PER_PAGE}
           totalPages={totalPages}
         />
-      </div>
 
       {canManage && (
         <>
