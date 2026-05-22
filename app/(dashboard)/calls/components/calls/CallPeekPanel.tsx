@@ -31,7 +31,6 @@ import {
   User,
   Tag,
   MapPin,
-  FileText,
   ExternalLink,
   Loader2,
   AlertCircle,
@@ -127,7 +126,6 @@ function getFilename(url: string): string {
   try {
     const decoded = decodeURIComponent(url);
     const name = decoded.split("/").pop()?.split("?")[0] ?? url;
-    // strip UUID prefix pattern (uuid_filename.ext → filename.ext)
     return name.replace(/^[0-9a-f-]{36}_/i, "");
   } catch {
     return url;
@@ -136,38 +134,51 @@ function getFilename(url: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-/**
- * InfoCell — a single grid cell.
- * Label is small + uppercase + subtle; value is semibold and prominent.
- * colSpan="full" → spans both columns; truncate → ellipsis + title on hover.
- */
-function InfoCell({
+function PeekBadge({
+  color,
+  bg,
+  icon: Icon,
+  children,
+}: {
+  color: string;
+  bg: string;
+  icon?: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md leading-none"
+      style={{ color, background: bg }}
+    >
+      {Icon && <Icon className="w-3 h-3 shrink-0" />}
+      {children}
+    </span>
+  );
+}
+
+function MetricTile({
   icon: Icon,
   label,
   value,
-  colSpan = "1",
-  truncate = false,
+  mono = false,
 }: {
   icon: React.ElementType;
   label: string;
-  value: React.ReactNode;
-  colSpan?: "full" | "1";
-  truncate?: boolean;
+  value: string;
+  mono?: boolean;
 }) {
-  if (!value || value === "—") return null;
-  const strValue = typeof value === "string" ? value : undefined;
   return (
-    <div className={colSpan === "full" ? "col-span-2" : "min-w-0"}>
-      <p className="flex items-center gap-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider leading-none">
-        <Icon className="w-3 h-3 shrink-0" />
+    <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 min-w-0">
+      <p className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+        <Icon className="w-2.5 h-2.5 shrink-0" />
         {label}
       </p>
       <p
         className={cn(
-          "text-sm font-semibold text-gray-900 mt-1 leading-snug",
-          truncate ? "truncate whitespace-nowrap" : "wrap-break-word",
+          "text-[12px] font-semibold text-slate-800 mt-1 leading-tight truncate",
+          mono && "font-mono tabular-nums",
         )}
-        title={truncate && strValue ? strValue : undefined}
+        title={value}
       >
         {value}
       </p>
@@ -175,19 +186,58 @@ function InfoCell({
   );
 }
 
-/** Strict two-column grid — cells control their own span via colSpan="full" */
-function InfoGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-x-4 gap-y-4">{children}</div>;
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+}) {
+  if (!value || value === "—") return null;
+  const strValue = typeof value === "string" ? value : undefined;
+  return (
+    <div className="flex items-start gap-2.5 py-2 border-b border-slate-100/90 last:border-0">
+      <div className="w-6 h-6 rounded-md bg-white border border-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+        <Icon className="w-3 h-3 text-slate-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+          {label}
+        </p>
+        <p
+          className="text-[12px] font-medium text-slate-800 mt-0.5 leading-snug wrap-break-word"
+          title={strValue}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
 }
 
-function SectionHeader({ label }: { label: string }) {
+function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const items = Array.isArray(children)
+    ? children.filter(Boolean)
+    : children;
+  if (!items || (Array.isArray(items) && items.length === 0)) return null;
+
   return (
-    <div className="flex items-center gap-2 pt-4 pb-2">
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-        {label}
-      </span>
-      <div className="flex-1 h-px bg-gray-100" />
-    </div>
+    <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+      <div className="px-3 py-1.5 bg-slate-50/90 border-b border-slate-100">
+        <h3 className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+          {title}
+        </h3>
+      </div>
+      <div className="px-3">{children}</div>
+    </section>
   );
 }
 
@@ -195,7 +245,7 @@ function SkeletonBlock(props: React.HTMLAttributes<HTMLDivElement>) {
   const { className, ...rest } = props;
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-gray-100", className)}
+      className={cn("animate-pulse rounded-md bg-slate-100", className)}
       {...rest}
     />
   );
@@ -218,24 +268,16 @@ export function CallPeekPanel({
 }: CallPeekPanelProps) {
   const isMobile = useIsMobile();
   const { dockOpen, sheetOpen: aircallSheetOpen } = useAircall();
-  // Aircall panel is on the left when both dock + sheet are open
   const aircallOnLeft = dockOpen && aircallSheetOpen;
-  // Visibility — two-phase (active = in DOM, visible = CSS transition applied)
   const [active, setActive] = useState(false);
   const [visible, setVisible] = useState(false);
-
-  // Download state per attachment URL
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   const [downloadError, setDownloadError] = useState<Record<string, boolean>>(
     {},
   );
-
-  // Collapsible notes section
   const [notesExpanded, setNotesExpanded] = useState(true);
-
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ── Mount / unmount animation ─────────────────────────────────────────────
   const isOpen = isLoading || call !== null;
 
   useEffect(() => {
@@ -252,14 +294,12 @@ export function CallPeekPanel({
     return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
-  // Reset scroll when call changes
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
     setNotesExpanded(true);
     setDownloadError({});
   }, [call?.id]);
 
-  // ── Attachment download ────────────────────────────────────────────────────
   const handleDownload = async (rawUrl: string) => {
     setDownloading((p) => ({ ...p, [rawUrl]: true }));
     setDownloadError((p) => ({ ...p, [rawUrl]: false }));
@@ -297,7 +337,6 @@ export function CallPeekPanel({
 
   if (!active) return null;
 
-  // ── Derived display data ───────────────────────────────────────────────────
   const c = call as any;
   const direction = c?.direction ?? "inbound";
   const hasMissed = !!c?.missedCallReason;
@@ -341,16 +380,12 @@ export function CallPeekPanel({
     : null;
   const aircallId = c?.aircallId ?? null;
 
-  // ── Responsive positioning ─────────────────────────────────────────────────
-  // Mobile  → bottom sheet: full-width, bottom-0, rounded-t-2xl
-  // Desktop → floating panel in gap to the left of Side Sheet
-
   const mobileClasses = cn(
     "fixed bottom-0 left-0 right-0 z-50 flex flex-col",
     "pointer-events-auto",
     "bg-white rounded-t-2xl",
     "shadow-[0_-8px_32px_-4px_rgba(0,0,0,0.14)]",
-    "border border-gray-200/80",
+    "border border-slate-200/80",
     "max-h-[85vh]",
     "transition-all duration-300 ease-out",
     visible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0",
@@ -358,12 +393,10 @@ export function CallPeekPanel({
 
   const desktopClasses = cn(
     "fixed z-[65] pointer-events-auto flex flex-col",
-    "bg-white rounded-2xl border border-gray-200/80",
+    "bg-[#f8f9fb] rounded-2xl border border-slate-200/80",
     "shadow-[0_20px_40px_-8px_rgba(0,0,0,0.14),0_8px_16px_-6px_rgba(0,0,0,0.08)]",
-    // Fixed width only when Aircall is NOT on the left — otherwise width is
-    // determined by the left/right bounds so both gaps are exactly 1rem.
-    !aircallOnLeft && "w-[400px]",
-    aircallOnLeft && "min-w-[280px]",
+    !aircallOnLeft && "w-[min(400px,calc(100vw-2rem))]",
+    aircallOnLeft && "min-w-[280px] max-w-[400px]",
     "transition-all duration-300 ease-out",
     visible
       ? "translate-x-0 opacity-100 scale-100"
@@ -374,18 +407,14 @@ export function CallPeekPanel({
   const containerStyle = isMobile
     ? undefined
     : {
-        // Same 1rem gap on the right (from Sheet left edge)
         right: "calc(min(80svw, 1100px) + 1rem)",
         top: "4rem",
-        bottom: "1rem",
-        // When Aircall dock is visible on the left: same 1rem gap from its right edge.
-        // Aircall panel: left-6 (1.5rem) + w-95 (380px) = ~404px from left.
+        maxHeight: "calc(100vh - 5rem)",
         ...(aircallOnLeft ? { left: "calc(1.5rem + 380px + 1rem)" } : {}),
       };
 
   return (
     <>
-      {/* Backdrop (mobile only) */}
       {isMobile && (
         <div
           className={cn(
@@ -406,30 +435,34 @@ export function CallPeekPanel({
         className={containerClass}
         style={containerStyle}
         onPointerDown={(e) => {
-          // Stop the native event from reaching Radix's document-level listener,
-          // which would otherwise treat any click here as an "outside click"
-          // and close the open Sheet/Dialog.
           e.nativeEvent.stopImmediatePropagation();
         }}
       >
-        {/* ── Drag handle (mobile only) ────────────────────────────────────── */}
         {isMobile && (
           <div className="shrink-0 flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-gray-300" />
+            <div className="w-10 h-1 rounded-full bg-slate-300" />
           </div>
         )}
 
-        {/* ── Header ────────────────────────────────────────────────────────── */}
-        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        {/* Header */}
+        <div
+          className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200/80 bg-white rounded-t-2xl"
+          style={{
+            boxShadow: `inset 3px 0 0 0 ${dirColor}`,
+          }}
+        >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 shrink-0">
-              <FileText className="w-4 h-4 text-gray-500" />
+            <div
+              className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+              style={{ background: `${dirColor}14`, color: dirColor }}
+            >
+              <DirIcon className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+              <p className="text-[13px] font-bold text-slate-900 leading-tight truncate">
                 {isLoading ? "Loading…" : `Call #${call?.id}`}
               </p>
-              <p className="text-xs text-gray-400 tabular-nums leading-tight mt-0.5">
+              <p className="text-[11px] text-slate-500 tabular-nums leading-tight mt-0.5">
                 {isLoading ? "—" : dateLabel}
               </p>
             </div>
@@ -438,184 +471,150 @@ export function CallPeekPanel({
             type="button"
             aria-label="Close preview"
             onClick={onClose}
-            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors ml-2"
+            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* ── Loading skeleton ──────────────────────────────────────────────── */}
         {isLoading && (
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            <div className="flex gap-2">
-              <SkeletonBlock className="h-5 w-16" />
-              <SkeletonBlock className="h-5 w-20" />
-              <SkeletonBlock className="h-5 w-14" />
+          <div className="overflow-y-auto px-4 py-4 space-y-3 bg-white">
+            <div className="flex gap-1.5 flex-wrap">
+              <SkeletonBlock className="h-5 w-14 rounded-md" />
+              <SkeletonBlock className="h-5 w-16 rounded-md" />
+              <SkeletonBlock className="h-5 w-20 rounded-md" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[100, 80, 90, 70].map((w, i) => (
-                <div key={i} className="space-y-1.5">
-                  <SkeletonBlock className="h-3 w-16" />
-                  <SkeletonBlock
-                    className="h-4"
-                    style={{ width: `${w}%` } as React.CSSProperties}
-                  />
-                </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3].map((i) => (
+                <SkeletonBlock key={i} className="h-14 rounded-lg" />
               ))}
             </div>
-            <SkeletonBlock className="h-16 w-full" />
+            <SkeletonBlock className="h-24 w-full rounded-xl" />
           </div>
         )}
 
-        {/* ── Content ───────────────────────────────────────────────────────── */}
         {!isLoading && call && (
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 pb-2"
+            className={cn(
+              "overflow-y-auto px-3 py-3 space-y-3",
+              isMobile ? "flex-1 min-h-0" : "max-h-[calc(100vh-11rem)]",
+            )}
             style={{ scrollbarWidth: "thin" }}
           >
-            {/* Status badges */}
-            <div className="flex items-center gap-2 flex-wrap py-3">
-              <span
-                className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{ color: dirColor, background: dirColor + "18" }}
-              >
-                <DirIcon className="w-3 h-3" />
+            {/* Status strip */}
+            <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-slate-100 bg-white">
+              <PeekBadge color={dirColor} bg={`${dirColor}18`} icon={DirIcon}>
                 {dirLabel}
-              </span>
-              <span
-                className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{ color: sc.text, background: sc.bg }}
-              >
+              </PeekBadge>
+              <PeekBadge color={sc.text} bg={sc.bg}>
                 {sc.label}
-              </span>
+              </PeekBadge>
               {dc && (
-                <span
-                  className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full"
-                  style={{ color: dc.text, background: dc.bg }}
-                >
+                <PeekBadge color={dc.text} bg={dc.bg}>
                   {dc.label}
-                </span>
+                </PeekBadge>
               )}
               {missedReason && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-                  <AlertCircle className="w-3 h-3" />
+                <PeekBadge color="#c0392b" bg="#fde8e6" icon={AlertCircle}>
                   {missedReason}
-                </span>
+                </PeekBadge>
               )}
               {followUp && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-                  <CalendarIcon className="w-3 h-3" />
-                  Pending Follow-up
-                </span>
+                <PeekBadge color="#c47a00" bg="#fef3d6" icon={CalendarIcon}>
+                  Follow-up
+                </PeekBadge>
               )}
             </div>
 
-            {/* ── Call Info section ──────────────────────────────────────────── */}
-            <SectionHeader label="Call Info" />
-            <InfoGrid>
-              <InfoCell
-                icon={CalendarIcon}
-                label="Date"
-                value={fullDate}
-                colSpan="full"
-              />
-              <InfoCell icon={Clock} label="Duration" value={duration} />
+            {/* Key metrics */}
+            <div
+              className={cn(
+                "grid gap-2",
+                aircallId ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
+              <div className="col-span-full">
+                <MetricTile
+                  icon={CalendarIcon}
+                  label="Date"
+                  value={fullDate}
+                />
+              </div>
+              <MetricTile icon={Clock} label="Duration" value={duration} mono />
               {aircallId && (
-                <InfoCell
+                <MetricTile
                   icon={ExternalLink}
-                  label="Aircall ID"
-                  value={aircallId}
-                  truncate
+                  label="Aircall"
+                  value={String(aircallId)}
+                  mono
                 />
               )}
-            </InfoGrid>
+            </div>
 
-            {/* ── Assignment section ─────────────────────────────────────────── */}
-            <SectionHeader label="Assignment" />
-            <InfoGrid>
-              <InfoCell icon={User} label="Agent" value={agentName} truncate />
-              <InfoCell
-                icon={Phone}
-                label="Phone Line"
-                value={phoneLine}
-                truncate
-              />
-              <InfoCell
+            <DetailSection title="Assignment">
+              <DetailRow icon={User} label="Agent" value={agentName} />
+              <DetailRow icon={Phone} label="Phone line" value={phoneLine} />
+              <DetailRow icon={Tag} label="Campaign" value={campaignName} />
+              <DetailRow
                 icon={Tag}
-                label="Campaign"
-                value={campaignName}
-                truncate
-              />
-              <InfoCell
-                icon={Tag}
-                label="Campaign Option"
+                label="Option"
                 value={campaignOpt ?? onboardingOpt}
-                truncate
               />
-              <InfoCell
-                icon={MapPin}
-                label="Yard"
-                value={yardName}
-                colSpan="full"
-                truncate
-              />
-            </InfoGrid>
+              <DetailRow icon={MapPin} label="Yard" value={yardName} />
+            </DetailSection>
 
-            {/* ── Follow-up section ─────────────────────────────────────────── */}
             {followUp && (
-              <>
-                <SectionHeader label="Follow-up" />
-                <InfoGrid>
-                  <InfoCell
-                    icon={CalendarIcon}
-                    label="Due Date"
-                    value={fmtDate(followUp)}
+              <DetailSection title="Follow-up">
+                <DetailRow
+                  icon={CalendarIcon}
+                  label="Due"
+                  value={fmtDate(followUp)}
+                />
+                {followUpAgent && (
+                  <DetailRow
+                    icon={User}
+                    label="Assigned to"
+                    value={followUpAgent}
                   />
-                  {followUpAgent && (
-                    <InfoCell
-                      icon={User}
-                      label="Assigned To"
-                      value={followUpAgent}
-                    />
-                  )}
-                </InfoGrid>
-              </>
+                )}
+              </DetailSection>
             )}
 
-            {/* ── Notes ─────────────────────────────────────────────────────── */}
             {notes && (
-              <>
-                <SectionHeader label="Notes" />
-                <div className="pb-1">
-                  <button
-                    type="button"
-                    onClick={() => setNotesExpanded((p) => !p)}
-                    className="w-full flex items-center justify-between text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors mb-2"
-                  >
-                    <span>{notesExpanded ? "Hide notes" : "Show notes"}</span>
-                    {notesExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                  {notesExpanded && (
-                    <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5">
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap wrap-break-word">
-                        {notes}
-                      </p>
-                    </div>
+              <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setNotesExpanded((p) => !p)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/90 border-b border-slate-100 hover:bg-slate-100/80 transition-colors"
+                >
+                  <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+                    Notes
+                  </span>
+                  {notesExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                   )}
-                </div>
-              </>
+                </button>
+                {notesExpanded && (
+                  <div className="px-3 py-2.5">
+                    <p className="text-[12px] text-slate-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                      {notes}
+                    </p>
+                  </div>
+                )}
+              </section>
             )}
 
-            {/* ── Attachments ───────────────────────────────────────────────── */}
             {attachments.length > 0 && (
-              <>
-                <SectionHeader label={`Attachments (${attachments.length})`} />
-                <div className="pb-1 space-y-2">
+              <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+                <div className="px-3 py-1.5 bg-slate-50/90 border-b border-slate-100">
+                  <h3 className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+                    Attachments ({attachments.length})
+                  </h3>
+                </div>
+                <div className="px-2 py-2 space-y-1.5">
                   {attachments.map((url) => {
                     const filename = getFilename(url);
                     const isDownloading = !!downloading[url];
@@ -623,11 +622,11 @@ export function CallPeekPanel({
                     return (
                       <div
                         key={url}
-                        className="flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5"
+                        className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-2"
                       >
-                        <Paperclip className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span
-                          className="flex-1 text-xs font-medium text-gray-600 truncate"
+                          className="flex-1 text-[11px] font-medium text-slate-600 truncate"
                           title={filename}
                         >
                           {filename}
@@ -638,48 +637,44 @@ export function CallPeekPanel({
                           disabled={isDownloading}
                           onClick={() => handleDownload(url)}
                           className={cn(
-                            "shrink-0 w-6 h-6 rounded-lg flex items-center justify-center transition-colors",
+                            "shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
                             hasError
                               ? "text-red-500 bg-red-50 hover:bg-red-100"
-                              : "text-gray-400 hover:text-[#008f68] hover:bg-green-50",
+                              : "text-slate-400 hover:text-[#008f68] hover:bg-[#008f68]/10",
                             isDownloading && "opacity-50 cursor-not-allowed",
                           )}
                         >
                           {isDownloading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : hasError ? (
-                            <AlertCircle className="w-3 h-3" />
+                            <AlertCircle className="w-3.5 h-3.5" />
                           ) : (
-                            <Download className="w-3 h-3" />
+                            <Download className="w-3.5 h-3.5" />
                           )}
                         </button>
                       </div>
                     );
                   })}
                 </div>
-              </>
+              </section>
             )}
-
-            {/* Bottom padding */}
-            <div className="h-2" />
           </div>
         )}
 
-        {/* ── Sticky footer ─────────────────────────────────────────────────── */}
         {!isLoading && call && (
-          <div className="sticky bottom-0 shrink-0 px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <div className="shrink-0 px-3 py-3 border-t border-slate-200/80 bg-white rounded-b-2xl">
             {onLink ? (
               <button
                 type="button"
                 onClick={onLink}
-                className="w-full h-8 flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+                className="w-full h-9 flex items-center justify-center gap-2 bg-[#008f68] hover:bg-[#007a5c] text-white text-[12px] font-semibold rounded-xl shadow-sm transition-all active:scale-[0.98]"
               >
                 <Link2 className="w-3.5 h-3.5" />
                 Link to current call
               </button>
             ) : (
-              <p className="text-xs text-gray-400 text-center">
-                Read-only preview · Edit in the main panel
+              <p className="text-[11px] text-slate-400 text-center py-1">
+                Read-only preview
               </p>
             )}
           </div>
