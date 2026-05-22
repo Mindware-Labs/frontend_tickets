@@ -23,9 +23,11 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   Download,
   Headphones,
+  ListChecks,
   MapPin,
   MessageSquare,
   PhoneCall,
@@ -33,6 +35,7 @@ import {
   Target,
   Timer,
   TrendingUp,
+  UserCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -56,6 +59,22 @@ type Metric = {
   trend: string;
   tone: Tone;
   icon: LucideIcon;
+};
+
+type CoverageItem = {
+  title: string;
+  status: string;
+  detail: string;
+  tone: Tone;
+  icon: LucideIcon;
+};
+
+type ScorecardItem = {
+  metric: string;
+  cadence: string;
+  actual: string;
+  target: string;
+  score: number;
 };
 
 const toneClasses: Record<
@@ -127,36 +146,87 @@ const tooltipStyle = {
   boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
 };
 
-const operationsMetrics: Metric[] = [
+const requirementCoverage: CoverageItem[] = [
   {
-    label: "Calls today",
-    value: "728",
-    detail: "432 inbound, 296 outbound",
-    trend: "+12% vs last Tue",
+    title: "Call records",
+    status: "Available in app",
+    detail:
+      "calls table supports direction, status, disposition, duration, recordings, voicemail, agent, customer, yard, campaign and phone line.",
     tone: "emerald",
     icon: PhoneCall,
   },
   {
-    label: "Live queue",
-    value: "18",
-    detail: "7 active, 11 waiting",
-    trend: "Peak window now",
+    title: "Ticket cases",
+    status: "Available in app",
+    detail:
+      "tickets_v2 separates real cases from lightweight calls with callId, status, priority, follow-up owner and due date.",
+    tone: "emerald",
+    icon: ClipboardList,
+  },
+  {
+    title: "Client number notes",
+    status: "Available in app",
+    detail:
+      "customers already have phone, note, pinnedNote and a notes timeline, matching the persistent phone-number note requirement.",
+    tone: "sky",
+    icon: ListChecks,
+  },
+  {
+    title: "Line of origin",
+    status: "Available in app",
+    detail:
+      "phone_lines plus campaign and yard IDs can drive line, campaign and location attribution across calls and tickets.",
+    tone: "sky",
+    icon: Radio,
+  },
+  {
+    title: "SMS analytics",
+    status: "Aircall feed required",
+    detail:
+      "SMS volume, reply rate, open rate and message timeline panels are reserved for the two-way SMS integration.",
+    tone: "amber",
+    icon: MessageSquare,
+  },
+  {
+    title: "Live wallboard",
+    status: "Aircall Analytics+ required",
+    detail:
+      "queue depth, agent availability, utilization history and peak-hour heatmaps need live Aircall status and analytics events.",
     tone: "amber",
     icon: Headphones,
+  },
+];
+
+const operationsMetrics: Metric[] = [
+  {
+    label: "Calls handled today",
+    value: "728",
+    detail: "432 inbound, 296 outbound",
+    trend: "Source: calls.direction + agent",
+    tone: "emerald",
+    icon: PhoneCall,
+  },
+  {
+    label: "Avg response time",
+    value: "1m 18s",
+    detail: "answeredAt - startedAt",
+    trend: "Daily leadership KPI",
+    tone: "sky",
+    icon: Clock3,
   },
   {
     label: "Avg handle time",
     value: "5m 21s",
-    detail: "Talk + wrap-up",
-    trend: "-24s vs target",
-    tone: "sky",
+    detail: "Duration by line",
+    trend: "ACW added after Aircall sync",
+    tone: "amber",
     icon: Timer,
   },
   {
-    label: "Overdue follow-ups",
-    value: "14",
-    detail: "8 calls, 6 tickets",
-    trend: "Supervisor review",
+    label: "Follow-ups due",
+    value: "37",
+    detail: "14 overdue, 23 due today",
+    trend: "Owner + due date workflow",
     tone: "rose",
     icon: AlertTriangle,
   },
@@ -164,36 +234,36 @@ const operationsMetrics: Metric[] = [
 
 const executiveMetrics: Metric[] = [
   {
-    label: "Call volume",
+    label: "Call volume by line",
     value: "14,820",
     detail: "All lines, last 30 days",
-    trend: "+8.4% month over month",
+    trend: "Daily call KPI",
     tone: "emerald",
     icon: Radio,
   },
   {
-    label: "Ticket resolution",
-    value: "82%",
-    detail: "Resolved inside SLA",
-    trend: "+5.1 points",
-    tone: "indigo",
-    icon: CheckCircle2,
-  },
-  {
-    label: "Callback kept rate",
-    value: "91%",
-    detail: "Promised callbacks honored",
-    trend: "+7.2 points",
-    tone: "sky",
-    icon: Clock3,
-  },
-  {
-    label: "At-risk workload",
-    value: "39",
-    detail: "Overdue or emergency",
-    trend: "12 require action today",
+    label: "Open tickets by line",
+    value: "164",
+    detail: "39 overdue or emergency",
+    trend: "Daily ticket KPI",
     tone: "rose",
-    icon: AlertTriangle,
+    icon: ClipboardList,
+  },
+  {
+    label: "Ticket / call ratio",
+    value: "18.4%",
+    detail: "Calls that became cases",
+    trend: "Weekly leadership KPI",
+    tone: "indigo",
+    icon: BarChart3,
+  },
+  {
+    label: "Resolution rate by line",
+    value: "82%",
+    detail: "Resolved tickets / total",
+    trend: "Monthly leadership KPI",
+    tone: "sky",
+    icon: CheckCircle2,
   },
 ];
 
@@ -202,44 +272,44 @@ const marketingMetrics: Metric[] = [
     label: "Contact rate",
     value: "64%",
     detail: "Connected / attempted",
-    trend: "+6.8 points",
+    trend: "Daily by campaign",
     tone: "emerald",
     icon: Target,
   },
   {
-    label: "Lead enrollment",
-    value: "18.6%",
-    detail: "Lead to enrolled funnel",
-    trend: "+2.4 points",
+    label: "PTP + enrollment outcomes",
+    value: "1,427",
+    detail: "Promise to Pay and Enrolled tags",
+    trend: "Disposition-driven funnel",
     tone: "indigo",
     icon: TrendingUp,
   },
   {
     label: "SMS reply rate",
     value: "31%",
-    detail: "Across active campaigns",
-    trend: "+4.9 points",
-    tone: "sky",
+    detail: "Post-call texts by campaign",
+    trend: "Aircall SMS required",
+    tone: "amber",
     icon: MessageSquare,
   },
   {
-    label: "Campaign ROI",
-    value: "3.4x",
-    detail: "Calls vs outcomes",
-    trend: "AR and Wellness lead",
-    tone: "amber",
-    icon: BarChart3,
+    label: "Calls per yard",
+    value: "48",
+    detail: "Tracked locations",
+    trend: "Yard tags or dedicated numbers",
+    tone: "sky",
+    icon: MapPin,
   },
 ];
 
 const operationsTrend = [
-  { day: "Mon", inbound: 284, outbound: 226, tickets: 132, callbacks: 42 },
-  { day: "Tue", inbound: 318, outbound: 244, tickets: 146, callbacks: 48 },
-  { day: "Wed", inbound: 344, outbound: 268, tickets: 153, callbacks: 51 },
-  { day: "Thu", inbound: 331, outbound: 251, tickets: 149, callbacks: 45 },
-  { day: "Fri", inbound: 372, outbound: 289, tickets: 166, callbacks: 56 },
-  { day: "Sat", inbound: 194, outbound: 122, tickets: 77, callbacks: 21 },
-  { day: "Sun", inbound: 138, outbound: 92, tickets: 51, callbacks: 17 },
+  { day: "Mon", inbound: 284, outbound: 226, missed: 18, tickets: 132 },
+  { day: "Tue", inbound: 318, outbound: 244, missed: 22, tickets: 146 },
+  { day: "Wed", inbound: 344, outbound: 268, missed: 19, tickets: 153 },
+  { day: "Thu", inbound: 331, outbound: 251, missed: 24, tickets: 149 },
+  { day: "Fri", inbound: 372, outbound: 289, missed: 23, tickets: 166 },
+  { day: "Sat", inbound: 194, outbound: 122, missed: 13, tickets: 77 },
+  { day: "Sun", inbound: 138, outbound: 92, missed: 9, tickets: 51 },
 ];
 
 const agentActivity = [
@@ -255,11 +325,11 @@ const liveWallboard = [
   {
     label: "Active calls",
     value: "7",
-    detail: "3 AR, 2 Leads, 2 Wellness",
+    detail: "Aircall live calls, app stores isLive",
     tone: "emerald" as Tone,
   },
   {
-    label: "Queued calls",
+    label: "Queued callbacks",
     value: "11",
     detail: "Longest wait 02:18",
     tone: "amber" as Tone,
@@ -267,7 +337,7 @@ const liveWallboard = [
   {
     label: "Agents available",
     value: "9",
-    detail: "5 ready, 4 after-call work",
+    detail: "Requires Aircall user status",
     tone: "sky" as Tone,
   },
   {
@@ -281,35 +351,48 @@ const liveWallboard = [
 const linePerformance = [
   {
     line: "AR Collections",
+    source: "phone_lines.label + AR campaigns",
     calls: "4,820",
+    response: "1m 12s",
     contact: "68%",
     aht: "5m 48s",
     missed: "4.8%",
-    owner: "Operations",
   },
   {
-    line: "Wellness",
+    line: "Wellness Outreach",
+    source: "dedicated Aircall number",
     calls: "2,940",
+    response: "1m 34s",
     contact: "58%",
     aht: "6m 12s",
     missed: "6.1%",
-    owner: "Marketing",
   },
   {
     line: "New Leads",
+    source: "lead campaign phone line",
     calls: "3,180",
+    response: "0m 54s",
     contact: "72%",
     aht: "4m 56s",
     missed: "3.9%",
-    owner: "Sales",
   },
   {
-    line: "Onboarding",
+    line: "New Client Onboarding",
+    source: "campaign.tipo = ONBOARDING",
     calls: "1,470",
+    response: "1m 46s",
     contact: "61%",
     aht: "7m 18s",
     missed: "5.3%",
-    owner: "Client Success",
+  },
+  {
+    line: "General Support",
+    source: "fallback phone line",
+    calls: "3,410",
+    response: "1m 26s",
+    contact: "63%",
+    aht: "5m 02s",
+    missed: "4.6%",
   },
 ];
 
@@ -318,7 +401,7 @@ const followUpQueue = [
     id: "CALL-1088",
     customer: "R. Alvarez",
     owner: "Maria G.",
-    status: "PTP overdue",
+    status: "Promise to Pay overdue",
     due: "2h late",
     tone: "rose" as Tone,
   },
@@ -334,7 +417,7 @@ const followUpQueue = [
     id: "CALL-1096",
     customer: "K. Nguyen",
     owner: "Lucia R.",
-    status: "Enrollment follow-up",
+    status: "Callback scheduled",
     due: "Today 4:15p",
     tone: "sky" as Tone,
   },
@@ -348,12 +431,49 @@ const followUpQueue = [
   },
 ];
 
-const executiveCallKpis = [
-  { metric: "Response time", actual: 82, target: 90 },
-  { metric: "AHT by line", actual: 76, target: 80 },
-  { metric: "Utilization", actual: 88, target: 85 },
-  { metric: "Callbacks kept", actual: 91, target: 90 },
-  { metric: "Resolution by line", actual: 84, target: 86 },
+const executiveCallKpis: ScorecardItem[] = [
+  {
+    metric: "Call response time",
+    cadence: "Daily",
+    actual: "1m 18s",
+    target: "< 1m 30s",
+    score: 91,
+  },
+  {
+    metric: "Average handle time by line",
+    cadence: "Weekly",
+    actual: "5m 21s",
+    target: "< 6m",
+    score: 89,
+  },
+  {
+    metric: "Agent utilization rate",
+    cadence: "Weekly",
+    actual: "84%",
+    target: "80-88%",
+    score: 94,
+  },
+  {
+    metric: "Callback promise kept rate",
+    cadence: "Weekly",
+    actual: "91%",
+    target: "90%+",
+    score: 91,
+  },
+  {
+    metric: "Ticket response time",
+    cadence: "Daily",
+    actual: "18m",
+    target: "< 20m",
+    score: 90,
+  },
+  {
+    metric: "Resolution rate by line",
+    cadence: "Monthly",
+    actual: "82%",
+    target: "86%",
+    score: 82,
+  },
 ];
 
 const ticketVsCallTrend = [
@@ -366,6 +486,7 @@ const ticketVsCallTrend = [
 const ticketRisk = [
   {
     yard: "Miami",
+    line: "AR Collections",
     open: 42,
     overdue: 6,
     response: "18m",
@@ -374,6 +495,7 @@ const ticketRisk = [
   },
   {
     yard: "Orlando",
+    line: "Wellness Outreach",
     open: 31,
     overdue: 3,
     response: "21m",
@@ -382,6 +504,7 @@ const ticketRisk = [
   },
   {
     yard: "Tampa",
+    line: "New Leads",
     open: 28,
     overdue: 7,
     response: "27m",
@@ -390,6 +513,7 @@ const ticketRisk = [
   },
   {
     yard: "Jacksonville",
+    line: "New Client Onboarding",
     open: 19,
     overdue: 2,
     response: "14m",
@@ -398,7 +522,18 @@ const ticketRisk = [
   },
 ];
 
-const heatmapHours = ["8a", "9a", "10a", "11a", "12p", "1p", "2p", "3p", "4p", "5p"];
+const heatmapHours = [
+  "8a",
+  "9a",
+  "10a",
+  "11a",
+  "12p",
+  "1p",
+  "2p",
+  "3p",
+  "4p",
+  "5p",
+];
 const peakHourHeatmap = [
   { day: "Mon", values: [18, 26, 38, 52, 61, 58, 49, 44, 31, 20] },
   { day: "Tue", values: [22, 31, 42, 59, 67, 64, 56, 47, 35, 24] },
@@ -409,6 +544,81 @@ const peakHourHeatmap = [
   { day: "Sun", values: [7, 12, 17, 21, 24, 23, 19, 16, 12, 9] },
 ];
 
+const leadershipCadence = [
+  {
+    group: "Call KPI",
+    metric: "Total call volume by yard / line",
+    cadence: "Daily",
+    source: "calls + phone_lines + yards",
+  },
+  {
+    group: "Call KPI",
+    metric: "Call response time",
+    cadence: "Daily",
+    source: "startedAt / answeredAt",
+  },
+  {
+    group: "Call KPI",
+    metric: "Average handle time by line",
+    cadence: "Weekly",
+    source: "duration + line",
+  },
+  {
+    group: "Call KPI",
+    metric: "Agent utilization rate",
+    cadence: "Weekly",
+    source: "Aircall status history",
+  },
+  {
+    group: "Call KPI",
+    metric: "Callback promise kept rate",
+    cadence: "Weekly",
+    source: "follow-up due date + final disposition",
+  },
+  {
+    group: "Call KPI",
+    metric: "Peak call hour heatmap",
+    cadence: "Monthly",
+    source: "Aircall Analytics+",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Open tickets by yard / line",
+    cadence: "Daily",
+    source: "tickets_v2 + yards + phone_lines",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Ticket response time",
+    cadence: "Daily",
+    source: "ticket createdAt / first update",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Ticket resolution time",
+    cadence: "Weekly",
+    source: "createdAt / updatedAt",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Overdue tickets by agent",
+    cadence: "Daily",
+    source: "status + assigned agent",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Ticket volume vs. call volume ratio",
+    cadence: "Weekly",
+    source: "tickets_v2 / calls",
+  },
+  {
+    group: "Ticket KPI",
+    metric: "Resolution rate by line",
+    cadence: "Monthly",
+    source: "ticket status + phone line",
+  },
+];
+
 const campaignRates = [
   { campaign: "AR", contact: 68, conversion: 31, sms: 24, roi: 3.9 },
   { campaign: "Wellness", contact: 58, conversion: 42, sms: 36, roi: 4.2 },
@@ -417,7 +627,7 @@ const campaignRates = [
 ];
 
 const leadFunnel = [
-  { stage: "Leads", value: 1240, pct: 100 },
+  { stage: "New leads", value: 1240, pct: 100 },
   { stage: "Called", value: 1014, pct: 82 },
   { stage: "Connected", value: 731, pct: 59 },
   { stage: "Qualified", value: 412, pct: 33 },
@@ -427,7 +637,7 @@ const leadFunnel = [
 const arFunnel = [
   { stage: "Dials", value: 4820, pct: 100 },
   { stage: "Contacts", value: 3278, pct: 68 },
-  { stage: "PTP", value: 1196, pct: 25 },
+  { stage: "Promise to Pay", value: 1196, pct: 25 },
   { stage: "Paid", value: 612, pct: 13 },
 ];
 
@@ -439,11 +649,16 @@ const smsTrend = [
 ];
 
 const dispositionBreakdown = [
-  { name: "PTP", value: 26, color: toneClasses.emerald.chart },
-  { name: "No answer", value: 31, color: toneClasses.amber.chart },
-  { name: "Dispute", value: 12, color: toneClasses.rose.chart },
-  { name: "Enrolled", value: 18, color: toneClasses.indigo.chart },
-  { name: "Callback", value: 13, color: toneClasses.sky.chart },
+  { name: "Resolved", value: 24, color: toneClasses.emerald.chart },
+  { name: "Callback Required", value: 13, color: toneClasses.sky.chart },
+  { name: "Callback Scheduled", value: 9, color: "#38bdf8" },
+  { name: "Voicemail Left", value: 7, color: toneClasses.slate.chart },
+  { name: "No Answer", value: 18, color: toneClasses.amber.chart },
+  { name: "Promise to Pay", value: 12, color: "#16a34a" },
+  { name: "Dispute", value: 6, color: toneClasses.rose.chart },
+  { name: "Wrong Number", value: 4, color: "#78716c" },
+  { name: "Enrolled", value: 6, color: toneClasses.indigo.chart },
+  { name: "Escalated", value: 5, color: "#9333ea" },
 ];
 
 const yardVolume = [
@@ -452,6 +667,29 @@ const yardVolume = [
   { yard: "Tampa", calls: 1184, outcomes: 336 },
   { yard: "Jacksonville", calls: 872, outcomes: 294 },
   { yard: "Atlanta", calls: 641, outcomes: 178 },
+];
+
+const marketingUseCases = [
+  {
+    campaign: "AR Collections",
+    measures: "Dials, contacts reached, PTPs, avg duration, payment outcomes",
+    source: "calls.disposition + campaign.tipo = AR",
+  },
+  {
+    campaign: "Wellness Outreach",
+    measures: "Enrollment conversion, best call windows, SMS engagement",
+    source: "campaign line + Aircall SMS",
+  },
+  {
+    campaign: "Lead Campaigns",
+    measures: "Speed-to-lead, hot/warm/cold outcomes, lead-to-enrollment funnel",
+    source: "startedAt / answeredAt + dispositions",
+  },
+  {
+    campaign: "New Client Onboarding",
+    measures: "Completion rate by stage, recording compliance, post-call SMS",
+    source: "campaign.tipo = ONBOARDING",
+  },
 ];
 
 function MetricCard({ metric }: { metric: Metric }) {
@@ -472,12 +710,12 @@ function MetricCard({ metric }: { metric: Metric }) {
           </div>
           <span
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border",
+              "flex size-10 shrink-0 items-center justify-center rounded-[8px] border",
               tone.iconWrap,
               tone.border,
             )}
           >
-            <Icon className={cn("h-5 w-5", tone.icon)} aria-hidden />
+            <Icon className={cn("size-5", tone.icon)} aria-hidden />
           </span>
         </div>
         <div className="mt-4 flex flex-col gap-1 text-sm">
@@ -570,7 +808,7 @@ function DataRow({
         </p>
       </div>
       <div className="flex items-center gap-2 sm:justify-end">
-        <span className={cn("h-2 w-2 rounded-full", toneClass.bg)} />
+        <span className={cn("size-2 rounded-full", toneClass.bg)} />
         <span className="text-lg font-semibold tabular-nums text-slate-950 dark:text-slate-50">
           {value}
         </span>
@@ -589,10 +827,11 @@ function SectionIntro() {
         <h1 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
           Support Center Dashboards
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-          Operations, executive and marketing views aligned with the Aircall
-          integration requirements: call logs, ticket KPIs, follow-ups, SMS,
-          campaign attribution and yard performance.
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+          Mockups aligned to the Aircall platform analysis and the March 2026
+          Rig Hut upgrade proposals: calls vs. tickets, client number notes,
+          line-of-origin attribution, structured dispositions, follow-ups, SMS,
+          yard reporting and leadership KPI cadence.
         </p>
       </div>
       <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -601,15 +840,61 @@ function SectionIntro() {
           variant="outline"
           className="h-9 rounded-[8px] border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
         >
-          <CalendarDays className="h-4 w-4" aria-hidden />
+          <CalendarDays className="size-4" aria-hidden />
           Last 30 days
         </Button>
         <Button type="button" className="h-9 rounded-[8px]">
-          <Download className="h-4 w-4" aria-hidden />
+          <Download className="size-4" aria-hidden />
           Export
         </Button>
       </div>
     </div>
+  );
+}
+
+function RequirementCoveragePanel() {
+  return (
+    <PanelCard
+      title="Requirement-to-data alignment"
+      subtitle="What the current app can support now, and what must arrive from Aircall for the full dashboard layer."
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {requirementCoverage.map((item) => {
+          const Icon = item.icon;
+          const tone = toneClasses[item.tone];
+
+          return (
+            <div
+              key={item.title}
+              className="rounded-[8px] border border-slate-200 p-3 dark:border-slate-800"
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-[8px] border",
+                    tone.iconWrap,
+                    tone.border,
+                  )}
+                >
+                  <Icon className={cn("size-4", tone.icon)} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                      {item.title}
+                    </p>
+                    <StatusBadge tone={item.tone}>{item.status}</StatusBadge>
+                  </div>
+                  <p className="mt-2 text-sm leading-5 text-slate-600 dark:text-slate-400">
+                    {item.detail}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </PanelCard>
   );
 }
 
@@ -631,7 +916,7 @@ function OperationsDashboard() {
       <div className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
         <PanelCard
           title="Call volume and ticket creation"
-          subtitle="Inbound, outbound, tickets created and follow-up callbacks by day."
+          subtitle="Inbound, outbound, missed calls and tickets created by day."
         >
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -670,7 +955,7 @@ function OperationsDashboard() {
                 <Area
                   type="monotone"
                   dataKey="inbound"
-                  name="Inbound"
+                  name="Inbound calls"
                   stroke={toneClasses.emerald.chart}
                   fill="url(#inboundFill)"
                   strokeWidth={2}
@@ -678,7 +963,7 @@ function OperationsDashboard() {
                 <Area
                   type="monotone"
                   dataKey="outbound"
-                  name="Outbound"
+                  name="Outbound calls"
                   stroke={toneClasses.sky.chart}
                   fill="url(#outboundFill)"
                   strokeWidth={2}
@@ -686,8 +971,16 @@ function OperationsDashboard() {
                 <Line
                   type="monotone"
                   dataKey="tickets"
-                  name="Tickets"
+                  name="Tickets opened"
                   stroke={toneClasses.indigo.chart}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="missed"
+                  name="Missed"
+                  stroke={toneClasses.rose.chart}
                   strokeWidth={2}
                   dot={false}
                 />
@@ -698,7 +991,7 @@ function OperationsDashboard() {
 
         <PanelCard
           title="Live wallboard"
-          subtitle="Queue health for supervisors and floor leads."
+          subtitle="Real-time queue visibility requested for supervisors."
         >
           <div className="grid gap-3 sm:grid-cols-2">
             {liveWallboard.map((item) => (
@@ -729,7 +1022,7 @@ function OperationsDashboard() {
                 <Legend />
                 <Bar
                   dataKey="calls"
-                  name="Calls"
+                  name="Calls handled"
                   fill={toneClasses.emerald.chart}
                   radius={[6, 6, 0, 0]}
                 />
@@ -776,18 +1069,19 @@ function OperationsDashboard() {
 
       <PanelCard
         title="Line and campaign operations"
-        subtitle="Daily line-of-origin performance for staffing, attribution and SLA review."
+        subtitle="Line-of-origin performance for staffing, attribution and SLA review."
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[920px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
-                <th className="py-3 pr-4 font-medium">Line</th>
+                <th className="py-3 pr-4 font-medium">Line / campaign</th>
+                <th className="py-3 pr-4 font-medium">Source in app</th>
                 <th className="py-3 pr-4 font-medium">Calls</th>
+                <th className="py-3 pr-4 font-medium">Response</th>
                 <th className="py-3 pr-4 font-medium">Contact rate</th>
                 <th className="py-3 pr-4 font-medium">AHT</th>
                 <th className="py-3 pr-4 font-medium">Missed</th>
-                <th className="py-3 pr-4 font-medium">Audience</th>
               </tr>
             </thead>
             <tbody>
@@ -799,8 +1093,14 @@ function OperationsDashboard() {
                   <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
                     {line.line}
                   </td>
+                  <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">
+                    {line.source}
+                  </td>
                   <td className="py-3 pr-4 tabular-nums text-slate-700 dark:text-slate-300">
                     {line.calls}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {line.response}
                   </td>
                   <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
                     {line.contact}
@@ -811,15 +1111,48 @@ function OperationsDashboard() {
                   <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
                     {line.missed}
                   </td>
-                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
-                    {line.owner}
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </PanelCard>
+    </div>
+  );
+}
+
+function ScorecardProgress({ item }: { item: ScorecardItem }) {
+  return (
+    <div className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {item.metric}
+            </span>
+            <StatusBadge tone="slate">{item.cadence}</StatusBadge>
+          </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Target: {item.target}
+          </p>
+        </div>
+        <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-slate-50">
+          {item.actual}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-900">
+        <div
+          className={cn(
+            "h-2 rounded-full",
+            item.score >= 90
+              ? "bg-emerald-600"
+              : item.score >= 80
+                ? "bg-amber-500"
+                : "bg-rose-600",
+          )}
+          style={{ width: `${item.score}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -868,34 +1201,12 @@ function ExecutiveDashboard() {
         </PanelCard>
 
         <PanelCard
-          title="Call KPI scorecard"
-          subtitle="Operational KPIs compared against leadership targets."
+          title="Leadership KPI scorecard"
+          subtitle="Call KPIs and ticket KPIs compared against operating targets."
         >
           <div className="space-y-4">
             {executiveCallKpis.map((item) => (
-              <div key={item.metric} className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    {item.metric}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-slate-50">
-                    {item.actual}% / {item.target}%
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-900">
-                  <div
-                    className={cn(
-                      "h-2 rounded-full",
-                      item.actual >= item.target
-                        ? "bg-emerald-600"
-                        : item.actual >= item.target - 6
-                          ? "bg-amber-500"
-                          : "bg-rose-600",
-                    )}
-                    style={{ width: `${item.actual}%` }}
-                  />
-                </div>
-              </div>
+              <ScorecardProgress key={item.metric} item={item} />
             ))}
           </div>
         </PanelCard>
@@ -947,14 +1258,15 @@ function ExecutiveDashboard() {
         </PanelCard>
 
         <PanelCard
-          title="Ticket risk by yard"
+          title="Ticket risk by yard and line"
           subtitle="Open workload, overdue count, response time and resolution rate."
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-sm">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
                   <th className="py-3 pr-4 font-medium">Yard</th>
+                  <th className="py-3 pr-4 font-medium">Line</th>
                   <th className="py-3 pr-4 font-medium">Open</th>
                   <th className="py-3 pr-4 font-medium">Overdue</th>
                   <th className="py-3 pr-4 font-medium">Response</th>
@@ -965,11 +1277,14 @@ function ExecutiveDashboard() {
               <tbody>
                 {ticketRisk.map((yard) => (
                   <tr
-                    key={yard.yard}
+                    key={`${yard.yard}-${yard.line}`}
                     className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
                   >
                     <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
                       {yard.yard}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                      {yard.line}
                     </td>
                     <td className="py-3 pr-4 tabular-nums text-slate-700 dark:text-slate-300">
                       {yard.open}
@@ -995,6 +1310,47 @@ function ExecutiveDashboard() {
           </div>
         </PanelCard>
       </div>
+
+      <PanelCard
+        title="Automated report cadence"
+        subtitle="Daily, weekly and monthly leadership metrics mapped to available app data and Aircall data."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                <th className="py-3 pr-4 font-medium">Group</th>
+                <th className="py-3 pr-4 font-medium">Metric</th>
+                <th className="py-3 pr-4 font-medium">Cadence</th>
+                <th className="py-3 pr-4 font-medium">Primary source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leadershipCadence.map((row) => (
+                <tr
+                  key={`${row.group}-${row.metric}`}
+                  className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
+                >
+                  <td className="py-3 pr-4">
+                    <StatusBadge tone={row.group === "Call KPI" ? "sky" : "indigo"}>
+                      {row.group}
+                    </StatusBadge>
+                  </td>
+                  <td className="py-3 pr-4 font-medium text-slate-950 dark:text-slate-50">
+                    {row.metric}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {row.cadence}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">
+                    {row.source}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PanelCard>
     </div>
   );
 }
@@ -1045,7 +1401,7 @@ function MarketingDashboard() {
       <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <PanelCard
           title="Campaign performance"
-          subtitle="Contact rate, conversion, SMS reply rate and ROI by campaign line."
+          subtitle="Contact rate, outcome conversion, SMS reply rate and ROI by campaign line."
         >
           <div className="h-[330px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -1063,7 +1419,7 @@ function MarketingDashboard() {
                 />
                 <Bar
                   dataKey="conversion"
-                  name="Conversion %"
+                  name="Outcome %"
                   fill={toneClasses.indigo.chart}
                   radius={[6, 6, 0, 0]}
                 />
@@ -1091,8 +1447,8 @@ function MarketingDashboard() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <PanelCard
-          title="SMS engagement"
-          subtitle="Two-way SMS volume, replies and response rate."
+          title="Post-integration SMS engagement"
+          subtitle="Two-way SMS volume, replies and response rate. Requires Aircall SMS sync."
         >
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -1137,8 +1493,8 @@ function MarketingDashboard() {
         </PanelCard>
 
         <PanelCard
-          title="Disposition mix"
-          subtitle="Mandatory outcome tags ready for clean campaign reporting."
+          title="Mandatory disposition mix"
+          subtitle="Exact structured outcomes from the upgrade proposal and call enum."
         >
           <div className="grid gap-4 lg:grid-cols-[240px_1fr] lg:items-center">
             <div className="h-[260px]">
@@ -1150,7 +1506,7 @@ function MarketingDashboard() {
                     nameKey="name"
                     innerRadius={62}
                     outerRadius={92}
-                    paddingAngle={3}
+                    paddingAngle={2}
                   >
                     {dispositionBreakdown.map((entry) => (
                       <Cell key={entry.name} fill={entry.color} />
@@ -1160,18 +1516,18 @@ function MarketingDashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
               {dispositionBreakdown.map((item) => (
                 <div
                   key={item.name}
-                  className="flex items-center justify-between gap-3 rounded-[8px] border border-slate-200 p-3 dark:border-slate-800"
+                  className="flex min-h-10 items-center justify-between gap-3 rounded-[8px] border border-slate-200 p-2 dark:border-slate-800"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                     <span
-                      className="h-3 w-3 rounded-[4px]"
+                      className="size-3 shrink-0 rounded-[4px]"
                       style={{ backgroundColor: item.color }}
                     />
-                    {item.name}
+                    <span className="truncate">{item.name}</span>
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-slate-50">
                     {item.value}%
@@ -1182,6 +1538,41 @@ function MarketingDashboard() {
           </div>
         </PanelCard>
       </div>
+
+      <PanelCard
+        title="Campaign measurement plan"
+        subtitle="Marketing requirements from the proposals mapped to real app entities and Aircall extensions."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                <th className="py-3 pr-4 font-medium">Campaign</th>
+                <th className="py-3 pr-4 font-medium">Measure</th>
+                <th className="py-3 pr-4 font-medium">Primary source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {marketingUseCases.map((row) => (
+                <tr
+                  key={row.campaign}
+                  className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
+                >
+                  <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
+                    {row.campaign}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
+                    {row.measures}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">
+                    {row.source}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PanelCard>
 
       <PanelCard
         title="Yard volume and outcomes"
@@ -1219,6 +1610,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-[calc(100dvh-5.5rem)] space-y-5 py-5 tracking-normal">
       <SectionIntro />
+      <RequirementCoveragePanel />
 
       <Tabs defaultValue="operations" className="space-y-4">
         <TabsList className="grid h-auto w-full grid-cols-1 rounded-[8px] border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-3 lg:w-fit">
@@ -1226,21 +1618,21 @@ export default function DashboardPage() {
             value="operations"
             className="min-h-10 rounded-[6px] text-sm"
           >
-            <Headphones className="h-4 w-4" aria-hidden />
+            <Headphones className="size-4" aria-hidden />
             Operations
           </TabsTrigger>
           <TabsTrigger
             value="executive"
             className="min-h-10 rounded-[6px] text-sm"
           >
-            <Users className="h-4 w-4" aria-hidden />
+            <Users className="size-4" aria-hidden />
             Executive
           </TabsTrigger>
           <TabsTrigger
             value="marketing"
             className="min-h-10 rounded-[6px] text-sm"
           >
-            <MapPin className="h-4 w-4" aria-hidden />
+            <UserCheck className="size-4" aria-hidden />
             Marketing
           </TabsTrigger>
         </TabsList>
