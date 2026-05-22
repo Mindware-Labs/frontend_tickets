@@ -29,6 +29,7 @@ const DISPOSITION_PILL: Record<string, PillColors> = {
   CALLBACK_SCHEDULED: { dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8" },
   NO_ANSWER: { dot: "#94a3b8", bg: "#f1f5f9", fg: "#475569" },
   VOICEMAIL_LEFT: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },
+  NEW_LEAD: { dot: "#059669", bg: "#d1fae5", fg: "#047857" },
   PROMISE_TO_PAY: { dot: "#7c3aed", bg: "#ede9fe", fg: "#6d28d9" },
   DISPUTE: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
   WRONG_NUMBER: { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },

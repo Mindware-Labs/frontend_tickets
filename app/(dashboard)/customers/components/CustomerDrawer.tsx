@@ -71,6 +71,7 @@ const dispositionLabel = (d?: string) => {
     CALLBACK_SCHEDULED: "Callback Scheduled",
     VOICEMAIL_LEFT: "Voicemail",
     NO_ANSWER: "No Answer",
+    NEW_LEAD: "New Lead",
     PROMISE_TO_PAY: "Promise to Pay",
     DISPUTE: "Dispute",
     WRONG_NUMBER: "Wrong Number",

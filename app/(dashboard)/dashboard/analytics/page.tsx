@@ -7,12 +7,6 @@ import BarChart from "@/components/dashboard/bar-chart";
 import LineChart from "@/components/dashboard/line-chart";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
-  getTicketsByCampaign,
-  getTicketsByType,
-  getCallsPerDay,
-  getDashboardStats,
-} from "@/lib/mock-data";
-import {
   Activity,
   BarChart2,
   Clock,
@@ -30,19 +24,95 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type AnalyticsDashboardData = {
+  generatedAt: string;
+  kpis: {
+    totalCalls: number;
+    totalTickets: number;
+    activeTickets: number;
+    openTickets: number;
+    inProgressTickets: number;
+    closedTickets: number;
+    pendingActions: number;
+    resolutionRate: number;
+    callsLast7Days: number;
+  };
+  charts: {
+    callsByDay: { day: string; calls: number }[];
+    ticketsByCampaign: { name: string; count: number }[];
+    ticketsByDisposition: { name: string; count: number }[];
+  };
+};
+
+const emptyDashboardData: AnalyticsDashboardData = {
+  generatedAt: new Date().toISOString(),
+  kpis: {
+    totalCalls: 0,
+    totalTickets: 0,
+    activeTickets: 0,
+    openTickets: 0,
+    inProgressTickets: 0,
+    closedTickets: 0,
+    pendingActions: 0,
+    resolutionRate: 0,
+    callsLast7Days: 0,
+  },
+  charts: {
+    callsByDay: [
+      { day: "Mon", calls: 0 },
+      { day: "Tue", calls: 0 },
+      { day: "Wed", calls: 0 },
+      { day: "Thu", calls: 0 },
+      { day: "Fri", calls: 0 },
+      { day: "Sat", calls: 0 },
+      { day: "Sun", calls: 0 },
+    ],
+    ticketsByCampaign: [{ name: "No data", count: 0 }],
+    ticketsByDisposition: [{ name: "No data", count: 0 }],
+  },
+};
+
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const stats = getDashboardStats(); // Using mock stats logic
-  const campaignData = getTicketsByCampaign();
-  const typeData = getTicketsByType();
-  const callsData = getCallsPerDay();
+  const [dashboardData, setDashboardData] =
+    useState<AnalyticsDashboardData>(emptyDashboardData);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+
+    async function loadDashboard() {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/dashboard/stats", {
+          cache: "no-store",
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Unable to load analytics data.");
+        }
+        if (isMounted) setDashboardData(payload.data);
+      } catch (error: any) {
+        toast.error("Failed to load analytics data.", {
+          description: error?.message || "Please try again.",
+        });
+        if (isMounted) setDashboardData(emptyDashboardData);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    void loadDashboard();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (isLoading) return <DashboardSkeleton />;
+
+  const { kpis } = dashboardData;
+  const campaignData = dashboardData.charts.ticketsByCampaign;
+  const typeData = dashboardData.charts.ticketsByDisposition;
+  const callsData = dashboardData.charts.callsByDay;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -88,40 +158,40 @@ export default function AnalyticsPage() {
       {/* --- KPIS --- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
-          title="Avg Response Time"
-          value="1m 42s"
-          secondaryValue="Goal: < 2m"
+          title="Total Calls"
+          value={kpis.totalCalls}
+          secondaryValue={`${kpis.callsLast7Days} last 7 days`}
           icon={Clock}
           iconBg="bg-blue-500"
-          trend="-12%"
-          trendUp={true} // Down is good for time, but using green for positive outcome
+          trend="Live data"
+          trendUp={true}
         />
         <KPICard
           title="Resolution Rate"
-          value="94.8%"
-          secondaryValue="Top 5% Industry"
+          value={`${kpis.resolutionRate}%`}
+          secondaryValue={`${kpis.closedTickets} tickets closed`}
           icon={Activity}
           iconBg="bg-violet-500"
-          trend="+2.4%"
-          trendUp={true}
+          trend={kpis.resolutionRate >= 80 ? "On target" : "Below target"}
+          trendUp={kpis.resolutionRate >= 80}
         />
         <KPICard
-          title="Customer CSAT"
-          value="4.8/5.0"
-          secondaryValue="Based on 142 reviews"
+          title="Active Tickets"
+          value={kpis.activeTickets}
+          secondaryValue={`${kpis.openTickets} open, ${kpis.inProgressTickets} in progress`}
           icon={Users}
           iconBg="bg-amber-500"
-          trend="+0.3"
-          trendUp={true}
+          trend={`${kpis.totalTickets} total`}
+          trendUp={kpis.activeTickets === 0}
         />
         <KPICard
-          title="Agent Utilization"
-          value="87%"
-          secondaryValue="Optimal Range: 85-90%"
+          title="Pending Actions"
+          value={kpis.pendingActions}
+          secondaryValue="High priority open work"
           icon={TrendingUp}
           iconBg="bg-emerald-500"
-          trend="+5%"
-          trendUp={true}
+          trend={kpis.pendingActions ? "Review" : "Clear"}
+          trendUp={kpis.pendingActions === 0}
         />
       </div>
 

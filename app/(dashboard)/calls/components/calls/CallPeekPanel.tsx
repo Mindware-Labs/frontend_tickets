@@ -106,6 +106,7 @@ const DISPOSITION_COLORS: Record<
   },
   VOICEMAIL_LEFT: { text: "#2563eb", bg: "#eff6ff", label: "Voicemail Left" },
   NO_ANSWER: { text: "#c0392b", bg: "#fde8e6", label: "No Answer" },
+  NEW_LEAD: { text: "#047857", bg: "#d1fae5", label: "New Lead" },
   PROMISE_TO_PAY: { text: "#0891b2", bg: "#ecfeff", label: "Promise to Pay" },
   DISPUTE: { text: "#dc2626", bg: "#fef2f2", label: "Dispute" },
   WRONG_NUMBER: { text: "#64748b", bg: "#f1f5f9", label: "Wrong Number" },
