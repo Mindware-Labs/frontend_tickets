@@ -649,7 +649,7 @@ export function CustomerTicketDrawer({
         <SheetContent
           side="right"
           hideClose
-          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] overflow-hidden border-l border-slate-200/80"
+          className="w-svw sm:w-[80vw] p-0 gap-0 flex flex-col bg-white overflow-hidden border-l border-slate-200/80"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             const originalTarget = e.detail?.originalEvent
@@ -679,7 +679,7 @@ export function CustomerTicketDrawer({
 
           {/* ── Top Bar ── */}
           <div className="shrink-0 bg-white border-b border-slate-100">
-            <div className="flex items-center gap-3 px-4 py-3">
+            <div className="flex items-center gap-3 px-4 py-2">
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
                 style={{
@@ -735,7 +735,7 @@ export function CustomerTicketDrawer({
             </div>
 
             {selectedTicket && (
-              <div className="flex items-center gap-1.5 px-4 pb-3 flex-wrap">
+              <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
                   <TicketIcon className="w-3 h-3 text-slate-400" />
                   Ticket #{selectedTicket.id}
@@ -829,7 +829,7 @@ export function CustomerTicketDrawer({
             </div>
 
             {/* ═══ COL 2 (flex): Hub ═══ */}
-            <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-[#f4f5f7]">
+            <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-slate-50/80 border-t border-slate-100">
               {!selectedTicket ? (
                 <div className="flex-1 flex items-center justify-center text-slate-400">
                   <div className="text-center">
@@ -838,7 +838,7 @@ export function CustomerTicketDrawer({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                <div className="flex-1 overflow-y-auto px-3 pt-1.5 pb-2 space-y-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                   {selectedTicket.callId && (
                     <SourceCallPreviewTrigger
                       callId={selectedTicket.callId}
