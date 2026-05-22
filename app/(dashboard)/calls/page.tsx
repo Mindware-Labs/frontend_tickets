@@ -56,6 +56,7 @@ import {
   getYardDisplayName,
   normalizeEnumValue,
   isMissedCall,
+  isCallbackDisposition,
 } from "./utils/call-helpers";
 import { startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useAircall } from "@/components/providers/AircallProvider";
@@ -86,6 +87,14 @@ const normalizeCallStatusForApi = (status?: string | null): string => {
   if (normalized === "CLOSED" || normalized === "RESOLVED") return "COMPLETED";
   if (normalized === "OPEN" || normalized === "IN_PROGRESS") return "ACTIVE";
   return "ACTIVE";
+};
+
+const resolveStatusForUpdate = (
+  status?: string | null,
+  disposition?: string | null,
+): string => {
+  if (isCallbackDisposition(disposition)) return "PENDING_FOLLOWUP";
+  return normalizeCallStatusForApi(status);
 };
 
 // ---------------------------------------------------------------------------
@@ -884,18 +893,15 @@ export default function TicketsPage() {
           data.agentId && data.agentId !== "none"
             ? Number(data.agentId)
             : undefined,
-        status: normalizeCallStatusForApi(data.status),
+        status: resolveStatusForUpdate(data.status, data.disposition),
         direction: data.direction?.toUpperCase(),
         disposition: data.disposition || null,
         followUpDueDate:
-          (data.disposition === "CALLBACK_REQUIRED" ||
-            data.disposition === "CALLBACK_SCHEDULED") &&
-          data.followUpDueDate
+          isCallbackDisposition(data.disposition) && data.followUpDueDate
             ? new Date(data.followUpDueDate).toISOString()
             : null,
         followUpAssignedToId:
-          (data.disposition === "CALLBACK_REQUIRED" ||
-            data.disposition === "CALLBACK_SCHEDULED") &&
+          isCallbackDisposition(data.disposition) &&
           data.followUpAssignedToId
             ? Number(data.followUpAssignedToId)
             : null,
@@ -1021,9 +1027,11 @@ export default function TicketsPage() {
         agentId: createFormData.agentId
           ? Number(createFormData.agentId)
           : undefined,
-        status: createFormData.status
-          ? normalizeCallStatusForApi(createFormData.status)
-          : undefined,
+        status: isCallbackDisposition(createFormData.disposition)
+          ? "PENDING_FOLLOWUP"
+          : createFormData.status
+            ? normalizeCallStatusForApi(createFormData.status)
+            : undefined,
         disposition: createFormData.disposition || undefined,
         notes: createFormData.notes?.trim() || undefined,
       };
@@ -1146,10 +1154,15 @@ export default function TicketsPage() {
         </div>
 
         <TabsContent value="calls" className="flex-1 flex flex-col gap-0 mt-0">
-          <OverdueCallsBanner />
+          <OverdueCallsBanner
+            overdueCount={getFilteredCountForView("overdue") || 0}
+            onViewOverdue={() => ticketFilters.handleViewChange("overdue")}
+          />
 
           {!ticketIdParam ? (
-          <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
+          <div className="flex items-end border-b border-border">
+            <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex px-0.5">
             {[
               {
                 id: "all",
@@ -1183,7 +1196,7 @@ export default function TicketsPage() {
                 <button
                   key={tab.id}
                   onClick={() => ticketFilters.handleViewChange(tab.id)}
-                  className={`px-2 py-2.5 text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
+                  className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
                     isActive
                       ? "border-[#008f68] text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1205,6 +1218,8 @@ export default function TicketsPage() {
                 </button>
               );
             })}
+            </div>
+            </div>
           </div>
           ) : null}
 
@@ -1306,7 +1321,11 @@ export default function TicketsPage() {
 
           <CustomerTimelineDrawer
             open={showTimelineDrawer}
-            onClose={() => setShowTimelineDrawer(false)}
+            onClose={() => {
+              setShowTimelineDrawer(false);
+              setDrawerSuccessToast(false);
+              setDrawerErrorToast(false);
+            }}
             returnToLabel={returnBackLabel ?? undefined}
             onBackToReturn={
               safeReturnPath ? handleBackToReturn : undefined

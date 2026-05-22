@@ -3,7 +3,7 @@
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -52,6 +52,7 @@ import {
   Eye,
 } from "lucide-react";
 import { CallPeekPanel } from "./CallPeekPanel";
+import { FollowUpDateTimePicker } from "./FollowUpDateTimePicker";
 import {
   Select,
   SelectContent,
@@ -440,9 +441,6 @@ export function CustomerTimelineDrawer({
   errorToastMessage,
   onErrorToastDismiss,
 }: CustomerTimelineDrawerProps) {
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [timeHourInput, setTimeHourInput] = useState("12");
-  const [timeMinuteInput, setTimeMinuteInput] = useState("00");
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -489,6 +487,17 @@ export function CustomerTimelineDrawer({
   // toastVisible → controls the CSS transition (translate + opacity)
   const [toastActive, setToastActive] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const toastUnmountRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissSuccessToast = useCallback(() => {
+    setToastVisible(false);
+    if (toastUnmountRef.current) clearTimeout(toastUnmountRef.current);
+    toastUnmountRef.current = setTimeout(() => {
+      setToastActive(false);
+      onSuccessToastDismiss?.();
+      toastUnmountRef.current = null;
+    }, 300);
+  }, [onSuccessToastDismiss]);
 
   useEffect(() => {
     if (!showSuccessToast) {
@@ -525,6 +534,44 @@ export function CustomerTimelineDrawer({
   // ── Sheet-anchored error toast ────────────────────────────────────────────
   const [errorToastActive, setErrorToastActive] = useState(false);
   const [errorToastVisible, setErrorToastVisible] = useState(false);
+  const errorToastUnmountRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const dismissErrorToast = useCallback(() => {
+    setErrorToastVisible(false);
+    if (errorToastUnmountRef.current) clearTimeout(errorToastUnmountRef.current);
+    errorToastUnmountRef.current = setTimeout(() => {
+      setErrorToastActive(false);
+      onErrorToastDismiss?.();
+      errorToastUnmountRef.current = null;
+    }, 300);
+  }, [onErrorToastDismiss]);
+
+  const dismissSheetToasts = useCallback(() => {
+    setToastVisible(false);
+    setErrorToastVisible(false);
+    if (toastUnmountRef.current) clearTimeout(toastUnmountRef.current);
+    if (errorToastUnmountRef.current) clearTimeout(errorToastUnmountRef.current);
+    const unmount = setTimeout(() => {
+      setToastActive(false);
+      setErrorToastActive(false);
+      onSuccessToastDismiss?.();
+      onErrorToastDismiss?.();
+      toastUnmountRef.current = null;
+      errorToastUnmountRef.current = null;
+    }, 300);
+    toastUnmountRef.current = unmount;
+    errorToastUnmountRef.current = unmount;
+  }, [onSuccessToastDismiss, onErrorToastDismiss]);
+
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    if (prevOpenRef.current && !open) {
+      dismissSheetToasts();
+    }
+    prevOpenRef.current = open;
+  }, [open, dismissSheetToasts]);
 
   useEffect(() => {
     if (!showErrorToast) {
@@ -584,23 +631,6 @@ export function CustomerTimelineDrawer({
     setSelectedLinkCall(null);
     setCustomerCallsCache([]);
     scrollRef.current?.scrollTo({ top: 0 });
-  }, [selectedCall?.id]);
-
-  // Sync time inputs when switching to a different call
-  useEffect(() => {
-    const d = editFormData.followUpDueDate
-      ? new Date(editFormData.followUpDueDate)
-      : null;
-    if (d) {
-      const h24 = d.getHours();
-      const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
-      setTimeHourInput(String(h12).padStart(2, "0"));
-      setTimeMinuteInput(String(d.getMinutes()).padStart(2, "0"));
-    } else {
-      setTimeHourInput("12");
-      setTimeMinuteInput("00");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCall?.id]);
 
   // Fetch recording via backend proxy (avoids CORS on direct Aircall URL)
@@ -684,6 +714,20 @@ export function CustomerTimelineDrawer({
     { revalidateOnFocus: false },
   );
 
+  const customerAllCallsUrl = useMemo(() => {
+    if (!open || !group?.customerId) return null;
+    const params = new URLSearchParams({
+      mode: "page",
+      customerId: String(group.customerId),
+      limit: "200",
+    });
+    return `/api/calls?${params.toString()}`;
+  }, [open, group?.customerId]);
+
+  const { data: customerAllCallsData } = useSWR(customerAllCallsUrl, fetcher, {
+    revalidateOnFocus: false,
+  });
+
   const allCalls = useMemo<Ticket[]>(() => {
     const sort = (arr: Ticket[]) =>
       [...arr].sort(
@@ -702,6 +746,21 @@ export function CustomerTimelineDrawer({
   const customerName = group?.customerName ?? getClientName(selectedCall);
   const customerPhone = group?.customerPhone ?? getClientPhone(selectedCall);
   const callCount = allCalls.length || group?.calls.length || 0;
+
+  const customerTotalCalls = useMemo(() => {
+    if (customerAllCallsData?.success && Array.isArray(customerAllCallsData.data?.data)) {
+      return customerAllCallsData.data.data.length;
+    }
+    if (customerAllCallsData?.success && Array.isArray(customerAllCallsData.data)) {
+      return customerAllCallsData.data.length;
+    }
+    if (group?.customerId) return 0;
+    return allCalls.length || group?.calls.length || 0;
+  }, [customerAllCallsData, group?.customerId, allCalls.length, group?.calls?.length]);
+
+  const canLinkCalls = customerTotalCalls > 1;
+  const linkCallsDisabledReason =
+    "This customer only has one call — linking is not available.";
 
   // Overdue calls from this customer that could be linked to the current call
   const overdueCallsSuggestions = useMemo(
@@ -725,28 +784,6 @@ export function CustomerTimelineDrawer({
     if (type === ManagementType.AR) return Object.values(ArOption);
     return [];
   }, [campaigns, editFormData.campaignId]);
-
-  const followUpDateDisplay = useMemo(() => {
-    if (!editFormData.followUpDueDate) return null;
-    try {
-      const d = new Date(editFormData.followUpDueDate);
-      if (isNaN(d.getTime())) return null;
-      const datePart = d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-      const h = d.getHours();
-      const m = d.getMinutes();
-      const timePart =
-        h > 0 || m > 0
-          ? ` ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-          : "";
-      return datePart + timePart;
-    } catch {
-      return null;
-    }
-  }, [editFormData.followUpDueDate]);
 
   const isCallbackDisposition =
     editFormData.disposition === CallDisposition.CALLBACK_REQUIRED ||
@@ -805,8 +842,16 @@ export function CustomerTimelineDrawer({
       )
     : null;
 
+  useEffect(() => {
+    if (!canLinkCalls && showCallLinker) {
+      setShowCallLinker(false);
+      setSelectedLinkCall(null);
+    }
+  }, [canLinkCalls, showCallLinker]);
+
   // ── Call Linking helpers ──────────────────────────────────────────────────
   const handleOpenCallLinker = () => {
+    if (!canLinkCalls) return;
     setShowCallLinker(true);
     setSelectedLinkCall(null);
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1116,7 +1161,10 @@ export function CustomerTimelineDrawer({
         isLoading={peekCallId !== null && isPeekLoading}
         onClose={() => setPeekCallId(null)}
         onLink={
-          peekCall && selectedCall && peekCall.id !== selectedCall.id
+          canLinkCalls &&
+          peekCall &&
+          selectedCall &&
+          peekCall.id !== selectedCall.id
             ? () => {
                 setCustomerCallsCache(
                   allCalls.filter((c) => c.id !== selectedCall?.id),
@@ -1164,13 +1212,7 @@ export function CustomerTimelineDrawer({
           <button
             type="button"
             aria-label="Dismiss notification"
-            onClick={() => {
-              setErrorToastVisible(false);
-              setTimeout(() => {
-                setErrorToastActive(false);
-                onErrorToastDismiss?.();
-              }, 300);
-            }}
+            onClick={dismissErrorToast}
             className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -1221,13 +1263,7 @@ export function CustomerTimelineDrawer({
           <button
             type="button"
             aria-label="Dismiss notification"
-            onClick={() => {
-              setToastVisible(false);
-              setTimeout(() => {
-                setToastActive(false);
-                onSuccessToastDismiss?.();
-              }, 300);
-            }}
+            onClick={dismissSuccessToast}
             className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -1239,6 +1275,7 @@ export function CustomerTimelineDrawer({
         open={open}
         onOpenChange={(v) => {
           if (!v) {
+            dismissSheetToasts();
             setAttachmentFiles([]);
             onClose();
           }
@@ -1410,7 +1447,9 @@ export function CustomerTimelineDrawer({
                   <button
                     type="button"
                     onClick={handleOpenCallLinker}
-                    className={`flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold rounded-xl border transition-all shadow-sm active:scale-95 ${
+                    disabled={!canLinkCalls}
+                    title={!canLinkCalls ? linkCallsDisabledReason : undefined}
+                    className={`flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold rounded-xl border transition-all shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-white disabled:hover:text-slate-600 disabled:hover:border-slate-200 ${
                       showCallLinker || !!editFormData.relatedCallId
                         ? "bg-[#008f68]/10 text-[#008f68] border-[#008f68]/50 hover:bg-[#008f68]/20 hover:border-[#008f68]/70"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-[#008f68] hover:border-[#008f68]/40"
@@ -1648,7 +1687,8 @@ export function CustomerTimelineDrawer({
                     )}
 
                     {/* ── Overdue Call Link Recommendation ── */}
-                    {overdueCallsSuggestions.length > 0 &&
+                    {canLinkCalls &&
+                      overdueCallsSuggestions.length > 0 &&
                       !editFormData.relatedCallId &&
                       !showCallLinker && (
                         <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200/70 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
@@ -1893,8 +1933,13 @@ export function CustomerTimelineDrawer({
                           <button
                             type="button"
                             onClick={handleOpenCallLinker}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                            title="Change linked call"
+                            disabled={!canLinkCalls}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                            title={
+                              !canLinkCalls
+                                ? linkCallsDisabledReason
+                                : "Change linked call"
+                            }
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -2005,12 +2050,23 @@ export function CustomerTimelineDrawer({
                             return (
                               <Select
                                 value={editFormData.disposition || "none"}
-                                onValueChange={(v) =>
+                                onValueChange={(v) => {
+                                  const newDisposition =
+                                    v === "none" ? "" : v;
                                   setEditFormData({
                                     ...editFormData,
-                                    disposition: v === "none" ? "" : v,
-                                  })
-                                }
+                                    disposition: newDisposition,
+                                    ...(newDisposition ===
+                                      CallDisposition.CALLBACK_REQUIRED ||
+                                    newDisposition ===
+                                      CallDisposition.CALLBACK_SCHEDULED
+                                      ? {
+                                          status:
+                                            CallStatus.PENDING_FOLLOWUP,
+                                        }
+                                      : {}),
+                                  });
+                                }}
                               >
                                 <SelectTrigger className="h-7 bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
                                   {dispCfg ? (
@@ -2095,296 +2151,26 @@ export function CustomerTimelineDrawer({
 
                         {/* Follow-up Date + Assignee — only visible when disposition = callback */}
                         {isCallbackDisposition && (
-                          <div className="grid grid-cols-2 gap-3 mb-3 rounded-xl p-3 bg-amber-50 border border-amber-200/70">
-                            {/* Follow-up Date */}
+                          <div className="mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/50 p-2.5">
                             <div>
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <InspLabel>Follow-up Date</InspLabel>
-                                <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                              <div className="mb-1 flex items-center gap-1.5">
+                                <InspLabel>Follow-up</InspLabel>
+                                <span className="rounded bg-amber-100 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-amber-700">
                                   Callback
                                 </span>
                               </div>
-                              <Popover
-                                open={calendarOpen}
-                                onOpenChange={setCalendarOpen}
-                              >
-                                <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="w-full h-8 flex items-center gap-2 px-2.5 text-xs rounded-lg transition-colors text-left border bg-white border-amber-300 hover:border-amber-400 focus:ring-2 focus:ring-amber-300/30"
-                                  >
-                                    <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                                    <span
-                                      className={
-                                        followUpDateDisplay
-                                          ? "text-slate-800 font-semibold text-xs"
-                                          : "text-amber-400 text-xs"
-                                      }
-                                    >
-                                      {followUpDateDisplay || "Pick date…"}
-                                    </span>
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  className="w-auto p-0 shadow-xl border-slate-200"
-                                  align="start"
-                                >
-                                  <Calendar
-                                    mode="single"
-                                    selected={
-                                      editFormData.followUpDueDate
-                                        ? new Date(editFormData.followUpDueDate)
-                                        : undefined
-                                    }
-                                    onSelect={(date) => {
-                                      if (!date) return;
-                                      const existing =
-                                        editFormData.followUpDueDate
-                                          ? new Date(
-                                              editFormData.followUpDueDate,
-                                            )
-                                          : null;
-                                      date.setHours(existing?.getHours() ?? 0);
-                                      date.setMinutes(
-                                        existing?.getMinutes() ?? 0,
-                                      );
-                                      setEditFormData({
-                                        ...editFormData,
-                                        followUpDueDate: date.toISOString(),
-                                      });
-                                    }}
-                                    disabled={{ before: new Date() }}
-                                    initialFocus
-                                  />
-                                  {/* Time picker — premium UI with 12-hour format + AM/PM toggle */}
-                                  {(() => {
-                                    const date = editFormData.followUpDueDate
-                                      ? new Date(editFormData.followUpDueDate)
-                                      : new Date();
-                                    const hours24 = date.getHours();
-                                    const minutes = date.getMinutes();
-                                    const isPM = hours24 >= 12;
-                                    const hours12 =
-                                      hours24 === 0
-                                        ? 12
-                                        : hours24 > 12
-                                          ? hours24 - 12
-                                          : hours24;
-
-                                    return (
-                                      <>
-                                        {/* Divider */}
-                                        <div className="border-t border-slate-100" />
-
-                                        {/* Time control panel */}
-                                        <div className="p-4 space-y-4">
-                                          {/* Time inputs row with AM/PM */}
-                                          <div className="flex items-center gap-3 justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-
-                                              {/* Hour input */}
-                                              <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={2}
-                                                value={timeHourInput}
-                                                onFocus={(e) =>
-                                                  e.target.select()
-                                                }
-                                                onChange={(e) => {
-                                                  const val = e.target.value;
-                                                  if (!/^\d*$/.test(val))
-                                                    return;
-                                                  setTimeHourInput(
-                                                    val.slice(0, 2),
-                                                  );
-                                                }}
-                                                onBlur={() => {
-                                                  let h12 =
-                                                    parseInt(timeHourInput) ||
-                                                    12;
-                                                  h12 = Math.min(
-                                                    12,
-                                                    Math.max(1, h12),
-                                                  );
-                                                  setTimeHourInput(
-                                                    String(h12).padStart(
-                                                      2,
-                                                      "0",
-                                                    ),
-                                                  );
-                                                  const h24 =
-                                                    h12 === 12
-                                                      ? isPM
-                                                        ? 12
-                                                        : 0
-                                                      : isPM
-                                                        ? h12 + 12
-                                                        : h12;
-                                                  const base =
-                                                    editFormData.followUpDueDate
-                                                      ? new Date(
-                                                          editFormData.followUpDueDate,
-                                                        )
-                                                      : new Date();
-                                                  base.setHours(h24);
-                                                  setEditFormData({
-                                                    ...editFormData,
-                                                    followUpDueDate:
-                                                      base.toISOString(),
-                                                  });
-                                                }}
-                                                placeholder="12"
-                                                className="w-12 h-10 text-center text-sm font-medium border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-slate-400 focus:border-slate-400 transition-colors"
-                                              />
-
-                                              {/* Colon separator */}
-                                              <span className="text-slate-700 text-lg font-bold px-0.5">
-                                                :
-                                              </span>
-
-                                              {/* Minute input */}
-                                              <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={2}
-                                                value={timeMinuteInput}
-                                                onFocus={(e) =>
-                                                  e.target.select()
-                                                }
-                                                onChange={(e) => {
-                                                  const val = e.target.value;
-                                                  if (!/^\d*$/.test(val))
-                                                    return;
-                                                  setTimeMinuteInput(
-                                                    val.slice(0, 2),
-                                                  );
-                                                }}
-                                                onBlur={() => {
-                                                  const m = Math.min(
-                                                    59,
-                                                    Math.max(
-                                                      0,
-                                                      parseInt(
-                                                        timeMinuteInput,
-                                                      ) || 0,
-                                                    ),
-                                                  );
-                                                  setTimeMinuteInput(
-                                                    String(m).padStart(2, "0"),
-                                                  );
-                                                  const base =
-                                                    editFormData.followUpDueDate
-                                                      ? new Date(
-                                                          editFormData.followUpDueDate,
-                                                        )
-                                                      : new Date();
-                                                  base.setMinutes(m);
-                                                  setEditFormData({
-                                                    ...editFormData,
-                                                    followUpDueDate:
-                                                      base.toISOString(),
-                                                  });
-                                                }}
-                                                placeholder="00"
-                                                className="w-12 h-10 text-center text-sm font-medium border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-slate-400 focus:border-slate-400 transition-colors"
-                                              />
-                                            </div>
-
-                                            {/* AM/PM toggle — refined segmented control */}
-                                            <div className="flex gap-1 bg-gray-100 p-1 rounded-md">
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const base =
-                                                    editFormData.followUpDueDate
-                                                      ? new Date(
-                                                          editFormData.followUpDueDate,
-                                                        )
-                                                      : new Date();
-                                                  const h24 = base.getHours();
-                                                  if (h24 >= 12) {
-                                                    base.setHours(h24 - 12);
-                                                  }
-                                                  setEditFormData({
-                                                    ...editFormData,
-                                                    followUpDueDate:
-                                                      base.toISOString(),
-                                                  });
-                                                }}
-                                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                                  !isPM
-                                                    ? "bg-white text-slate-800 shadow-sm"
-                                                    : "bg-transparent text-slate-500 hover:text-slate-600"
-                                                }`}
-                                              >
-                                                AM
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const base =
-                                                    editFormData.followUpDueDate
-                                                      ? new Date(
-                                                          editFormData.followUpDueDate,
-                                                        )
-                                                      : new Date();
-                                                  const h24 = base.getHours();
-                                                  if (h24 < 12) {
-                                                    base.setHours(h24 + 12);
-                                                  }
-                                                  setEditFormData({
-                                                    ...editFormData,
-                                                    followUpDueDate:
-                                                      base.toISOString(),
-                                                  });
-                                                }}
-                                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                                  isPM
-                                                    ? "bg-white text-slate-800 shadow-sm"
-                                                    : "bg-transparent text-slate-500 hover:text-slate-600"
-                                                }`}
-                                              >
-                                                PM
-                                              </button>
-                                            </div>
-                                          </div>
-
-                                          {/* Action buttons */}
-                                          {editFormData.followUpDueDate && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setEditFormData({
-                                                  ...editFormData,
-                                                  followUpDueDate: "",
-                                                });
-                                              }}
-                                              className="w-full h-8 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                            >
-                                              Clear Date
-                                            </button>
-                                          )}
-
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setCalendarOpen(false)
-                                            }
-                                            className="w-full h-10 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold rounded-md transition-colors"
-                                          >
-                                            Done
-                                          </button>
-                                        </div>
-                                      </>
-                                    );
-                                  })()}
-                                </PopoverContent>
-                              </Popover>
+                              <FollowUpDateTimePicker
+                                value={editFormData.followUpDueDate}
+                                onChange={(iso) =>
+                                  setEditFormData({
+                                    ...editFormData,
+                                    followUpDueDate: iso,
+                                  })
+                                }
+                                placeholder="Date & time"
+                              />
                             </div>
 
-                            {/* Assignee */}
                             <div>
                               <InspLabel>Assignee</InspLabel>
                               <InspectorSelect

@@ -55,6 +55,10 @@ import {
   ChevronDown,
   Ticket,
 } from "lucide-react";
+import {
+  TableCampaignBadge,
+  TableYardBadge,
+} from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useTicketFilters } from "../../hooks/useTicketFilters";
@@ -589,7 +593,9 @@ export function TicketsTab({
   return (
     <div className="flex-1 flex flex-col gap-1">
       {/* View Tabs */}
-      <div className="flex border-b border-border overflow-x-auto no-scrollbar px-0.5">
+      <div className="flex items-end border-b border-border">
+        <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex px-0.5">
         {TICKET_STATUS_VIEW_TABS.map((tab) => {
           const isActive = ticketFilters.activeView === tab.key;
           const count = viewCounts?.[tab.countKey] ?? 0;
@@ -601,7 +607,7 @@ export function TicketsTab({
                 ticketFilters.handleViewChange(tab.key);
                 ticketFilters.setFilter("status", "all");
               }}
-              className={`px-2 py-[10px] text-[13px] font-medium border-b-2 mr-4 flex items-center gap-2 transition-colors -mb-px ${
+              className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors -mb-px ${
                 isActive
                   ? "border-[#008f68] text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -623,11 +629,12 @@ export function TicketsTab({
             </button>
           );
         })}
-        <div className="flex-1" />
+        </div>
+        </div>
         <button
           type="button"
           onClick={openCreate}
-          className="mb-1 self-center flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+          className="mb-1 ml-2 shrink-0 flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
           style={{ background: "#008f68" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#007a5a")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#008f68")}
@@ -1009,11 +1016,13 @@ export function TicketsTab({
                         <TableCell className="py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">
                           {agentName(t)}
                         </TableCell>
-                        <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
-                          {yardName(t)}
+                        <TableCell className="w-[200px] min-w-[180px] py-3 align-middle">
+                          <TableYardBadge
+                            name={t.yard?.commonName || t.yard?.name}
+                          />
                         </TableCell>
-                        <TableCell className="py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
-                          {t.campaign?.nombre || "—"}
+                        <TableCell className="w-[180px] min-w-[150px] py-3 align-middle">
+                          <TableCampaignBadge name={t.campaign?.nombre} />
                         </TableCell>
                         <TableCell className="py-3 text-[13px] text-slate-500 dark:text-slate-400 font-mono font-medium">
                           {t.createdAt

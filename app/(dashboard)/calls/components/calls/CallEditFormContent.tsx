@@ -68,6 +68,7 @@ import {
   YardOption,
 } from "../../types";
 import type { Ticket as TicketType } from "@/lib/mock-data";
+import { FollowUpDateTimePicker } from "./FollowUpDateTimePicker";
 import { cn } from "@/lib/utils";
 import { CallRecordingPlayer } from "./CallRecordingPlayer";
 
@@ -909,13 +910,13 @@ export function CallEditFormContent({
               value={formData.disposition || "none"}
               onValueChange={(value) => {
                 const newDisposition = value === "none" ? "" : value;
-                const isCallback =
-                  newDisposition === "CALLBACK_REQUIRED" ||
-                  newDisposition === "CALLBACK_SCHEDULED";
                 setFormData({
                   ...formData,
                   disposition: newDisposition,
-                  ...(isCallback && { status: CallStatus.PENDING_FOLLOWUP }),
+                  ...(newDisposition === TicketDisposition.CALLBACK_REQUIRED ||
+                  newDisposition === TicketDisposition.CALLBACK_SCHEDULED
+                    ? { status: CallStatus.PENDING_FOLLOWUP }
+                    : {}),
                 });
               }}
             >
@@ -939,16 +940,20 @@ export function CallEditFormContent({
             <>
               <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <FieldLabel>Follow-up Date</FieldLabel>
-                <Input
-                  type="datetime-local"
-                  className={inputCls}
-                  value={formData.followUpDueDate || ""}
-                  onChange={(e) =>
+                <FollowUpDateTimePicker
+                  value={
+                    formData.followUpDueDate
+                      ? new Date(formData.followUpDueDate).toISOString()
+                      : ""
+                  }
+                  onChange={(iso) =>
                     setFormData({
                       ...formData,
-                      followUpDueDate: e.target.value,
+                      followUpDueDate: iso,
                     })
                   }
+                  placeholder="Date & time"
+                  className={inputCls}
                 />
               </div>
               <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">

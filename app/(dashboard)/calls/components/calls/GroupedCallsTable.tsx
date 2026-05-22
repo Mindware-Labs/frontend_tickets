@@ -36,9 +36,12 @@ import {
   PhoneOutgoing,
   PhoneIncoming,
   ChevronDown,
-  ChevronRight,
   Radio,
 } from "lucide-react";
+import {
+  TableCampaignBadge,
+  TableYardBadge,
+} from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useLiveCalls } from "@/components/providers/CallSocketProvider";
@@ -60,7 +63,7 @@ import {
   getDirectionText,
   getYardTypeColor,
   getYardTypeIcon,
-  getYardDisplayName,
+  getYardBadgeName,
   getCampaign,
   formatEnumLabel,
 } from "../../utils/call-helpers";
@@ -147,12 +150,12 @@ function StatusPill({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[key] || STATUS_CONFIG.CLOSED;
   return (
     <span
-      className={`inline-flex items-center gap-2 px-3 py-[5px] rounded-full text-[12.5px] font-bold leading-none border ${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor}`}
+      className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-bold leading-none ${cfg.bgColor} ${cfg.textColor} ${cfg.borderColor}`}
     >
       <span
-        className={`w-[7px] h-[7px] rounded-full ${cfg.dotColor} shrink-0`}
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dotColor}`}
       />
-      {cfg.label}
+      <span className="truncate">{cfg.label}</span>
     </span>
   );
 }
@@ -221,14 +224,15 @@ function DirectionChip({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-medium ${cfg.textColor}`}
+      className={`inline-flex max-w-full items-center gap-1 font-medium ${cfg.textColor}`}
+      title={label}
     >
       <span
-        className={`inline-flex items-center justify-center w-5 h-5 rounded-md ${cfg.bgColor}`}
+        className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ${cfg.bgColor}`}
       >
-        <Icon className={`h-[13px] w-[13px] ${cfg.iconColor}`} />
+        <Icon className={`h-2.5 w-2.5 ${cfg.iconColor}`} />
       </span>
-      <span className="text-[13px]">{label}</span>
+      <span className="truncate text-[11px]">{label}</span>
     </span>
   );
 }
@@ -369,7 +373,7 @@ export function GroupedCallsTable({
         </div>
       ) : null}
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
+      <div className="my-2 flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-[320px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
           <Input
@@ -453,49 +457,53 @@ export function GroupedCallsTable({
       {/* Table ─────────────────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border/80 overflow-hidden shadow-sm">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
-          <Table className="relative">
-            <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
+          <Table className="relative w-full table-fixed text-[12px]">
+            <colgroup>
+              <col className="w-[17%]" />
+              <col className="w-[5%]" />
+              <col className="w-[14%]" />
+              <col className="w-[16%]" />
+              <col className="w-[14%]" />
+              <col className="w-[9%]" />
+              <col className="w-[7%]" />
+              <col className="w-[7%]" />
+              <col className="w-[11%]" />
+            </colgroup>
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[240px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                  Number
-                </TableHead>
-                <TableHead className="w-[80px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Calls
                 </TableHead>
-                <TableHead className="w-[150px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Line
                 </TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="w-[170px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="w-[160px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Disposition
                 </TableHead>
-                <TableHead className="w-[110px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                  Direction
+                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Dir.
                 </TableHead>
-                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
-                <TableHead className="w-[140px] font-bold text-[11px] tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                  Date
-                </TableHead>
-                <TableHead className="w-[44px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={14} className="h-24 text-center">
+                  <TableCell colSpan={10} className="h-24 text-center">
                     <div className="flex items-center justify-center">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
                       Loading calls...
@@ -505,7 +513,7 @@ export function GroupedCallsTable({
               ) : groups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={14}
+                    colSpan={10}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No calls found.
@@ -515,14 +523,7 @@ export function GroupedCallsTable({
                 paginatedGroups.map((group, i) => {
                   const t = group.latestCall;
                   const isLive = !!(t.isLive || liveCallIds.has(Number(t.id)));
-                  const yardDisplayName = getYardDisplayName(t, yards);
-                  let yardType = (t as any).yardType;
-                  if (!yardType && t.yardId) {
-                    const yardObj = yards.find(
-                      (y) => y.id.toString() === t.yardId?.toString(),
-                    );
-                    if (yardObj) yardType = yardObj.yardType;
-                  }
+                  const yardBadgeName = getYardBadgeName(t, yards);
 
                   const latestDate = new Date(t.callDate || t.createdAt || "");
                   const isToday =
@@ -555,11 +556,11 @@ export function GroupedCallsTable({
                         onClick={() => onOpenTimeline(group)}
                       >
                         {/* Customer */}
-                        <TableCell className="w-[240px] pl-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <Avatar className="h-8 w-8 shrink-0 rounded-full">
+                        <TableCell className="px-2 py-1.5 align-middle">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
-                                className="text-[12px] font-bold rounded-full"
+                                className="rounded-full text-[10px] font-bold"
                                 style={{
                                   background: "transparent",
                                   border: "1px solid #d1d5db",
@@ -574,31 +575,34 @@ export function GroupedCallsTable({
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <div className="font-bold text-[14px] leading-tight truncate text-foreground">
-                                  {group.customerName}
-                                </div>
-                                {isLive && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold leading-none shrink-0 shadow-sm shadow-emerald-500/40 tracking-wide">
-                                    <span className="w-1.25 h-1.25 rounded-full bg-white animate-pulse shrink-0" />
+                              <div className="flex min-w-0 items-center gap-1">
+                                <p
+                                  className="truncate text-[12px] font-bold leading-tight text-foreground"
+                                  title={group.customerName}
+                                >
+                                  {group.customerName || "Unknown"}
+                                </p>
+                                {isLive ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500 px-1 py-px text-[8px] font-bold leading-none text-white">
                                     LIVE
                                   </span>
-                                )}
+                                ) : null}
                               </div>
-                              <div className="text-[11.5px] text-muted-foreground mt-[2px] truncate">
-                                last {dateLabel}
-                              </div>
+                              <p
+                                className="truncate font-mono text-[10px] text-slate-500"
+                                title={group.customerPhone}
+                              >
+                                {group.customerPhone || "—"}
+                              </p>
+                              <p className="truncate text-[10px] text-slate-400">
+                                {dateLabel}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
 
-                        {/* Number */}
-                        <TableCell className="w-[170px] py-3 font-mono text-[13.5px] text-slate-600 dark:text-slate-300 font-medium">
-                          {group.customerPhone}
-                        </TableCell>
-
                         {/* Calls chip */}
-                        <TableCell className="w-[80px] py-3">
+                        <TableCell className="px-1 py-1.5 text-center align-middle">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -607,68 +611,73 @@ export function GroupedCallsTable({
                                 prev === group.key ? null : group.key,
                               );
                             }}
-                            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-bold transition-all duration-150 shadow-sm ${
+                            className={`inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors ${
                               expandedKey === group.key
-                                ? "bg-[#dcfce7] text-[#15803d] border-[#86efac] shadow-[#86efac]/20"
-                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-[#dcfce7] hover:text-[#15803d] hover:border-[#86efac] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600"
+                                ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
+                                : "border-slate-200 bg-slate-100 text-slate-600 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]"
                             }`}
                             aria-label="Toggle call timeline"
                             title="View call timeline"
                           >
-                            <Phone className="h-[12px] w-[12px]" />
-                            <span className="font-mono">
+                            <Phone className="h-2.5 w-2.5" />
+                            <span className="font-mono tabular-nums">
                               {group.calls.length}
                             </span>
                           </button>
                         </TableCell>
 
                         {/* Line */}
-                        <TableCell className="w-[150px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
-                          {(t as any).phoneLine?.label ||
+                        <TableCell
+                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] font-medium text-slate-600"
+                          title={
+                            (t as any).phoneLine?.label ||
                             (t as any).phoneLine?.phoneNumber ||
-                            "-"}
+                            undefined
+                          }
+                        >
+                          <span className="block truncate">
+                            {(t as any).phoneLine?.label ||
+                              (t as any).phoneLine?.phoneNumber ||
+                              "—"}
+                          </span>
                         </TableCell>
 
                         {/* Yard */}
-                        <TableCell className="w-[130px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
-                          {yardDisplayName ? (
-                            yardDisplayName.split(" — ")[0]
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
-                              Unassigned
-                            </span>
-                          )}
+                        <TableCell className="max-w-0 px-2 py-1.5 align-middle">
+                          <TableYardBadge compact name={yardBadgeName} />
                         </TableCell>
 
                         {/* Campaign */}
-                        <TableCell className="w-[170px] py-3 text-[13.5px] text-slate-600 dark:text-slate-300 truncate font-medium">
-                          {getCampaign(t, campaigns) || (
-                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
-                              Unassigned
-                            </span>
-                          )}
+                        <TableCell className="max-w-0 px-2 py-1.5 align-middle">
+                          <TableCampaignBadge
+                            compact
+                            name={getCampaign(t, campaigns)}
+                          />
                         </TableCell>
 
                         {/* Disposition */}
-                        <TableCell className="w-[160px] py-3">
+                        <TableCell className="px-2 py-1.5 align-middle">
                           {t.disposition ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[12px] font-medium border border-slate-200 dark:border-slate-700 truncate max-w-[145px]">
+                            <span
+                              className="inline-flex max-w-full items-center truncate rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-600"
+                              title={formatEnumLabel(t.disposition)}
+                            >
                               {formatEnumLabel(t.disposition)}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-px rounded-full bg-amber-100 text-amber-700 border border-amber-200 text-[11.5px] font-medium">
-                              Unassigned
+                            <span className="text-[10.5px] text-amber-600">
+                              —
                             </span>
                           )}
                         </TableCell>
 
                         {/* Status */}
-                        <TableCell className="w-[120px] py-3">
+                        <TableCell className="px-1 py-1.5 align-middle">
                           <StatusPill status={t.status} />
                         </TableCell>
 
                         {/* Direction */}
-                        <TableCell className="w-[130px] py-3">
+                        <TableCell className="px-1 py-1.5 align-middle">
                           <DirectionChip
                             direction={t.direction || "inbound"}
                             originalDirection={(t as any).originalDirection}
@@ -677,33 +686,13 @@ export function GroupedCallsTable({
                         </TableCell>
 
                         {/* Agent */}
-                        <TableCell className="w-[140px] py-3 text-[13px] text-slate-600 dark:text-slate-300 truncate">
-                          {(t as any).agent?.name ? (
-                            <span className="font-medium">
-                              {(t as any).agent.name}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-
-                        {/* Date */}
-                        <TableCell className="w-[140px] py-3 font-mono text-[13px] text-slate-500 dark:text-slate-400 font-medium">
-                          {dateLabel}
-                        </TableCell>
-
-                        {/* Hover Actions */}
-                        <TableCell className="w-[44px] p-0 align-middle">
-                          <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-[30px] w-[30px] text-muted-foreground bg-muted/50 border-border"
-                              title="Open details"
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <TableCell
+                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] text-slate-600"
+                          title={(t as any).agent?.name}
+                        >
+                          <span className="block truncate font-medium">
+                            {(t as any).agent?.name || "—"}
+                          </span>
                         </TableCell>
                       </TableRow>
                       {expandedKey === group.key && (
@@ -711,7 +700,7 @@ export function GroupedCallsTable({
                           key={`${group.key}-timeline`}
                           className="bg-accent/10 hover:bg-accent/10 border-b relative"
                         >
-                          <TableCell colSpan={13} className="p-0 border-t-0">
+                          <TableCell colSpan={10} className="border-t-0 p-0">
                             <InlineCallTimeline group={group} agents={agents} />
                           </TableCell>
                         </TableRow>

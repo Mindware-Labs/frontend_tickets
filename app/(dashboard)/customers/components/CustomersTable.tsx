@@ -12,7 +12,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, MapPin, Pencil, Phone, Pin, Trash2 } from "lucide-react";
+import { Clock, Pencil, Phone, Pin, Trash2 } from "lucide-react";
+import {
+  TableCampaignBadges,
+  TableYardBadges,
+} from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import type { Customer } from "../types";
 import { CustomerMark } from "./CustomerMark";
@@ -184,54 +188,21 @@ export function CustomersTable({
                       </TableCell>
 
                       <TableCell className="max-w-0 overflow-hidden py-3">
-                        {customerYards.length > 0 ? (
-                          <div
-                            className="flex min-w-0 flex-wrap gap-1"
-                            title={customerYards.map((yard) => yard.name).join(", ")}
-                          >
-                            {customerYards.slice(0, 2).map((yard) => (
-                              <Badge
-                                key={yard.id}
-                                variant="outline"
-                                className="max-w-full gap-1 truncate rounded-full font-medium"
-                              >
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{yard.name}</span>
-                              </Badge>
-                            ))}
-                            {customerYards.length > 2 ? (
-                              <Badge variant="outline" className="rounded-full">
-                                +{customerYards.length - 2}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-[13px] text-slate-400">—</span>
-                        )}
+                        <TableYardBadges
+                          yards={customerYards.map((yard) => ({
+                            id: yard.id,
+                            name: yard.name,
+                          }))}
+                        />
                       </TableCell>
 
                       <TableCell className="max-w-0 overflow-hidden py-3">
-                        {customer.campaigns && customer.campaigns.length > 0 ? (
-                          <div className="flex min-w-0 flex-wrap gap-1">
-                            {customer.campaigns.slice(0, 2).map((campaign) => (
-                              <Badge
-                                key={campaign.id}
-                                variant="secondary"
-                                className="max-w-full truncate rounded-full font-medium"
-                                title={campaign.nombre}
-                              >
-                                {campaign.nombre}
-                              </Badge>
-                            ))}
-                            {customer.campaigns.length > 2 ? (
-                              <Badge variant="outline" className="rounded-full">
-                                +{customer.campaigns.length - 2}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-[13px] text-slate-400">—</span>
-                        )}
+                        <TableCampaignBadges
+                          campaigns={(customer.campaigns ?? []).map((campaign) => ({
+                            id: campaign.id,
+                            name: campaign.nombre,
+                          }))}
+                        />
                       </TableCell>
 
                       <TableCell className="py-3 text-right font-mono text-[13px] font-semibold text-slate-700 dark:text-slate-200">

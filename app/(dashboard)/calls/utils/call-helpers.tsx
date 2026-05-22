@@ -170,6 +170,11 @@ export function isMissedCall(ticket: Ticket): boolean {
   return ticket.direction?.toString().toLowerCase() === "missed";
 }
 
+export function isCallbackDisposition(disposition?: string | null): boolean {
+  const value = disposition?.toString().toUpperCase().replace(/\s+/g, "_");
+  return value === "CALLBACK_REQUIRED" || value === "CALLBACK_SCHEDULED";
+}
+
 export function formatEnumLabel(value?: string): string {
   if (!value) return "-";
   if (value === OnboardingOption.PAID_WITH_LL || value === "PAID_WITH_LL") {
@@ -255,6 +260,32 @@ export function getYardDisplayName(
       (y) => y.id.toString() === ticket.yardId?.toString(),
     );
     if (yard) return yard.commonName || yard.name;
+  }
+
+  return null;
+}
+
+/** Short yard label for table badges (common name preferred). */
+export function getYardBadgeName(
+  ticket: Ticket,
+  yards: YardOption[],
+): string | null {
+  if (ticket.yard && typeof ticket.yard === "object") {
+    const y = ticket.yard as { name?: string; commonName?: string };
+    const label = (y.commonName || y.name || "").trim();
+    return label || null;
+  }
+
+  if (typeof ticket.yard === "string" && ticket.yard.trim() !== "") {
+    return ticket.yard.trim();
+  }
+
+  if (ticket.yardId) {
+    const yard = yards.find(
+      (y) => y.id.toString() === ticket.yardId?.toString(),
+    );
+    const label = (yard?.commonName || yard?.name || "").trim();
+    return label || null;
   }
 
   return null;

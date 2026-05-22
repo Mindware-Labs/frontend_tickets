@@ -811,12 +811,17 @@ export function CreateCallModal({
                   </Label>
                   <Select
                     value={createFormData.disposition}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
+                      const newDisposition = value === "none" ? "" : value;
                       setCreateFormData({
                         ...createFormData,
-                        disposition: value === "none" ? "" : value,
-                      })
-                    }
+                        disposition: newDisposition,
+                        ...(newDisposition === TicketDisposition.CALLBACK_REQUIRED ||
+                        newDisposition === TicketDisposition.CALLBACK_SCHEDULED
+                          ? { status: CallStatus.PENDING_FOLLOWUP }
+                          : {}),
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select disposition" />

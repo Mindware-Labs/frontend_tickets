@@ -52,6 +52,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  TableCampaignBadge,
+  TableYardBadge,
+} from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useReferenceData } from "../../hooks/useReferenceData";
@@ -686,11 +690,21 @@ export function ManualRecordsTab() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-[12px] text-slate-600">
-                      {record.yard?.name || (record.yardId ? `#${record.yardId}` : "—")}
+                    <TableCell className="w-[200px] min-w-[180px] py-3 align-middle">
+                      <TableYardBadge
+                        name={
+                          record.yard?.commonName || record.yard?.name
+                        }
+                      />
                     </TableCell>
-                    <TableCell className="text-[12px] text-slate-600">
-                      {record.campaign ? (record.campaign as any).nombre || `#${record.campaignId}` : record.campaignId ? `#${record.campaignId}` : "—"}
+                    <TableCell className="w-[180px] min-w-[150px] py-3 align-middle">
+                      <TableCampaignBadge
+                        name={
+                          record.campaign
+                            ? (record.campaign as { nombre?: string }).nombre
+                            : null
+                        }
+                      />
                     </TableCell>
                     <TableCell className="text-[12px] text-slate-600">
                       {record.campaignOption ? formatLabel(record.campaignOption) : "—"}

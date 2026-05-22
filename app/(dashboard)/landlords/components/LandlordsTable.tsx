@@ -9,14 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Building2,
-  Loader2,
-  Mail,
-  Pencil,
-  Phone,
-  Trash2,
-} from "lucide-react";
+import { Loader2, Mail, Pencil, Phone, Trash2 } from "lucide-react";
+import { TableYardBadges } from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import { Landlord, YardOption } from "../types";
 import { LandlordMark } from "./LandlordMark";
@@ -150,29 +144,12 @@ export function LandlordsTable({
                       </TableCell>
 
                       <TableCell className="max-w-0 overflow-hidden py-3">
-                        {yardNames.length > 0 ? (
-                          <div className="flex min-w-0 flex-wrap gap-1.5">
-                            {yardNames.slice(0, 2).map((name) => (
-                              <span
-                                key={name}
-                                className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-[#bbf7d0] bg-[#e2fae9] px-2 py-px text-[11.5px] font-medium text-[#008f68]"
-                                title={name}
-                              >
-                                <Building2 className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{name}</span>
-                              </span>
-                            ))}
-                            {yardNames.length > 2 && (
-                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-px text-[11.5px] font-medium text-slate-500">
-                                +{yardNames.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-px text-[11.5px] font-medium text-slate-500">
-                            No yards
-                          </span>
-                        )}
+                        <TableYardBadges
+                          yards={yardNames.map((name, index) => ({
+                            id: index,
+                            name,
+                          }))}
+                        />
                       </TableCell>
 
                       <TableCell

@@ -53,6 +53,7 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import { TableCampaignBadge } from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 
 // ... (Tipos anteriores se mantienen igual)
@@ -763,13 +764,8 @@ export default function AgentDashboardPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="font-normal text-xs bg-background"
-                          >
-                            {ticket.campaign}
-                          </Badge>
+                        <TableCell className="max-w-0 overflow-hidden">
+                          <TableCampaignBadge name={ticket.campaign} />
                         </TableCell>
                         <TableCell>
                           <Badge
