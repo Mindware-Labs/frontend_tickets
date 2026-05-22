@@ -8,6 +8,10 @@ import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/components/providers/role-provider";
 import { fetchFromBackend } from "@/lib/api-client";
+import {
+  buildListQueryString,
+  usePaginatedList,
+} from "@/hooks/use-paginated-list";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ManagementType } from "../calls/types";
@@ -85,10 +89,9 @@ export default function CampaignsPage() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [yards, setYards] = useState<YardSummary[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [yardFilter, setYardFilter] = useState("all");
   const [filters, setFilters] = useState<CampaignsFilterState>(DEFAULT_FILTERS);
   const [activeView, setActiveView] = useState<CampaignView>("all");
@@ -106,26 +109,57 @@ export default function CampaignsPage() {
     Record<string, string>
   >({});
 
-  const fetchCampaigns = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchFromBackend("/campaign?page=1&limit=500");
-      const items = Array.isArray(data) ? data : data?.data || [];
-      setCampaigns(items);
-    } catch {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const listQuery = useMemo(() => {
+    const qs = buildListQueryString({
+      page: currentPage,
+      limit: itemsPerPage,
+      search: debouncedSearch.trim() || undefined,
+      view: activeView !== "all" ? activeView : undefined,
+      tipo: filters.type !== "all" ? filters.type : undefined,
+      status: filters.status !== "all" ? filters.status : undefined,
+      yardId: yardFilter !== "all" ? Number(yardFilter) : undefined,
+      campaignId: campaignIdFilter ?? undefined,
+      includeViewCounts: true,
+    });
+    return `/campaign?${qs}`;
+  }, [
+    currentPage,
+    itemsPerPage,
+    debouncedSearch,
+    activeView,
+    filters,
+    yardFilter,
+    campaignIdFilter,
+  ]);
+
+  const {
+    items: campaigns,
+    total: totalFiltered,
+    totalPages,
+    viewCounts: serverViewCounts,
+    isLoading: loading,
+    error: listError,
+    mutate: refreshCampaigns,
+  } = usePaginatedList<Campaign>(listQuery);
+
+  useEffect(() => {
+    if (listError) {
       toast({
         title: "Error",
         description: "Failed to load campaigns",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [listError]);
 
   const fetchYards = async () => {
     try {
-      const data = await fetchFromBackend("/yards?page=1&limit=10000");
+      const data = await fetchFromBackend("/yards?page=1&limit=500");
       const items = Array.isArray(data) ? data : data?.data || [];
       setYards(items);
     } catch {
@@ -134,7 +168,6 @@ export default function CampaignsPage() {
   };
 
   useEffect(() => {
-    fetchCampaigns();
     fetchYards();
   }, []);
 
@@ -146,12 +179,25 @@ export default function CampaignsPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!campaignIdFilter || loading || campaigns.length === 0) return;
+    if (!campaignIdFilter || loading) return;
     const match = campaigns.find((c) => c.id === campaignIdFilter);
     if (match) {
       setSelectedCampaign(match);
       setShowCampaignSheet(true);
+      return;
     }
+    let cancelled = false;
+    fetchFromBackend(`/campaign/${campaignIdFilter}`)
+      .then((campaign) => {
+        if (!cancelled && campaign) {
+          setSelectedCampaign(campaign as Campaign);
+          setShowCampaignSheet(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [campaignIdFilter, loading, campaigns]);
 
   const handleOpenYardPanel = (yardId: number) => {
@@ -182,89 +228,21 @@ export default function CampaignsPage() {
     yards.find((y) => y.id === campaign.yardaId)?.name ||
     "";
 
-  const matchesSearch = (campaign: Campaign) => {
-    const term = search.toLowerCase();
-    if (!term) return true;
-    return (
-      campaign.nombre.toLowerCase().includes(term) ||
-      getYardName(campaign).toLowerCase().includes(term)
-    );
-  };
-
-  const matchesYard = (campaign: Campaign) =>
-    yardFilter === "all" ||
-    campaign.yardaId?.toString() === yardFilter ||
-    campaign.yarda?.id?.toString() === yardFilter;
-
-  const matchesTypeFilter = (campaign: Campaign) =>
-    filters.type === "all" || campaign.tipo === filters.type;
-
-  const matchesStatusFilter = (campaign: Campaign) =>
-    filters.status === "all" ||
-    (filters.status === "active" && campaign.isActive) ||
-    (filters.status === "inactive" && !campaign.isActive);
-
-  const matchesView = (campaign: Campaign) => {
-    switch (activeView) {
-      case "active":
-        return campaign.isActive;
-      case "inactive":
-        return !campaign.isActive;
-      case "onboarding":
-        return campaign.tipo === ManagementType.ONBOARDING;
-      case "ar":
-        return campaign.tipo === ManagementType.AR;
-      default:
-        return true;
-    }
-  };
-
-  const viewCounts = useMemo(() => {
-    const base = campaigns.filter((c) => {
-      if (campaignIdFilter && c.id !== campaignIdFilter) return false;
-      return matchesSearch(c);
-    });
-    return {
-      all: base.length,
-      active: base.filter((c) => c.isActive).length,
-      inactive: base.filter((c) => !c.isActive).length,
-      onboarding: base.filter((c) => c.tipo === ManagementType.ONBOARDING)
-        .length,
-      ar: base.filter((c) => c.tipo === ManagementType.AR).length,
-    };
-  }, [campaigns, search, campaignIdFilter, yards]);
-
-  const filteredCampaigns = useMemo(() => {
-    return campaigns
-      .filter((campaign) => {
-        const matchesQuery = campaignIdFilter
-          ? campaign.id === campaignIdFilter
-          : true;
-        return (
-          matchesSearch(campaign) &&
-          matchesYard(campaign) &&
-          matchesTypeFilter(campaign) &&
-          matchesStatusFilter(campaign) &&
-          matchesView(campaign) &&
-          matchesQuery
-        );
-      })
-      .sort((a, b) => b.id - a.id);
-  }, [campaigns, search, yardFilter, filters, activeView, campaignIdFilter, yards]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredCampaigns.length / itemsPerPage),
+  const viewCounts = useMemo(
+    () =>
+      serverViewCounts ?? {
+        all: 0,
+        active: 0,
+        inactive: 0,
+        onboarding: 0,
+        ar: 0,
+      },
+    [serverViewCounts],
   );
-
-  const paginatedCampaigns = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredCampaigns.slice(start, start + itemsPerPage);
-  }, [filteredCampaigns, currentPage, itemsPerPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, yardFilter, filters, activeView, campaignIdFilter, itemsPerPage]);
+  }, [debouncedSearch, yardFilter, filters, activeView, itemsPerPage]);
 
   const handleFilterChange = (
     key: keyof CampaignsFilterState,
@@ -347,7 +325,7 @@ export default function CampaignsPage() {
       });
       setShowCreate(false);
       resetForm();
-      await fetchCampaigns();
+      await refreshCampaigns();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -391,7 +369,7 @@ export default function CampaignsPage() {
       setShowEdit(false);
       setSelectedCampaign(null);
       resetForm();
-      await fetchCampaigns();
+      await refreshCampaigns();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -423,7 +401,7 @@ export default function CampaignsPage() {
       setShowDelete(false);
       setShowCampaignSheet(false);
       setSelectedCampaign(null);
-      await fetchCampaigns();
+      await refreshCampaigns();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -473,7 +451,7 @@ export default function CampaignsPage() {
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;
-              const count = viewCounts[tab.key];
+              const count = viewCounts[tab.key] ?? 0;
               return (
                 <button
                   key={tab.key}
@@ -543,9 +521,9 @@ export default function CampaignsPage() {
       <div className="flex flex-col gap-4">
         <CampaignsGrid
           loading={loading}
-          campaigns={paginatedCampaigns}
+          campaigns={campaigns}
           yards={yards}
-          totalFiltered={filteredCampaigns.length}
+          totalFiltered={totalFiltered}
           search={search}
           canManage={canManage}
           onCreate={handleCreate}
@@ -555,7 +533,7 @@ export default function CampaignsPage() {
         />
 
         <CampaignsPagination
-          totalCount={filteredCampaigns.length}
+          totalCount={totalFiltered}
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}

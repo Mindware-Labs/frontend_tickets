@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Plus, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
+import { EntityGridLoading } from "@/components/shared/entity-loading-state";
 import { Button } from "@/components/ui/button";
 import type { User } from "../types";
 import { UserCard } from "./UserCard";
@@ -29,12 +30,7 @@ export function UsersGrid({
   onDelete,
 }: UsersGridProps) {
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
-        <Loader2 className="h-8 w-8 animate-spin text-[#008f68]" />
-        <p className="text-sm font-medium">Loading team members...</p>
-      </div>
-    );
+    return <EntityGridLoading kind="users" />;
   }
 
   if (totalFiltered === 0) {

@@ -7,6 +7,10 @@ import dynamic from "next/dynamic";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 
 import { fetchFromBackend } from "@/lib/api-client";
+import {
+  buildListQueryString,
+  usePaginatedList,
+} from "@/hooks/use-paginated-list";
 import { useRole } from "@/components/providers/role-provider";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -76,9 +80,8 @@ export default function YardsPage() {
   const yardIdFilter = yardIdParam ? Number(yardIdParam) : null;
   const returnLandlordId = landlordIdParam ? Number(landlordIdParam) : null;
 
-  const [yards, setYards] = useState<Yard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeView, setActiveView] = useState<YardView>("all");
   const [filters, setFilters] = useState<YardsFilterState>({
     type: "all",
@@ -95,25 +98,50 @@ export default function YardsPage() {
   const [formData, setFormData] = useState<YardFormData>(DEFAULT_FORM);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  const fetchYards = async () => {
-    try {
-      setLoading(true);
-      const response = await fetchFromBackend("/yards?page=1&limit=10000");
-      setYards(Array.isArray(response) ? response : response.data || []);
-    } catch {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const listQuery = useMemo(() => {
+    const qs = buildListQueryString({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+      search: debouncedSearch.trim() || undefined,
+      view: activeView !== "all" ? activeView : undefined,
+      yardType: filters.type !== "all" ? filters.type : undefined,
+      status: filters.status !== "all" ? filters.status : undefined,
+      yardId: yardIdFilter ?? undefined,
+      includeViewCounts: true,
+    });
+    return `/yards?${qs}`;
+  }, [
+    currentPage,
+    debouncedSearch,
+    activeView,
+    filters,
+    yardIdFilter,
+  ]);
+
+  const {
+    items: yards,
+    total: totalFiltered,
+    totalPages,
+    viewCounts: serverViewCounts,
+    isLoading: loading,
+    error: listError,
+    mutate: refreshYards,
+  } = usePaginatedList<Yard>(listQuery);
+
+  useEffect(() => {
+    if (listError) {
       toast({
         title: "Error",
         description: "Failed to load yards",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchYards();
-  }, []);
+  }, [listError]);
 
   useEffect(() => {
     setShowCreateModal(false);
@@ -123,13 +151,26 @@ export default function YardsPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!yardIdFilter || loading || yards.length === 0) return;
+    if (!yardIdFilter || loading) return;
     const match = yards.find((y) => y.id === yardIdFilter);
     if (match) {
       setSelectedYard(match);
       setShowYardSheet(true);
+      return;
     }
-  }, [yardIdFilter, loading, yards.length]);
+    let cancelled = false;
+    fetchFromBackend(`/yards/${yardIdFilter}`)
+      .then((yard) => {
+        if (!cancelled && yard) {
+          setSelectedYard(yard as Yard);
+          setShowYardSheet(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [yardIdFilter, loading, yards]);
 
   const handleYardSheetOpenChange = (open: boolean) => {
     setShowYardSheet(open);
@@ -164,78 +205,21 @@ export default function YardsPage() {
     return { id: returnLandlordId, name: `Landlord #${returnLandlordId}` };
   }, [returnLandlordId, selectedYard, yardIdFilter, yards]);
 
-  const viewCounts = useMemo(() => {
-    const base = yards.filter((yard) => {
-      if (yardIdFilter && yard.id !== yardIdFilter) return false;
-      const term = search.toLowerCase();
-      if (!term) return true;
-      return (
-        yard.name.toLowerCase().includes(term) ||
-        yard.commonName.toLowerCase().includes(term) ||
-        yard.propertyAddress.toLowerCase().includes(term) ||
-        yard.contactInfo.toLowerCase().includes(term) ||
-        (yard.landlord?.name || "").toLowerCase().includes(term)
-      );
-    });
-
-    return {
-      all: base.length,
-      active: base.filter((y) => y.isActive).length,
-      inactive: base.filter((y) => !y.isActive).length,
-      saas: base.filter((y) => y.yardType === "SAAS").length,
-      full_service: base.filter((y) => y.yardType === "FULL_SERVICE").length,
-    };
-  }, [yards, search, yardIdFilter]);
-
-  const filteredYards = useMemo(() => {
-    return yards
-      .filter((yard) => {
-        const term = search.toLowerCase();
-        const matchesSearch =
-          !term ||
-          yard.name.toLowerCase().includes(term) ||
-          yard.commonName.toLowerCase().includes(term) ||
-          yard.propertyAddress.toLowerCase().includes(term) ||
-          yard.contactInfo.toLowerCase().includes(term) ||
-          (yard.landlord?.name || "").toLowerCase().includes(term);
-
-        const matchesType =
-          filters.type === "all" || yard.yardType === filters.type;
-        const matchesStatus =
-          filters.status === "all" ||
-          (filters.status === "active" && yard.isActive) ||
-          (filters.status === "inactive" && !yard.isActive);
-
-        const matchesView =
-          activeView === "all" ||
-          (activeView === "active" && yard.isActive) ||
-          (activeView === "inactive" && !yard.isActive) ||
-          (activeView === "saas" && yard.yardType === "SAAS") ||
-          (activeView === "full_service" && yard.yardType === "FULL_SERVICE");
-
-        const matchesQuery = yardIdFilter ? yard.id === yardIdFilter : true;
-
-        return (
-          matchesSearch &&
-          matchesType &&
-          matchesStatus &&
-          matchesView &&
-          matchesQuery
-        );
-      })
-      .sort((a, b) => a.id - b.id);
-  }, [yards, search, filters, activeView, yardIdFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredYards.length / ITEMS_PER_PAGE));
-
-  const paginatedYards = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredYards.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredYards, currentPage]);
+  const viewCounts = useMemo(
+    () =>
+      serverViewCounts ?? {
+        all: 0,
+        active: 0,
+        inactive: 0,
+        saas: 0,
+        full_service: 0,
+      },
+    [serverViewCounts],
+  );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filters, activeView, yardIdFilter]);
+  }, [debouncedSearch, filters, activeView]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
 
@@ -309,7 +293,7 @@ export default function YardsPage() {
       });
       setShowCreateModal(false);
       resetForm();
-      await fetchYards();
+      await refreshYards();
     } catch (error: unknown) {
       const err = error as { message?: string | Record<string, string> };
       if (err.message && typeof err.message === "object") {
@@ -358,7 +342,7 @@ export default function YardsPage() {
       setShowEditModal(false);
       setSelectedYard(null);
       resetForm();
-      await fetchYards();
+      await refreshYards();
     } catch (error: unknown) {
       const err = error as { message?: string | Record<string, string> };
       if (err.message && typeof err.message === "object") {
@@ -391,7 +375,7 @@ export default function YardsPage() {
       });
       setShowDeleteModal(false);
       setSelectedYard(null);
-      await fetchYards();
+      await refreshYards();
     } catch (error: unknown) {
       const err = error as { message?: string };
       let errorMsg = err.message || "Failed to delete yard.";
@@ -441,7 +425,7 @@ export default function YardsPage() {
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;
-              const count = viewCounts[tab.key];
+              const count = viewCounts[tab.key] ?? 0;
               return (
                 <button
                   key={tab.key}
@@ -503,8 +487,8 @@ export default function YardsPage() {
 
       <YardsTable
           loading={loading}
-          yards={paginatedYards}
-          totalFiltered={filteredYards.length}
+          yards={yards}
+          totalFiltered={totalFiltered}
           onRowClick={handleRowClick}
           onEdit={canManage ? handleEdit : undefined}
           onDelete={canManage ? handleDelete : undefined}

@@ -345,3 +345,58 @@
 .delay-2000 {
   animation-delay: 2000ms;
 }
+
+/* Entity table / grid loading spinner (Rig Hut brand) */
+@keyframes entity-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes entity-loading-spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes entity-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes entity-loading-ellipsis {
+  0%,
+  20% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.entity-loading-ring-outer {
+  animation: entity-loading-spin 1.4s linear infinite;
+}
+
+.entity-loading-ring-inner {
+  animation: entity-loading-spin-reverse 0.95s linear infinite;
+}
+
+.entity-loading-ring-pulse {
+  animation: entity-loading-pulse 2s ease-in-out infinite;
+}
+
+.entity-loading-ellipsis {
+  display: inline-block;
+  animation: entity-loading-ellipsis 1.4s ease-in-out infinite;
+}

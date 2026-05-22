@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { DataTablePagination } from "../shared/DataTablePagination";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import {
   Search,
   AlertTriangle,
-  Loader2,
   X,
   Calendar,
   PhoneCall,
@@ -417,14 +417,7 @@ export function GroupedCallsTable({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center">
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                      Loading calls...
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <TableLoadingRow colSpan={10} kind="calls" compact />
               ) : groups.length === 0 ? (
                 <TableRow>
                   <TableCell

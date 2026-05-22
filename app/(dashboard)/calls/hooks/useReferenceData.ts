@@ -110,8 +110,8 @@ export function useReferenceData() {
 
   const fetchPhoneLines = async () => {
     try {
-      const data = await fetchFromBackend("/phone-lines");
-      setPhoneLines(Array.isArray(data) ? data : []);
+      const data = await fetchFromBackend("/phone-lines?page=1&limit=500");
+      setPhoneLines(Array.isArray(data) ? data : (data?.data ?? []));
     } catch (err) {
       console.error("Failed to load phone lines", err);
       setPhoneLines([]);

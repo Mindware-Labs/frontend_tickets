@@ -65,6 +65,7 @@ import { TicketFiltersBar } from "./TicketFiltersBar";
 import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
 import { CreateTicketForm } from "./CreateTicketForm";
 import { DataTablePagination } from "../shared/DataTablePagination";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { SourceCallViaCallBadge } from "../calls/SourceCallViaCallModal";
 import {
   SupportTicketStatus,
@@ -813,11 +814,7 @@ export function TicketsTab({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="h-24 text-center">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
-                  </TableCell>
-                </TableRow>
+                <TableLoadingRow colSpan={11} kind="tickets" compact />
               ) : ticketGroups.length === 0 ? (
                 <TableRow>
                   <TableCell

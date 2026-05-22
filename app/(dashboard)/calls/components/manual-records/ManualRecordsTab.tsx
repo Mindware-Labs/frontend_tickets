@@ -48,6 +48,7 @@ import {
 import { CustomerManualRecordDrawer } from "./CustomerManualRecordDrawer";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { DataTablePagination } from "../shared/DataTablePagination";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -692,11 +693,7 @@ export function ManualRecordsTab() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
-                  </TableCell>
-                </TableRow>
+                <TableLoadingRow colSpan={9} kind="manual-records" compact />
               ) : recordGroups.length === 0 ? (
                 <TableRow>
                   <TableCell

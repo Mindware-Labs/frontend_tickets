@@ -7,6 +7,10 @@ import dynamic from "next/dynamic";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 
 import { fetchFromBackend } from "@/lib/api-client";
+import {
+  buildListQueryString,
+  usePaginatedList,
+} from "@/hooks/use-paginated-list";
 import { useRole } from "@/components/providers/role-provider";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -56,10 +60,9 @@ export default function LandlordsPage() {
   const landlordIdParam = searchParams?.get("landlordId");
   const landlordIdFilter = landlordIdParam ? Number(landlordIdParam) : null;
 
-  const [landlords, setLandlords] = useState<Landlord[]>([]);
   const [yards, setYards] = useState<YardOption[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -72,25 +75,43 @@ export default function LandlordsPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchLandlords = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchFromBackend("/landlords?page=1&limit=500");
-      setLandlords(Array.isArray(data) ? data : (data?.data ?? []));
-    } catch {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const listQuery = useMemo(() => {
+    const qs = buildListQueryString({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+      search: debouncedSearch.trim() || undefined,
+      landlordId: landlordIdFilter ?? undefined,
+    });
+    return `/landlords?${qs}`;
+  }, [currentPage, debouncedSearch, landlordIdFilter]);
+
+  const {
+    items: landlords,
+    total: totalFiltered,
+    totalPages,
+    isLoading: loading,
+    error: listError,
+    mutate: refreshLandlords,
+  } = usePaginatedList<Landlord>(listQuery);
+
+  useEffect(() => {
+    if (listError) {
       toast({
         title: "Error",
         description: "Failed to load landlords",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [listError]);
 
   const fetchYards = async () => {
     try {
-      const data = await fetchFromBackend("/yards?page=1&limit=10000");
+      const data = await fetchFromBackend("/yards?page=1&limit=500");
       setYards(Array.isArray(data) ? data : (data?.data ?? []));
     } catch {
       console.error("Failed to load yards");
@@ -98,7 +119,6 @@ export default function LandlordsPage() {
   };
 
   useEffect(() => {
-    fetchLandlords();
     fetchYards();
   }, []);
 
@@ -110,13 +130,26 @@ export default function LandlordsPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!landlordIdFilter || loading || landlords.length === 0) return;
+    if (!landlordIdFilter || loading) return;
     const match = landlords.find((l) => l.id === landlordIdFilter);
     if (match) {
       setSelectedLandlord(match);
       setShowLandlordSheet(true);
+      return;
     }
-  }, [landlordIdFilter, loading, landlords.length]);
+    let cancelled = false;
+    fetchFromBackend(`/landlords/${landlordIdFilter}`)
+      .then((landlord) => {
+        if (!cancelled && landlord) {
+          setSelectedLandlord(landlord as Landlord);
+          setShowLandlordSheet(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [landlordIdFilter, loading, landlords]);
 
   const handleLandlordSheetOpenChange = (open: boolean) => {
     setShowLandlordSheet(open);
@@ -131,40 +164,9 @@ export default function LandlordsPage() {
     }
   };
 
-  const filteredLandlords = useMemo(() => {
-    const term = search.toLowerCase();
-    return landlords
-      .filter((l) => {
-        if (landlordIdFilter && l.id !== landlordIdFilter) return false;
-        if (!term) return true;
-        const name = l.name?.toLowerCase() ?? "";
-        const email = l.email?.toLowerCase() ?? "";
-        const phone = l.phone?.toLowerCase() ?? "";
-        const yardNames =
-          l.yards?.map((y) => y.name).join(" ").toLowerCase() ?? "";
-        return (
-          name.includes(term) ||
-          email.includes(term) ||
-          phone.includes(term) ||
-          yardNames.includes(term)
-        );
-      })
-      .sort((a, b) => a.id - b.id);
-  }, [landlords, search, landlordIdFilter]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredLandlords.length / ITEMS_PER_PAGE),
-  );
-
-  const paginatedLandlords = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredLandlords.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredLandlords, currentPage]);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, landlordIdFilter]);
+  }, [debouncedSearch]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearValidationErrors = () => setValidationErrors({});
@@ -239,7 +241,7 @@ export default function LandlordsPage() {
       });
       setShowCreateModal(false);
       resetForm();
-      await fetchLandlords();
+      await refreshLandlords();
       await fetchYards();
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -284,7 +286,7 @@ export default function LandlordsPage() {
       setShowEditModal(false);
       setSelectedLandlord(null);
       resetForm();
-      await fetchLandlords();
+      await refreshLandlords();
       await fetchYards();
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -316,7 +318,7 @@ export default function LandlordsPage() {
       });
       setShowDeleteModal(false);
       setSelectedLandlord(null);
-      await fetchLandlords();
+      await refreshLandlords();
       await fetchYards();
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -379,7 +381,7 @@ export default function LandlordsPage() {
             <div className="px-2 py-2.5 text-[13px] font-medium border-b-2 border-[#008f68] text-foreground -mb-px mr-4 flex items-center gap-2 whitespace-nowrap">
               All Landlords
               <span className="py-px px-1.5 rounded-full text-[11px] border bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]">
-                {filteredLandlords.length}
+                {totalFiltered}
               </span>
             </div>
           </div>
@@ -411,8 +413,8 @@ export default function LandlordsPage() {
 
       <LandlordsTable
           loading={loading}
-          landlords={paginatedLandlords}
-          totalFiltered={filteredLandlords.length}
+          landlords={landlords}
+          totalFiltered={totalFiltered}
           yards={yards}
           onRowClick={handleRowClick}
           onEdit={canManage ? handleEdit : undefined}

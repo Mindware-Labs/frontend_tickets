@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Megaphone, Plus } from "lucide-react";
+import { Megaphone, Plus } from "lucide-react";
+import { EntityGridLoading } from "@/components/shared/entity-loading-state";
 import { Button } from "@/components/ui/button";
 import type { Campaign, YardSummary } from "../types";
 import { CampaignCard } from "./CampaignCard";
@@ -31,12 +32,7 @@ export function CampaignsGrid({
   onDelete,
 }: CampaignsGridProps) {
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
-        <Loader2 className="h-8 w-8 animate-spin text-[#008f68]" />
-        <p className="text-sm font-medium">Loading campaigns...</p>
-      </div>
-    );
+    return <EntityGridLoading kind="campaigns" />;
   }
 
   if (totalFiltered === 0) {

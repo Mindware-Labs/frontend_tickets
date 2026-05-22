@@ -194,7 +194,7 @@ export function CustomerTimelineToolbar({
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetchFromBackend("/phone-lines").catch(() => []),
+      fetchFromBackend("/phone-lines?page=1&limit=500").catch(() => []),
       fetchFromBackend("/yards?page=1&limit=200").catch(() => []),
       fetchFromBackend("/campaign?page=1&limit=200").catch(() => []),
     ]).then(([linesData, yardsData, campaignsData]) => {

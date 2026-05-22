@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { Clock, Pencil, Phone, Pin, Trash2 } from "lucide-react";
 import {
   TableCampaignBadges,
@@ -104,24 +104,7 @@ export function CustomersTable({
 
             <TableBody>
               {loading ? (
-                Array.from({ length: itemsPerPage }).map((_, index) => (
-                  <TableRow key={index} className="border-b border-border/70">
-                    <TableCell className="pl-4">
-                      <div className="flex items-center gap-2.5">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <div className="flex flex-1 flex-col gap-1.5">
-                          <Skeleton className="h-3.5 w-32" />
-                          <Skeleton className="h-3 w-24" />
-                        </div>
-                      </div>
-                    </TableCell>
-                    {Array.from({ length: colSpan - 1 }).map((__, cell) => (
-                      <TableCell key={cell}>
-                        <Skeleton className="h-4 w-full max-w-[120px]" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                <TableLoadingRow colSpan={colSpan} kind="customers" />
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={colSpan} className="h-28 text-center">

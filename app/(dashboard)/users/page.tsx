@@ -6,6 +6,10 @@ import dynamic from "next/dynamic";
 import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { fetchFromBackend } from "@/lib/api-client";
+import {
+  buildListQueryString,
+  usePaginatedList,
+} from "@/hooks/use-paginated-list";
 import { cn } from "@/lib/utils";
 import type { User, UserFormData } from "./types";
 import { UsersToolbar } from "./components/UsersToolbar";
@@ -50,9 +54,8 @@ export default function UsersPage() {
   const userIdParam = searchParams?.get("userId");
   const userIdFilter = userIdParam ? Number(userIdParam) : null;
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeView, setActiveView] = useState<UserView>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
@@ -68,26 +71,42 @@ export default function UsersPage() {
     Record<string, string>
   >({});
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchFromBackend("/users?page=1&limit=500");
-      const items = Array.isArray(data) ? data : data?.data || [];
-      setUsers(items);
-    } catch {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const listQuery = useMemo(() => {
+    const qs = buildListQueryString({
+      page: currentPage,
+      limit: itemsPerPage,
+      search: debouncedSearch.trim() || undefined,
+      view: activeView !== "all" ? activeView : undefined,
+      userId: userIdFilter ?? undefined,
+      includeViewCounts: true,
+    });
+    return `/users?${qs}`;
+  }, [currentPage, itemsPerPage, debouncedSearch, activeView, userIdFilter]);
+
+  const {
+    items: users,
+    total: totalFiltered,
+    totalPages,
+    viewCounts: serverViewCounts,
+    isLoading: loading,
+    error: listError,
+    mutate: refreshUsers,
+  } = usePaginatedList<User>(listQuery);
+
+  useEffect(() => {
+    if (listError) {
       toast({
         title: "Error",
         description: "Failed to load users",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  }, [listError]);
 
   useEffect(() => {
     setShowCreate(false);
@@ -97,13 +116,26 @@ export default function UsersPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!userIdFilter || loading || users.length === 0) return;
+    if (!userIdFilter || loading) return;
     const match = users.find((u) => u.id === userIdFilter);
     if (match) {
       setSelectedUser(match);
       setShowUserSheet(true);
+      return;
     }
-  }, [userIdFilter, loading, users.length]);
+    let cancelled = false;
+    fetchFromBackend(`/users/${userIdFilter}`)
+      .then((user) => {
+        if (!cancelled && user) {
+          setSelectedUser(user as User);
+          setShowUserSheet(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userIdFilter, loading, users]);
 
   const handleUserSheetOpenChange = (open: boolean) => {
     setShowUserSheet(open);
@@ -118,62 +150,21 @@ export default function UsersPage() {
     }
   };
 
-  const viewCounts = useMemo(() => {
-    const base = users.filter((user) => {
-      const term = search.toLowerCase();
-      if (!term) return true;
-      return (
-        user.name.toLowerCase().includes(term) ||
-        user.lastName.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term) ||
-        user.role.toLowerCase().includes(term)
-      );
-    });
-
-    return {
-      all: base.length,
-      active: base.filter((u) => u.isActive).length,
-      blocked: base.filter((u) => !u.isActive).length,
-      admin: base.filter((u) => u.role === "admin").length,
-      agent: base.filter((u) => u.role === "agent").length,
-    };
-  }, [users, search]);
-
-  const filteredUsers = useMemo(() => {
-    return users
-      .filter((user) => {
-        const term = search.toLowerCase();
-        const matchesSearch =
-          !term ||
-          user.name.toLowerCase().includes(term) ||
-          user.lastName.toLowerCase().includes(term) ||
-          user.email.toLowerCase().includes(term) ||
-          user.role.toLowerCase().includes(term);
-
-        const matchesView =
-          activeView === "all" ||
-          (activeView === "active" && user.isActive) ||
-          (activeView === "blocked" && !user.isActive) ||
-          (activeView === "admin" && user.role === "admin") ||
-          (activeView === "agent" && user.role === "agent");
-
-        const matchesQuery = userIdFilter ? user.id === userIdFilter : true;
-
-        return matchesSearch && matchesView && matchesQuery;
-      })
-      .sort((a, b) => a.id - b.id);
-  }, [users, search, activeView, userIdFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredUsers.slice(start, start + itemsPerPage);
-  }, [filteredUsers, currentPage, itemsPerPage]);
+  const viewCounts = useMemo(
+    () =>
+      serverViewCounts ?? {
+        all: 0,
+        active: 0,
+        blocked: 0,
+        admin: 0,
+        agent: 0,
+      },
+    [serverViewCounts],
+  );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeView, userIdFilter, itemsPerPage]);
+  }, [debouncedSearch, activeView, itemsPerPage]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearValidationErrors = () => setValidationErrors({});
@@ -252,7 +243,7 @@ export default function UsersPage() {
 
       setShowCreate(false);
       resetForm();
-      await fetchUsers();
+      await refreshUsers();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -298,7 +289,7 @@ export default function UsersPage() {
       });
       setShowEdit(false);
       setSelectedUser(null);
-      await fetchUsers();
+      await refreshUsers();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -327,7 +318,7 @@ export default function UsersPage() {
       });
       setShowDelete(false);
       setSelectedUser(null);
-      await fetchUsers();
+      await refreshUsers();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -350,7 +341,7 @@ export default function UsersPage() {
         title: "Success",
         description: `${user.email} is now ${user.isActive ? "blocked" : "active"}.`,
       });
-      await fetchUsers();
+      await refreshUsers();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -385,7 +376,7 @@ export default function UsersPage() {
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;
-              const count = viewCounts[tab.key];
+              const count = viewCounts[tab.key] ?? 0;
               return (
                 <button
                   key={tab.key}
@@ -440,8 +431,8 @@ export default function UsersPage() {
       <div className="flex flex-col gap-4">
         <UsersGrid
           loading={loading}
-          users={paginatedUsers}
-          totalFiltered={filteredUsers.length}
+          users={users}
+          totalFiltered={totalFiltered}
           search={search}
           onCreate={handleCreate}
           onOpen={handleOpen}
@@ -451,7 +442,7 @@ export default function UsersPage() {
         />
 
         <UsersPagination
-          totalCount={filteredUsers.length}
+          totalCount={totalFiltered}
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}

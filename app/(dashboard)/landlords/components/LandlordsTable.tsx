@@ -9,7 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, Pencil, Phone, Trash2 } from "lucide-react";
+import { Mail, Pencil, Phone, Trash2 } from "lucide-react";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { TableYardBadges } from "@/components/entity-table-badges";
 import { cn } from "@/lib/utils";
 import { Landlord, YardOption } from "../types";
@@ -78,14 +79,7 @@ export function LandlordsTable({
 
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Loading landlords...
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <TableLoadingRow colSpan={5} kind="landlords" />
               ) : totalFiltered === 0 ? (
                 <TableRow>
                   <TableCell

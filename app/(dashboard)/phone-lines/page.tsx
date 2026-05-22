@@ -7,6 +7,10 @@ import { CheckCircle2, Plus } from "lucide-react";
 
 import { useRole } from "@/components/providers/role-provider";
 import { fetchFromBackend } from "@/lib/api-client";
+import {
+  buildListQueryString,
+  usePaginatedList,
+} from "@/hooks/use-paginated-list";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -61,9 +65,8 @@ export default function PhoneLinesPage() {
   const phoneLineIdParam = searchParams?.get("phoneLineId");
   const phoneLineIdFilter = phoneLineIdParam ? Number(phoneLineIdParam) : null;
 
-  const [lines, setLines] = useState<PhoneLine[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeView, setActiveView] = useState<LineView>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -77,25 +80,42 @@ export default function PhoneLinesPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<PhoneLineFormData>(DEFAULT_FORM);
 
-  const fetchLines = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchFromBackend("/phone-lines");
-      setLines(Array.isArray(data) ? data : []);
-    } catch {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const listQuery = useMemo(() => {
+    const qs = buildListQueryString({
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+      search: debouncedSearch.trim() || undefined,
+      view: activeView !== "all" ? activeView : undefined,
+      phoneLineId: phoneLineIdFilter ?? undefined,
+      includeViewCounts: true,
+    });
+    return `/phone-lines?${qs}`;
+  }, [currentPage, debouncedSearch, activeView, phoneLineIdFilter]);
+
+  const {
+    items: lines,
+    total: totalFiltered,
+    totalPages,
+    viewCounts: serverViewCounts,
+    isLoading: loading,
+    error: listError,
+    mutate: refreshLines,
+  } = usePaginatedList<PhoneLine>(listQuery);
+
+  useEffect(() => {
+    if (listError) {
       toast({
         title: "Error",
         description: "Failed to load phone lines",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchLines();
-  }, []);
+  }, [listError]);
 
   useEffect(() => {
     setShowCreateModal(false);
@@ -105,13 +125,26 @@ export default function PhoneLinesPage() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!phoneLineIdFilter || loading || lines.length === 0) return;
+    if (!phoneLineIdFilter || loading) return;
     const match = lines.find((l) => l.id === phoneLineIdFilter);
     if (match) {
       setSelectedLine(match);
       setShowLineSheet(true);
+      return;
     }
-  }, [phoneLineIdFilter, loading, lines.length]);
+    let cancelled = false;
+    fetchFromBackend(`/phone-lines/${phoneLineIdFilter}`)
+      .then((line) => {
+        if (!cancelled && line) {
+          setSelectedLine(line as PhoneLine);
+          setShowLineSheet(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [phoneLineIdFilter, loading, lines]);
 
   const handleLineSheetOpenChange = (open: boolean) => {
     setShowLineSheet(open);
@@ -126,56 +159,19 @@ export default function PhoneLinesPage() {
     }
   };
 
-  const viewCounts = useMemo(() => {
-    const base = lines.filter((line) => {
-      const term = search.toLowerCase();
-      if (!term) return true;
-      return (
-        line.phoneNumber.includes(term) ||
-        (line.label || "").toLowerCase().includes(term)
-      );
-    });
-
-    return {
-      all: base.length,
-      active: base.filter((l) => l.isActive).length,
-      inactive: base.filter((l) => !l.isActive).length,
-    };
-  }, [lines, search]);
-
-  const filteredLines = useMemo(() => {
-    return lines
-      .filter((line) => {
-        const term = search.toLowerCase();
-        const matchesSearch =
-          !term ||
-          line.phoneNumber.includes(term) ||
-          (line.label || "").toLowerCase().includes(term);
-
-        const matchesView =
-          activeView === "all" ||
-          (activeView === "active" && line.isActive) ||
-          (activeView === "inactive" && !line.isActive);
-
-        const matchesQuery = phoneLineIdFilter
-          ? line.id === phoneLineIdFilter
-          : true;
-
-        return matchesSearch && matchesView && matchesQuery;
-      })
-      .sort((a, b) => a.id - b.id);
-  }, [lines, search, activeView, phoneLineIdFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredLines.length / ITEMS_PER_PAGE));
-
-  const paginatedLines = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredLines.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredLines, currentPage]);
+  const viewCounts = useMemo(
+    () =>
+      serverViewCounts ?? {
+        all: 0,
+        active: 0,
+        inactive: 0,
+      },
+    [serverViewCounts],
+  );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeView, phoneLineIdFilter]);
+  }, [debouncedSearch, activeView]);
 
   const resetForm = () => setFormData(DEFAULT_FORM);
   const clearErrors = () => setValidationErrors({});
@@ -243,7 +239,7 @@ export default function PhoneLinesPage() {
       });
       setShowCreateModal(false);
       resetForm();
-      await fetchLines();
+      await refreshLines();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -291,7 +287,7 @@ export default function PhoneLinesPage() {
       setShowEditModal(false);
       setSelectedLine(null);
       resetForm();
-      await fetchLines();
+      await refreshLines();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -322,7 +318,7 @@ export default function PhoneLinesPage() {
       });
       setShowDeleteModal(false);
       setSelectedLine(null);
-      await fetchLines();
+      await refreshLines();
     } catch (error: unknown) {
       const err = error as { message?: string };
       toast({
@@ -359,7 +355,7 @@ export default function PhoneLinesPage() {
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;
-              const count = viewCounts[tab.key];
+              const count = viewCounts[tab.key] ?? 0;
               return (
                 <button
                   key={tab.key}
@@ -415,8 +411,8 @@ export default function PhoneLinesPage() {
 
       <PhoneLinesTable
           loading={loading}
-          lines={paginatedLines}
-          totalFiltered={filteredLines.length}
+          lines={lines}
+          totalFiltered={totalFiltered}
           onRowClick={handleRowClick}
           onEdit={canManage ? handleEdit : undefined}
           onDelete={canManage ? handleDelete : undefined}

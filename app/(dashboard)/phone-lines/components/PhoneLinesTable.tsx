@@ -9,7 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { cn } from "@/lib/utils";
 import { PhoneLine } from "../types";
 import { formatPhoneDisplay } from "../utils";
@@ -83,14 +84,7 @@ export function PhoneLinesTable({
 
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Loading phone lines...
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <TableLoadingRow colSpan={5} kind="phone-lines" />
               ) : totalFiltered === 0 ? (
                 <TableRow>
                   <TableCell
