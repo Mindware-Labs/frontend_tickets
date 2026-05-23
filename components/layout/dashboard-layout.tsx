@@ -15,9 +15,11 @@ export default function DashboardLayout({
     <SidebarProvider>
       <CallSocketProvider>
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="bg-[#f4f5f7] dark:bg-slate-950">
           <Topbar />
-          <main className="flex-1 px-6 lg:px-8 pb-6 lg:pb-8">{children}</main>
+          <main className="flex-1 px-4 pb-6 pt-3 sm:px-6 lg:px-8 lg:pb-8 lg:pt-4">
+            {children}
+          </main>
         </SidebarInset>
       </CallSocketProvider>
     </SidebarProvider>

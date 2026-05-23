@@ -6,9 +6,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+
+import { useDashboardRealtime } from "@/components/providers/CallSocketProvider";
 
 import {
   executiveMetricTemplates,
@@ -204,6 +207,9 @@ type DashboardDataContextValue = {
   isFilterLoading: boolean;
   error: string | null;
   generatedAt: string | null;
+  isRealtimeConnected: boolean;
+  isRealtimeSyncing: boolean;
+  lastRealtimeEventAt: string | null;
   filters: DashboardFilters;
   setFilter: (key: DashboardFilterKey, value: string | null) => void;
   toggleFilter: (key: DashboardFilterKey, value: string) => void;
@@ -219,6 +225,10 @@ const DashboardDataContext = createContext<DashboardDataContextValue | null>(
 );
 
 const PERIOD = "30d";
+const REALTIME_REFRESH_DEBOUNCE_MS = 700;
+const LIVE_ACTIVITY_REFRESH_MS = 5000;
+const SOCKET_FALLBACK_REFRESH_MS = 10000;
+const IDLE_REFRESH_MS = 30000;
 const chartPalette = [
   toneClasses.emerald.chart,
   toneClasses.sky.chart,
@@ -1317,73 +1327,154 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
 }
 
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
+  const realtime = useDashboardRealtime();
   const [baseSources, setBaseSources] = useState<DashboardSources>({});
   const [filteredPerformance, setFilteredPerformance] =
     useState<PerformanceReport | null>(null);
   const [filters, setFilters] = useState<DashboardFilters>(emptyDashboardFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
+  const [isRealtimeSyncing, setIsRealtimeSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const realtimeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const lastRealtimeVersionRef = useRef(0);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    setFilters(emptyDashboardFilters());
-    setFilteredPerformance(null);
+  const loadDashboardSources = useCallback(
+    async ({
+      resetFilters = false,
+      showLoading = false,
+      realtimeSync = false,
+    }: {
+      resetFilters?: boolean;
+      showLoading?: boolean;
+      realtimeSync?: boolean;
+    } = {}) => {
+      if (showLoading) setIsLoading(true);
+      if (realtimeSync) setIsRealtimeSyncing(true);
+      setError(null);
 
-    const [
-      statsResult,
-      performanceResult,
-      wallboardResult,
-      smsResult,
-      yardsResult,
-    ] = await Promise.allSettled([
-      fetchDashboardEndpoint<DashboardStats>("/api/dashboard/stats"),
-      fetchDashboardEndpoint<PerformanceReport>(
-        `/api/reports/performance?period=${PERIOD}`,
-      ),
-      fetchDashboardEndpoint<WallboardReport>(
-        `/api/aircall-analytics/wallboard?period=${PERIOD}`,
-      ),
-      fetchDashboardEndpoint<SmsSummary>(
-        `/api/aircall-analytics/sms/summary?period=${PERIOD}`,
-      ),
-      fetchDashboardEndpoint<YardsReport>(
-        `/api/reports/yards?period=${PERIOD}`,
-      ),
-    ]);
+      if (resetFilters) {
+        setFilters(emptyDashboardFilters());
+        setFilteredPerformance(null);
+      }
 
-    const sources: DashboardSources = {
-      stats: settledValue(statsResult),
-      performance: settledValue(performanceResult),
-      wallboard: settledValue(wallboardResult),
-      sms: settledValue(smsResult),
-      yards: settledValue(yardsResult),
-    };
-    const errors = [
-      statsResult,
-      performanceResult,
-      wallboardResult,
-      smsResult,
-      yardsResult,
-    ]
-      .map(settledError)
-      .filter((message): message is string => !!message);
+      try {
+        const [
+          statsResult,
+          performanceResult,
+          wallboardResult,
+          smsResult,
+          yardsResult,
+        ] = await Promise.allSettled([
+          fetchDashboardEndpoint<DashboardStats>("/api/dashboard/stats"),
+          fetchDashboardEndpoint<PerformanceReport>(
+            `/api/reports/performance?period=${PERIOD}`,
+          ),
+          fetchDashboardEndpoint<WallboardReport>(
+            `/api/aircall-analytics/wallboard?period=${PERIOD}`,
+          ),
+          fetchDashboardEndpoint<SmsSummary>(
+            `/api/aircall-analytics/sms/summary?period=${PERIOD}`,
+          ),
+          fetchDashboardEndpoint<YardsReport>(
+            `/api/reports/yards?period=${PERIOD}`,
+          ),
+        ]);
 
-    setBaseSources(sources);
-    setGeneratedAt(
-      sources.wallboard?.generatedAt ||
-        sources.stats?.generatedAt ||
-        new Date().toISOString(),
-    );
-    setError(errors.length ? errors[0] : null);
-    setIsLoading(false);
-  }, []);
+        const sources: DashboardSources = {
+          stats: settledValue(statsResult),
+          performance: settledValue(performanceResult),
+          wallboard: settledValue(wallboardResult),
+          sms: settledValue(smsResult),
+          yards: settledValue(yardsResult),
+        };
+        const errors = [
+          statsResult,
+          performanceResult,
+          wallboardResult,
+          smsResult,
+          yardsResult,
+        ]
+          .map(settledError)
+          .filter((message): message is string => !!message);
+
+        setBaseSources(sources);
+        setGeneratedAt(
+          sources.wallboard?.generatedAt ||
+            sources.stats?.generatedAt ||
+            new Date().toISOString(),
+        );
+        setError(errors.length ? errors[0] : null);
+      } finally {
+        if (showLoading) setIsLoading(false);
+        if (realtimeSync) setIsRealtimeSyncing(false);
+      }
+    },
+    [],
+  );
+
+  const refresh = useCallback(
+    () => loadDashboardSources({ resetFilters: true, showLoading: true }),
+    [loadDashboardSources],
+  );
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!realtime.version) return;
+    if (lastRealtimeVersionRef.current === realtime.version) return;
+
+    lastRealtimeVersionRef.current = realtime.version;
+
+    if (realtimeRefreshTimerRef.current) {
+      clearTimeout(realtimeRefreshTimerRef.current);
+    }
+
+    realtimeRefreshTimerRef.current = setTimeout(() => {
+      void loadDashboardSources({ realtimeSync: true });
+    }, REALTIME_REFRESH_DEBOUNCE_MS);
+
+    return () => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current);
+      }
+    };
+  }, [loadDashboardSources, realtime.version]);
+
+  const hasLiveActivity = useMemo(() => {
+    const live = baseSources.wallboard?.live;
+    return (
+      numberValue(live?.activeCalls) +
+        numberValue(live?.queuedCalls) +
+        numberValue(live?.ringingCalls) >
+      0
+    );
+  }, [
+    baseSources.wallboard?.live?.activeCalls,
+    baseSources.wallboard?.live?.queuedCalls,
+    baseSources.wallboard?.live?.ringingCalls,
+  ]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const intervalMs = realtime.connected
+      ? hasLiveActivity
+        ? LIVE_ACTIVITY_REFRESH_MS
+        : IDLE_REFRESH_MS
+      : SOCKET_FALLBACK_REFRESH_MS;
+
+    const intervalId = setInterval(() => {
+      void loadDashboardSources({ realtimeSync: true });
+    }, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [hasLiveActivity, isLoading, loadDashboardSources, realtime.connected]);
 
   useEffect(() => {
     if (!baseSources.performance) return;
@@ -1466,6 +1557,9 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       isFilterLoading,
       error,
       generatedAt,
+      isRealtimeConnected: realtime.connected,
+      isRealtimeSyncing,
+      lastRealtimeEventAt: realtime.lastEvent?.timestamp ?? null,
       filters,
       setFilter,
       toggleFilter,
@@ -1485,7 +1579,10 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       isHeatmapSlotActive,
       isFilterLoading,
       isLoading,
+      isRealtimeSyncing,
       refresh,
+      realtime.connected,
+      realtime.lastEvent?.timestamp,
       setFilter,
       toggleFilter,
       toggleHeatmapSlot,

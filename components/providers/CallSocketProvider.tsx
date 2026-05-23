@@ -4,6 +4,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -16,16 +17,46 @@ import { auth } from "@/lib/auth";
 import { revalidateNotifications } from "@/hooks/use-notifications";
 
 // -- Live call context --------------------------------------------------------
+export type DashboardRealtimeEventType =
+  | "ticket-assigned"
+  | "tickets-updated"
+  | "live-call-changed"
+  | "aircall-wallboard-changed"
+  | "sms-message-changed"
+  | "callback-due"
+  | "ticket-follow-up-due";
+
+export type DashboardRealtimeEvent = {
+  type: DashboardRealtimeEventType;
+  timestamp: string;
+};
+
+type DashboardRealtimeState = {
+  connected: boolean;
+  version: number;
+  lastEvent: DashboardRealtimeEvent | null;
+};
+
 interface LiveCallsContextValue {
   liveCallIds: Set<number>;
+  dashboardRealtime: DashboardRealtimeState;
 }
 
 const LiveCallsContext = createContext<LiveCallsContextValue>({
   liveCallIds: new Set(),
+  dashboardRealtime: {
+    connected: false,
+    version: 0,
+    lastEvent: null,
+  },
 });
 
 export function useLiveCalls() {
   return useContext(LiveCallsContext);
+}
+
+export function useDashboardRealtime() {
+  return useContext(LiveCallsContext).dashboardRealtime;
 }
 
 // -- Provider -----------------------------------------------------------------
@@ -35,6 +66,12 @@ export function CallSocketProvider({
   children?: React.ReactNode;
 }) {
   const [liveCallIds, setLiveCallIds] = useState<Set<number>>(new Set());
+  const [dashboardRealtime, setDashboardRealtime] =
+    useState<DashboardRealtimeState>({
+      connected: false,
+      version: 0,
+      lastEvent: null,
+    });
   const { toast } = useToast();
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -44,6 +81,8 @@ export function CallSocketProvider({
   const revalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const dashboardRevalidateDebounceRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -75,6 +114,41 @@ export function CallSocketProvider({
       }, 300);
     };
 
+    const revalidateDashboardCaches = () => {
+      if (dashboardRevalidateDebounceRef.current) {
+        clearTimeout(dashboardRevalidateDebounceRef.current);
+      }
+      dashboardRevalidateDebounceRef.current = setTimeout(() => {
+        mutate(
+          (key) =>
+            typeof key === "string" &&
+            (key.startsWith("/api/dashboard") ||
+              key.startsWith("/api/reports") ||
+              key.startsWith("/api/aircall-analytics")),
+        );
+      }, 300);
+    };
+
+    const markDashboardRealtime = (
+      type: DashboardRealtimeEventType,
+      timestamp = new Date().toISOString(),
+    ) => {
+      setDashboardRealtime((prev) => ({
+        connected: socket.connected,
+        version: prev.version + 1,
+        lastEvent: { type, timestamp },
+      }));
+      revalidateDashboardCaches();
+    };
+
+    socket.on("connect", () => {
+      setDashboardRealtime((prev) => ({ ...prev, connected: true }));
+    });
+
+    socket.on("disconnect", () => {
+      setDashboardRealtime((prev) => ({ ...prev, connected: false }));
+    });
+
     socket.on(
       "ticketAssigned",
       (data: { title: string; message: string; ticketId: number }) => {
@@ -99,6 +173,7 @@ export function CallSocketProvider({
           ),
         });
 
+        markDashboardRealtime("ticket-assigned");
         revalidateCallCaches();
       },
     );
@@ -106,6 +181,7 @@ export function CallSocketProvider({
     socket.on(
       "ticketsUpdated",
       (data: { action: string; ticketId: number; timestamp: string }) => {
+        markDashboardRealtime("tickets-updated", data.timestamp);
         revalidateCallCaches();
       },
     );
@@ -123,7 +199,22 @@ export function CallSocketProvider({
           }
           return next;
         });
+        markDashboardRealtime("live-call-changed", data.timestamp);
         revalidateCallCaches();
+      },
+    );
+
+    socket.on(
+      "aircallWallboardChanged",
+      (data: { timestamp: string }) => {
+        markDashboardRealtime("aircall-wallboard-changed", data.timestamp);
+      },
+    );
+
+    socket.on(
+      "smsMessageChanged",
+      (data: { smsMessageId: number; direction: string; timestamp: string }) => {
+        markDashboardRealtime("sms-message-changed", data.timestamp);
       },
     );
 
@@ -158,6 +249,7 @@ export function CallSocketProvider({
         });
 
         revalidateNotifications();
+        markDashboardRealtime("callback-due", data.createdAt);
         revalidateCallCaches();
       },
     );
@@ -193,6 +285,7 @@ export function CallSocketProvider({
         });
 
         revalidateNotifications();
+        markDashboardRealtime("ticket-follow-up-due", data.createdAt);
         revalidateCallCaches();
       },
     );
@@ -200,6 +293,8 @@ export function CallSocketProvider({
     return () => {
       if (revalidateDebounceRef.current)
         clearTimeout(revalidateDebounceRef.current);
+      if (dashboardRevalidateDebounceRef.current)
+        clearTimeout(dashboardRevalidateDebounceRef.current);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -207,8 +302,13 @@ export function CallSocketProvider({
     };
   }, [user?.id, toast, router, mutate]);
 
+  const contextValue = useMemo(
+    () => ({ liveCallIds, dashboardRealtime }),
+    [dashboardRealtime, liveCallIds],
+  );
+
   return (
-    <LiveCallsContext.Provider value={{ liveCallIds }}>
+    <LiveCallsContext.Provider value={contextValue}>
       {children}
     </LiveCallsContext.Provider>
   );

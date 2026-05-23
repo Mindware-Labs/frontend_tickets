@@ -25,6 +25,8 @@ type DashboardHeaderProps = {
   onViewChange: (view: DashboardViewKey) => void;
   lastUpdated: string | null;
   isLoading: boolean;
+  isRealtimeConnected: boolean;
+  isRealtimeSyncing: boolean;
   onRefresh: () => void;
 };
 
@@ -34,6 +36,8 @@ export function DashboardHeader({
   onViewChange,
   lastUpdated,
   isLoading,
+  isRealtimeConnected,
+  isRealtimeSyncing,
   onRefresh,
 }: DashboardHeaderProps) {
   return (
@@ -98,6 +102,29 @@ export function DashboardHeader({
 
           <div className="flex items-center gap-3 text-slate-400">
             <FilterHelpPopover />
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-semibold",
+                isRealtimeConnected
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
+              )}
+              title={
+                isRealtimeConnected
+                  ? "Socket connected: dashboard syncs from live events."
+                  : "Socket disconnected: dashboard is using live polling."
+              }
+            >
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  isRealtimeConnected ? "bg-emerald-500" : "bg-amber-500",
+                  isRealtimeSyncing && "animate-pulse",
+                )}
+                aria-hidden
+              />
+              {isRealtimeConnected ? "Live" : "Polling"}
+            </span>
             {lastUpdated ? (
               <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 {lastUpdated}

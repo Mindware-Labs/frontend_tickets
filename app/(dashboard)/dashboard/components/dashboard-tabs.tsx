@@ -25,7 +25,14 @@ const VIEW_TABS = [
 
 export function DashboardTabs() {
   const [activeView, setActiveView] = useState<DashboardViewKey>("operations");
-  const { error, generatedAt, isLoading, refresh } = useSupportDashboardData();
+  const {
+    error,
+    generatedAt,
+    isLoading,
+    isRealtimeConnected,
+    isRealtimeSyncing,
+    refresh,
+  } = useSupportDashboardData();
 
   const lastUpdated = generatedAt
     ? new Date(generatedAt).toLocaleTimeString([], {
@@ -42,6 +49,8 @@ export function DashboardTabs() {
         onViewChange={setActiveView}
         lastUpdated={lastUpdated}
         isLoading={isLoading}
+        isRealtimeConnected={isRealtimeConnected}
+        isRealtimeSyncing={isRealtimeSyncing}
         onRefresh={() => void refresh()}
       />
 
