@@ -17,7 +17,12 @@ import {
   scorecardTemplates,
 } from "./dashboard-config";
 import { createEmptyDashboardData } from "./dashboard-empty";
-import type { DashboardDataSet } from "./dashboard-types";
+import {
+  formatDuration,
+  formatLiveQueueTrend,
+  sanitizeLiveQueueWaitSeconds,
+} from "./dashboard-format";
+import type { DashboardDataSet, ExecutiveLiveSnapshot } from "./dashboard-types";
 import {
   buildPerformanceFilterQuery,
   emptyDashboardFilters,
@@ -129,6 +134,7 @@ type PerformanceReport = {
 
 type WallboardReport = {
   generatedAt?: string;
+  period?: { label?: string };
   live?: {
     activeCalls?: number;
     queuedCalls?: number;
@@ -252,16 +258,6 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(
     Math.round(value),
   );
-}
-
-function formatSeconds(seconds?: number | null) {
-  const totalSeconds = Math.max(0, Math.round(numberValue(seconds)));
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-  const minutes = Math.floor(totalSeconds / 60);
-  const remainingSeconds = totalSeconds % 60;
-  return remainingSeconds
-    ? `${minutes}m ${remainingSeconds}s`
-    : `${minutes}m`;
 }
 
 function percent(numerator: number, denominator: number) {
@@ -486,6 +482,10 @@ function buildOperationsMetrics({
   const inbound = numberValue(summary?.totalInboundCalls);
   const outbound = numberValue(summary?.totalOutboundCalls);
   const avgWait = numberValue(wallboard?.live?.avgWaitSeconds);
+  const queuedCount = numberValue(wallboard?.live?.queuedCalls);
+  const longestQueue = sanitizeLiveQueueWaitSeconds(
+    wallboard?.live?.longestCurrentWaitSeconds,
+  );
   const avgDuration = numberValue(
     summary?.avgCallDurationSec ?? performance?.kpis?.avgDurationSeconds,
   );
@@ -493,30 +493,31 @@ function buildOperationsMetrics({
     numberValue(summary?.pendingTickets) +
     numberValue(summary?.overdueTickets) +
     numberValue(stats?.kpis?.pendingActions);
+  const periodLabel = performance?.period?.label || "Last 30 days";
 
   return [
     buildMetric(operationsMetricTemplates[0], {
       value: formatNumber(totalCalls),
       detail: `${formatNumber(inbound)} inbound, ${formatNumber(outbound)} outbound`,
-      trend: `calls · ${performance?.period?.label || "last 30 days"}`,
+      trend: periodLabel,
       tone: "emerald",
     }),
     buildMetric(operationsMetricTemplates[1], {
-      value: formatSeconds(avgWait),
-      detail: "Aircall wallboard avg wait",
-      trend: `Longest queue: ${formatSeconds(wallboard?.live?.longestCurrentWaitSeconds)}`,
+      value: formatDuration(avgWait),
+      detail: "Average time to answer (answered calls)",
+      trend: formatLiveQueueTrend(queuedCount, longestQueue),
       tone: avgWait <= 90 ? "sky" : "amber",
     }),
     buildMetric(operationsMetricTemplates[2], {
-      value: formatSeconds(avgDuration),
-      detail: "Average call duration",
-      trend: "reports/performance",
+      value: formatDuration(avgDuration),
+      detail: "Talk time per answered call",
+      trend: avgDuration <= 360 ? "Within handle-time goal" : "Above handle-time goal",
       tone: avgDuration <= 360 ? "emerald" : "amber",
     }),
     buildMetric(operationsMetricTemplates[3], {
       value: formatNumber(followUps),
-      detail: `${formatNumber(numberValue(summary?.overdueTickets))} overdue tickets`,
-      trend: "tickets_v2 status",
+      detail: `${formatNumber(numberValue(summary?.overdueTickets))} overdue`,
+      trend: "Pending and overdue ticket work",
       tone: followUps ? "rose" : "emerald",
     }),
   ];
@@ -554,19 +555,19 @@ function buildExecutiveMetrics({
     buildMetric(executiveMetricTemplates[1], {
       value: formatNumber(openTickets),
       detail: `${formatNumber(numberValue(summary?.overdueTickets))} overdue`,
-      trend: "tickets_v2",
+      trend: "Open, pending, and overdue combined",
       tone: openTickets ? "rose" : "emerald",
     }),
     buildMetric(executiveMetricTemplates[2], {
       value: `${percent(totalTickets, totalCalls)}%`,
       detail: `${formatNumber(totalTickets)} tickets / ${formatNumber(totalCalls)} calls`,
-      trend: "reports/performance",
+      trend: performance?.period?.label || "Last 30 days",
       tone: "indigo",
     }),
     buildMetric(executiveMetricTemplates[3], {
       value: `${resolutionRate}%`,
       detail: `${formatNumber(closedTickets)} closed`,
-      trend: "ticket status",
+      trend: "Closed vs total tickets",
       tone: resolutionRate >= 80 ? "sky" : "amber",
     }),
   ];
@@ -592,13 +593,13 @@ function buildMarketingMetrics({
     buildMetric(marketingMetricTemplates[0], {
       value: `${percent(totalAnswered, totalCalls)}%`,
       detail: `${formatNumber(totalAnswered)} connected / ${formatNumber(totalCalls)} calls`,
-      trend: "call direction",
+      trend: performance?.period?.label || "Last 30 days",
       tone: "emerald",
     }),
     buildMetric(marketingMetricTemplates[1], {
       value: formatNumber(outcomeTotal),
       detail: "PTP, paid, enrolled or resolved",
-      trend: "disposition breakdown",
+      trend: "From call dispositions",
       tone: "indigo",
     }),
     buildMetric(marketingMetricTemplates[2], {
@@ -610,7 +611,7 @@ function buildMarketingMetrics({
     buildMetric(marketingMetricTemplates[3], {
       value: formatNumber(callsPerYard),
       detail: `${yards?.data?.length || 0} yards`,
-      trend: "reports/yards",
+      trend: "Average call volume per yard",
       tone: "sky",
     }),
   ];
@@ -737,9 +738,9 @@ function buildLinePerformance({
         return {
           line: line.line || "Unassigned",
           calls: formatNumber(total),
-          response: formatSeconds(line.avgWaitSeconds),
+          response: formatDuration(line.avgWaitSeconds),
           contact: `${percent(total - missed, total)}%`,
-          aht: avgDuration ? formatSeconds(avgDuration) : "n/a",
+          aht: avgDuration ? formatDuration(avgDuration) : "n/a",
           missed: `${percent(missed, total)}%`,
         };
       });
@@ -757,9 +758,9 @@ function buildLinePerformance({
       return {
         line: line.line || "Unassigned",
         calls: formatNumber(total),
-        response: formatSeconds(line.avgWaitSeconds),
+        response: formatDuration(line.avgWaitSeconds),
         contact: `${percent(total - missed, total)}%`,
-        aht: avgDuration ? formatSeconds(avgDuration) : "n/a",
+        aht: avgDuration ? formatDuration(avgDuration) : "n/a",
         missed: `${percent(missed, total)}%`,
       };
     });
@@ -836,7 +837,7 @@ function buildScorecards({
     buildScorecard(scorecardTemplates[0], {
       actual:
         totalAnswered > 0 || avgWait > 0
-          ? formatSeconds(avgWait)
+          ? formatDuration(avgWait)
           : "—",
       score: callResponseScored.score,
       progress: callResponseScored.progress,
@@ -844,7 +845,7 @@ function buildScorecards({
     buildScorecard(scorecardTemplates[1], {
       actual:
         totalAnswered > 0 || avgDuration > 0
-          ? formatSeconds(avgDuration)
+          ? formatDuration(avgDuration)
           : "—",
       score: ahtScored.score,
       progress: ahtScored.progress,
@@ -1122,15 +1123,69 @@ function buildYardVolume({
   return rows;
 }
 
-function buildLeadershipCadence(
-  scorecards: ScorecardItem[],
-): DashboardDataSet["leadershipCadence"] {
-  return scorecards.map((item) => ({
-    group: /ticket|resolution|open/i.test(item.metric) ? "Ticket KPI" : "Call KPI",
-    metric: item.metric,
-    cadence: item.cadence,
-    source: `${item.actual} · target ${item.target}`,
-  }));
+function buildExecutiveLiveSnapshot({
+  performance,
+  wallboard,
+}: DashboardSources): ExecutiveLiveSnapshot {
+  const summary = performance?.summary;
+  const live = wallboard?.live;
+  const agents = wallboard?.agents;
+  const periodLabel = performance?.period?.label || wallboard?.period?.label || "Last 30 days";
+  const queued = numberValue(live?.queuedCalls);
+  const longest = sanitizeLiveQueueWaitSeconds(live?.longestCurrentWaitSeconds);
+
+  const lineAlerts: ExecutiveLiveSnapshot["lineAlerts"] = [];
+  for (const line of wallboard?.linePerformance || []) {
+    if (lineAlerts.length >= 5) break;
+    const label = line.line || "Unassigned";
+    const active = numberValue(line.active);
+    const missed = numberValue(line.missed);
+    const wait = numberValue(line.avgWaitSeconds);
+    if (active >= 3) {
+      lineAlerts.push({
+        line: label,
+        detail: `${formatNumber(active)} active calls now`,
+        tone: "amber",
+      });
+    } else if (missed >= 5) {
+      lineAlerts.push({
+        line: label,
+        detail: `${formatNumber(missed)} missed in period`,
+        tone: "rose",
+      });
+    } else if (wait >= 120) {
+      lineAlerts.push({
+        line: label,
+        detail: `Avg wait ${formatDuration(wait)}`,
+        tone: "sky",
+      });
+    }
+  }
+
+  return {
+    periodLabel,
+    calls: {
+      active: numberValue(live?.activeCalls),
+      queued,
+      ringing: numberValue(live?.ringingCalls),
+    },
+    wait: {
+      avgLabel: formatDuration(live?.avgWaitSeconds),
+      longestLabel: queued ? formatDuration(longest) : "—",
+    },
+    agents: {
+      available: numberValue(agents?.available),
+      unavailable: numberValue(agents?.unavailable),
+      offline: numberValue(agents?.offline),
+      total: numberValue(agents?.totalTracked),
+    },
+    tickets: {
+      open: numberValue(summary?.openTickets),
+      overdue: numberValue(summary?.overdueTickets),
+      pending: numberValue(summary?.pendingTickets),
+    },
+    lineAlerts,
+  };
 }
 
 function buildMarketingUseCases(
@@ -1141,7 +1196,7 @@ function buildMarketingUseCases(
   ).map((item) => ({
     campaign: item.name,
     measures: `${formatNumber(item.value)} calls in period`,
-    source: "reports/performance · campaignBreakdown",
+    source: "Campaign call volume",
   }));
 }
 
@@ -1249,7 +1304,7 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
     ticketRisk: buildTicketRisk(sources),
     heatmapHours: heatmap.heatmapHours,
     peakHourHeatmap: heatmap.peakHourHeatmap,
-    leadershipCadence: buildLeadershipCadence(executiveCallKpis),
+    executiveLiveSnapshot: buildExecutiveLiveSnapshot(sources),
     campaignRates: buildCampaignRates(sources),
     leadFunnel: funnels.leadFunnel,
     arFunnel: funnels.arFunnel,

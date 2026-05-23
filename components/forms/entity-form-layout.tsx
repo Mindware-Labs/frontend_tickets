@@ -17,7 +17,7 @@ export const entityFormDialogContentClass =
   "max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950";
 
 export const entityFormScrollBodyClass =
-  "max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent";
+  "scrollbar-app max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5";
 
 export const entityFormInputClassName = cn(
   "h-9 w-full rounded-lg border border-transparent bg-slate-50 px-2.5 text-xs text-slate-900 shadow-none transition-colors",

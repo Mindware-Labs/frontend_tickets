@@ -58,6 +58,13 @@
   --chart-3: 38 92% 50%;
   --chart-4: 200 80% 50%;
   --chart-5: 0 84% 60%;
+
+  /* Minimal scrollbars — Rig Hut teal accent */
+  --scrollbar-size: 5px;
+  --scrollbar-thumb: color-mix(in srgb, #64748b 32%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, #008f68 55%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, #008f68 72%, transparent);
+  --scrollbar-track: transparent;
 }
 
 .dark {
@@ -99,6 +106,10 @@
   --sidebar-accent-foreground: 0 0% 92%;
   --sidebar-border: 220 18% 16%;
   --sidebar-ring: 160 100% 38%;
+
+  --scrollbar-thumb: color-mix(in srgb, #94a3b8 28%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, #34d399 50%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, #34d399 68%, transparent);
 }
 
 @theme inline {
@@ -153,6 +164,8 @@
   html {
     overflow-y: scroll;
     scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   body[data-scroll-locked] {
@@ -230,18 +243,115 @@
   @apply max-h-[calc(100vh-12rem)] overflow-y-auto [scrollbar-gutter:stable] [&_[data-slot=table-container]]:overflow-x-clip;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── App scrollbars (minimal, teal accent on interaction) ───────── */
+.scrollbar-app,
+.entity-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
+.scrollbar-app::-webkit-scrollbar,
+.entity-table-scroll::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+.scrollbar-app::-webkit-scrollbar-track,
+.entity-table-scroll::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.scrollbar-app::-webkit-scrollbar-thumb,
+.entity-table-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border: 1.5px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-app::-webkit-scrollbar-thumb:hover,
+.entity-table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+.scrollbar-app::-webkit-scrollbar-thumb:active,
+.entity-table-scroll::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+.scrollbar-app::-webkit-scrollbar-corner,
+.entity-table-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Overlay-style: thumb appears when the scroll container is hovered */
+.scrollbar-app-hover {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-app-hover:hover {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scrollbar-app-hover::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.scrollbar-app-hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-app-hover::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-app-hover:hover::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+}
+
+.scrollbar-app-hover:hover::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border: 1.5px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* KPI Card Refinement */

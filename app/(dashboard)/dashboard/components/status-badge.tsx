@@ -5,7 +5,15 @@ import { cn } from "@/lib/utils";
 import { toneClasses } from "../dashboard-theme";
 import type { Tone } from "../types";
 
-export function StatusBadge({ children, tone }: { children: ReactNode; tone: Tone }) {
+export function StatusBadge({
+  children,
+  tone,
+  className,
+}: {
+  children: ReactNode;
+  tone: Tone;
+  className?: string;
+}) {
   const toneClass = toneClasses[tone];
 
   return (
@@ -15,6 +23,7 @@ export function StatusBadge({ children, tone }: { children: ReactNode; tone: Ton
         toneClass.iconWrap,
         toneClass.border,
         toneClass.text,
+        className,
       )}
     >
       {children}

@@ -85,7 +85,7 @@ export const dashboardPanelClass =
 export const dashboardPanelHeaderClass =
   "flex shrink-0 items-start justify-between gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-slate-800";
 
-export const dashboardPanelBodyClass = "min-h-0 flex-1 px-3.5 py-3";
+export const dashboardPanelBodyClass = "min-h-0 flex-1 px-3 py-2.5";
 
 export const dashboardChartSurfaceClass =
   "rounded-xl border border-slate-100 bg-slate-50/60 p-1.5 dark:border-slate-800/80 dark:bg-slate-900/40";
@@ -94,7 +94,7 @@ export const dashboardSectionLabelClass =
   "text-[10px] font-semibold uppercase tracking-widest text-slate-400";
 
 export const dashboardMetricTileClass =
-  "min-w-0 rounded-xl border px-3 py-3 transition-colors";
+  "min-w-0 rounded-xl border px-2.5 transition-colors";
 
 /** Fixed chart height so paired panels align without empty space below KPI grids. */
 export const DASHBOARD_CHART_HEIGHT = 220;
@@ -103,7 +103,10 @@ export const DASHBOARD_CHART_HEIGHT_SM = 200;
 export const DASHBOARD_CHART_HEIGHT_SM_CLASS = "h-[200px]";
 
 export const dashboardShellClass = "flex flex-col gap-2";
-export const dashboardRowClass = "grid gap-2 xl:items-stretch";
+export const dashboardRowClass = "grid gap-2";
+/** Paired chart + side panel rows — equal height, no dead space below charts. */
+export const dashboardPairedRowClass =
+  "grid gap-2 xl:grid-cols-2 xl:items-stretch [&>*]:min-h-0";
 export const dashboardTableHeadClass =
   "py-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400";
 export const dashboardTableCellClass =

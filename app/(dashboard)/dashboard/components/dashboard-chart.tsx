@@ -14,10 +14,13 @@ import {
 export function DashboardChart({
   children,
   size = "md",
+  fill = false,
   className,
 }: {
   children: ReactElement;
   size?: "md" | "sm";
+  /** Grow to fill a flex parent (paired dashboard panels). */
+  fill?: boolean;
   className?: string;
 }) {
   return (
@@ -25,7 +28,11 @@ export function DashboardChart({
       className={cn(
         "w-full min-h-0",
         dashboardChartSurfaceClass,
-        size === "sm" ? DASHBOARD_CHART_HEIGHT_SM_CLASS : DASHBOARD_CHART_HEIGHT_CLASS,
+        fill
+          ? "min-h-[180px] flex-1"
+          : size === "sm"
+            ? DASHBOARD_CHART_HEIGHT_SM_CLASS
+            : DASHBOARD_CHART_HEIGHT_CLASS,
         className,
       )}
     >

@@ -46,13 +46,37 @@ export function MetricCard({ metric }: { metric: Metric }) {
   const Icon = metric.icon as LucideIcon;
 
   return (
-    <div className={cn(dashboardMetricTileClass, tone.tile)}>
-      <p className="flex items-start gap-1.5 text-[9px] font-semibold uppercase leading-tight tracking-normal sm:gap-2">
-        <Icon className={cn("mt-px h-3 w-3 shrink-0", tone.icon)} aria-hidden />
-        <span className="min-w-0 whitespace-normal break-words">{metric.label}</span>
-      </p>
-      <p className="mt-1.5 text-xl font-bold leading-none tabular-nums">{metric.value}</p>
-      <div className="mt-1.5 flex flex-col gap-0 text-[10px] leading-snug">
+    <div
+      className={cn(
+        dashboardMetricTileClass,
+        "flex gap-2.5 py-2 sm:items-center",
+        tone.tile,
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/60 dark:bg-slate-950/40",
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5", tone.icon)} aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-semibold uppercase leading-tight tracking-wide">
+          {metric.label}
+        </p>
+        <p className="mt-0.5 text-lg font-bold leading-none tabular-nums sm:text-xl">
+          {metric.value}
+        </p>
+      </div>
+      <div className="hidden min-w-0 max-w-[42%] flex-col gap-0 text-right text-[10px] leading-snug sm:flex">
+        <span className="line-clamp-2 text-slate-500 dark:text-slate-400">
+          {metric.detail}
+        </span>
+        <span className={cn("line-clamp-1 font-semibold", tone.trend)}>
+          {metric.trend}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1 flex-col gap-0 text-[10px] leading-snug sm:hidden">
         <span className="line-clamp-1 text-slate-500 dark:text-slate-400">
           {metric.detail}
         </span>

@@ -14,11 +14,33 @@ export type MarketingUseCaseRow = {
   source: string;
 };
 
-export type LeadershipCadenceRow = {
-  group: string;
-  metric: string;
-  cadence: string;
-  source: string;
+export type ExecutiveLiveSnapshot = {
+  periodLabel: string;
+  calls: {
+    active: number;
+    queued: number;
+    ringing: number;
+  };
+  wait: {
+    avgLabel: string;
+    longestLabel: string;
+  };
+  agents: {
+    available: number;
+    unavailable: number;
+    offline: number;
+    total: number;
+  };
+  tickets: {
+    open: number;
+    overdue: number;
+    pending: number;
+  };
+  lineAlerts: {
+    line: string;
+    detail: string;
+    tone: Tone;
+  }[];
 };
 
 export type DashboardDataSet = {
@@ -75,7 +97,7 @@ export type DashboardDataSet = {
   /** Raw hour keys (00–23) aligned with heatmapHours display labels. */
   heatmapHourKeys: string[];
   peakHourHeatmap: { day: string; values: number[] }[];
-  leadershipCadence: LeadershipCadenceRow[];
+  executiveLiveSnapshot: ExecutiveLiveSnapshot;
   campaignRates: {
     campaign: string;
     /** Share of named-campaign call volume in the period (0–100). */

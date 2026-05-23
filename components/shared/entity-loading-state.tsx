@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Building2,
   FileText,
   Landmark,
@@ -24,7 +25,8 @@ export type EntityLoadingKind =
   | "landlords"
   | "phone-lines"
   | "campaigns"
-  | "users";
+  | "users"
+  | "dashboard";
 
 const ENTITY_META: Record<
   EntityLoadingKind,
@@ -39,6 +41,7 @@ const ENTITY_META: Record<
   "phone-lines": { label: "Loading phone lines", icon: Phone },
   campaigns: { label: "Loading campaigns", icon: Megaphone },
   users: { label: "Loading team members", icon: UserCog },
+  dashboard: { label: "Loading dashboard", icon: BarChart3 },
 };
 
 const SPINNER_SIZE = {
