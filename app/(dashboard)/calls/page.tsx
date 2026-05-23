@@ -128,10 +128,18 @@ export default function TicketsPage() {
   const tickets: Call[] = Array.isArray(ticketsPageData)
     ? ticketsPageData
     : ticketsPageData?.data || [];
-  const totalMatchingTickets =
+  /** Customer groups when groupBy=customer; used for pagination by row. */
+  const totalCustomerGroups =
     typeof ticketsPageData?.total === "number"
       ? ticketsPageData.total
       : tickets.length;
+  /** Total calls matching filters (not group rows). */
+  const totalMatchingCalls =
+    typeof ticketsPageData?.totalCalls === "number"
+      ? ticketsPageData.totalCalls
+      : typeof ticketsPageData?.total === "number"
+        ? ticketsPageData.total
+        : tickets.length;
   const serverViewCounts = ticketsPageData?.viewCounts || null;
 
   // ---- View counts ----
@@ -139,6 +147,10 @@ export default function TicketsPage() {
     const currentCustomerIdParam = searchParams.get("customerId");
 
     return (viewType: string): number => {
+      if (viewType === "all" && typeof ticketsPageData?.totalCalls === "number") {
+        return ticketsPageData.totalCalls;
+      }
+
       if (
         serverViewCounts &&
         typeof serverViewCounts === "object" &&
@@ -148,7 +160,7 @@ export default function TicketsPage() {
       }
 
       if (viewType === ticketFilters.activeView) {
-        return totalMatchingTickets;
+        return totalMatchingCalls;
       }
 
       return tickets.filter((ticket: Call) => {
@@ -288,7 +300,8 @@ export default function TicketsPage() {
     ticketFilters.activeView,
     searchParams,
     serverViewCounts,
-    totalMatchingTickets,
+    totalMatchingCalls,
+    ticketsPageData?.totalCalls,
     refData.isTicketAssignedToCurrentUser,
   ]);
 
@@ -400,25 +413,25 @@ export default function TicketsPage() {
   useEffect(() => {
     if (previousTicketQueryKeyRef.current !== ticketFilters.ticketsApiUrl) {
       previousTicketQueryKeyRef.current = ticketFilters.ticketsApiUrl;
-      if (totalMatchingTickets > 0)
-        previousTicketCountRef.current = totalMatchingTickets;
+      if (totalMatchingCalls > 0)
+        previousTicketCountRef.current = totalMatchingCalls;
       return;
     }
-    if (totalMatchingTickets > 0) {
+    if (totalMatchingCalls > 0) {
       if (
         previousTicketCountRef.current > 0 &&
-        totalMatchingTickets > previousTicketCountRef.current
+        totalMatchingCalls > previousTicketCountRef.current
       ) {
-        const newCount = totalMatchingTickets - previousTicketCountRef.current;
+        const newCount = totalMatchingCalls - previousTicketCountRef.current;
         toast({
           title: "New Ticket" + (newCount > 1 ? "s" : ""),
           description: `${newCount} new ticket${newCount > 1 ? "s" : ""} created`,
           duration: 3000,
         });
       }
-      previousTicketCountRef.current = totalMatchingTickets;
+      previousTicketCountRef.current = totalMatchingCalls;
     }
-  }, [ticketFilters.ticketsApiUrl, totalMatchingTickets]);
+  }, [ticketFilters.ticketsApiUrl, totalMatchingCalls]);
 
   // ---- Close modals on route change ----
   useEffect(() => {
@@ -1242,17 +1255,13 @@ export default function TicketsPage() {
             onPageChange={ticketFilters.setCurrentPage}
             itemsPerPage={ticketFilters.itemsPerPage}
             onItemsPerPageChange={ticketFilters.setItemsPerPage}
-            totalCount={
-              typeof ticketsPageData?.totalCalls === "number"
-                ? ticketsPageData.totalCalls
-                : totalMatchingTickets
-            }
-            totalCustomers={totalMatchingTickets}
+            totalCount={totalMatchingCalls}
+            totalCustomers={totalCustomerGroups}
             totalPages={
               ticketsPageData?.totalPages ??
               Math.max(
                 1,
-                Math.ceil(totalMatchingTickets / ticketFilters.itemsPerPage),
+                Math.ceil(totalCustomerGroups / ticketFilters.itemsPerPage),
               )
             }
           />

@@ -92,10 +92,10 @@ export function CampaignFormModal({
     clearError("tipo");
   };
 
-  const yardItems = [
-    { value: "", label: "No yard" },
-    ...yards.map((y) => ({ value: String(y.id), label: y.name })),
-  ];
+  const yardItems = yards.map((y) => ({
+    value: String(y.id),
+    label: y.name,
+  }));
 
   return (
     <EntityFormDialogShell
