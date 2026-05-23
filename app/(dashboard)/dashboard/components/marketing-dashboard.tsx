@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import {
   Bar,
   BarChart,
@@ -8,14 +9,33 @@ import {
   Line,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { toneClasses, tooltipStyle } from "../dashboard-theme";
+import {
+  DASHBOARD_CHART_HEIGHT_CLASS,
+  DASHBOARD_CHART_HEIGHT_SM_CLASS,
+  chartAxisTickStyle,
+  chartGridStroke,
+  chartLegendStyle,
+  dashboardListItemClass,
+  dashboardRowClass,
+  dashboardShellClass,
+  dashboardTableCellClass,
+  dashboardTableCellStrongClass,
+  dashboardTableHeadClass,
+  toneClasses,
+  tooltipStyle,
+} from "../dashboard-theme";
 import { useSupportDashboardData } from "../use-dashboard-real-data";
+import {
+  crossFilterBarOpacity,
+  crossFilterRowClass,
+  useCrossFilter,
+} from "./chart-cross-filter";
+import { DashboardChart } from "./dashboard-chart";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { FunnelBars } from "./funnel-bars";
 import { MetricsGrid } from "./metrics-grid";
@@ -23,6 +43,7 @@ import { PanelCard } from "./panel-card";
 
 export function MarketingDashboard() {
   const { data } = useSupportDashboardData();
+  const { filters, toggleFilter, isFilterActive } = useCrossFilter();
   const dispositionTotal = data.dispositionBreakdown.reduce(
     (sum, item) => sum + item.value,
     0,
@@ -30,116 +51,117 @@ export function MarketingDashboard() {
   const hasFunnelData =
     data.leadFunnel.some((s) => s.value > 0) ||
     data.arFunnel.some((s) => s.value > 0);
+  const campaignFilterActive = !!filters.campaign;
+  const yardFilterActive = !!filters.yard;
+  const dispositionFilterActive = !!filters.disposition;
 
   return (
-    <div className="space-y-4">
+    <div className={dashboardShellClass}>
       <MetricsGrid metrics={data.marketingMetrics} />
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+      <div className={`${dashboardRowClass} xl:grid-cols-[1.2fr_1fr]`}>
         <PanelCard
+          fill
           title="Campaign performance"
-          subtitle="Contact rate, outcome conversion, SMS reply rate and ROI by campaign line."
+          subtitle="Click a bar to filter the dashboard by campaign."
         >
           {data.campaignRates.length === 0 ? (
-            <DashboardEmptyState message="No campaign breakdown for this period." />
+            <DashboardEmptyState message="No campaign breakdown for this period." compact />
           ) : (
-          <div className="h-[330px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.campaignRates}
-                margin={{ left: -16, right: 8 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="campaign" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
+            <DashboardChart>
+              <BarChart data={data.campaignRates} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="campaign" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
+                <YAxis tickLine={false} axisLine={false} unit="%" tick={chartAxisTickStyle} width={28} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(value: number) => [`${value}%`, "Share of calls"]}
+                />
+                <Legend wrapperStyle={chartLegendStyle} />
                 <Bar
-                  dataKey="contact"
-                  name="Contact %"
+                  dataKey="volume"
+                  name="Share of calls"
                   fill={toneClasses.emerald.chart}
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar
-                  dataKey="conversion"
-                  name="Outcome %"
-                  fill={toneClasses.indigo.chart}
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar
-                  dataKey="sms"
-                  name="SMS reply %"
-                  fill={toneClasses.sky.chart}
-                  radius={[6, 6, 0, 0]}
-                />
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(bar) => {
+                    const row = bar as { campaign?: string };
+                    if (row.campaign) toggleFilter("campaign", row.campaign);
+                  }}
+                >
+                  {data.campaignRates.map((entry) => (
+                    <Cell
+                      key={entry.campaign}
+                      fill={toneClasses.emerald.chart}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive("campaign", entry.campaign),
+                        campaignFilterActive,
+                      )}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
-            </ResponsiveContainer>
-          </div>
+            </DashboardChart>
           )}
         </PanelCard>
 
         <PanelCard
+          fill
           title="Campaign options"
-          subtitle="Call outcomes by campaign option from reports/performance (calls.campaignOption)."
+          subtitle="Outcome distribution by campaign type."
+          bodyClassName="min-h-0"
         >
           {!hasFunnelData ? (
-            <DashboardEmptyState message="No campaign options recorded for this period." />
+            <DashboardEmptyState message="No campaign options for this period." compact />
           ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-1">
-            <FunnelBars
-              title="Onboarding"
-              data={data.leadFunnel}
-              tone="indigo"
-            />
-            <FunnelBars
-              title="AR"
-              data={data.arFunnel}
-              tone="emerald"
-            />
-          </div>
+            <div
+              className={`grid ${DASHBOARD_CHART_HEIGHT_CLASS} grid-cols-1 gap-3 md:grid-cols-2`}
+            >
+              <FunnelBars title="Onboarding" data={data.leadFunnel} tone="indigo" compact />
+              <FunnelBars title="AR" data={data.arFunnel} tone="emerald" compact />
+            </div>
           )}
         </PanelCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+      <div className={`${dashboardRowClass} xl:grid-cols-2`}>
         <PanelCard
-          title="Post-integration SMS engagement"
-          subtitle="Two-way SMS volume, replies and response rate. Requires Aircall SMS sync."
+          fill
+          title="SMS engagement"
+          subtitle="Filtered by day when a day filter is active."
         >
           {data.smsTrend.length === 0 ? (
-            <DashboardEmptyState message="No SMS activity for this period." />
+            <DashboardEmptyState message="No SMS activity for this period." compact />
           ) : (
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={data.smsTrend}
-                margin={{ left: -16, right: 8 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="week" tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" tickLine={false} axisLine={false} />
+            <DashboardChart size="sm">
+              <ComposedChart data={data.smsTrend} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="week" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
+                <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={28} />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
                   tickLine={false}
                   axisLine={false}
                   unit="%"
+                  tick={chartAxisTickStyle}
+                  width={32}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
+                <Legend wrapperStyle={chartLegendStyle} />
                 <Bar
                   yAxisId="left"
                   dataKey="sent"
                   name="Sent"
                   fill={toneClasses.sky.chart}
-                  radius={[6, 6, 0, 0]}
+                  radius={[4, 4, 0, 0]}
                 />
                 <Bar
                   yAxisId="left"
                   dataKey="replies"
                   name="Replies"
                   fill={toneClasses.amber.chart}
-                  radius={[6, 6, 0, 0]}
+                  radius={[4, 4, 0, 0]}
                 />
                 <Line
                   yAxisId="right"
@@ -147,139 +169,172 @@ export function MarketingDashboard() {
                   dataKey="rate"
                   name="Reply rate"
                   stroke={toneClasses.emerald.chart}
-                  strokeWidth={3}
+                  strokeWidth={2}
+                  dot={false}
                 />
               </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+            </DashboardChart>
           )}
         </PanelCard>
 
         <PanelCard
-          title="Mandatory disposition mix"
-          subtitle="Exact structured outcomes from the upgrade proposal and call enum."
+          fill
+          title="Disposition mix"
+          subtitle="Click a slice or row to filter by disposition."
+          bodyClassName="flex min-h-0 flex-col"
         >
           {data.dispositionBreakdown.length === 0 ? (
-            <DashboardEmptyState message="No disposition breakdown for this period." />
+            <DashboardEmptyState message="No disposition breakdown." compact />
           ) : (
-          <div className="grid gap-4 lg:grid-cols-[240px_1fr] lg:items-center">
-            <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.dispositionBreakdown}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={62}
-                    outerRadius={92}
-                    paddingAngle={2}
+            <div className={`grid min-h-0 flex-1 gap-2 lg:grid-cols-[140px_1fr] ${DASHBOARD_CHART_HEIGHT_SM_CLASS}`}>
+              <div className="h-full min-h-[140px]">
+                <DashboardChart size="sm">
+                  <PieChart>
+                    <Pie
+                      data={data.dispositionBreakdown}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={40}
+                      outerRadius={62}
+                      paddingAngle={2}
+                      cursor="pointer"
+                      onClick={(slice) => {
+                        const row = slice as { name?: string };
+                        if (row.name) toggleFilter("disposition", row.name);
+                      }}
+                    >
+                      {data.dispositionBreakdown.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={entry.color}
+                          fillOpacity={crossFilterBarOpacity(
+                            isFilterActive("disposition", entry.name),
+                            dispositionFilterActive,
+                          )}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </DashboardChart>
+              </div>
+              <div className="grid min-h-0 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+                {data.dispositionBreakdown.map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => toggleFilter("disposition", item.name)}
+                    className={cn(
+                      "flex items-center justify-between gap-2 py-1.5 text-left",
+                      dashboardListItemClass,
+                      crossFilterRowClass(
+                        isFilterActive("disposition", item.name),
+                      ),
+                    )}
                   >
-                    {data.dispositionBreakdown.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
+                    <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-foreground">
+                      <span
+                        className="size-2 shrink-0 rounded-sm"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate">{item.name}</span>
+                    </span>
+                    <span className="shrink-0 text-[11px] font-semibold tabular-nums">
+                      {item.value}
+                      {dispositionTotal > 0
+                        ? ` (${Math.round((item.value / dispositionTotal) * 100)}%)`
+                        : ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {data.dispositionBreakdown.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex min-h-10 items-center justify-between gap-3 rounded-[8px] border border-slate-200 p-2 dark:border-slate-800"
-                >
-                  <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                    <span
-                      className="size-3 shrink-0 rounded-[4px]"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="truncate">{item.name}</span>
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-foreground">
-                    {item.value}
-                    {dispositionTotal > 0
-                      ? ` (${Math.round((item.value / dispositionTotal) * 100)}%)`
-                      : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
           )}
         </PanelCard>
       </div>
 
-      <PanelCard
-        title="Campaign volume by line"
-        subtitle="Live campaign breakdown from the performance report."
-      >
-        {data.marketingUseCases.length === 0 ? (
-          <DashboardEmptyState message="No campaigns with activity in this period." />
-        ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400">
-                <th className="py-3 pr-4 font-medium">Campaign</th>
-                <th className="py-3 pr-4 font-medium">Measure</th>
-                <th className="py-3 pr-4 font-medium">Primary source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.marketingUseCases.map((row) => (
-                <tr
-                  key={row.campaign}
-                  className="border-b border-slate-100 last:border-b-0 dark:border-slate-900"
-                >
-                  <td className="py-3 pr-4 font-semibold text-slate-950 dark:text-slate-50">
-                    {row.campaign}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
-                    {row.measures}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">
-                    {row.source}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        )}
-      </PanelCard>
+      <div className={`${dashboardRowClass} xl:grid-cols-2`}>
+        <PanelCard title="Campaign volume by line" subtitle="Click a row to filter by campaign.">
+          {data.marketingUseCases.length === 0 ? (
+            <DashboardEmptyState message="No campaigns with activity." compact />
+          ) : (
+            <div className="max-h-[200px] overflow-auto">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-white dark:bg-slate-950">
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <th className={dashboardTableHeadClass}>Campaign</th>
+                    <th className={dashboardTableHeadClass}>Measure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.marketingUseCases.map((row) => (
+                    <tr
+                      key={row.campaign}
+                      className={cn(
+                        "border-b border-slate-50 last:border-b-0 dark:border-slate-800/80",
+                        crossFilterRowClass(
+                          isFilterActive("campaign", row.campaign),
+                        ),
+                      )}
+                      onClick={() => toggleFilter("campaign", row.campaign)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleFilter("campaign", row.campaign);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                    >
+                      <td className={dashboardTableCellStrongClass}>{row.campaign}</td>
+                      <td className={dashboardTableCellClass}>{row.measures}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </PanelCard>
 
-      <PanelCard
-        title="Yard volume and outcomes"
-        subtitle="Location reporting for marketing allocation and operational load."
-      >
-        {data.yardVolume.length === 0 ? (
-          <DashboardEmptyState message="No yard volume data for this period." />
-        ) : (
-        <div className="h-[320px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.yardVolume} margin={{ left: -16, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="yard" tickLine={false} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
-              <Bar
-                dataKey="calls"
-                name="Calls"
-                fill={toneClasses.indigo.chart}
-                radius={[6, 6, 0, 0]}
-              />
-              <Bar
-                dataKey="outcomes"
-                name="Positive outcomes"
-                fill={toneClasses.emerald.chart}
-                radius={[6, 6, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        )}
-      </PanelCard>
+        <PanelCard title="Yard volume and outcomes" subtitle="Click a yard bar to filter.">
+          {data.yardVolume.length === 0 ? (
+            <DashboardEmptyState message="No yard volume data." compact />
+          ) : (
+            <DashboardChart size="sm">
+              <BarChart data={data.yardVolume} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="yard" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
+                <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={28} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={chartLegendStyle} />
+                <Bar
+                  dataKey="calls"
+                  name="Calls"
+                  fill={toneClasses.indigo.chart}
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(bar) => {
+                    const row = bar as { yard?: string };
+                    if (row.yard) toggleFilter("yard", row.yard);
+                  }}
+                >
+                  {data.yardVolume.map((entry) => (
+                    <Cell
+                      key={`${entry.yard}-calls`}
+                      fill={toneClasses.indigo.chart}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive("yard", entry.yard),
+                        yardFilterActive,
+                      )}
+                    />
+                  ))}
+                </Bar>
+                <Bar dataKey="outcomes" name="Outcomes" fill={toneClasses.emerald.chart} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </DashboardChart>
+          )}
+        </PanelCard>
+      </div>
     </div>
   );
 }

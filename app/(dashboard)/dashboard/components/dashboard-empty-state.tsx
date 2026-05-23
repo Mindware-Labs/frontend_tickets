@@ -1,5 +1,7 @@
 import { BarChart3 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 export function DashboardEmptyState({
   message = "No data for this period yet.",
   compact = false,
@@ -11,16 +13,18 @@ export function DashboardEmptyState({
     <div
       className={
         compact
-          ? "flex items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center"
-          : "flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center"
+          ? "flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-4 text-center dark:border-slate-700 dark:bg-slate-900/40"
+          : "flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900/40"
       }
     >
       <BarChart3
-        className="mb-2 h-8 w-8 text-muted-foreground/60"
+        className={compact ? "mb-1 h-6 w-6 text-[#008f68]/50" : "mb-2 h-8 w-8 text-[#008f68]/50"}
         aria-hidden
       />
-      <p className="text-sm font-medium text-foreground">{message}</p>
-      <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+      <p className={compact ? "text-xs font-medium text-foreground" : "text-sm font-medium text-foreground"}>
+        {message}
+      </p>
+      <p className={cn("mt-1 max-w-sm text-muted-foreground", compact ? "text-[10px]" : "text-xs")}>
         Metrics load from live APIs when calls, tickets, SMS, or wallboard data
         exist for the selected period.
       </p>

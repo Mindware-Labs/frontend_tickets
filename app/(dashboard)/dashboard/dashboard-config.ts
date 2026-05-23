@@ -40,15 +40,12 @@ export const marketingMetricTemplates: Omit<Metric, "value" | "detail" | "trend"
 export const scorecardTemplates: Pick<ScorecardItem, "metric" | "cadence" | "target">[] = [
   { metric: "Call response time", cadence: "Daily", target: "< 1m 30s" },
   { metric: "Average handle time by line", cadence: "Weekly", target: "< 6m" },
-  { metric: "Agent utilization rate", cadence: "Weekly", target: "80-88%" },
+  {
+    metric: "Agent utilization rate",
+    cadence: "Weekly",
+    target: "80-88% of team active in period",
+  },
   { metric: "Callback promise kept rate", cadence: "Weekly", target: "90%+" },
-  { metric: "Ticket response time", cadence: "Daily", target: "< 20m" },
+  { metric: "Open ticket backlog", cadence: "Daily", target: "≤ 20 open" },
   { metric: "Resolution rate by line", cadence: "Monthly", target: "86%" },
 ];
-
-export const EMPTY_LIVE_WALLBOARD = [
-  { label: "Active calls", detail: "No live data", tone: "emerald" as const },
-  { label: "Queued callbacks", detail: "No live data", tone: "amber" as const },
-  { label: "Agents available", detail: "No live data", tone: "sky" as const },
-  { label: "Missed (period)", detail: "No live data", tone: "rose" as const },
-] as const;

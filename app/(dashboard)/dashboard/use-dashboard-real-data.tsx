@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import {
-  EMPTY_LIVE_WALLBOARD,
   executiveMetricTemplates,
   marketingMetricTemplates,
   operationsMetricTemplates,
@@ -19,6 +18,13 @@ import {
 } from "./dashboard-config";
 import { createEmptyDashboardData } from "./dashboard-empty";
 import type { DashboardDataSet } from "./dashboard-types";
+import {
+  buildPerformanceFilterQuery,
+  emptyDashboardFilters,
+  hasActiveDashboardFilters,
+  type DashboardFilterKey,
+  type DashboardFilters,
+} from "./dashboard-filters";
 import { toneClasses } from "./dashboard-theme";
 import type { Metric, ScorecardItem, Tone } from "./types";
 
@@ -108,6 +114,17 @@ type PerformanceReport = {
     closedTickets?: number;
     resolutionRate?: number;
   }[];
+  peakHourHeatmap?: { day: string; hours: Record<string, number> }[];
+  linePerformance?: {
+    line?: string;
+    total?: number;
+    active?: number;
+    missed?: number;
+    avgWaitSeconds?: number;
+  }[];
+  yardVolume?: { yard: string; calls: number; outcomes: number }[];
+  ticketsByDay?: { day: string; count: number }[];
+  ticketRisk?: DashboardDataSet["ticketRisk"];
 };
 
 type WallboardReport = {
@@ -178,8 +195,16 @@ type DashboardSources = {
 type DashboardDataContextValue = {
   data: DashboardDataSet;
   isLoading: boolean;
+  isFilterLoading: boolean;
   error: string | null;
   generatedAt: string | null;
+  filters: DashboardFilters;
+  setFilter: (key: DashboardFilterKey, value: string | null) => void;
+  toggleFilter: (key: DashboardFilterKey, value: string) => void;
+  toggleHeatmapSlot: (day: string, hourKey: string) => void;
+  clearFilters: () => void;
+  isFilterActive: (key: DashboardFilterKey, value: string) => boolean;
+  isHeatmapSlotActive: (day: string, hourKey: string) => boolean;
   refresh: () => Promise<void>;
 };
 
@@ -244,6 +269,112 @@ function percent(numerator: number, denominator: number) {
   return Math.round((numerator / denominator) * 100);
 }
 
+const SCORECARD_CALL_RESPONSE_TARGET_SEC = 90;
+const SCORECARD_AHT_TARGET_SEC = 360;
+const SCORECARD_TICKET_BACKLOG_TARGET = 20;
+const SCORECARD_RESOLUTION_TARGET_PCT = 86;
+const SCORECARD_CALLBACK_TARGET_PCT = 90;
+const SCORECARD_UTILIZATION_MIN_PCT = 80;
+const SCORECARD_UTILIZATION_MAX_PCT = 88;
+
+/** Lower actual is better. Bar = % of time budget used; score = health vs target. */
+function scoreLowerIsBetter(
+  actual: number,
+  target: number,
+): { score: number; progress: number } {
+  if (!target || target <= 0) return { score: 0, progress: 0 };
+  if (!actual || actual <= 0) return { score: 100, progress: 0 };
+
+  const progress = Math.min(100, Math.round((actual / target) * 100));
+  const score =
+    actual <= target
+      ? 100
+      : Math.max(0, 100 - Math.round(((actual - target) / target) * 100));
+
+  return { score, progress };
+}
+
+/** Higher actual is better (vs a minimum target). */
+function scoreAtLeast(
+  actual: number,
+  target: number,
+): { score: number; progress: number } {
+  if (!target || target <= 0) return { score: 0, progress: 0 };
+  const progress = Math.min(100, Math.round((actual / target) * 100));
+  const score = actual >= target ? 100 : progress;
+  return { score, progress };
+}
+
+/** Lower count is better (open backlog). */
+function scoreAtMost(
+  actual: number,
+  target: number,
+): { score: number; progress: number } {
+  if (!target || target <= 0) return { score: 0, progress: 0 };
+  if (!actual || actual <= 0) return { score: 100, progress: 0 };
+
+  const progress = Math.min(100, Math.round((actual / target) * 100));
+  const score =
+    actual <= target
+      ? 100
+      : Math.max(0, 100 - Math.round(((actual - target) / target) * 100));
+
+  return { score, progress };
+}
+
+/** Value should fall inside [min, max] (e.g. utilization band). */
+function scoreInRange(
+  actual: number,
+  min: number,
+  max: number,
+): { score: number; progress: number } {
+  if (!actual || actual <= 0) return { score: 0, progress: 0 };
+  if (actual >= min && actual <= max) {
+    const bandPosition = (actual - min) / Math.max(max - min, 1);
+    return {
+      score: 100,
+      progress: 60 + Math.round(bandPosition * 40),
+    };
+  }
+  if (actual < min) {
+    const progress = Math.round((actual / min) * 60);
+    return { score: progress, progress };
+  }
+  const progress = Math.min(100, Math.round((actual / max) * 100));
+  const score = Math.max(0, 100 - Math.round(((actual - max) / max) * 100));
+  return { score, progress };
+}
+
+function buildCallbackKeptRate(performance?: PerformanceReport | null): {
+  actual: string;
+  score: number;
+  progress: number;
+} {
+  const dispositions = (performance?.dispositionBreakdown || []).map(
+    breakdownValue,
+  );
+  const promised = dispositions
+    .filter((item) => /callback required|callback scheduled/i.test(item.name))
+    .reduce((sum, item) => sum + item.value, 0);
+
+  if (!promised) {
+    return { actual: "No callbacks in period", score: 0, progress: 0 };
+  }
+
+  const overdue = Math.min(
+    promised,
+    numberValue(performance?.summary?.overdueTickets),
+  );
+  const kept = Math.max(0, promised - overdue);
+  const rate = percent(kept, promised);
+  const scored = scoreAtLeast(rate, SCORECARD_CALLBACK_TARGET_PCT);
+
+  return {
+    actual: `${rate}% (${formatNumber(kept)}/${formatNumber(promised)} kept)`,
+    ...scored,
+  };
+}
+
 function labelFromDate(value?: string) {
   if (!value) return "";
   const date = new Date(value);
@@ -295,6 +426,26 @@ function breakdownValue(item: {
   };
 }
 
+/** Exclude empty / placeholder buckets from campaign-line tables and charts. */
+function isUnspecifiedLabel(name?: string | null): boolean {
+  const normalized = (name || "").trim().toLowerCase();
+  return (
+    !normalized ||
+    normalized === "unspecified" ||
+    normalized === "unassigned" ||
+    normalized === "unknown" ||
+    normalized === "n/a"
+  );
+}
+
+function filterNamedCampaigns<T extends { name: string; value: number }>(
+  items: T[],
+): T[] {
+  return items.filter(
+    (item) => item.value > 0 && !isUnspecifiedLabel(item.name),
+  );
+}
+
 function buildMetric(
   template: Omit<Metric, "value" | "detail" | "trend">,
   updates: Partial<Omit<Metric, "icon" | "tone">> & { tone?: Tone },
@@ -313,10 +464,12 @@ function buildScorecard(
   template: Pick<ScorecardItem, "metric" | "cadence" | "target">,
   updates: Partial<ScorecardItem>,
 ): ScorecardItem {
+  const score = updates.score ?? 0;
   return {
     ...template,
     actual: updates.actual ?? "—",
-    score: updates.score ?? 0,
+    score,
+    progress: updates.progress ?? score,
     ...updates,
   };
 }
@@ -468,7 +621,10 @@ function buildOperationsTrend({
   performance,
 }: DashboardSources): DashboardDataSet["operationsTrend"] {
   const ticketByDay = new Map(
-    (stats?.charts?.callsByDay || []).map((item) => [item.day, item.calls]),
+    (performance?.ticketsByDay || stats?.charts?.callsByDay || []).map((item) => [
+      item.day,
+      "count" in item ? item.count : item.calls,
+    ]),
   );
   const trend = (performance?.callsByDay || []).map((item) => {
     const day = item.day || labelFromDate(item.date) || "Day";
@@ -503,46 +659,62 @@ function buildAgentActivity(
   return rows;
 }
 
-function buildLiveWallboard(
-  wallboard?: WallboardReport | null,
-): DashboardDataSet["liveWallboard"] {
-  const live = wallboard?.live;
-  const agents = wallboard?.agents;
+function buildOperationsCallInsights(
+  performance?: PerformanceReport | null,
+  operationsTrend: DashboardDataSet["operationsTrend"] = [],
+): DashboardDataSet["operationsInsights"] {
+  const summary = performance?.summary;
+  const totalCalls = numberValue(summary?.totalCalls);
+  const answered = numberValue(summary?.totalAnsweredCalls);
+  const missed = numberValue(summary?.totalMissedCalls);
+  const voicemail = numberValue(summary?.totalVoicemailCalls);
+  const inbound = numberValue(summary?.totalInboundCalls);
+  const outbound = numberValue(summary?.totalOutboundCalls);
+
+  const contactRate = percent(answered, totalCalls);
+  const missedRate = percent(missed, totalCalls);
+
+  const peakMissedDay = operationsTrend.reduce(
+    (best, row) => (row.missed > best.missed ? row : best),
+    { day: "—", missed: 0, inbound: 0, outbound: 0, tickets: 0 },
+  );
+
+  const periodLabel = performance?.period?.label || "selected period";
 
   return [
     {
-      label: EMPTY_LIVE_WALLBOARD[0].label,
-      value: formatNumber(numberValue(live?.activeCalls)),
-      detail: live
-        ? `${formatNumber(numberValue(live.ringingCalls))} ringing now`
-        : EMPTY_LIVE_WALLBOARD[0].detail,
-      tone: "emerald",
+      label: "Contact rate",
+      value: totalCalls ? `${contactRate}%` : "—",
+      detail: `${formatNumber(answered)} answered of ${formatNumber(totalCalls)} calls`,
+      tone: contactRate >= 80 ? "emerald" : contactRate >= 60 ? "amber" : "rose",
     },
     {
-      label: EMPTY_LIVE_WALLBOARD[1].label,
-      value: formatNumber(numberValue(live?.queuedCalls)),
-      detail: live
-        ? `Longest wait ${formatSeconds(live.longestCurrentWaitSeconds)}`
-        : EMPTY_LIVE_WALLBOARD[1].detail,
-      tone: "amber",
+      label: "Missed call rate",
+      value: totalCalls ? `${missedRate}%` : "—",
+      detail: `${formatNumber(missed)} missed · ${periodLabel}`,
+      tone: missedRate <= 10 ? "emerald" : missedRate <= 20 ? "amber" : "rose",
     },
     {
-      label: EMPTY_LIVE_WALLBOARD[2].label,
-      value: formatNumber(numberValue(agents?.available)),
-      detail: agents
-        ? `${formatNumber(numberValue(agents.totalTracked))} tracked agents`
-        : EMPTY_LIVE_WALLBOARD[2].detail,
-      tone: "sky",
+      label: "Peak missed window",
+      value: peakMissedDay.missed > 0 ? peakMissedDay.day : "—",
+      detail:
+        peakMissedDay.missed > 0
+          ? `${formatNumber(peakMissedDay.missed)} missed that day`
+          : "No missed-call spikes in daily trend",
+      tone: peakMissedDay.missed > 0 ? "amber" : "sky",
     },
     {
-      label: EMPTY_LIVE_WALLBOARD[3].label,
-      value: formatNumber(numberValue(live?.missedCalls)),
-      detail: live
-        ? `${formatNumber(numberValue(live.voicemailCalls))} voicemails`
-        : EMPTY_LIVE_WALLBOARD[3].detail,
-      tone: "rose",
+      label: "Voicemail volume",
+      value: formatNumber(voicemail),
+      detail: `${formatNumber(inbound)} inbound · ${formatNumber(outbound)} outbound`,
+      tone: voicemail > 0 ? "rose" : "emerald",
     },
   ];
+}
+
+function isOpaqueAircallLineKey(line: string): boolean {
+  const trimmed = line.trim();
+  return /^\d{5,}$/.test(trimmed);
 }
 
 function buildLinePerformance({
@@ -552,14 +724,38 @@ function buildLinePerformance({
   const avgDuration = numberValue(
     performance?.summary?.avgCallDurationSec ?? performance?.kpis?.avgDurationSeconds,
   );
+
+  if (performance?.linePerformance?.length) {
+    return performance.linePerformance
+      .filter((line) => {
+        const label = (line.line || "").trim();
+        return label && !isOpaqueAircallLineKey(label);
+      })
+      .map((line) => {
+        const total = numberValue(line.total);
+        const missed = numberValue(line.missed);
+        return {
+          line: line.line || "Unassigned",
+          calls: formatNumber(total),
+          response: formatSeconds(line.avgWaitSeconds),
+          contact: `${percent(total - missed, total)}%`,
+          aht: avgDuration ? formatSeconds(avgDuration) : "n/a",
+          missed: `${percent(missed, total)}%`,
+        };
+      });
+  }
+
   const rows = (wallboard?.linePerformance || [])
+    .filter((line) => {
+      const label = (line.line || "").trim();
+      return label && !isOpaqueAircallLineKey(label);
+    })
     .slice(0, 8)
     .map((line) => {
       const total = numberValue(line.total);
       const missed = numberValue(line.missed);
       return {
         line: line.line || "Unassigned",
-        source: "Aircall webhook line",
         calls: formatNumber(total),
         response: formatSeconds(line.avgWaitSeconds),
         contact: `${percent(total - missed, total)}%`,
@@ -596,6 +792,7 @@ function buildScorecards({
   const avgDuration = numberValue(summary?.avgCallDurationSec);
   const available = numberValue(wallboard?.agents?.available);
   const tracked = numberValue(wallboard?.agents?.totalTracked);
+  const activeInPeriod = numberValue(summary?.activeAgents);
   const resolutionRate = numberValue(
     summary?.overallResolutionRate ?? stats?.kpis?.resolutionRate,
   );
@@ -603,37 +800,76 @@ function buildScorecards({
     numberValue(summary?.openTickets) +
     numberValue(summary?.pendingTickets) +
     numberValue(summary?.overdueTickets);
-  const closedTickets = numberValue(summary?.closedTickets);
   const totalTickets = numberValue(summary?.totalTickets);
+  const totalAnswered = numberValue(summary?.totalAnsweredCalls);
+
+  const callResponseScored =
+    totalAnswered > 0 || avgWait > 0
+      ? scoreLowerIsBetter(avgWait, SCORECARD_CALL_RESPONSE_TARGET_SEC)
+      : { score: 0, progress: 0 };
+
+  const ahtScored =
+    totalAnswered > 0 || avgDuration > 0
+      ? scoreLowerIsBetter(avgDuration, SCORECARD_AHT_TARGET_SEC)
+      : { score: 0, progress: 0 };
+
+  const utilizationPct = tracked
+    ? percent(activeInPeriod, tracked)
+    : activeInPeriod > 0
+      ? 100
+      : 0;
+  const utilizationScored = tracked
+    ? scoreInRange(
+        utilizationPct,
+        SCORECARD_UTILIZATION_MIN_PCT,
+        SCORECARD_UTILIZATION_MAX_PCT,
+      )
+    : { score: 0, progress: 0 };
+
+  const callbackScored = buildCallbackKeptRate(performance);
+  const backlogScored = scoreAtMost(openTickets, SCORECARD_TICKET_BACKLOG_TARGET);
+  const resolutionScored = totalTickets
+    ? scoreAtLeast(resolutionRate, SCORECARD_RESOLUTION_TARGET_PCT)
+    : { score: 0, progress: 0 };
 
   return [
     buildScorecard(scorecardTemplates[0], {
-      actual: formatSeconds(avgWait),
-      score: avgWait
-        ? Math.max(0, Math.min(100, Math.round((90 / avgWait) * 100)))
-        : 0,
+      actual:
+        totalAnswered > 0 || avgWait > 0
+          ? formatSeconds(avgWait)
+          : "—",
+      score: callResponseScored.score,
+      progress: callResponseScored.progress,
     }),
     buildScorecard(scorecardTemplates[1], {
-      actual: formatSeconds(avgDuration),
-      score: avgDuration
-        ? Math.max(0, Math.min(100, Math.round((360 / avgDuration) * 100)))
-        : 0,
+      actual:
+        totalAnswered > 0 || avgDuration > 0
+          ? formatSeconds(avgDuration)
+          : "—",
+      score: ahtScored.score,
+      progress: ahtScored.progress,
     }),
     buildScorecard(scorecardTemplates[2], {
-      actual: `${percent(available, tracked)}%`,
-      score: percent(available, tracked),
+      actual: tracked
+        ? `${utilizationPct}% (${formatNumber(activeInPeriod)}/${formatNumber(tracked)} active)`
+        : "—",
+      score: utilizationScored.score,
+      progress: utilizationScored.progress,
     }),
     buildScorecard(scorecardTemplates[3], {
-      actual: `${percent(closedTickets, closedTickets + openTickets)}%`,
-      score: percent(closedTickets, closedTickets + openTickets),
+      actual: callbackScored.actual,
+      score: callbackScored.score,
+      progress: callbackScored.progress,
     }),
     buildScorecard(scorecardTemplates[4], {
       actual: `${formatNumber(openTickets)} open`,
-      score: openTickets ? Math.max(30, 100 - Math.min(openTickets, 70)) : 100,
+      score: backlogScored.score,
+      progress: backlogScored.progress,
     }),
     buildScorecard(scorecardTemplates[5], {
-      actual: `${resolutionRate}%`,
-      score: totalTickets ? resolutionRate : 0,
+      actual: totalTickets ? `${resolutionRate}%` : "—",
+      score: resolutionScored.score,
+      progress: resolutionScored.progress,
     }),
   ];
 }
@@ -660,7 +896,14 @@ function buildExecutiveTrend({
   return rows;
 }
 
-function buildTicketRisk(yards?: YardsReport | null): DashboardDataSet["ticketRisk"] {
+function buildTicketRisk({
+  performance,
+  yards,
+}: DashboardSources): DashboardDataSet["ticketRisk"] {
+  if (performance?.ticketRisk?.length) {
+    return performance.ticketRisk;
+  }
+
   const rows = (yards?.data || []).slice(0, 8).map((row) => {
     const total = numberValue(row.totalTickets);
     const open =
@@ -680,10 +923,17 @@ function buildTicketRisk(yards?: YardsReport | null): DashboardDataSet["ticketRi
   return rows;
 }
 
-function buildHeatmap(
-  wallboard?: WallboardReport | null,
-): Pick<DashboardDataSet, "heatmapHours" | "peakHourHeatmap"> {
-  const source = wallboard?.peakHourHeatmap || [];
+function buildHeatmap({
+  performance,
+  wallboard,
+}: DashboardSources): Pick<
+  DashboardDataSet,
+  "heatmapHours" | "heatmapHourKeys" | "peakHourHeatmap"
+> {
+  const source =
+    performance?.peakHourHeatmap?.length
+      ? performance.peakHourHeatmap
+      : wallboard?.peakHourHeatmap || [];
   const hourSet = new Set<string>();
   source.forEach((row) => {
     Object.keys(row.hours || {}).forEach((hour) => hourSet.add(hour));
@@ -693,6 +943,7 @@ function buildHeatmap(
   if (!source.length || !rawHours.length) {
     return {
       heatmapHours: [],
+      heatmapHourKeys: [],
       peakHourHeatmap: [],
     };
   }
@@ -708,6 +959,7 @@ function buildHeatmap(
 
   return {
     heatmapHours,
+    heatmapHourKeys: rawHours,
     peakHourHeatmap: source.map((row) => ({
       day: row.day,
       values: rawHours.map((hour) => numberValue(row.hours?.[hour])),
@@ -717,24 +969,20 @@ function buildHeatmap(
 
 function buildCampaignRates({
   performance,
-  sms,
 }: DashboardSources): DashboardDataSet["campaignRates"] {
-  const campaigns = (performance?.campaignBreakdown || [])
-    .map(breakdownValue)
-    .filter((item) => item.value > 0);
+  const campaigns = filterNamedCampaigns(
+    (performance?.campaignBreakdown || []).map(breakdownValue),
+  );
   const total = campaigns.reduce((sum, item) => sum + item.value, 0);
-  const resolution = numberValue(performance?.summary?.overallResolutionRate);
-  const smsReplyRate = numberValue(sms?.totals?.replyRate);
 
-  const rows = campaigns.slice(0, 8).map((item) => ({
+  return campaigns.slice(0, 8).map((item) => ({
     campaign: item.name,
-    contact: percent(item.value, total),
-    conversion: resolution,
-    sms: smsReplyRate,
+    volume: percent(item.value, total),
+    contact: 0,
+    conversion: 0,
+    sms: 0,
     roi: 0,
   }));
-
-  return rows;
 }
 
 type CampaignOptionStage = { stage: string; value: number; pct: number };
@@ -773,24 +1021,25 @@ function buildCampaignOptionFunnel(
   options: { name: string; value: number }[],
   orderedStages: { pattern: RegExp; label: string }[],
 ): CampaignOptionStage[] {
-  if (!options.length) return [];
+  const namedOptions = filterNamedCampaigns(options);
+  if (!namedOptions.length) return [];
 
-  const base = Math.max(...options.map((o) => o.value), 1);
+  const total = namedOptions.reduce((sum, item) => sum + item.value, 0);
   const consumed = new Set<string>();
   const rows: CampaignOptionStage[] = [];
 
   for (const { pattern, label } of orderedStages) {
-    const match = options.find(
+    const match = namedOptions.find(
       (item) => pattern.test(item.name) && !consumed.has(item.name),
     );
     if (match) consumed.add(match.name);
-    rows.push(funnelStage(label, match?.value ?? 0, base));
+    rows.push(funnelStage(label, match?.value ?? 0, total));
   }
 
-  options
+  namedOptions
     .filter((item) => !consumed.has(item.name) && item.value > 0)
     .forEach((item) => {
-      rows.push(funnelStage(item.name, item.value, base));
+      rows.push(funnelStage(item.name, item.value, total));
     });
 
   return rows;
@@ -809,8 +1058,9 @@ function isArCampaignOption(name: string): boolean {
 function buildFunnels(
   performance?: PerformanceReport | null,
 ): Pick<DashboardDataSet, "leadFunnel" | "arFunnel"> {
-  const campaignOptions =
-    performance?.callCampaignOptionBreakdown?.map(breakdownValue) || [];
+  const campaignOptions = filterNamedCampaigns(
+    performance?.callCampaignOptionBreakdown?.map(breakdownValue) || [],
+  );
 
   const onboardingOptions = campaignOptions.filter((item) =>
     isOnboardingCampaignOption(item.name),
@@ -845,7 +1095,7 @@ function buildDispositionBreakdown(
 ): DashboardDataSet["dispositionBreakdown"] {
   const rows = (performance?.dispositionBreakdown || [])
     .map(breakdownValue)
-    .filter((item) => item.value > 0)
+    .filter((item) => item.value > 0 && !isUnspecifiedLabel(item.name))
     .map((item, index) => ({
       name: item.name,
       value: item.value,
@@ -855,7 +1105,14 @@ function buildDispositionBreakdown(
   return rows;
 }
 
-function buildYardVolume(yards?: YardsReport | null): DashboardDataSet["yardVolume"] {
+function buildYardVolume({
+  performance,
+  yards,
+}: DashboardSources): DashboardDataSet["yardVolume"] {
+  if (performance?.yardVolume?.length) {
+    return performance.yardVolume.slice(0, 8);
+  }
+
   const rows = (yards?.data || []).slice(0, 8).map((row) => ({
     yard: row.yard?.commonName || row.yard?.name || "Unassigned",
     calls: numberValue(row.totalTickets),
@@ -879,33 +1136,117 @@ function buildLeadershipCadence(
 function buildMarketingUseCases(
   performance?: PerformanceReport | null,
 ): DashboardDataSet["marketingUseCases"] {
-  return (performance?.campaignBreakdown || [])
-    .map(breakdownValue)
-    .filter((item) => item.value > 0)
-    .map((item) => ({
-      campaign: item.name,
-      measures: `${formatNumber(item.value)} calls/tickets in period`,
-      source: "reports/performance · campaignBreakdown",
-    }));
+  return filterNamedCampaigns(
+    (performance?.campaignBreakdown || []).map(breakdownValue),
+  ).map((item) => ({
+    campaign: item.name,
+    measures: `${formatNumber(item.value)} calls in period`,
+    source: "reports/performance · campaignBreakdown",
+  }));
+}
+
+function matchesRecordDayHour(
+  createdAt: string | undefined,
+  filters: DashboardFilters,
+): boolean {
+  if (!createdAt) return !filters.day && !filters.hour;
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return false;
+  const day = date.toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: "America/Santo_Domingo",
+  });
+  const hour = date
+    .toLocaleTimeString("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "America/Santo_Domingo",
+    })
+    .padStart(2, "0");
+  if (filters.day && day !== filters.day) return false;
+  if (filters.hour && hour !== filters.hour) return false;
+  return true;
+}
+
+function applyClientDashboardFilters(
+  sources: DashboardSources,
+  filters: DashboardFilters,
+): DashboardSources {
+  let next = sources;
+
+  if (filters.campaign && next.stats?.recentTickets?.length) {
+    next = {
+      ...next,
+      stats: {
+        ...next.stats!,
+        recentTickets: next.stats!.recentTickets!.filter(
+          (ticket) => ticket.campaign === filters.campaign,
+        ),
+      },
+    };
+  }
+
+  if (filters.yard && next.yards?.data?.length) {
+    const yard = filters.yard;
+    next = {
+      ...next,
+      yards: {
+        data: next.yards!.data!.filter(
+          (row) => row.yard?.commonName === yard || row.yard?.name === yard,
+        ),
+      },
+    };
+  }
+
+  if (next.stats?.recentTickets?.length && (filters.day || filters.hour)) {
+    next = {
+      ...next,
+      stats: {
+        ...next.stats!,
+        recentTickets: next.stats!.recentTickets!.filter((ticket) =>
+          matchesRecordDayHour(ticket.createdAt, filters),
+        ),
+      },
+    };
+  }
+
+  if (filters.day && next.sms?.byDay?.length) {
+    next = {
+      ...next,
+      sms: {
+        ...next.sms!,
+        byDay: next.sms!.byDay!.filter(
+          (row) =>
+            labelFromDate(row.day) === filters.day || row.day === filters.day,
+        ),
+      },
+    };
+  }
+
+  return next;
 }
 
 function buildDashboardData(sources: DashboardSources): DashboardDataSet {
-  const heatmap = buildHeatmap(sources.wallboard);
+  const heatmap = buildHeatmap(sources);
   const funnels = buildFunnels(sources.performance);
   const executiveCallKpis = buildScorecards(sources);
+  const operationsTrend = buildOperationsTrend(sources);
 
   return {
     operationsMetrics: buildOperationsMetrics(sources),
     executiveMetrics: buildExecutiveMetrics(sources),
     marketingMetrics: buildMarketingMetrics(sources),
-    operationsTrend: buildOperationsTrend(sources),
+    operationsTrend,
+    operationsInsights: buildOperationsCallInsights(
+      sources.performance,
+      operationsTrend,
+    ),
     agentActivity: buildAgentActivity(sources.performance),
-    liveWallboard: buildLiveWallboard(sources.wallboard),
     linePerformance: buildLinePerformance(sources),
     followUpQueue: buildFollowUpQueue(sources.stats),
     executiveCallKpis,
     ticketVsCallTrend: buildExecutiveTrend(sources),
-    ticketRisk: buildTicketRisk(sources.yards),
+    ticketRisk: buildTicketRisk(sources),
     heatmapHours: heatmap.heatmapHours,
     peakHourHeatmap: heatmap.peakHourHeatmap,
     leadershipCadence: buildLeadershipCadence(executiveCallKpis),
@@ -914,20 +1255,27 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
     arFunnel: funnels.arFunnel,
     smsTrend: buildSmsTrend(sources.sms),
     dispositionBreakdown: buildDispositionBreakdown(sources.performance),
-    yardVolume: buildYardVolume(sources.yards),
+    yardVolume: buildYardVolume(sources),
     marketingUseCases: buildMarketingUseCases(sources.performance),
+    heatmapHourKeys: heatmap.heatmapHourKeys,
   };
 }
 
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<DashboardDataSet>(createEmptyDashboardData);
+  const [baseSources, setBaseSources] = useState<DashboardSources>({});
+  const [filteredPerformance, setFilteredPerformance] =
+    useState<PerformanceReport | null>(null);
+  const [filters, setFilters] = useState<DashboardFilters>(emptyDashboardFilters);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setFilters(emptyDashboardFilters());
+    setFilteredPerformance(null);
 
     const [
       statsResult,
@@ -958,7 +1306,6 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       sms: settledValue(smsResult),
       yards: settledValue(yardsResult),
     };
-    const nextData = buildDashboardData(sources);
     const errors = [
       statsResult,
       performanceResult,
@@ -969,7 +1316,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       .map(settledError)
       .filter((message): message is string => !!message);
 
-    setData(nextData);
+    setBaseSources(sources);
     setGeneratedAt(
       sources.wallboard?.generatedAt ||
         sources.stats?.generatedAt ||
@@ -983,15 +1330,111 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!baseSources.performance) return;
+
+    if (!hasActiveDashboardFilters(filters)) {
+      setFilteredPerformance(null);
+      setIsFilterLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsFilterLoading(true);
+
+    const query = buildPerformanceFilterQuery(filters, PERIOD);
+    fetchDashboardEndpoint<PerformanceReport>(`/api/reports/performance?${query}`)
+      .then((performance) => {
+        if (!cancelled) setFilteredPerformance(performance);
+      })
+      .catch(() => {
+        if (!cancelled) setFilteredPerformance(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsFilterLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filters, baseSources.performance]);
+
+  const mergedSources = useMemo(() => {
+    const sources: DashboardSources = {
+      ...baseSources,
+      performance: filteredPerformance ?? baseSources.performance,
+    };
+    return applyClientDashboardFilters(sources, filters);
+  }, [baseSources, filteredPerformance, filters]);
+
+  const data = useMemo(() => buildDashboardData(mergedSources), [mergedSources]);
+
+  const setFilter = useCallback((key: DashboardFilterKey, value: string | null) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const toggleFilter = useCallback((key: DashboardFilterKey, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: prev[key] === value ? null : value,
+    }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters(emptyDashboardFilters());
+  }, []);
+
+  const toggleHeatmapSlot = useCallback((day: string, hourKey: string) => {
+    setFilters((prev) => {
+      if (prev.day === day && prev.hour === hourKey) {
+        return { ...prev, day: null, hour: null };
+      }
+      return { ...prev, day, hour: hourKey };
+    });
+  }, []);
+
+  const isFilterActive = useCallback(
+    (key: DashboardFilterKey, value: string) => filters[key] === value,
+    [filters],
+  );
+
+  const isHeatmapSlotActive = useCallback(
+    (day: string, hourKey: string) =>
+      filters.day === day && filters.hour === hourKey,
+    [filters],
+  );
+
   const value = useMemo(
     () => ({
       data,
       isLoading,
+      isFilterLoading,
       error,
       generatedAt,
+      filters,
+      setFilter,
+      toggleFilter,
+      toggleHeatmapSlot,
+      clearFilters,
+      isFilterActive,
+      isHeatmapSlotActive,
       refresh,
     }),
-    [data, error, generatedAt, isLoading, refresh],
+    [
+      clearFilters,
+      data,
+      error,
+      filters,
+      generatedAt,
+      isFilterActive,
+      isHeatmapSlotActive,
+      isFilterLoading,
+      isLoading,
+      refresh,
+      setFilter,
+      toggleFilter,
+      toggleHeatmapSlot,
+    ],
   );
 
   return (

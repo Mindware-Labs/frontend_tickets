@@ -1,7 +1,7 @@
 import type { Tone } from "./types";
 import type { Metric, ScorecardItem } from "./types";
 
-export type LiveWallboardItem = {
+export type OperationsInsightItem = {
   label: string;
   value: string;
   detail: string;
@@ -38,10 +38,9 @@ export type DashboardDataSet = {
     talk: number;
     resolution: number;
   }[];
-  liveWallboard: LiveWallboardItem[];
+  operationsInsights: OperationsInsightItem[];
   linePerformance: {
     line: string;
-    source: string;
     calls: string;
     response: string;
     contact: string;
@@ -73,10 +72,14 @@ export type DashboardDataSet = {
     rate: string;
   }[];
   heatmapHours: string[];
+  /** Raw hour keys (00–23) aligned with heatmapHours display labels. */
+  heatmapHourKeys: string[];
   peakHourHeatmap: { day: string; values: number[] }[];
   leadershipCadence: LeadershipCadenceRow[];
   campaignRates: {
     campaign: string;
+    /** Share of named-campaign call volume in the period (0–100). */
+    volume: number;
     contact: number;
     conversion: number;
     sms: number;

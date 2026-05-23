@@ -16,8 +16,8 @@ export const toneClasses: Record<
     iconWrap: "bg-emerald-50 dark:bg-emerald-950/40",
     border: "border-emerald-200 dark:border-emerald-900",
     text: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-600",
-    chart: "#059669",
+    bg: "bg-[#008f68]",
+    chart: "#008f68",
   },
   sky: {
     icon: "text-sky-700 dark:text-sky-300",
@@ -63,8 +63,52 @@ export const toneClasses: Record<
 
 export const tooltipStyle = {
   background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
+  border: "1px solid #e2e8f0",
   borderRadius: 8,
-  color: "hsl(var(--foreground))",
-  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
+  color: "#334155",
+  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+  fontSize: 12,
+  padding: "8px 10px",
 };
+
+export const chartGridStroke = "#e2e8f0";
+export const chartAxisTickStyle = { fontSize: 10, fill: "#94a3b8" } as const;
+export const chartLegendStyle = { fontSize: 11, color: "#64748b" } as const;
+
+/** Matches entity-form scroll body — soft canvas behind dashboard panels. */
+export const dashboardCanvasClass =
+  "rounded-xl bg-[#f4f5f7] p-2 dark:bg-slate-900/50";
+
+export const dashboardPanelClass =
+  "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950";
+
+export const dashboardPanelHeaderClass =
+  "flex shrink-0 items-start justify-between gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-slate-800";
+
+export const dashboardPanelBodyClass = "min-h-0 flex-1 px-3.5 py-3";
+
+export const dashboardChartSurfaceClass =
+  "rounded-xl border border-slate-100 bg-slate-50/60 p-1.5 dark:border-slate-800/80 dark:bg-slate-900/40";
+
+export const dashboardSectionLabelClass =
+  "text-[10px] font-semibold uppercase tracking-widest text-slate-400";
+
+export const dashboardMetricTileClass =
+  "min-w-0 rounded-xl border px-3 py-3 transition-colors";
+
+/** Fixed chart height so paired panels align without empty space below KPI grids. */
+export const DASHBOARD_CHART_HEIGHT = 220;
+export const DASHBOARD_CHART_HEIGHT_CLASS = "h-[220px]";
+export const DASHBOARD_CHART_HEIGHT_SM = 200;
+export const DASHBOARD_CHART_HEIGHT_SM_CLASS = "h-[200px]";
+
+export const dashboardShellClass = "flex flex-col gap-2";
+export const dashboardRowClass = "grid gap-2 xl:items-stretch";
+export const dashboardTableHeadClass =
+  "py-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400";
+export const dashboardTableCellClass =
+  "py-2 pr-3 text-xs text-slate-600 dark:text-slate-300";
+export const dashboardTableCellStrongClass =
+  "py-2 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-100";
+export const dashboardListItemClass =
+  "rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950";

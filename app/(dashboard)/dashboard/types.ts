@@ -16,5 +16,8 @@ export type ScorecardItem = {
   cadence: string;
   actual: string;
   target: string;
+  /** Health 0–100 (drives bar color). */
   score: number;
+  /** Bar fill 0–100; when omitted, uses `score`. */
+  progress?: number;
 };
