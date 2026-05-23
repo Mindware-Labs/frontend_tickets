@@ -12,7 +12,10 @@ export function CenterQuestMark({
 }) {
   return (
     <span
-      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center dark:hidden",
+        className,
+      )}
       style={{ width: size, height: size }}
     >
       <Image

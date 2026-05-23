@@ -1,20 +1,23 @@
 "use client";
 
-import { LogOut, ChevronDown, CircleUser, Sun, Moon } from "lucide-react";
+import { ChevronDown, CircleUser, LogOut } from "lucide-react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
+  topbarAccentBarClass,
+  topbarAccentLineClass,
+  topbarActionsGroupClass,
+  topbarDropdownClass,
+  topbarIconBtnClass,
+  topbarSectionLabelClass,
+  topbarShellClass,
+  topbarTitleClass,
+  topbarUserBtnClass,
+  topbarWrapClass,
+} from "@/components/layout/sidebar-theme";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,10 +28,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
 
 const NotificationBell = dynamic(
   () => import("./notification-bell").then((m) => m.NotificationBell),
@@ -44,7 +53,7 @@ function resolvePageMeta(pathname: string): PageMeta {
   const path = pathname.toLowerCase();
 
   if (path.startsWith("/calls"))
-    return { section: "Communications", title: "Calls" };
+    return { section: "Communications", title: "Contact Center" };
 
   if (path.startsWith("/aircall"))
     return { section: "Communications", title: "Aircall" };
@@ -56,10 +65,10 @@ function resolvePageMeta(pathname: string): PageMeta {
     return { section: "Operations", title: "Campaigns" };
 
   if (path.startsWith("/reports/performance"))
-    return { section: "Operations", title: "Performance" };
+    return { section: "Reports", title: "Performance" };
 
   if (path.startsWith("/reports/agents"))
-    return { section: "Operations", title: "Agents" };
+    return { section: "Reports", title: "Agents" };
 
   if (path.startsWith("/reports/campaigns"))
     return { section: "Operations", title: "Campaign Reports" };
@@ -69,6 +78,12 @@ function resolvePageMeta(pathname: string): PageMeta {
 
   if (path.startsWith("/reports/landlords"))
     return { section: "Management", title: "Landlord Reports" };
+
+  if (path.startsWith("/audit/sms"))
+    return { section: "SMS", title: "SMS Audit" };
+
+  if (path.startsWith("/audit/notifications"))
+    return { section: "Notifications", title: "Notifications Audit" };
 
   if (path.startsWith("/yards"))
     return { section: "Management", title: "Yards" };
@@ -106,12 +121,6 @@ function getUserInitials(name: string) {
     .slice(0, 2);
 }
 
-const iconButtonClass = cn(
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 active:scale-95",
-  "text-slate-500 hover:bg-slate-100 hover:text-slate-800",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 focus-visible:ring-offset-1",
-);
-
 export default function Topbar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
@@ -125,13 +134,6 @@ export default function Topbar() {
     name: "User",
     email: "",
   });
-
-  const [mounted, setMounted] = useState(false);
-
-  const { theme, setTheme, resolvedTheme } = useTheme();
-
-  const currentTheme = resolvedTheme || theme;
-  const isDark = currentTheme === "dark";
 
   const refreshUser = () => {
     const storedUser = auth.getUser();
@@ -149,10 +151,6 @@ export default function Topbar() {
   };
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
     refreshUser();
 
     const handleProfileUpdate = () => refreshUser();
@@ -167,11 +165,7 @@ export default function Topbar() {
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      window.removeEventListener(
-        "user-profile-updated",
-        handleProfileUpdate,
-      );
-
+      window.removeEventListener("user-profile-updated", handleProfileUpdate);
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
@@ -183,252 +177,128 @@ export default function Topbar() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-
       const { auth: authModule } = await import("@/lib/auth");
-
       authModule.logout();
     } catch (error) {
       console.error("Logout failed:", error);
-
       setIsLoggingOut(false);
       setShowLogoutDialog(false);
-
       window.location.href = "/login";
     }
   };
 
   const userInitials = getUserInitials(currentUser.name);
-
   const avatarHue = (currentUser.name?.charCodeAt(0) ?? 200) % 360;
 
   return (
     <>
-      <header
-        className={cn(
-          "relative sticky top-0 z-40 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl transition-colors duration-200 sm:px-4 lg:px-5",
+      <header className={topbarWrapClass}>
+        <div className={topbarShellClass}>
+          <span className={topbarAccentLineClass} aria-hidden />
 
-          "before:absolute before:inset-x-0 before:bottom-0 before:h-px",
-          "before:bg-gradient-to-r before:from-transparent before:via-slate-200 before:to-transparent",
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            {isMobile ? (
+              <SidebarTrigger className={topbarIconBtnClass} />
+            ) : null}
 
-          isDark
-            ? "border-gray-800/90 bg-gradient-to-b from-gray-950/95 to-gray-900/90"
-            : "border-slate-200/90 bg-gradient-to-b from-white/95 to-slate-50/90",
-        )}
-      >
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          {isMobile && (
-            <SidebarTrigger
-              className={cn(
-                iconButtonClass,
-                isDark && "hover:bg-gray-800 hover:text-gray-200",
-              )}
-            />
-          )}
-
-          <div className="flex min-w-0 items-center gap-3">
-            <span
-              className="hidden h-8 w-1 shrink-0 rounded-full bg-[#008f68] sm:block"
-              aria-hidden
-            />
+            <span className={cn(topbarAccentBarClass, isMobile ? "hidden sm:block" : "block")} aria-hidden />
 
             <div className="min-w-0">
-              {pageMeta.section && (
-                <p
-                  className={cn(
-                    "truncate text-[9px] font-semibold uppercase leading-none tracking-[0.18em]",
-                    isDark ? "text-gray-500" : "text-slate-400",
-                  )}
-                >
+              {pageMeta.section ? (
+                <p className={cn(topbarSectionLabelClass, "leading-none")}>
                   {pageMeta.section}
                 </p>
-              )}
-
-              <h1
-                className={cn(
-                  "truncate text-[16px] font-bold leading-none tracking-[-0.02em]",
-                  isDark ? "text-gray-100" : "text-slate-900",
-                )}
-              >
-                {pageMeta.title}
-              </h1>
+              ) : null}
+              <h1 className={topbarTitleClass}>{pageMeta.title}</h1>
             </div>
           </div>
-        </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <div
-            className={cn(
-              iconButtonClass,
-              isDark && "hover:bg-gray-800 hover:text-gray-200",
-            )}
-          >
+          <div className={topbarActionsGroupClass}>
             <NotificationBell />
-          </div>
 
-
-        
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  "flex max-w-[210px] items-center gap-2 rounded-full border py-1 pl-1 pr-2.5 shadow-sm transition-all duration-200",
-
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/30 focus-visible:ring-offset-1",
-
-                  isDark
-                    ? "border-gray-700 bg-gray-900/90 hover:border-gray-600 hover:bg-gray-800"
-                    : "border-slate-200 bg-white/90 hover:border-slate-300 hover:bg-white",
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm",
-                    "ring-1 ring-black/5",
-                    isDark && "ring-white/10",
-                  )}
-                  style={{
-                    background: `hsl(${avatarHue} 48% 42%)`,
-                  }}
-                >
-                  {userInitials}
-                </div>
-
-                <span
-                  className={cn(
-                    "hidden max-w-[120px] truncate text-[12px] font-semibold sm:block",
-                    isDark ? "text-gray-200" : "text-slate-700",
-                  )}
-                >
-                  {currentUser.name}
-                </span>
-
-                <ChevronDown
-                  className={cn(
-                    "h-3.5 w-3.5 shrink-0",
-                    isDark ? "text-gray-500" : "text-slate-400",
-                  )}
-                />
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              className={cn(
-                "w-64 rounded-2xl border p-1.5 shadow-2xl backdrop-blur-xl",
-
-                isDark
-                  ? "border-gray-800 bg-gray-950/95"
-                  : "border-slate-200/70 bg-white/95",
-              )}
-            >
-              <div
-                className={cn(
-                  "rounded-xl px-3 py-3",
-                  isDark ? "bg-gray-900" : "bg-slate-50",
-                )}
-              >
-                <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className={topbarUserBtnClass}>
                   <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold text-white"
-                    style={{
-                      background: `hsl(${avatarHue} 48% 42%)`,
-                    }}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white ring-1 ring-black/5 dark:ring-white/10"
+                    style={{ background: `hsl(${avatarHue} 48% 42%)` }}
                   >
                     {userInitials}
                   </div>
+                  <span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-slate-700 sm:block dark:text-slate-200">
+                    {currentUser.name}
+                  </span>
+                  <ChevronDown className="size-3.5 shrink-0 text-slate-400" />
+                </button>
+              </DropdownMenuTrigger>
 
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "truncate text-[13px] font-semibold",
-                        isDark ? "text-gray-100" : "text-slate-900",
-                      )}
+              <DropdownMenuContent align="end" className={topbarDropdownClass}>
+                <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
+                      style={{ background: `hsl(${avatarHue} 48% 42%)` }}
                     >
-                      {currentUser.name}
-                    </p>
-
-                    <p
-                      className={cn(
-                        "truncate text-[11px]",
-                        isDark ? "text-gray-400" : "text-slate-500",
-                      )}
-                    >
-                      {currentUser.email || "—"}
-                    </p>
+                      {userInitials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+                        {currentUser.name}
+                      </p>
+                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                        {currentUser.email || "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
 
-              <DropdownMenuItem
-                asChild
-                className="cursor-pointer rounded-xl px-2.5 py-2 text-[13px]"
-              >
-                <Link href="/profile" className="flex items-center gap-2">
-                  <CircleUser className="h-4 w-4 text-slate-500" />
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer rounded-lg px-2.5 py-2 text-[13px] focus:bg-[#f0faf5] focus:text-[#008f68] dark:focus:bg-emerald-500/10 dark:focus:text-emerald-400"
+                >
+                  <Link href="/profile" className="flex items-center gap-2">
+                    <CircleUser className="size-4 text-slate-500" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
 
-              <DropdownMenuItem
-                className="cursor-pointer rounded-xl px-2.5 py-2 text-[13px] text-red-600 focus:bg-red-50 focus:text-red-700"
-                onClick={() => setShowLogoutDialog(true)}
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  className="cursor-pointer rounded-lg px-2.5 py-2 text-[13px] text-rose-600 focus:bg-rose-50 focus:text-rose-700 dark:focus:bg-rose-950/40 dark:focus:text-rose-400"
+                  onClick={() => setShowLogoutDialog(true)}
+                >
+                  <LogOut className="size-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
-      <AlertDialog
-        open={showLogoutDialog}
-        onOpenChange={setShowLogoutDialog}
-      >
-        <AlertDialogContent
-          className={cn(
-            "rounded-2xl border sm:max-w-md",
-            isDark
-              ? "border-gray-800 bg-gray-950"
-              : "border-slate-200 bg-white",
-          )}
-        >
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className="rounded-2xl border-slate-200/80 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
           <AlertDialogHeader>
-            <AlertDialogTitle
-              className={cn(
-                "text-[15px] font-semibold",
-                isDark ? "text-gray-100" : "text-slate-900",
-              )}
-            >
+            <AlertDialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
               Sign out
             </AlertDialogTitle>
-
-            <AlertDialogDescription
-              className={cn(
-                "text-[13px]",
-                isDark ? "text-gray-400" : "text-slate-500",
-              )}
-            >
+            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-slate-400">
               Are you sure you want to sign out of your account?
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="gap-2 border-t border-slate-100 pt-4 sm:gap-2">
+          <AlertDialogFooter className="gap-2 border-t border-slate-100 pt-4 sm:gap-2 dark:border-slate-800">
             <AlertDialogCancel
               disabled={isLoggingOut}
-              className="rounded-xl border-slate-200"
+              className="rounded-lg border-slate-200 dark:border-slate-700"
             >
               Cancel
             </AlertDialogCancel>
-
             <AlertDialogAction
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="rounded-xl bg-red-600 hover:bg-red-700"
+              className="rounded-lg bg-rose-600 hover:bg-rose-700"
             >
               {isLoggingOut ? "Signing out..." : "Sign out"}
             </AlertDialogAction>

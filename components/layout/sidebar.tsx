@@ -3,11 +3,14 @@
 import * as React from "react";
 import {
   BarChart3,
+  Bell,
   Building2,
   ChevronDown,
   CircleUser,
+  Headset,
   LayoutDashboard,
   Megaphone,
+  MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
@@ -63,7 +66,7 @@ const sections: NavSection[] = [
   {
     title: "Communications",
     items: [
-      { title: "Calls", url: "/calls", icon: PhoneCall },
+      { title: "Contact Center", url: "/calls", icon: Headset },
       { title: "Aircall", url: "/aircall", icon: Radio },
     ],
   },
@@ -80,15 +83,18 @@ const sections: NavSection[] = [
           { title: "Reports", url: "/reports/campaigns", icon: BarChart3 },
         ],
       },
+    ],
+  },
+  {
+    title: "Reports",
+    items: [
       {
-        title: "Reports",
+        title: "Performance",
+        url: "/reports/performance",
         icon: BarChart3,
         adminOnly: true,
-        children: [
-          { title: "Performance", url: "/reports/performance", icon: BarChart3 },
-          { title: "Agents", url: "/reports/agents", icon: Users },
-        ],
       },
+      { title: "Agents", url: "/reports/agents", icon: Users, adminOnly: true },
     ],
   },
   {
@@ -112,6 +118,16 @@ const sections: NavSection[] = [
           { title: "Reports", url: "/reports/landlords", icon: BarChart3 },
         ],
       },
+    ],
+  },
+  {
+    title: "SMS",
+    items: [{ title: "SMS Audit", url: "/audit/sms", icon: MessageSquare }],
+  },
+  {
+    title: "Notifications",
+    items: [
+      { title: "Notifications Audit", url: "/audit/notifications", icon: Bell },
     ],
   },
   {
@@ -352,6 +368,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25"
             >
               <CenterQuestMark size={26} />
+              <span
+                className="hidden size-7 shrink-0 items-center justify-center rounded-lg bg-[#008f68] text-[11px] font-bold text-white dark:inline-flex"
+                aria-hidden
+              >
+                CQ
+              </span>
               <span className="truncate text-[14px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 Center Quest
               </span>
@@ -365,6 +387,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               title="Center Quest"
             >
               <CenterQuestMark size={24} />
+              <span className="hidden size-7 items-center justify-center rounded-lg bg-[#008f68] text-[10px] font-bold text-white dark:inline-flex">
+                CQ
+              </span>
             </Link>
           )}
 

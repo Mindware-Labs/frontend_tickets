@@ -23,6 +23,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { topbarIconBtnClass } from "@/components/layout/sidebar-theme";
+import { cn } from "@/lib/utils";
 
 const typeConfig: Record<
   NotificationItem["type"],
@@ -84,7 +86,7 @@ export function NotificationBell() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          className={cn(topbarIconBtnClass, "relative")}
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
