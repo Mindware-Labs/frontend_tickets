@@ -1029,21 +1029,21 @@ export function YardSheet({
             </div>
 
             <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
-              <div className="flex justify-center">
-                <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-2">
+              <div className="flex justify-center overflow-x-auto">
+                <div className="flex flex-nowrap items-center gap-2">
                   <DialButton
                     phone={data.contactInfo}
                     yardId={data.id}
                     dial={dial}
                     canDial={canDial}
-                    className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                    className="w-30 shrink-0"
                   />
                   <SheetAction
                     icon={ActivitiesIcon}
                     label="Activities"
                     href={`/calls?yardId=${data.id}`}
                     onClick={() => onOpenChange(false)}
-                    className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                    className="w-30 shrink-0"
                   />
                   {!isAgent ? (
                     <SheetAction
@@ -1051,7 +1051,7 @@ export function YardSheet({
                       label="Report"
                       href={`/reports/yards?yardId=${data.id}`}
                       onClick={() => onOpenChange(false)}
-                      className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                      className="w-30 shrink-0"
                     />
                   ) : null}
                   {onEdit ? (
@@ -1062,7 +1062,7 @@ export function YardSheet({
                         onOpenChange(false);
                         onEdit(data);
                       }}
-                      className="w-[8.75rem] shrink-0 sm:w-[8.75rem]"
+                      className="w-30 shrink-0"
                     />
                   ) : null}
                 </div>

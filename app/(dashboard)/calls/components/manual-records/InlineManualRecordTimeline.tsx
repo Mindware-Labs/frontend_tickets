@@ -187,12 +187,12 @@ export function InlineManualRecordTimeline({
                   key={record.id}
                   className={cn(
                     "relative min-w-0 pl-8",
-                    isLatest && "rounded-md bg-slate-50/80 px-2 py-1",
+                    isLatest && "rounded-md bg-slate-50/80 py-1",
                   )}
                 >
                   <span
                     className={cn(
-                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 bg-white",
+                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border-2",
                       sm.ring,
                     )}
                   >

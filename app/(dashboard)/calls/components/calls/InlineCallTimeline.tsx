@@ -222,7 +222,10 @@ export function InlineCallTimeline({
                     />
                   </span>
 
-                  <div className="min-w-0 space-y-0.5">
+                  <div className={cn(
+                    "min-w-0 space-y-0.5",
+                    isLatest && "ml-6"
+                  )}>
                     <p className="text-[10.5px] text-slate-500 tabular-nums whitespace-nowrap">
                       {dateLabel}
                     </p>

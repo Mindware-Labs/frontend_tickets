@@ -85,13 +85,13 @@ export function YardsTable({
                 <TableHead className="w-[14%] max-w-[160px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Common Name
                 </TableHead>
-                <TableHead className="w-[22%] max-w-[240px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[120px] max-w-[240px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Address
                 </TableHead>
-                <TableHead className="min-w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Contact
                 </TableHead>
-                <TableHead className="w-[110px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Type
                 </TableHead>
                 <TableHead className="w-[100px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
@@ -165,9 +165,9 @@ export function YardsTable({
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span
                           className="min-w-0 flex-1 truncate text-[13px] text-slate-600"
-                          title={yard.propertyAddress}
+                          title={yard.propertyAddress.slice(0, 13).concat("...")}
                         >
-                          {yard.propertyAddress}
+                          {yard.propertyAddress.slice(0, 13).concat("...")}
                         </span>
                       </div>
                     </TableCell>

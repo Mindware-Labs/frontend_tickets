@@ -662,31 +662,31 @@ export function ManualRecordsTab() {
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   ID
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Records
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Disposition
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
                 </TableHead>
               </TableRow>
@@ -773,7 +773,6 @@ export function ManualRecordsTab() {
                                     disabled={!canDial}
                                     aria-label="Call customer"
                                   >
-                                    <PhoneOutgoing className="h-2.5 w-2.5" />
                                   </button>
                                 </div>
                               )}

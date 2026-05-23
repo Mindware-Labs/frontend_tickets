@@ -408,7 +408,7 @@ export function GroupedCallsTable({
                   Status
                 </TableHead>
                 <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Dir.
+                  Direction
                 </TableHead>
                 <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent

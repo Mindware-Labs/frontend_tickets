@@ -625,41 +625,39 @@ export function TicketsTab({
       {/* View Tabs */}
       <div className="flex items-end border-b border-border">
         <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex px-0.5">
-        {TICKET_STATUS_VIEW_TABS.map((tab) => {
-          const isActive = ticketFilters.activeView === tab.key;
-          const count = viewCounts?.[tab.countKey] ?? 0;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                ticketFilters.handleViewChange(tab.key);
-                ticketFilters.setFilter("status", "all");
-              }}
-              className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors -mb-px ${
-                isActive
-                  ? "border-[#008f68] text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
-                  isActive
-                    ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
-                    : "bg-muted/40 text-muted-foreground font-medium border-border"
-                }`}
-              >
-                {count}
-              </span>
-              {tab.isOverdue && count > 0 && (
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5" />
-              )}
-            </button>
-          );
-        })}
-        </div>
+          <div className="flex px-0.5">
+            {TICKET_STATUS_VIEW_TABS.map((tab) => {
+              const isActive = ticketFilters.activeView === tab.key;
+              const count = viewCounts?.[tab.countKey] ?? 0;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    ticketFilters.handleViewChange(tab.key);
+                    ticketFilters.setFilter("status", "all");
+                  }}
+                  className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors -mb-px ${isActive
+                      ? "border-[#008f68] text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${isActive
+                        ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                        : "bg-muted/40 text-muted-foreground font-medium border-border"
+                      }`}
+                  >
+                    {count}
+                  </span>
+                  {tab.isOverdue && count > 0 && (
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <button
           type="button"
@@ -777,37 +775,37 @@ export function TicketsTab({
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   ID
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Tickets
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Priority
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Type
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Disposition
                 </TableHead>
-                <TableHead className="h-auto px-2 py-1 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
                 </TableHead>
               </TableRow>
@@ -847,15 +845,10 @@ export function TicketsTab({
                         )}
                         onClick={() => openView(t)}
                       >
-                        <TableCell className="px-2 py-1 align-middle">
-                          <span className="text-[11px] font-mono font-semibold text-slate-500 tabular-nums">
+                        <TableCell className="px-2 py-1 align-top ">
+                          <span className="text-[10px] font-bold text-slate-700 tabular-nums">
                             #{t.id}
                           </span>
-                          {t.callId && (
-                            <div className="mt-1">
-                              <SourceCallViaCallBadge call={t.call ?? null} />
-                            </div>
-                          )}
                         </TableCell>
                         <TableCell className="px-2 py-1 align-middle">
                           <div className="flex min-w-0 items-center gap-1.5">
@@ -896,14 +889,13 @@ export function TicketsTab({
                                       e.stopPropagation();
                                       dial(
                                         group.customerPhone ||
-                                          t.customer!.phone!,
+                                        t.customer!.phone!,
                                         t.callId ?? t.id,
                                       );
                                     }}
                                     disabled={!canDial}
                                     aria-label="Call customer"
                                   >
-                                    <PhoneOutgoing className="h-2.5 w-2.5" />
                                   </button>
                                 </div>
                               )}
