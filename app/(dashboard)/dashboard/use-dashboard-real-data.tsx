@@ -1110,17 +1110,17 @@ function buildYardVolume({
   performance,
   yards,
 }: DashboardSources): DashboardDataSet["yardVolume"] {
-  if (performance?.yardVolume?.length) {
-    return performance.yardVolume.slice(0, 8);
-  }
+  const rows = (
+    performance?.yardVolume?.length
+      ? performance.yardVolume
+      : (yards?.data || []).map((row) => ({
+          yard: row.yard?.commonName || row.yard?.name || "Unassigned",
+          calls: numberValue(row.totalTickets),
+          outcomes: numberValue(row.closedTickets),
+        }))
+  ).filter((row) => row.calls > 0 && !isUnspecifiedLabel(row.yard));
 
-  const rows = (yards?.data || []).slice(0, 8).map((row) => ({
-    yard: row.yard?.commonName || row.yard?.name || "Unassigned",
-    calls: numberValue(row.totalTickets),
-    outcomes: numberValue(row.closedTickets),
-  }));
-
-  return rows;
+  return rows.slice(0, 8);
 }
 
 function buildExecutiveLiveSnapshot({
