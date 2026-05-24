@@ -58,22 +58,23 @@ export function PanelCard({
           {Icon ? (
             <div
               className={cn(
-                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800",
-                centered && "h-7 w-7",
+                "flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
+                centered && "size-7",
               )}
             >
               <Icon
                 className={cn(
-                  "h-3 w-3 text-slate-600 dark:text-slate-300",
-                  centered && "h-3.5 w-3.5",
+                  "size-3",
+                  centered && "size-3.5",
                 )}
+                aria-hidden
               />
             </div>
           ) : null}
           <div className={cn("min-w-0 flex-1", centered && "flex-1-none")}>
             <h3
               className={cn(
-                "text-[12px] font-bold leading-tight text-slate-700 dark:text-slate-200",
+                "text-[12px] font-bold leading-tight text-slate-800 dark:text-slate-100",
                 centered && "text-sm",
               )}
             >

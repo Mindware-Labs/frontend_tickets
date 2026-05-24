@@ -393,36 +393,54 @@ export function UnifiedRecordsList({
   onViewDetail,
 }: UnifiedRecordsListProps) {
   return (
-    <Table>
-      <TableHeader className="sticky top-0 z-10 bg-background">
-        <TableRow>
-          <TableHead className="min-w-[170px]">Record</TableHead>
-          <TableHead className="min-w-[180px]">Customer</TableHead>
-          <TableHead className="min-w-[160px]">Relation</TableHead>
-          <TableHead className="min-w-[130px]">Status</TableHead>
-          <TableHead className="min-w-[150px]">Outcome</TableHead>
-          <TableHead className="min-w-[140px]">Owner</TableHead>
-          <TableHead className="min-w-[150px]">Date</TableHead>
-          <TableHead className="w-[120px]">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {records.map((record) =>
-          record.recordType === "call" ? (
-            <CallGroupRows
-              key={record.id}
-              record={record}
-              onViewDetail={onViewDetail}
-            />
-          ) : (
-            <StandaloneRecordRow
-              key={record.id}
-              record={record}
-              onViewDetail={onViewDetail}
-            />
-          ),
-        )}
-      </TableBody>
-    </Table>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+      <Table>
+        <TableHeader className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="min-w-[170px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Record
+            </TableHead>
+            <TableHead className="min-w-[180px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Customer
+            </TableHead>
+            <TableHead className="min-w-[160px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Relation
+            </TableHead>
+            <TableHead className="min-w-[130px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Status
+            </TableHead>
+            <TableHead className="min-w-[150px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Outcome
+            </TableHead>
+            <TableHead className="min-w-[140px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Owner
+            </TableHead>
+            <TableHead className="min-w-[150px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Date
+            </TableHead>
+            <TableHead className="w-[120px] py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {records.map((record) =>
+            record.recordType === "call" ? (
+              <CallGroupRows
+                key={record.id}
+                record={record}
+                onViewDetail={onViewDetail}
+              />
+            ) : (
+              <StandaloneRecordRow
+                key={record.id}
+                record={record}
+                onViewDetail={onViewDetail}
+              />
+            ),
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

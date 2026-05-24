@@ -17,6 +17,7 @@ import {
   yardDashboardTabListClass,
   yardDashboardToolbarClass,
 } from "./yard-dashboard-chrome";
+import { YardFilterTrigger } from "./yard-filter-bar";
 import type { Yard } from "./types";
 
 type ReportHeaderProps = {
@@ -31,6 +32,7 @@ type ReportHeaderProps = {
   onViewAllTickets: () => void;
   onExportPDF: () => void;
   onExportExcel: () => void;
+  showCrossFilters?: boolean;
 };
 
 export function ReportHeader({
@@ -45,6 +47,7 @@ export function ReportHeader({
   onViewAllTickets,
   onExportPDF,
   onExportExcel,
+  showCrossFilters = false,
 }: ReportHeaderProps) {
   const hasDateRange = Boolean(startDate && endDate);
   const hasYardDetail = Boolean(selectedYard);
@@ -53,7 +56,7 @@ export function ReportHeader({
   return (
     <header className="shrink-0">
       <div className={yardDashboardToolbarClass}>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 md:gap-4">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:gap-3">
           <div
             className={yardDashboardTabListClass}
             role="tablist"
@@ -108,18 +111,20 @@ export function ReportHeader({
               value={`${startDate} → ${endDate}`}
             />
           ) : null}
+
         </div>
 
-        <div className="flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-2 md:w-auto md:border-t-0 md:pt-0 md:justify-end">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between md:w-auto md:border-t-0 md:pt-0 md:justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80">
+            {showCrossFilters ? <YardFilterTrigger /> : null}
             <button
               type="button"
               onClick={onOpenFilters}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm transition-colors",
+                "flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm transition-colors",
                 filtersConfigured || hasDateRange
                   ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
-                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+                  : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
               )}
             >
               <Filter className="size-3.5" aria-hidden />
@@ -130,7 +135,7 @@ export function ReportHeader({
               <button
                 type="button"
                 onClick={onViewAllTickets}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
               >
                 <ClipboardList className="size-3.5" aria-hidden />
                 <span>Records</span>
@@ -142,7 +147,7 @@ export function ReportHeader({
                 <button
                   type="button"
                   onClick={onExportPDF}
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
                 >
                   <Download className="size-3.5" aria-hidden />
                   <span>PDF</span>
@@ -150,7 +155,7 @@ export function ReportHeader({
                 <button
                   type="button"
                   onClick={onExportExcel}
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
                 >
                   <FileSpreadsheet className="size-3.5" aria-hidden />
                   <span>Excel</span>
@@ -164,7 +169,7 @@ export function ReportHeader({
             aria-hidden
           />
 
-          <div className="flex shrink-0 items-center gap-3 text-slate-400">
+          <div className="flex shrink-0 items-center gap-2 text-slate-400">
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-semibold",

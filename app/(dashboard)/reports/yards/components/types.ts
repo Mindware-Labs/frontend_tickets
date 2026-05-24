@@ -163,6 +163,8 @@ export type YardStats = {
   openTickets: number;
   inProgressTickets: number;
   closedTickets: number;
+  closedCalls?: number;
+  closedManualRecords?: number;
   resolutionRate?: number;
   todayTickets: number;
   lastActivity?: string | null;

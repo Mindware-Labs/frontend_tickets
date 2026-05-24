@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Tooltip,
   XAxis,
@@ -20,6 +21,7 @@ import {
   chartLegendStyle,
   tooltipStyle,
 } from "@/app/(dashboard)/dashboard/dashboard-theme";
+import { crossFilterBarOpacity, useYardDashboardData } from "./yard-cross-filter";
 import type { YardStatsDay } from "./types";
 
 type YardActivityChartProps = {
@@ -43,8 +45,17 @@ export function YardActivityChart({
   primaryColor,
   closedColor,
 }: YardActivityChartProps) {
+  const { toggleFilter, isFilterActive, hasActiveFilters } =
+    useYardDashboardData();
+  const dayFilterActive = hasActiveFilters;
+
   return (
-    <PanelCard fill title={title} subtitle={subtitle} icon={icon}>
+    <PanelCard
+      fill
+      title={title}
+      subtitle={`${subtitle} · Click a day to filter`}
+      icon={icon}
+    >
       {data.length === 0 ? (
         <DashboardEmptyState message="No activity in period." compact />
       ) : (
@@ -79,14 +90,44 @@ export function YardActivityChart({
               fill={primaryColor}
               radius={[3, 3, 0, 0]}
               maxBarSize={28}
-            />
+              cursor="pointer"
+              onClick={(bar) => {
+                const row = bar as YardStatsDay;
+                if (row.date) toggleFilter("day", row.date);
+              }}
+            >
+              {data.map((entry) => (
+                <Cell
+                  key={`${entry.date}-primary`}
+                  fillOpacity={crossFilterBarOpacity(
+                    isFilterActive("day", entry.date),
+                    dayFilterActive,
+                  )}
+                />
+              ))}
+            </Bar>
             <Bar
               dataKey="closed"
               name="Closed"
               fill={closedColor}
               radius={[3, 3, 0, 0]}
               maxBarSize={28}
-            />
+              cursor="pointer"
+              onClick={(bar) => {
+                const row = bar as YardStatsDay;
+                if (row.date) toggleFilter("day", row.date);
+              }}
+            >
+              {data.map((entry) => (
+                <Cell
+                  key={`${entry.date}-closed`}
+                  fillOpacity={crossFilterBarOpacity(
+                    isFilterActive("day", entry.date),
+                    dayFilterActive,
+                  )}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </DashboardChart>
       )}

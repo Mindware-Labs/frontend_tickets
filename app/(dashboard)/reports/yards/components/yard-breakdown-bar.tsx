@@ -9,6 +9,11 @@ import { DashboardEmptyState } from "@/app/(dashboard)/dashboard/components/dash
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import { chartAxisTickStyle, tooltipStyle } from "@/app/(dashboard)/dashboard/dashboard-theme";
 import { DISPOSITION_COLORS } from "./chart-colors";
+import {
+  crossFilterBarOpacity,
+  useYardDashboardData,
+} from "./yard-cross-filter";
+import type { YardDashboardFilterKey } from "./yard-dashboard-filters";
 import { formatMetricLabel } from "./yard-report-ui";
 
 type BreakdownItem = {
@@ -23,6 +28,7 @@ type YardBreakdownBarProps = {
   colorMap?: Record<string, string>;
   icon?: LucideIcon;
   barColor?: string;
+  filterKey: YardDashboardFilterKey;
 };
 
 function resolveColor(
@@ -47,7 +53,11 @@ export function YardBreakdownBar({
   colorMap = {},
   icon,
   barColor,
+  filterKey,
 }: YardBreakdownBarProps) {
+  const { toggleFilter, isFilterActive, hasActiveFilters } =
+    useYardDashboardData();
+
   const segments = useMemo(() => {
     const filtered = data.filter((item) => item.count > 0);
     const total = filtered.reduce((sum, item) => sum + item.count, 0);
@@ -64,12 +74,15 @@ export function YardBreakdownBar({
   }, [data, colorMap, barColor]);
 
   const chartHeight = Math.max(120, segments.length * 28 + 16);
+  const dimensionFilterActive = Boolean(
+    hasActiveFilters && segments.some((s) => isFilterActive(filterKey, formatMetricLabel(s.key))),
+  );
 
   return (
     <PanelCard
       fill
       title={title}
-      subtitle={subtitle}
+      subtitle={`${subtitle} · Click a bar to filter`}
       icon={icon}
       bodyClassName="!py-2"
     >
@@ -99,10 +112,31 @@ export function YardBreakdownBar({
                   return [`${value ?? 0} (${row?.pct ?? 0}%)`, "Count"];
                 }}
               />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={18}>
-                {segments.map((entry) => (
-                  <Cell key={entry.key} fill={entry.fill} />
-                ))}
+              <Bar
+                dataKey="value"
+                radius={[0, 4, 4, 0]}
+                maxBarSize={18}
+                cursor="pointer"
+                onClick={(bar) => {
+                  const row = bar as { key?: string };
+                  if (row.key) {
+                    toggleFilter(filterKey, formatMetricLabel(row.key));
+                  }
+                }}
+              >
+                {segments.map((entry) => {
+                  const filterValue = formatMetricLabel(entry.key);
+                  return (
+                    <Cell
+                      key={entry.key}
+                      fill={entry.fill}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive(filterKey, filterValue),
+                        dimensionFilterActive,
+                      )}
+                    />
+                  );
+                })}
               </Bar>
             </BarChart>
           </DashboardChart>

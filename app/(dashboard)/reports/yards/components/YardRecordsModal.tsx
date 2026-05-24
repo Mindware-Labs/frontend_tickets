@@ -12,7 +12,7 @@ import {
   Ticket,
   X,
 } from "lucide-react";
-import { fetchFromBackend } from "@/lib/api-client";
+
 import { UnifiedRecordsList } from "@/components/records/UnifiedRecordsList";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,11 +25,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { fetchFromBackend } from "@/lib/api-client";
 import {
   YardContextChip,
   YardSegmentedTabs,
   YardStatusBadge,
-  yardDashboardToolbarClass,
 } from "./yard-dashboard-chrome";
 import type { YardRecord, YardRecordType } from "./types";
 
@@ -68,7 +68,6 @@ const recordTabs: Array<{
   countKey: keyof YardRecordCounts;
   icon: typeof Layers;
 }> = [
-  { value: "all", label: "All", countKey: "all", icon: Layers },
   { value: "call", label: "Calls", countKey: "calls", icon: Phone },
   { value: "ticket", label: "Tickets", countKey: "tickets", icon: Ticket },
   {
@@ -87,7 +86,7 @@ export function YardRecordsModal({
   reportStartDate,
   reportEndDate,
 }: YardRecordsModalProps) {
-  const [activeTab, setActiveTab] = useState<RecordTab>("all");
+  const [activeTab, setActiveTab] = useState<RecordTab>("call");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [records, setRecords] = useState<YardRecord[]>([]);
@@ -115,7 +114,7 @@ export function YardRecordsModal({
 
   useEffect(() => {
     if (!open) return;
-    setActiveTab("all");
+    setActiveTab("call");
     setSearch("");
     setDebouncedSearch("");
     setPage(1);
@@ -215,7 +214,7 @@ export function YardRecordsModal({
 
   const periodLabel = useMemo(() => {
     if (!reportStartDate || !reportEndDate) return "All dates";
-    return `${reportStartDate} → ${reportEndDate}`;
+    return `${reportStartDate} -> ${reportEndDate}`;
   }, [reportStartDate, reportEndDate]);
 
   const segmentedTabs = useMemo(
@@ -232,122 +231,118 @@ export function YardRecordsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200/80 p-0 shadow-lg sm:max-w-[min(96vw,1320px)]">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Yard Records — {yardName}</DialogTitle>
-            <DialogDescription>
-              Unified calls, tickets, and manual records for the selected period.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="flex h-[90dvh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[min(96vw,1320px)] dark:border-slate-800 dark:bg-slate-950">
+          <div className="shrink-0 border-b border-slate-200/80 bg-white pr-10 dark:border-slate-800 dark:bg-slate-950">
+            <DialogHeader className="flex flex-row items-start justify-between gap-4 px-4 pb-2.5 pt-3 text-left">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
+                  <ClipboardList className="size-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <DialogTitle className="text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                    Record Directory
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 flex flex-wrap items-center gap-1.5 text-xs leading-5 text-slate-500">
+                    <span>Showing records for</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                      {yardName}
+                    </span>
+                    <span className="rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 font-mono text-[10px] text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                      {periodLabel}
+                    </span>
+                  </DialogDescription>
+                </div>
+              </div>
 
-          <div className="shrink-0 border-b border-slate-100 bg-[#f4f5f7]/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className={yardDashboardToolbarClass}>
-              <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                  <Layers className="size-3.5 text-slate-400" aria-hidden />
+                  {recordTabs.length} Categories
+                </span>
+                <YardStatusBadge
+                  label={
+                    loading ? "Loading" : error ? "Error" : `${total} records`
+                  }
+                  tone={loading ? "loading" : error ? "muted" : "ready"}
+                />
+                {lastLoadedAt ? (
+                  <span className="inline-flex h-8 items-center rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    {lastLoadedAt}
+                  </span>
+                ) : null}
+              </div>
+            </DialogHeader>
+
+            <div className="px-4 pb-3">
+              <div className="relative w-full max-w-[360px]">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
+                  aria-hidden
+                />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search records"
+                  className="h-9 rounded-lg border-slate-200/80 bg-slate-50 pl-9 pr-9 text-xs shadow-sm hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200/80 bg-[#f4f5f7] px-4 py-2 dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex flex-wrap items-center gap-2">
                 <YardSegmentedTabs
                   tabs={segmentedTabs}
                   activeValue={activeTab}
                   onChange={setActiveTab}
                   ariaLabel="Record types"
-                  layout="grid"
-                  className="w-full min-w-0 sm:min-w-[360px]"
+                  className="w-auto min-w-0"
                 />
-
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  <YardContextChip label="Yard" value={yardName} />
-                  <YardContextChip label="Range" value={periodLabel} />
-                  {counts.linkedTickets > 0 ? (
-                    <YardContextChip
-                      label="Linked"
-                      value={`${counts.linkedTickets} tickets`}
-                    />
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex w-full flex-col gap-3 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between md:border-t-0 md:pt-0">
-                <div className="relative w-full sm:max-w-xs">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
-                    aria-hidden
+                {counts.linkedTickets > 0 ? (
+                  <YardContextChip
+                    label="Linked"
+                    value={`${counts.linkedTickets} tickets`}
                   />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search records"
-                    className="h-8 rounded-lg border-slate-200 bg-white pl-9 pr-9 text-xs shadow-sm dark:border-slate-700 dark:bg-slate-950"
-                  />
-                  {search ? (
-                    <button
-                      type="button"
-                      className="absolute right-1 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      aria-label="Clear search"
-                      onClick={() => setSearch("")}
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-
-                <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <div
-                    className="hidden h-4 w-px shrink-0 bg-slate-200 sm:block dark:bg-slate-700"
-                    aria-hidden
-                  />
-
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <YardStatusBadge
-                      label={
-                        loading
-                          ? "Loading"
-                          : error
-                            ? "Error"
-                            : `${total} records`
-                      }
-                      tone={loading ? "loading" : error ? "muted" : "ready"}
-                    />
-                    {lastLoadedAt ? (
-                      <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                        {lastLoadedAt}
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => onOpenChange(false)}
-                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                    >
-                      <ClipboardList className="size-3.5" aria-hidden />
-                      Close
-                    </button>
-                  </div>
-                </div>
+                ) : null}
               </div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 bg-white dark:bg-slate-950">
+          <div className="min-h-0 flex-1 bg-[#f4f5f7] px-3 dark:bg-slate-950">
             <ScrollArea className="h-full">
               {loading ? (
-                <div className="flex h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <div className="flex h-64 items-center justify-center gap-2 text-xs text-slate-500">
                   <Loader2 className="size-4 animate-spin" />
                   Loading records...
                 </div>
               ) : error ? (
                 <div className="flex h-64 flex-col items-center justify-center gap-2 px-6 text-center">
-                  <p className="font-medium text-foreground">
+                  <p className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
                     Records could not be loaded
                   </p>
-                  <p className="max-w-md text-sm text-muted-foreground">
+                  <p className="max-w-md text-xs text-slate-500 dark:text-slate-400">
                     {error}
                   </p>
                 </div>
               ) : records.length === 0 ? (
                 <div className="flex h-64 flex-col items-center justify-center gap-3 px-6 text-center">
-                  <div className="rounded-full bg-muted p-4">
-                    <Inbox className="size-8 text-muted-foreground" />
+                  <div className="rounded-lg bg-[#f0faf5] p-3 text-[#008f68]">
+                    <Inbox className="size-6" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <p className="font-medium text-foreground">No records</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                      No records
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {search
                         ? "No matches for this search."
                         : "No records in this period."}
@@ -355,15 +350,17 @@ export function YardRecordsModal({
                   </div>
                 </div>
               ) : (
-                <UnifiedRecordsList
-                  records={records}
-                  onViewDetail={(body, title) => setDetail({ body, title })}
-                />
+                <div className="py-3">
+                  <UnifiedRecordsList
+                    records={records}
+                    onViewDetail={(body, title) => setDetail({ body, title })}
+                  />
+                </div>
               )}
             </ScrollArea>
           </div>
 
-          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+          <DialogFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-2.5 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-800 dark:text-slate-100">
@@ -385,7 +382,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-lg border-slate-200 text-xs"
+                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm"
                   disabled={loading || page <= 1}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
@@ -395,7 +392,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-lg border-slate-200 text-xs"
+                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm"
                   disabled={loading || page >= Math.max(totalPages, 1)}
                   onClick={() =>
                     setPage((current) =>
@@ -417,27 +414,27 @@ export function YardRecordsModal({
           if (!nextOpen) setDetail(null);
         }}
       >
-        <DialogContent className="max-h-[82vh] overflow-hidden rounded-xl border border-slate-200/80 p-0 sm:max-w-[560px]">
-          <DialogHeader className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <DialogTitle className="text-sm font-bold text-slate-800 dark:text-slate-100">
+        <DialogContent className="max-h-[82vh] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-800">
+            <DialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
               {detail?.title}
             </DialogTitle>
-            <DialogDescription className="text-[11px]">
+            <DialogDescription className="text-xs">
               Record detail
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[58vh]">
-            <div className="p-5">
-              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+            <div className="bg-[#f4f5f7] p-3 dark:bg-slate-950">
+              <p className="whitespace-pre-wrap break-words rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-xs leading-5 text-slate-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
                 {detail?.body}
               </p>
             </div>
           </ScrollArea>
-          <DialogFooter className="border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+          <DialogFooter className="border-t border-slate-200/80 px-4 py-2.5 dark:border-slate-800">
             <Button
               type="button"
               size="sm"
-              className="h-8 rounded-lg text-xs"
+              className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a]"
               onClick={() => setDetail(null)}
             >
               Close

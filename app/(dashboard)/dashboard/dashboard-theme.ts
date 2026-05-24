@@ -80,21 +80,21 @@ export const dashboardCanvasClass =
   "rounded-xl bg-[#f4f5f7] p-2 dark:bg-slate-900/50";
 
 export const dashboardPanelClass =
-  "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950";
+  "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950";
 
 export const dashboardPanelHeaderClass =
-  "flex shrink-0 items-start justify-between gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-slate-800";
+  "flex shrink-0 items-start justify-between gap-2 border-b border-slate-100 px-3.5 py-2 dark:border-slate-800";
 
 export const dashboardPanelBodyClass = "min-h-0 flex-1 px-3 py-2.5";
 
 export const dashboardChartSurfaceClass =
-  "rounded-xl border border-slate-100 bg-slate-50/60 p-1.5 dark:border-slate-800/80 dark:bg-slate-900/40";
+  "rounded-xl border border-slate-200/70 bg-slate-50/50 p-1.5 dark:border-slate-800/80 dark:bg-slate-900/40";
 
 export const dashboardSectionLabelClass =
   "text-[10px] font-semibold uppercase tracking-widest text-slate-400";
 
 export const dashboardMetricTileClass =
-  "min-w-0 rounded-xl border px-2.5 transition-colors";
+  "min-w-0 rounded-xl border px-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors";
 
 /** Fixed chart height so paired panels align without empty space below KPI grids. */
 export const DASHBOARD_CHART_HEIGHT = 220;

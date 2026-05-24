@@ -2,23 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  Building,
-  SlidersHorizontal,
-  AlertCircle,
-} from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { toast } from "@/hooks/use-toast";
 import { useDialogCleanup } from "@/hooks/use-dialog-cleanup";
 import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
 import { YardDashboard } from "./components/YardDashboard";
+import { YardReportSetupEmptyState } from "./components/yard-report-setup-empty-state";
 import { YardRecordsModal } from "./components/YardRecordsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
 import { dashboardCanvasClass } from "@/app/(dashboard)/dashboard/dashboard-theme";
+import {
+  buildYardFilterQuery,
+  emptyYardDashboardFilters,
+  type YardDashboardFilters,
+} from "./components/yard-dashboard-filters";
+import { YardDashboardDataProvider } from "./components/use-yard-dashboard-data";
+import { YardFilterTransition } from "./components/yard-filter-transition";
 import type { Ticket, Yard, YardStats } from "./components/types";
 
 const parseLocalDateStart = (value: string) => {
@@ -142,6 +153,10 @@ export default function YardReportsPage() {
   const [reportLastUpdated, setReportLastUpdated] = useState<string | null>(
     null,
   );
+  const [yardFilters, setYardFilters] = useState<YardDashboardFilters>(
+    emptyYardDashboardFilters,
+  );
+  const [isYardFilterLoading, setIsYardFilterLoading] = useState(false);
 
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return true;
@@ -389,9 +404,14 @@ export default function YardReportsPage() {
   }, [selectedYardQueryKey, selectedYardId, startDate, endDate]);
 
   useEffect(() => {
+    setYardFilters(emptyYardDashboardFilters());
+  }, [selectedYardId]);
+
+  useEffect(() => {
     if (!selectedYardQueryKey) {
       setSelectedYardStats(null);
       setReportLastUpdated(null);
+      setIsYardFilterLoading(false);
       return;
     }
 
@@ -399,12 +419,10 @@ export default function YardReportsPage() {
 
     const fetchSelectedYardStats = async () => {
       try {
-        const params = new URLSearchParams({
-          start: startDate,
-          end: endDate,
-        });
+        setIsYardFilterLoading(true);
+        const query = buildYardFilterQuery(yardFilters, startDate, endDate);
         const response = await fetchFromBackend(
-          `/reports/yards/${selectedYardId}/detail?${params.toString()}`,
+          `/reports/yards/${selectedYardId}/detail?${query}`,
         );
         if (cancelled) return;
 
@@ -440,6 +458,10 @@ export default function YardReportsPage() {
           description: errorMessage,
           variant: "destructive",
         });
+      } finally {
+        if (!cancelled) {
+          setIsYardFilterLoading(false);
+        }
       }
     };
 
@@ -452,6 +474,7 @@ export default function YardReportsPage() {
     selectedYardId,
     startDate,
     endDate,
+    yardFilters,
   ]);
 
   useEffect(() => {
@@ -697,24 +720,33 @@ export default function YardReportsPage() {
     });
   };
 
+  const showYardDetailDashboard = Boolean(
+    selectedYardId && selectedYard && hasDateRange && isDateRangeValid,
+  );
+
   return (
-    <div className="flex min-h-[calc(100dvh-4.25rem)] min-h-0 flex-col px-4 pb-4 pt-2 animate-in fade-in duration-500">
-      <div className="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-2">
-        <ReportHeader
-          selectedYard={selectedYard}
-          startDate={startDate}
-          endDate={endDate}
-          canExport={Boolean(selectedYardStats) && isDateRangeValid}
-          canViewTickets={Boolean(
-            selectedYard && startDate && endDate && isDateRangeValid,
-          )}
-          lastUpdated={reportLastUpdated}
-          onSelectOverview={handleSelectOverview}
-          onOpenFilters={() => setFiltersModalOpen(true)}
-          onViewAllTickets={handleViewAllTickets}
-          onExportPDF={handleExportPDF}
-          onExportExcel={handleExportExcel}
-        />
+    <YardDashboardDataProvider
+      filters={yardFilters}
+      onFiltersChange={setYardFilters}
+    >
+      <div className="flex min-h-[calc(100dvh-4.25rem)] min-h-0 flex-col px-3 pb-4 pt-2 animate-in fade-in duration-500 lg:px-5 lg:pb-8">
+        <div className="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-2">
+          <ReportHeader
+            selectedYard={selectedYard}
+            startDate={startDate}
+            endDate={endDate}
+            canExport={Boolean(selectedYardStats) && isDateRangeValid}
+            canViewTickets={Boolean(
+              selectedYard && startDate && endDate && isDateRangeValid,
+            )}
+            lastUpdated={reportLastUpdated}
+            showCrossFilters={showYardDetailDashboard}
+            onSelectOverview={handleSelectOverview}
+            onOpenFilters={() => setFiltersModalOpen(true)}
+            onViewAllTickets={handleViewAllTickets}
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+          />
 
         <FiltersSheet
           open={filtersModalOpen}
@@ -738,26 +770,9 @@ export default function YardReportsPage() {
         {!selectedYardId || !selectedYard ? (
           <div className="space-y-4">
             {!hasDateRange || !isDateRangeValid ? (
-              <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-gradient-to-br from-muted/30 to-muted/10 p-8 text-center animate-in zoom-in-95 duration-300">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 ring-8 ring-primary/5">
-                  <Building className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">
-                  Configure report to view yards
-                </h3>
-                <p className="mb-6 mt-3 max-w-md text-sm text-muted-foreground">
-                  Select a date range and optionally a specific yard to load
-                  the dashboard cards and detailed analytics.
-                </p>
-                <Button
-                  onClick={() => setFiltersModalOpen(true)}
-                  className="gap-2"
-                  size="lg"
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Configure Report
-                </Button>
-              </div>
+              <YardReportSetupEmptyState
+                onConfigure={() => setFiltersModalOpen(true)}
+              />
             ) : (
               <YardsOverview
                 loadingStats={loadingStats}
@@ -769,27 +784,36 @@ export default function YardReportsPage() {
             )}
           </div>
         ) : !hasDateRange ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed p-6 text-center">
-            <Alert className="max-w-md gap-4 px-4 py-4 text-left text-sm sm:text-base">
-              <AlertCircle className="size-5 text-primary" />
-              <div className="space-y-1">
-                <AlertTitle className="text-base font-semibold">
+          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
+            <Empty className="min-h-0 w-full max-w-[400px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] md:p-5 dark:border-slate-800 dark:bg-slate-950">
+              <EmptyHeader className="max-w-[320px] gap-2">
+                <EmptyMedia
+                  variant="icon"
+                  className="mb-0 size-10 rounded-xl bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                >
+                  <AlertCircle className="size-4" aria-hidden />
+                </EmptyMedia>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                  Yard report setup
+                </span>
+                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
                   Select a date range
-                </AlertTitle>
-                <AlertDescription className="text-sm sm:text-base">
+                </EmptyTitle>
+                <EmptyDescription className="max-w-[300px] text-xs leading-5 text-slate-500 dark:text-slate-400">
                   Choose a start date and end date in Configure Report to load
                   the yard dashboard.
-                </AlertDescription>
-              </div>
-            </Alert>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-sm text-primary underline-offset-4"
-              onClick={() => setFiltersModalOpen(true)}
-            >
-              Open Configure Report
-            </Button>
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent className="max-w-none gap-0">
+                <Button
+                  size="sm"
+                  className="h-9 rounded-lg bg-[#008f68] px-3.5 text-xs font-semibold shadow-sm hover:bg-[#007a5a]"
+                  onClick={() => setFiltersModalOpen(true)}
+                >
+                  Open Configure Report
+                </Button>
+              </EmptyContent>
+            </Empty>
           </div>
         ) : !isDateRangeValid ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-amber-300/70 bg-amber-50/40 p-6 text-center dark:border-amber-500/35 dark:bg-amber-950/15">
@@ -826,24 +850,26 @@ export default function YardReportsPage() {
           </div>
         ) : (
           <div
-            className={`min-h-0 flex-1 overflow-hidden ${dashboardCanvasClass}`}
+            className={`relative min-h-0 flex-1 overflow-hidden ${dashboardCanvasClass}`}
           >
-            <div className="scrollbar-app-hover h-full overflow-y-auto pb-2">
-              <YardDashboard
-                stats={selectedYardStats}
-                yardTickets={selectedYardTickets}
-                activeTicketChartData={activeTicketChartData}
-                activeCallsChartData={activeCallsChartData}
-                activeManualChartData={activeManualChartData}
-                reportStartDate={startDate}
-                reportEndDate={endDate}
-              />
-            </div>
+            <YardFilterTransition isFilterLoading={isYardFilterLoading}>
+              <div className="scrollbar-app-hover h-full overflow-y-auto pb-2">
+                <YardDashboard
+                  stats={selectedYardStats}
+                  yardTickets={selectedYardTickets}
+                  activeTicketChartData={activeTicketChartData}
+                  activeCallsChartData={activeCallsChartData}
+                  activeManualChartData={activeManualChartData}
+                  reportStartDate={startDate}
+                  reportEndDate={endDate}
+                />
+              </div>
+            </YardFilterTransition>
           </div>
         )}
-      </div>
+        </div>
 
-      <YardRecordsModal
+        <YardRecordsModal
         open={showYardRecordsModal}
         onOpenChange={setShowYardRecordsModal}
         yardName={selectedYard?.name || "Selected Yard"}
@@ -851,6 +877,7 @@ export default function YardReportsPage() {
         reportStartDate={startDate}
         reportEndDate={endDate}
       />
-    </div>
+      </div>
+    </YardDashboardDataProvider>
   );
 }

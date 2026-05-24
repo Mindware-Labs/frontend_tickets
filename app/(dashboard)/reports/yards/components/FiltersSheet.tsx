@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Building,
   Calendar,
   Check,
   ChevronsUpDown,
@@ -156,6 +155,12 @@ export function FiltersSheet({
   const isYardPopoverOpen = open && yardOpen;
   const isStartDatePopoverOpen = open && startPopoverOpen;
   const isEndDatePopoverOpen = open && endPopoverOpen;
+  const formattedStartDate = localStartDate
+    ? format(localStartDate, "MMM d, yyyy")
+    : null;
+  const formattedEndDate = localEndDate
+    ? format(localEndDate, "MMM d, yyyy")
+    : null;
 
   const handleSheetOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -170,33 +175,38 @@ export function FiltersSheet({
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-lg"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-slate-800 dark:bg-slate-950"
       >
-        <SheetHeader className="px-6 py-5 border-b bg-card/50 backdrop-blur-sm z-10">
-          <SheetTitle className="flex items-center gap-2.5 text-xl font-bold">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Filter className="h-5 w-5" />
+        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
+          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
+              <Filter className="size-4" aria-hidden />
+            </span>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span>Report filters</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                Yard report setup
+              </span>
             </div>
-            Report Filters
           </SheetTitle>
-          <SheetDescription className="ml-11 text-sm">
-            Configure the parameters to generate your yard report.
+          <SheetDescription className="pl-11 text-xs leading-5 text-slate-500">
+            Choose a yard and a valid date range before applying the report.
           </SheetDescription>
         </SheetHeader>
 
-        {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Section: Location */}
-          <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
-            <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              Location Settings
+        <div className="scrollbar-app flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <MapPin className="size-3.5 text-[#008f68]" aria-hidden />
+              Location
             </label>
 
             <Popover
               modal
               open={isYardPopoverOpen}
-              onOpenChange={(nextOpen) => onYardOpenChange(open ? nextOpen : false)}
+              onOpenChange={(nextOpen) =>
+                onYardOpenChange(open ? nextOpen : false)
+              }
             >
               <PopoverTrigger asChild>
                 <Button
@@ -204,31 +214,34 @@ export function FiltersSheet({
                   role="combobox"
                   aria-expanded={yardOpen}
                   className={cn(
-                    "w-full justify-between bg-background transition-colors hover:bg-muted/50",
-                    !selectedYardId && "text-muted-foreground",
+                    "h-9 w-full justify-between rounded-lg border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                    !selectedYardId && "text-slate-500",
                   )}
                   disabled={loadingYards}
                 >
                   <span className="truncate">
                     {selectedYardName || "Select a yard..."}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown data-icon="inline-end" className="opacity-50" />
                 </Button>
               </PopoverTrigger>
 
               <PopoverContent
-                className="z-[60] w-[var(--radix-popover-trigger-width)] p-0 rounded-xl"
+                className="z-[60] w-[var(--radix-popover-trigger-width)] rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
                 align="start"
               >
                 <Command>
-                  <CommandInput placeholder="Search yard..." className="h-10" />
+                  <CommandInput
+                    placeholder="Search yard..."
+                    className="h-9 text-xs"
+                  />
                   <CommandList
                     className="max-h-[220px]"
                     onWheel={handleYardListWheel}
                   >
-                    <CommandEmpty className="py-6 text-center text-sm">
+                    <CommandEmpty className="py-6 text-center text-xs">
                       {loadingYards ? (
-                        <span className="animate-pulse text-muted-foreground">
+                        <span className="animate-pulse text-slate-500">
                           Loading yards...
                         </span>
                       ) : (
@@ -241,19 +254,19 @@ export function FiltersSheet({
                           key={yard.id}
                           value={yard.name}
                           onSelect={() => handleYardSelect(yard.id.toString())}
-                          className="cursor-pointer my-0.5 rounded-lg"
+                          className="my-0.5 cursor-pointer rounded-lg text-xs"
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4 transition-opacity",
+                              "mr-2 size-3.5 transition-opacity",
                               selectedYardId === yard.id.toString()
-                                ? "opacity-100 text-primary"
+                                ? "text-[#008f68] opacity-100"
                                 : "opacity-0",
                             )}
                           />
                           <span className="font-medium">{yard.name}</span>
                           {yard.commonName && (
-                            <span className="ml-2 text-xs text-muted-foreground truncate">
+                            <span className="ml-2 truncate text-[11px] text-slate-500">
                               ({yard.commonName})
                             </span>
                           )}
@@ -266,17 +279,23 @@ export function FiltersSheet({
             </Popover>
           </div>
 
-          {/* Section: Date Range */}
-          <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
-            <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
-              <Calendar className="h-4 w-4 text-primary" />
-              Date Range
-            </label>
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-start justify-between gap-3">
+              <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
+                Date range
+              </label>
+              {hasDateRange ? (
+                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  Selected
+                </span>
+              ) : null}
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground ml-1">
-                  Start Date
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Start date
                 </label>
                 <Popover
                   modal
@@ -289,25 +308,26 @@ export function FiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal w-full h-10 bg-background transition-colors hover:bg-muted/50",
-                        !localStartDate && "text-muted-foreground",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        !localStartDate && "text-slate-500",
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                      {localStartDate ? (
-                        <span className="truncate">
-                          {format(localStartDate, "MMM d, yyyy")}
-                        </span>
+                      <Calendar
+                        data-icon="inline-start"
+                        className="text-slate-400"
+                      />
+                      {formattedStartDate ? (
+                        <span className="truncate">{formattedStartDate}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="z-[60] w-auto p-0 rounded-xl"
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
                     align="start"
                   >
-                    <div className="p-3">
+                    <div className="flex flex-col gap-2 p-2">
                       <CalendarWidget
                         mode="single"
                         selected={localStartDate}
@@ -317,14 +337,14 @@ export function FiltersSheet({
                         className="rounded-md"
                       />
                       {localStartDate && (
-                        <div className="flex justify-end pt-2 border-t mt-2">
+                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs text-muted-foreground hover:text-foreground w-full"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                             onClick={() => handleStartSelect(undefined)}
                           >
-                            <X className="mr-2 h-3.5 w-3.5" />
+                            <X data-icon="inline-start" />
                             Clear selection
                           </Button>
                         </div>
@@ -334,9 +354,9 @@ export function FiltersSheet({
                 </Popover>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground ml-1">
-                  End Date
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  End date
                 </label>
                 <Popover
                   modal
@@ -349,22 +369,26 @@ export function FiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal w-full h-10 bg-background transition-colors hover:bg-muted/50",
-                        !localEndDate && "text-muted-foreground",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        !localEndDate && "text-slate-500",
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                      {localEndDate ? (
-                        <span className="truncate">
-                          {format(localEndDate, "MMM d, yyyy")}
-                        </span>
+                      <Calendar
+                        data-icon="inline-start"
+                        className="text-slate-400"
+                      />
+                      {formattedEndDate ? (
+                        <span className="truncate">{formattedEndDate}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="z-[60] w-auto p-0 rounded-xl" align="end">
-                    <div className="p-3">
+                  <PopoverContent
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    align="end"
+                  >
+                    <div className="flex flex-col gap-2 p-2">
                       <CalendarWidget
                         mode="single"
                         selected={localEndDate}
@@ -374,14 +398,14 @@ export function FiltersSheet({
                         className="rounded-md"
                       />
                       {localEndDate && (
-                        <div className="flex justify-end pt-2 border-t mt-2">
+                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs text-muted-foreground hover:text-foreground w-full"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                             onClick={() => handleEndSelect(undefined)}
                           >
-                            <X className="mr-2 h-3.5 w-3.5" />
+                            <X data-icon="inline-start" />
                             Clear selection
                           </Button>
                         </div>
@@ -392,26 +416,34 @@ export function FiltersSheet({
               </div>
             </div>
 
-            {/* Date Alerts Contextualized inside the Date Range box */}
+            {hasDateRange && isDateRangeValid ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  Range:
+                </span>{" "}
+                {formattedStartDate} to {formattedEndDate}
+              </div>
+            ) : null}
+
             {showMissingDateAlert && (
-              <Alert className="mt-2 border-sky-200 bg-sky-50/50 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
-                <AlertCircle className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                <AlertTitle className="text-sm font-semibold">
-                  Missing Dates
+              <Alert className="border-sky-200 bg-sky-50/70 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
+                <AlertCircle className="size-4 text-sky-600 dark:text-sky-400" />
+                <AlertTitle className="text-xs font-semibold">
+                  Missing dates
                 </AlertTitle>
-                <AlertDescription className="text-xs mt-1">
-                  Select both Start Date and End Date to generate the report.
+                <AlertDescription className="mt-1 text-xs">
+                  Select both start date and end date to generate the report.
                 </AlertDescription>
               </Alert>
             )}
 
             {hasDateRange && !isDateRangeValid && (
-              <Alert className="mt-2 border-amber-200 bg-amber-50/50 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-sm font-semibold">
-                  Invalid Range
+              <Alert className="border-amber-200 bg-amber-50/70 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-xs font-semibold">
+                  Invalid range
                 </AlertTitle>
-                <AlertDescription className="text-xs mt-1">
+                <AlertDescription className="mt-1 text-xs">
                   Start date cannot be later than end date. Please adjust the
                   range.
                 </AlertDescription>
@@ -419,32 +451,31 @@ export function FiltersSheet({
             )}
           </div>
 
-          {/* Section: Export Options */}
           {canExport && (
-            <div className="space-y-3 rounded-xl border border-primary/10 bg-primary/5 p-4">
-              <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-primary">
-                <Download className="h-4 w-4" />
-                Quick Export
+            <div className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-emerald-500/20 dark:bg-emerald-500/10">
+              <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-[#008f68] dark:text-emerald-300">
+                <Download className="size-3.5" aria-hidden />
+                Quick export
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onExportPDF}
-                  className="gap-2 h-10 bg-background hover:border-primary/50 hover:text-primary transition-all"
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950"
                   disabled={!hasDateRange || !isDateRangeValid}
                 >
-                  <Download className="w-4 h-4" />
+                  <Download data-icon="inline-start" />
                   PDF
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onExportExcel}
-                  className="gap-2 h-10 bg-background hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950 dark:hover:text-emerald-400"
                   disabled={!hasDateRange || !isDateRangeValid}
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <FileSpreadsheet data-icon="inline-start" />
                   Excel
                 </Button>
               </div>
@@ -452,22 +483,21 @@ export function FiltersSheet({
           )}
         </div>
 
-        {/* Fixed Footer */}
-        <SheetFooter className="px-6 py-4 border-t bg-card/50 backdrop-blur-sm flex-col-reverse sm:flex-row gap-3">
+        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-slate-800 dark:bg-slate-950">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto sm:flex-1 h-11 font-medium"
+            className="h-9 w-full rounded-lg text-xs font-medium sm:w-auto sm:flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={onApplyFilters}
-            className="gap-2 w-full sm:w-auto sm:flex-1 h-11 font-semibold shadow-md"
+            className="h-9 w-full rounded-lg bg-[#008f68] text-xs font-semibold shadow-sm hover:bg-[#007a5a] sm:w-auto sm:flex-1"
             disabled={!hasDateRange || !isDateRangeValid}
           >
-            <Check className="h-4 w-4" />
-            Apply Filters
+            <Check data-icon="inline-start" />
+            Apply filters
           </Button>
         </SheetFooter>
       </SheetContent>

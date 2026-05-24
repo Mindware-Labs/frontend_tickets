@@ -1,9 +1,9 @@
 export const DISPOSITION_LABEL_COLORS: Record<string, string> = {
-  NEW_LEAD: "var(--chart-1)",
-  BOOKING: "var(--chart-2)",
-  GENERAL_INFO: "var(--chart-3)",
-  BILLING: "var(--chart-4)",
-  SUPPORT: "var(--chart-5)",
+  NEW_LEAD: "#008f68",
+  BOOKING: "#0284c7",
+  GENERAL_INFO: "#4f46e5",
+  BILLING: "#d97706",
+  SUPPORT: "#0f766e",
   COMPLAINT: "oklch(0.65 0.22 25)",
   TECHNICAL_ISSUE: "oklch(0.68 0.18 180)",
   SPAM: "oklch(0.60 0.10 220)",
@@ -22,14 +22,14 @@ export const DISPOSITION_LABEL_COLORS: Record<string, string> = {
 };
 
 export const DISPOSITION_COLORS = [
-  "oklch(0.65 0.18 160)",
-  "oklch(0.75 0.18 85)",
-  "var(--color-primary)",
-  "oklch(0.65 0.22 25)",
-  "oklch(0.72 0.16 250)",
-  "oklch(0.70 0.20 300)",
-  "oklch(0.68 0.18 180)",
-  "oklch(0.66 0.20 60)",
+  "#008f68",
+  "#0284c7",
+  "#4f46e5",
+  "#d97706",
+  "#e11d48",
+  "#0f766e",
+  "#7c3aed",
+  "#64748b",
 ];
 
 export const STATUS_COLORS: Record<string, string> = {

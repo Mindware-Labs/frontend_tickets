@@ -72,7 +72,18 @@ export function YardDashboard({
   const newLeadCustomers =
     stats.newLeadCustomersCount ?? stats.ticketsByNewLead.length;
   const newLeadCalls = stats.newLeadCallsCount ?? 0;
-  const ticketResolutionRate = stats.resolutionRate ?? 0;
+  const resolutionRate = stats.resolutionRate ?? 0;
+  const closedTickets = stats.closedTickets ?? 0;
+  const closedCalls = stats.closedCalls ?? 0;
+  const closedManual = stats.closedManualRecords ?? 0;
+  const closedContactsTotal = closedTickets + closedCalls + closedManual;
+  const resolutionBreakdown = [
+    closedTickets > 0 ? `${closedTickets} tickets` : null,
+    closedCalls > 0 ? `${closedCalls} calls` : null,
+    closedManual > 0 ? `${closedManual} manual` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const topNewLead = stats.ticketsByNewLead[0];
   const topNewLeadLabel =
@@ -169,11 +180,13 @@ export function YardDashboard({
     },
     {
       label: "Resolution",
-      value: `${ticketResolutionRate}%`,
-      detail: "Tickets closed in period",
+      value: `${resolutionRate}%`,
+      detail:
+        resolutionBreakdown ||
+        `${closedContactsTotal} closed of ${contactsTotal} contacts`,
       trend: stats.avgResolutionTime
-        ? `Avg ${stats.avgResolutionTime.toFixed(1)}h`
-        : "Support tickets v2",
+        ? `Avg ${stats.avgResolutionTime.toFixed(1)}h (tickets)`
+        : `${closedContactsTotal} closed in period`,
       tone: "indigo",
       icon: Target,
     },
@@ -195,7 +208,7 @@ export function YardDashboard({
         ))}
       </div>
 
-      <div className={`${dashboardRowClass} lg:grid-cols-3`}>
+      <div className={`${dashboardRowClass} lg:grid-cols-3 lg:[&>*]:min-h-[76px]`}>
         <InsightActionCard
           label="New lead customers"
           value={newLeadCustomers}
@@ -223,7 +236,7 @@ export function YardDashboard({
         />
       </div>
 
-      <div className={`${dashboardRowClass} xl:grid-cols-3`}>
+      <div className={`${dashboardRowClass} xl:grid-cols-3 xl:[&>*]:min-h-[246px]`}>
         <YardActivityChart
           title="Call activity"
           subtitle="Created vs closed on call day (Aircall)"
@@ -256,13 +269,14 @@ export function YardDashboard({
         />
       </div>
 
-      <div className={`${dashboardRowClass} lg:grid-cols-3`}>
+      <div className={`${dashboardRowClass} lg:grid-cols-3 lg:[&>*]:min-h-[218px]`}>
         <YardBreakdownBar
           title="Disposition"
           subtitle="Call outcomes in period"
           data={dispositionChartData}
           colorMap={DISPOSITION_LABEL_COLORS}
           icon={BarChart3}
+          filterKey="disposition"
         />
         <YardBreakdownBar
           title="Direction"
@@ -271,6 +285,7 @@ export function YardDashboard({
           colorMap={DIRECTION_COLORS}
           icon={Phone}
           barColor={toneClasses.sky.chart}
+          filterKey="direction"
         />
         <YardBreakdownBar
           title="Priority"
@@ -279,10 +294,14 @@ export function YardDashboard({
           colorMap={PRIORITY_COLORS}
           icon={Target}
           barColor={toneClasses.amber.chart}
+          filterKey="priority"
         />
       </div>
 
-      <YardAgentsPanel agents={stats.ticketsByAgent} />
+      <YardAgentsPanel
+        agents={stats.ticketsByAgent}
+        customers={stats.ticketsByNewLead}
+      />
 
       <NewLeadsModal
         open={showNewLeadsModal}

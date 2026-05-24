@@ -5,17 +5,17 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const yardDashboardToolbarClass = cn(
-  "flex min-h-[56px] flex-col gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-2 shadow-sm",
+  "flex min-h-[56px] flex-col gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
   "md:flex-row md:items-center md:justify-between md:gap-4",
   "dark:border-slate-800 dark:bg-slate-950",
 );
 
 export const yardDashboardTabListClass =
-  "flex w-full min-w-[280px] rounded-lg bg-slate-100 p-1 sm:w-auto sm:min-w-[320px] dark:bg-slate-900/80";
+  "flex w-full min-w-[260px] rounded-lg border border-slate-200/80 bg-slate-100 p-1 shadow-sm sm:w-auto sm:min-w-[300px] dark:border-slate-800 dark:bg-slate-900/80";
 
 export function yardDashboardTabClass(isActive: boolean) {
   return cn(
-    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150",
+    "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-all duration-150",
     isActive
       ? "bg-white font-semibold text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
       : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
@@ -38,7 +38,7 @@ export function YardContextChip({
 }) {
   return (
     <div
-      className="flex max-w-[240px] shrink-0 items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 py-0.5 pr-2 pl-2.5 text-xs font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
+      className="flex h-7 max-w-[260px] shrink-0 items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 pr-2 pl-2.5 text-xs font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
       title={`${label}: ${value}`}
     >
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#008f68] dark:text-emerald-300">
