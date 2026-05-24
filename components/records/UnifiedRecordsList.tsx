@@ -386,14 +386,21 @@ type UnifiedRecordsListProps = {
   records: UnifiedRecord[];
   onViewDetail?: (detail: string, title: string) => void;
   showOpenLinks?: boolean;
+  className?: string;
 };
 
 export function UnifiedRecordsList({
   records,
   onViewDetail,
+  className,
 }: UnifiedRecordsListProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950",
+        className,
+      )}
+    >
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900">
           <TableRow className="hover:bg-transparent">
