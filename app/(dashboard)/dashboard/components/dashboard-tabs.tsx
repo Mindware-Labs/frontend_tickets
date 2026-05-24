@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Headphones, UserCheck, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -34,12 +34,20 @@ export function DashboardTabs() {
     refresh,
   } = useSupportDashboardData();
 
-  const lastUpdated = generatedAt
-    ? new Date(generatedAt).toLocaleTimeString([], {
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!generatedAt) {
+      setLastUpdated(null);
+      return;
+    }
+    setLastUpdated(
+      new Date(generatedAt).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-      })
-    : null;
+      }),
+    );
+  }, [generatedAt]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

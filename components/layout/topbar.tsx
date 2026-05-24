@@ -1,10 +1,11 @@
 "use client";
 
 import { ChevronDown, CircleUser, LogOut } from "lucide-react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 import {
   topbarAccentBarClass,
@@ -38,11 +39,6 @@ import {
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-
-const NotificationBell = dynamic(
-  () => import("./notification-bell").then((m) => m.NotificationBell),
-  { ssr: false },
-);
 
 type PageMeta = {
   title: string;
