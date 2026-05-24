@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Calendar,
@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { YardContextChip } from "./yard-dashboard-chrome";
 import {
   InsightEmptyState,
+  InsightExpandableDetails,
   InsightIssueBlock,
   InsightMetaRow,
   InsightPriorityPill,
@@ -39,6 +40,7 @@ import {
   getInsightCardsGridClass,
   getInsightSheetMaxWidthClass,
   insightCardClass,
+  insightCardExpandedClass,
   insightSheetHeaderClass,
   useInsightSheetChrome,
 } from "./yard-insight-ui";
@@ -100,6 +102,8 @@ function CriticalTicketCard({
   yardName,
   reportStartDate,
   reportEndDate,
+  detailsOpen,
+  onDetailsOpenChange,
   onClose,
 }: {
   ticket: Ticket;
@@ -108,6 +112,8 @@ function CriticalTicketCard({
   yardName: string;
   reportStartDate?: string;
   reportEndDate?: string;
+  detailsOpen: boolean;
+  onDetailsOpenChange: (open: boolean) => void;
   onClose: () => void;
 }) {
   const resolvedYardId =
@@ -142,6 +148,7 @@ function CriticalTicketCard({
         isEmergency
           ? "border-rose-300/80 hover:border-rose-400 dark:border-rose-800"
           : "hover:border-orange-300 dark:hover:border-orange-800",
+        detailsOpen && insightCardExpandedClass,
       )}
     >
       <div
@@ -166,7 +173,12 @@ function CriticalTicketCard({
         </div>
       </div>
 
-      <div className="space-y-2 p-2.5">
+      <div className="p-2.5">
+        <InsightExpandableDetails
+          open={detailsOpen}
+          onOpenChange={onDetailsOpenChange}
+        >
+        <div className="space-y-2">
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
           <InsightMetaRow
             label="Status"
@@ -247,6 +259,8 @@ function CriticalTicketCard({
             <InsightIssueBlock text={ticket.notes} />
           </InsightRecordPanel>
         ) : null}
+        </div>
+        </InsightExpandableDetails>
       </div>
 
       <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-slate-800">
@@ -323,6 +337,7 @@ export function HighPriorityPendingModal({
       : "All dates";
 
   useInsightSheetChrome(open);
+  const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
 
   const renderSection = (
     title: string,
@@ -366,6 +381,10 @@ export function HighPriorityPendingModal({
               yardName={yardName}
               reportStartDate={reportStartDate}
               reportEndDate={reportEndDate}
+              detailsOpen={expandedTicketId === ticket.id}
+              onDetailsOpenChange={(open) =>
+                setExpandedTicketId(open ? ticket.id : null)
+              }
               onClose={() => onOpenChange(false)}
             />
           ))}
@@ -454,7 +473,7 @@ export function HighPriorityPendingModal({
         <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-slate-500">
-              Issue, notes, and routing visible on each card — no extra popups
+              Expand a ticket to see full context · open in Contact Center below
             </p>
             <Button
               type="button"
