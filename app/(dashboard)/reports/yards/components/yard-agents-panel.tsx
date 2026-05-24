@@ -287,6 +287,7 @@ export function YardAgentsPanel({ agents, customers }: YardAgentsPanelProps) {
           shortLabel: formatChartAxisLabel(chartPrimary),
           count: customer.count,
           hint: phone,
+          filterValue: name,
         };
       }),
     [customers],
@@ -300,10 +301,11 @@ export function YardAgentsPanel({ agents, customers }: YardAgentsPanelProps) {
     <div className={cn(dashboardRowClass, "xl:grid-cols-2 xl:[&>*]:min-h-[246px]")}>
       <YardRankedPanel
         title="Top customers"
-        subtitle="New lead activity in period"
+        subtitle="Click a row or bar to filter by customer"
         icon={UserPlus}
         items={customerItems}
         countLabel="leads"
+        filterKey="customer"
         barColor={toneClasses.sky.chart}
       />
       <YardRankedPanel
