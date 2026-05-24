@@ -212,7 +212,7 @@ export function HighPriorityPendingModal({
     section: "pending" | "closed",
   ) => (
     <div
-      className={`mx-auto grid w-full gap-5 ${getCardsGridClass(
+      className={`mx-auto grid w-full gap-3 ${getCardsGridClass(
         sectionTickets.length,
       )}`}
     >
@@ -258,20 +258,20 @@ export function HighPriorityPendingModal({
         return (
           <div
             key={ticket.id}
-            className="group flex h-full flex-col rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-rose-300 hover:shadow-lg dark:hover:border-rose-800"
+            className="group flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors hover:border-rose-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-rose-800"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-lg font-bold text-foreground">
+                <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
                   Ticket #{ticket.id}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[10px] text-slate-500">
                   Opened: {formatDateTime(openedAt)}
                 </p>
               </div>
               <Badge
                 variant="outline"
-                className={`font-semibold ${getPriorityBadgeClass(
+                className={`px-2 py-0.5 text-[10px] font-semibold ${getPriorityBadgeClass(
                   ticket.priority,
                 )}`}
               >
@@ -279,47 +279,47 @@ export function HighPriorityPendingModal({
               </Badge>
             </div>
 
-            <div className="mt-4 space-y-3 border-t pt-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Status</span>
-                <span className="font-semibold capitalize text-foreground">
+            <div className="mt-3 space-y-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Status</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-slate-100">
                   {formatStatusLabel(ticket.status)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">Customer</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-slate-500">Customer</span>
                 <span
-                  className="max-w-[65%] truncate text-right font-medium text-foreground"
+                  className="max-w-[65%] truncate text-right font-medium text-slate-900 dark:text-slate-100"
                   title={getCustomerLabel(ticket)}
                 >
                   {getCustomerLabel(ticket)}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Agent:</span>
-                <span className="ml-auto truncate font-medium text-foreground">
+              <div className="flex items-center gap-2">
+                <User className="size-3.5 text-slate-400" />
+                <span className="text-slate-500">Agent:</span>
+                <span className="ml-auto truncate font-medium text-slate-900 dark:text-slate-100">
                   {getAgentLabel(ticket)}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm">
-                <Megaphone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Campaign:</span>
-                <span className="ml-auto line-clamp-1 text-right font-medium text-foreground">
+              <div className="flex items-center gap-2">
+                <Megaphone className="size-3.5 text-slate-400" />
+                <span className="text-slate-500">Campaign:</span>
+                <span className="ml-auto line-clamp-1 text-right font-medium text-slate-900 dark:text-slate-100">
                   {getCampaignLabel(ticket)}
                 </span>
               </div>
             </div>
 
-            <div className="mt-auto border-t pt-4">
+            <div className="mt-auto border-t border-slate-100 pt-3 dark:border-slate-800">
               <div className="flex flex-col gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="h-8 w-full rounded-lg text-xs"
                   onClick={() => openIssueDetails(ticket)}
                   disabled={!issueDetail}
                 >
@@ -330,7 +330,7 @@ export function HighPriorityPendingModal({
                 <Button
                   asChild
                   variant="secondary"
-                  className="w-full bg-secondary/60 hover:bg-secondary"
+                  className="h-8 w-full rounded-lg bg-slate-100 text-xs hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
                 >
                   <Link href={ticketsUrl} onClick={() => onOpenChange(false)}>
                     View tickets
@@ -350,24 +350,24 @@ export function HighPriorityPendingModal({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side={side}
-          className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl ${sheetWidthClass}`}
+          className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 ${sheetWidthClass}`}
         >
-          <SheetHeader className="border-b bg-card/50 px-6 py-6 backdrop-blur-sm">
+          <SheetHeader className="border-b border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
             <div>
               <div>
-                <SheetTitle className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
-                  <div className="rounded-xl bg-rose-100 p-2.5 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                    <AlertTriangle className="h-6 w-6" />
+                <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 ring-1 ring-rose-200/70 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
+                    <AlertTriangle className="size-3.5" />
                   </div>
                   High Priority Pending
                 </SheetTitle>
-                <SheetDescription className="ml-14 mt-1.5 text-base">
+                <SheetDescription className="ml-10 mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {hasNoCriticalTickets
                     ? "No high-priority tickets found in the selected range."
                     : "High-priority tickets in the selected range, divided by status."}
                 </SheetDescription>
-                <div className="ml-14 mt-2 space-y-1 text-sm">
-                  <p className="text-muted-foreground">
+                <div className="ml-10 mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                  <p className="rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-slate-500 dark:border-slate-800 dark:bg-slate-900">
                     <span className="font-medium text-foreground">
                       {pendingCriticalTickets.length} Pending
                     </span>
@@ -378,7 +378,7 @@ export function HighPriorityPendingModal({
                     {" / "}
                     <span>{pendingHighCount} High</span>
                   </p>
-                  <p className="text-muted-foreground">
+                  <p className="rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-slate-500 dark:border-slate-800 dark:bg-slate-900">
                     <span className="font-medium text-foreground">
                       {closedCriticalTickets.length} Closed / Resolved
                     </span>
@@ -394,29 +394,29 @@ export function HighPriorityPendingModal({
             </div>
           </SheetHeader>
 
-          <ScrollArea className="min-h-0 flex-1 bg-muted/10">
-            <div className="p-5 sm:p-6 lg:p-8">
+          <ScrollArea className="min-h-0 flex-1 bg-[#f4f5f7] scrollbar-app dark:bg-slate-950">
+            <div className="p-3 sm:p-4">
               {hasNoCriticalTickets ? (
-                <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-24 text-center">
-                  <div className="mb-5 rounded-full bg-muted/50 p-5 ring-1 ring-border">
-                    <XCircle className="h-12 w-12 text-muted-foreground/60" />
+                <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
+                    <XCircle className="size-10 text-slate-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground">
+                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
                     No high-priority tickets
                   </h3>
-                  <p className="mt-2 text-muted-foreground">
+                  <p className="mt-1 text-xs text-slate-500">
                     No HIGH or EMERGENCY tickets were found in this range.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <section className="space-y-4">
+                <div className="space-y-4">
+                  <section className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-semibold text-foreground">
+                        <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
                           Pending
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-slate-500">
                           High-priority tickets still open.
                         </p>
                       </div>
@@ -430,19 +430,19 @@ export function HighPriorityPendingModal({
                     {pendingCriticalTickets.length > 0 ? (
                       renderTicketGrid(pendingCriticalTickets, "pending")
                     ) : (
-                      <div className="rounded-xl border border-dashed bg-card/60 p-4 text-sm text-muted-foreground">
+                      <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/70 p-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/70">
                         No pending HIGH or EMERGENCY tickets in this range.
                       </div>
                     )}
                   </section>
 
-                  <section className="space-y-4">
+                  <section className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-semibold text-foreground">
+                        <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
                           Closed / Resolved
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-slate-500">
                           High-priority tickets already closed in this range.
                         </p>
                       </div>
@@ -453,7 +453,7 @@ export function HighPriorityPendingModal({
                     {closedCriticalTickets.length > 0 ? (
                       renderTicketGrid(closedCriticalTickets, "closed")
                     ) : (
-                      <div className="rounded-xl border border-dashed bg-card/60 p-4 text-sm text-muted-foreground">
+                      <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/70 p-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/70">
                         No closed HIGH or EMERGENCY tickets in this range.
                       </div>
                     )}
@@ -463,15 +463,15 @@ export function HighPriorityPendingModal({
             </div>
           </ScrollArea>
 
-          <SheetFooter className="border-t bg-card/50 px-6 py-4 backdrop-blur-sm">
+          <SheetFooter className="border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-slate-500">
                 Each section is sorted by priority and oldest open first
               </p>
               <Button
                 variant="default"
                 onClick={() => onOpenChange(false)}
-                className="h-10 w-full shadow-sm sm:w-auto sm:min-w-[120px]"
+                className="h-8 w-full rounded-lg bg-[#008f68] text-xs shadow-sm hover:bg-[#007a5a] sm:w-auto sm:min-w-[96px]"
               >
                 Done
               </Button>

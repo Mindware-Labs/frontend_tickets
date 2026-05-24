@@ -369,16 +369,16 @@ export function ActiveCampaignsModal({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-none p-0 shadow-2xl ${sheetWidthClass}`}
+        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 ${sheetWidthClass}`}
       >
-        <SheetHeader className="border-b bg-card/50 px-6 py-5 backdrop-blur-sm">
-          <SheetTitle className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <TrendingUp className="h-6 w-6" />
+        <SheetHeader className="border-b border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <TrendingUp className="size-3.5" />
             </div>
             Active Campaigns
           </SheetTitle>
-          <SheetDescription className="text-base mt-1.5 ml-12">
+          <SheetDescription className="ml-10 mt-1 text-xs text-slate-500 dark:text-slate-400">
             Showing all active campaigns for{" "}
             <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">
               {yardName}
@@ -386,42 +386,42 @@ export function ActiveCampaignsModal({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="min-h-0 flex-1 bg-muted/10">
-          <div className="p-4 sm:p-6 flex justify-center">
+        <ScrollArea className="min-h-0 flex-1 bg-[#f4f5f7] scrollbar-app dark:bg-slate-950">
+          <div className="flex justify-center p-3 sm:p-4">
             {showLoadingState ? (
-              <div className="flex flex-col items-center justify-center py-20 w-full">
-                <Loader2 className="h-10 w-10 animate-spin text-primary/60" />
-                <span className="mt-4 text-base font-medium text-muted-foreground animate-pulse">
+              <div className="flex w-full flex-col items-center justify-center py-16">
+                <Loader2 className="size-8 animate-spin text-[#008f68]/70" />
+                <span className="mt-3 animate-pulse text-xs font-medium text-slate-500">
                   Loading campaigns...
                 </span>
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center max-w-md mx-auto w-full">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <XCircle className="h-12 w-12 text-muted-foreground/60" />
+              <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-16 text-center">
+                <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
+                  <XCircle className="size-10 text-slate-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground">
+                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
                   No active campaigns
                 </h3>
-                <p className="text-muted-foreground mt-2 leading-relaxed">
+                <p className="mt-1 text-xs leading-5 text-slate-500">
                   We couldn't find any active campaigns configured for this yard
                   at the moment.
                 </p>
               </div>
             ) : (
-              <div className={`mx-auto grid w-full gap-5 ${cardsGridClass}`}>
+              <div className={`mx-auto grid w-full gap-3 ${cardsGridClass}`}>
                 {campaigns.map((campaign) => {
                   const secondaryMetrics = getSecondaryMetrics(campaign);
 
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/40"
+                      className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors hover:border-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
                     >
-                      <div className="flex flex-col p-5 space-y-5">
-                        <div className="flex flex-col gap-3 min-h-[80px]">
+                      <div className="flex flex-col space-y-3 p-3">
+                        <div className="flex min-h-[64px] flex-col gap-2">
                           <h3
-                            className="text-lg font-bold leading-tight tracking-tight text-foreground line-clamp-2"
+                            className="line-clamp-2 text-[13px] font-semibold leading-tight text-slate-900 dark:text-slate-100"
                             title={campaign.nombre}
                           >
                             {campaign.nombre}
@@ -429,22 +429,22 @@ export function ActiveCampaignsModal({
                           <div className="flex flex-wrap items-center gap-2 mt-auto">
                             <Badge
                               variant="outline"
-                              className={`flex items-center gap-1.5 px-2.5 py-0.5 transition-colors ${getCampaignTypeColor(
+                            className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] transition-colors ${getCampaignTypeColor(
                                 campaign.tipo,
                               )}`}
                             >
-                              <Tag className="h-3.5 w-3.5" />
-                              <span className="text-xs font-semibold uppercase tracking-wider">
+                              <Tag className="size-3" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider">
                                 {campaignTypeLabels[campaign.tipo] ||
                                   campaign.tipo}
                               </span>
                             </Badge>
                             <Badge
                               variant="outline"
-                              className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
+                              className="flex items-center gap-1 border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] text-[#008f68] dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-400"
                             >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              <span className="text-xs font-medium">
+                              <CheckCircle2 className="size-3" />
+                              <span className="text-[10px] font-medium">
                                 Active
                               </span>
                             </Badge>
@@ -452,46 +452,46 @@ export function ActiveCampaignsModal({
                         </div>
 
                         <div className="flex flex-col gap-4">
-                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/40 rounded-lg p-2.5 border border-muted min-h-[42px]">
+                          <div className="flex min-h-9 items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900">
                             {campaign.duracion ? (
                               <>
-                                <Clock className="h-4 w-4 text-primary/70 shrink-0" />
+                                <Clock className="size-3.5 shrink-0 text-[#008f68]/70" />
                                 <span className="truncate">
                                   {campaign.duracion}
                                 </span>
                               </>
                             ) : (
-                              <span className="text-muted-foreground/50 italic text-xs">
+                              <span className="text-xs italic text-slate-400">
                                 No duration set
                               </span>
                             )}
                           </div>
 
-                          <div className="space-y-3 pt-4 border-t">
-                            <div className="flex items-center justify-between rounded-xl bg-primary/5 p-4 border border-primary/10">
-                              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                                <div className="p-1.5 rounded-md bg-background shadow-sm border">
-                                  <Users className="h-4 w-4 text-primary" />
+                          <div className="space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                            <div className="flex items-center justify-between rounded-lg border border-emerald-100 bg-[#f0faf5] px-3 py-2 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                              <div className="flex items-center gap-2 text-xs font-medium text-slate-900 dark:text-slate-100">
+                                <div className="rounded-md border border-emerald-100 bg-white p-1 shadow-sm dark:border-emerald-900/30 dark:bg-slate-950">
+                                  <Users className="size-3.5 text-[#008f68]" />
                                 </div>
                                 Total Tickets
                               </div>
-                              <p className="text-2xl font-bold text-primary">
+                              <p className="text-xl font-bold text-[#008f68]">
                                 {campaign.ticketCount ?? 0}
                               </p>
                             </div>
 
                             {secondaryMetrics.length > 0 ? (
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-2 gap-2">
                                 {secondaryMetrics.map((metric) => (
                                   <div
                                     key={`${campaign.id}-${metric.label}`}
-                                    className={`rounded-xl border p-3.5 flex flex-col justify-between h-full min-h-[85px] ${metric.bgClass}`}
+                                    className={`flex min-h-[72px] flex-col justify-between rounded-lg border p-3 ${metric.bgClass}`}
                                   >
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 line-clamp-2">
+                                    <p className="mb-1 line-clamp-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                                       {metric.label}
                                     </p>
                                     <p
-                                      className={`text-xl font-bold mt-auto ${metric.textClass}`}
+                                      className={`mt-auto text-lg font-bold ${metric.textClass}`}
                                     >
                                       {metric.value}
                                     </p>
@@ -499,8 +499,8 @@ export function ActiveCampaignsModal({
                                 ))}
                               </div>
                             ) : (
-                              <div className="rounded-xl border bg-muted/20 p-3.5 flex items-center justify-between min-h-[85px]">
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              <div className="flex min-h-[72px] items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                                   Campaign Type
                                 </p>
                                 <span className="text-sm font-medium">
@@ -516,7 +516,7 @@ export function ActiveCampaignsModal({
                           <Button
                             type="button"
                             variant="secondary"
-                            className="w-full"
+                            className="h-8 w-full rounded-lg bg-slate-100 text-xs hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
                             onClick={() => handleOpenCampaignReport(campaign)}
                           >
                             Open Reports
@@ -532,16 +532,16 @@ export function ActiveCampaignsModal({
           </div>
         </ScrollArea>
 
-        <SheetFooter className="border-t bg-card/50 px-6 py-4 backdrop-blur-sm">
+        <SheetFooter className="border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-slate-500">
               {campaigns.length}{" "}
               {campaigns.length === 1 ? "campaign" : "campaigns"} found
             </p>
             <Button
               variant="default"
               onClick={() => onOpenChange(false)}
-              className="h-10 w-full shadow-sm sm:w-auto sm:min-w-[120px]"
+              className="h-8 w-full rounded-lg bg-[#008f68] text-xs shadow-sm hover:bg-[#007a5a] sm:w-auto sm:min-w-[96px]"
             >
               Done
             </Button>

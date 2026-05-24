@@ -46,3 +46,31 @@ export const recordPrimaryLabel = (record: UnifiedRecord) => {
 
 export const linkedTicketLabel = (ticket: UnifiedRecordLinkedTicket) =>
   `Ticket #${ticket.id}`;
+
+export const getCustomerGroupKey = (record: UnifiedRecord) => {
+  const rawCustomerId = record.customer?.id ?? record.customerId;
+  if (rawCustomerId !== null && rawCustomerId !== undefined) {
+    return `id:${rawCustomerId}`;
+  }
+
+  const normalizedPhone = (phoneLabel(record) || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  if (normalizedPhone && normalizedPhone !== "-") {
+    return `phone:${normalizedPhone}`;
+  }
+
+  const normalizedName = (customerLabel(record) || "").toLowerCase().trim();
+  if (normalizedName && normalizedName !== "unknown") {
+    return `name:${normalizedName}`;
+  }
+
+  return `record:${record.id}`;
+};
+
+export const getRecordDateMs = (record: UnifiedRecord) => {
+  const value = recordDate(record);
+  if (!value) return 0;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+};

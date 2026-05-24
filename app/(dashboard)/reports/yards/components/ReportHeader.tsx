@@ -41,7 +41,6 @@ export function ReportHeader({
   endDate,
   canExport,
   canViewTickets,
-  lastUpdated,
   onSelectOverview,
   onOpenFilters,
   onViewAllTickets,
@@ -99,7 +98,6 @@ export function ReportHeader({
 
           {filtersConfigured ? (
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-              <YardContextChip label="Yard" value={selectedYard!.name} />
               <YardContextChip
                 label="Range"
                 value={`${startDate} → ${endDate}`}
@@ -164,35 +162,6 @@ export function ReportHeader({
             ) : null}
           </div>
 
-          <div
-            className="hidden h-4 w-px shrink-0 bg-slate-200 md:block dark:bg-slate-700"
-            aria-hidden
-          />
-
-          <div className="flex shrink-0 items-center gap-2 text-slate-400">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-semibold",
-                filtersConfigured
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-                  : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400",
-              )}
-            >
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  filtersConfigured ? "bg-emerald-500" : "bg-slate-400",
-                )}
-                aria-hidden
-              />
-              {filtersConfigured ? "Ready" : "Setup"}
-            </span>
-            {lastUpdated ? (
-              <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                {lastUpdated}
-              </span>
-            ) : null}
-          </div>
         </div>
       </div>
     </header>

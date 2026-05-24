@@ -7,7 +7,6 @@ import {
   FileText,
   Inbox,
   Layers,
-  Loader2,
   Phone,
   Search,
   Ticket,
@@ -16,9 +15,14 @@ import {
 } from "lucide-react";
 
 import { UnifiedRecordsList } from "@/components/records/UnifiedRecordsList";
+import {
+  EntityLoadingSpinner,
+  type EntityLoadingKind,
+} from "@/components/shared/entity-loading-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -37,7 +41,7 @@ import {
 } from "./yard-dashboard-chrome";
 import type { YardRecord, YardRecordType } from "./types";
 
-type RecordTab = "all" | YardRecordType;
+type RecordTab = YardRecordType;
 
 type YardRecordCounts = {
   all: number;
@@ -72,7 +76,6 @@ const recordTabs: Array<{
   countKey: keyof YardRecordCounts;
   icon: typeof Layers;
 }> = [
-  { value: "all", label: "All", countKey: "all", icon: Layers },
   { value: "call", label: "Calls", countKey: "calls", icon: Phone },
   { value: "ticket", label: "Tickets", countKey: "tickets", icon: Ticket },
   {
@@ -83,24 +86,25 @@ const recordTabs: Array<{
   },
 ];
 
+function recordTabLoadingKind(tab: RecordTab): EntityLoadingKind {
+  if (tab === "call") return "calls";
+  if (tab === "ticket") return "tickets";
+  return "manual-records";
+}
+
 function RecordsEmptyState({
   icon: Icon,
   title,
   description,
-  spinIcon = false,
 }: {
   icon: typeof Inbox;
   title: string;
   description: string;
-  spinIcon?: boolean;
 }) {
   return (
     <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-10 text-center">
       <div className="mb-4 rounded-xl bg-[#f0faf5] p-4 text-[#008f68] ring-8 ring-[#f0faf5]/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/5">
-        <Icon
-          className={cn("size-10 opacity-80", spinIcon && "animate-spin")}
-          aria-hidden
-        />
+        <Icon className="size-10 opacity-80" aria-hidden />
       </div>
       <p className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
         {title}
@@ -120,7 +124,7 @@ export function YardRecordsModal({
   reportStartDate,
   reportEndDate,
 }: YardRecordsModalProps) {
-  const [activeTab, setActiveTab] = useState<RecordTab>("all");
+  const [activeTab, setActiveTab] = useState<RecordTab>("call");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -149,7 +153,7 @@ export function YardRecordsModal({
 
   useEffect(() => {
     if (!open) return;
-    setActiveTab("all");
+    setActiveTab("call");
     setSearch("");
     setDebouncedSearch("");
     setPage(1);
@@ -269,42 +273,48 @@ export function YardRecordsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[90dvh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[min(96vw,1400px)] dark:border-slate-800 dark:bg-slate-950">
+        <DialogContent
+          showCloseButton={false}
+          className="flex h-[90dvh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[min(96vw,1400px)] dark:border-slate-800 dark:bg-slate-950"
+        >
           <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
             <div
               className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
               aria-hidden
             />
-            <DialogHeader className="space-y-0 px-4 pb-2.5 pt-3.5 text-left sm:px-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 items-start gap-2.5">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
-                    <ClipboardList className="size-4" aria-hidden />
+            <DialogClose className="absolute right-3 top-3 z-30 flex size-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008f68]/25 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200">
+              <X className="size-4" aria-hidden />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+
+            <DialogHeader className="space-y-0 px-4 pb-2 pt-2.5 pr-12 text-left sm:px-5 sm:pr-14">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <ClipboardList className="size-3.5" aria-hidden />
                   </span>
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0">
                     <DialogTitle className="text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
                       Record Directory
                     </DialogTitle>
-                    <DialogDescription className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    <DialogDescription className="mt-0.5 truncate text-xs leading-4 text-slate-500 dark:text-slate-400">
                       Unified calls, tickets, and manual records for{" "}
                       <span className="font-semibold text-slate-800 dark:text-slate-100">
                         {yardName}
                       </span>
                     </DialogDescription>
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <YardContextChip label="Range" value={periodLabel} />
-                      {counts.linkedTickets > 0 ? (
-                        <YardContextChip
-                          label="Linked"
-                          value={`${counts.linkedTickets} tickets on calls`}
-                        />
-                      ) : null}
-                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-3 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5 lg:justify-end">
+                  <YardContextChip label="Range" value={periodLabel} />
+                  {counts.linkedTickets > 0 ? (
+                    <YardContextChip
+                      label="Linked"
+                      value={`${counts.linkedTickets} tickets on calls`}
+                    />
+                  ) : null}
+                  <span className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 text-[11px] font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
                     <Layers className="size-3.5 text-slate-400" aria-hidden />
                     {recordTabs.length} types
                   </span>
@@ -319,47 +329,44 @@ export function YardRecordsModal({
                     tone={loading ? "loading" : error ? "muted" : "ready"}
                   />
                   {lastLoadedAt ? (
-                    <span className="inline-flex h-8 items-center rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    <span className="inline-flex h-7 items-center rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 font-mono text-[11px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                       {lastLoadedAt}
                     </span>
                   ) : null}
                 </div>
               </div>
-
-              <div className="pt-2">
-                <div
-                  className={cn(
-                    "relative max-w-full transition-[width] duration-200 sm:max-w-[360px]",
-                    isSearchFocused && "sm:max-w-[420px]",
-                  )}
-                >
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    placeholder="Search by customer, phone, ID, agent..."
-                    className="h-9 rounded-lg border-slate-200/80 bg-slate-50 pl-9 pr-9 text-xs shadow-sm hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
-                  />
-                  {search ? (
-                    <button
-                      type="button"
-                      className="absolute right-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      aria-label="Clear search"
-                      onClick={() => setSearch("")}
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
             </DialogHeader>
 
-            <div className="border-t border-slate-200/80 bg-[#f4f5f7] px-4 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <div className="grid gap-2 border-t border-slate-200/80 bg-[#f4f5f7] px-4 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-5 lg:grid-cols-[minmax(260px,360px)_minmax(0,1fr)] lg:items-center">
+              <div
+                className={cn(
+                  "relative max-w-full transition-[width] duration-200",
+                  isSearchFocused && "lg:max-w-[420px]",
+                )}
+              >
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
+                  aria-hidden
+                />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  placeholder="Search by customer, phone, ID, agent..."
+                  className="h-8 rounded-lg border-slate-200/80 bg-white pl-8 pr-8 text-xs shadow-sm hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : null}
+              </div>
               <div className="relative min-w-0">
                 <div
                   className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#f4f5f7] to-transparent dark:from-slate-950"
@@ -391,12 +398,19 @@ export function YardRecordsModal({
             >
               <ScrollArea className="h-full flex-1 scrollbar-app-hover [&>[data-radix-scroll-area-viewport]]:max-h-full">
                 {loading ? (
-                  <RecordsEmptyState
-                    icon={Loader2}
-                    spinIcon
-                    title="Loading records..."
-                    description={`Fetching page ${page} of ${Math.max(totalPages, 1)}${activeTab !== "all" ? ` (${activeTabLabel})` : ""}.`}
-                  />
+                  <div
+                    className={cn(
+                      "flex min-h-[360px] items-center justify-center py-10",
+                      "bg-gradient-to-b from-[#f0faf5]/50 via-white to-white",
+                      "dark:from-[#008f68]/5 dark:via-slate-950 dark:to-slate-950",
+                    )}
+                  >
+                    <EntityLoadingSpinner
+                      kind={recordTabLoadingKind(activeTab)}
+                      size="md"
+                      label={`Loading ${activeTabLabel.toLowerCase()} · page ${page} of ${Math.max(totalPages, 1)}`}
+                    />
+                  </div>
                 ) : error ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-10 text-center">
                     <div className="mb-4 rounded-xl bg-rose-50 p-4 text-rose-600 ring-8 ring-rose-50/80 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/5">
@@ -425,13 +439,14 @@ export function YardRecordsModal({
                     description={
                       search
                         ? "Try another search term or clear the filter."
-                        : `No ${activeTab === "all" ? "" : `${activeTabLabel.toLowerCase()} `}records in this date range.`
+                        : `No ${activeTabLabel.toLowerCase()} records in this date range.`
                     }
                   />
                 ) : (
                   <div className="p-2">
                     <UnifiedRecordsList
                       records={records}
+                      recordKind={activeTab}
                       className="rounded-xl border-0 shadow-none"
                       onViewDetail={(body, title) => setDetail({ body, title })}
                     />
@@ -447,16 +462,10 @@ export function YardRecordsModal({
                 <span className="font-semibold text-slate-800 dark:text-slate-100">
                   {total}
                 </span>{" "}
-                record{total === 1 ? "" : "s"}
-                {activeTab !== "all" ? (
-                  <>
-                    {" "}
-                    in{" "}
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">
-                      {activeTabLabel}
-                    </span>
-                  </>
-                ) : null}
+                record{total === 1 ? "" : "s"} in{" "}
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {activeTabLabel}
+                </span>
                 {search ? " matching search" : null}
                 <span className="mx-1.5 text-slate-300 dark:text-slate-700">
                   |
