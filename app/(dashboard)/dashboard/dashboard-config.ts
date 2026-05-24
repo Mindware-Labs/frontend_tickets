@@ -32,20 +32,20 @@ export const executiveMetricTemplates: Omit<Metric, "value" | "detail" | "trend"
 
 export const marketingMetricTemplates: Omit<Metric, "value" | "detail" | "trend">[] = [
   { label: "Contact rate", tone: "emerald", icon: Target },
-  { label: "PTP + enrollment outcomes", tone: "indigo", icon: TrendingUp },
+  { label: "Total dispositions", tone: "indigo", icon: TrendingUp },
   { label: "SMS messages", tone: "amber", icon: MessageSquare },
   { label: "Calls per yard", tone: "sky", icon: MapPin },
 ];
 
 export const scorecardTemplates: Pick<ScorecardItem, "metric" | "cadence" | "target">[] = [
   { metric: "Call response time", cadence: "Daily", target: "< 1m 30s" },
-  { metric: "Average handle time by line", cadence: "Weekly", target: "< 6m" },
+  { metric: "Avg handle time by line", cadence: "Weekly", target: "< 6m" },
   {
     metric: "Agent utilization rate",
     cadence: "Weekly",
-    target: "80-88% of team active in period",
+    target: "80-88% ",
   },
-  { metric: "Callback promise kept rate", cadence: "Weekly", target: "90%+" },
+  { metric: "Callback promise", cadence: "Weekly", target: "90%+" },
   { metric: "Open ticket backlog", cadence: "Daily", target: "≤ 20 open" },
   { metric: "Resolution rate by line", cadence: "Monthly", target: "86%" },
 ];

@@ -127,7 +127,7 @@ export function ExecutiveDashboard() {
         <PanelCard
           fill
           title="Leadership KPIs"
-          subtitle="Actual vs goal — green on track, amber watch, red action needed."
+          subtitle="Actual vs goal."
           bodyClassName="flex min-h-0 flex-1 flex-col"
         >
           <KpiScorecardGrid items={data.executiveCallKpis} />

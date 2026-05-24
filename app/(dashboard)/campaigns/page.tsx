@@ -447,7 +447,7 @@ export default function CampaignsPage() {
       </div>
 
       <div className="mt-1 flex items-end border-b border-border">
-        <div className="flex min-w-0 flex-1 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 flex-1 items-end   [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;

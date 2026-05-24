@@ -220,19 +220,7 @@ function LoginForm() {
       {/* Top line */}
       <div aria-hidden style={{ position:"absolute", left:0, right:0, top:0, height:1, background:"linear-gradient(90deg,transparent,rgba(46,169,142,.5) 50%,transparent)" }}/>
 
-      {/* Signal waves */}
-      <svg viewBox="0 0 440 120" preserveAspectRatio="xMidYMid meet" aria-hidden style={{ position:"absolute", top:66, left:"50%", transform:"translateX(-50%)", width:"min(440px,100%)", height:120, opacity:.45, pointerEvents:"none" }}>
-        <defs>
-          <linearGradient id="lw" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="rgba(46,169,142,0)"/>
-            <stop offset="0.5" stopColor="rgba(46,169,142,0.6)"/>
-            <stop offset="1" stopColor="rgba(46,169,142,0)"/>
-          </linearGradient>
-        </defs>
-        {[0,1,2].map((k) => (
-          <path key={k} d={wavePath(k)} stroke="url(#lw)" strokeWidth={1+k*.4} fill="none" opacity={.55-k*.12}/>
-        ))}
-      </svg>
+      
 
       {/* ════ LOGO ════ */}
       <div className="lu-logo" style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:12, paddingTop:0 }}>

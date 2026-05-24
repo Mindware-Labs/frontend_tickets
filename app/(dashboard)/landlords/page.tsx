@@ -376,7 +376,7 @@ export default function LandlordsPage() {
       </div>
 
       <div className="flex border-b border-border mt-1 items-end">
-        <div className="flex flex-1 min-w-0 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-1 min-w-0 items-end [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex px-0.5">
             <div className="px-2 py-2.5 text-[13px] font-medium border-b-2 border-[#008f68] text-foreground -mb-px mr-4 flex items-center gap-2 whitespace-nowrap">
               All Landlords

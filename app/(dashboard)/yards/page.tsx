@@ -421,7 +421,7 @@ export default function YardsPage() {
       </div>
 
       <div className="flex border-b border-border mt-1 items-end">
-        <div className="flex flex-1 min-w-0 items-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-1 min-w-0 items-end [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex px-0.5">
             {VIEW_TABS.map((tab) => {
               const isActive = activeView === tab.key;

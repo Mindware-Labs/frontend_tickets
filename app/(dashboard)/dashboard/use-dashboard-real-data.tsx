@@ -515,13 +515,13 @@ function buildOperationsMetrics({
     }),
     buildMetric(operationsMetricTemplates[1], {
       value: formatDuration(avgWait),
-      detail: "Average time to answer (answered calls)",
+      detail: "Average time to answer",
       trend: formatLiveQueueTrend(queuedCount, longestQueue),
       tone: avgWait <= 90 ? "sky" : "amber",
     }),
     buildMetric(operationsMetricTemplates[2], {
       value: formatDuration(avgDuration),
-      detail: "Talk time per answered call",
+      detail: "Talk time per call",
       trend: avgDuration <= 360 ? "Within handle-time goal" : "Above handle-time goal",
       tone: avgDuration <= 360 ? "emerald" : "amber",
     }),
@@ -566,7 +566,7 @@ function buildExecutiveMetrics({
     buildMetric(executiveMetricTemplates[1], {
       value: formatNumber(openTickets),
       detail: `${formatNumber(numberValue(summary?.overdueTickets))} overdue`,
-      trend: "Open, pending, and overdue combined",
+      trend: "All statuses ",
       tone: openTickets ? "rose" : "emerald",
     }),
     buildMetric(executiveMetricTemplates[2], {
@@ -609,7 +609,7 @@ function buildMarketingMetrics({
     }),
     buildMetric(marketingMetricTemplates[1], {
       value: formatNumber(outcomeTotal),
-      detail: "PTP, paid, enrolled or resolved",
+      detail: "PTP, paid, enrolled ...",
       trend: "From call dispositions",
       tone: "indigo",
     }),
@@ -621,8 +621,8 @@ function buildMarketingMetrics({
     }),
     buildMetric(marketingMetricTemplates[3], {
       value: formatNumber(callsPerYard),
-      detail: `${yards?.data?.length || 0} yards`,
-      trend: "Average call volume per yard",
+      detail: `In total`,
+      trend: `${yards?.data?.length || 0} yards`,
       tone: "sky",
     }),
   ];
