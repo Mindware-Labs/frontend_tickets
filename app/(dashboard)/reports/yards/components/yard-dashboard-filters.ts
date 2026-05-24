@@ -3,6 +3,7 @@ export type YardDashboardFilterKey =
   | "direction"
   | "priority"
   | "agent"
+  | "customer"
   | "campaign"
   | "day";
 
@@ -13,6 +14,7 @@ export const emptyYardDashboardFilters = (): YardDashboardFilters => ({
   direction: null,
   priority: null,
   agent: null,
+  customer: null,
   campaign: null,
   day: null,
 });
@@ -33,6 +35,7 @@ export function buildYardFilterQuery(
   if (filters.direction) params.set("direction", filters.direction);
   if (filters.priority) params.set("priority", filters.priority);
   if (filters.agent) params.set("agentName", filters.agent);
+  if (filters.customer) params.set("customerName", filters.customer);
   if (filters.campaign) params.set("campaignName", filters.campaign);
   if (filters.day) params.set("activityDate", filters.day);
   return params.toString();
@@ -48,6 +51,8 @@ export function yardFilterLabel(key: YardDashboardFilterKey): string {
       return "Priority";
     case "agent":
       return "Agent";
+    case "customer":
+      return "Customer";
     case "campaign":
       return "Campaign";
     case "day":
