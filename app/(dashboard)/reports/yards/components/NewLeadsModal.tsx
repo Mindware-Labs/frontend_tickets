@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { YardContextChip } from "./yard-dashboard-chrome";
 import {
   InsightEmptyState,
+  InsightExpandableDetails,
   InsightIssueBlock,
   InsightKpiStrip,
   InsightMetaRow,
@@ -40,6 +41,7 @@ import {
   getInsightCardsGridClass,
   getInsightSheetMaxWidthClass,
   insightCardClass,
+  insightCardExpandedClass,
   insightSheetHeaderClass,
   useInsightSheetChrome,
 } from "./yard-insight-ui";
@@ -127,6 +129,7 @@ export function NewLeadsModal({
       : "All dates";
 
   useInsightSheetChrome(open);
+  const [expandedLeadKey, setExpandedLeadKey] = useState<string | null>(null);
 
   const sheetWidthClass = getInsightSheetMaxWidthClass(leads.length);
   const cardsGridClass = getInsightCardsGridClass(leads.length);
@@ -189,6 +192,8 @@ export function NewLeadsModal({
             ) : (
               <div className={cn("grid gap-3", cardsGridClass)}>
                 {leads.map((lead, index) => {
+                  const cardKey = `${lead.customerId ?? lead.customerName}-${index}`;
+                  const detailsOpen = expandedLeadKey === cardKey;
                   const customerKey =
                     lead.customerId !== null
                       ? String(lead.customerId)
@@ -240,8 +245,12 @@ export function NewLeadsModal({
 
                   return (
                     <article
-                      key={`${lead.customerId ?? lead.customerName}-${index}`}
-                      className={cn(insightCardClass, "hover:border-[#008f68]/35")}
+                      key={cardKey}
+                      className={cn(
+                        insightCardClass,
+                        "hover:border-[#008f68]/35",
+                        detailsOpen && insightCardExpandedClass,
+                      )}
                     >
                       <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-slate-800">
                         <div className="flex items-start justify-between gap-2">
@@ -284,7 +293,15 @@ export function NewLeadsModal({
                         </div>
                       </div>
 
-                      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2.5">
+                      <div className="flex flex-col p-2.5">
+                        <InsightExpandableDetails
+                          count={sortedCalls.length + relatedTickets.length}
+                          open={detailsOpen}
+                          onOpenChange={(open) =>
+                            setExpandedLeadKey(open ? cardKey : null)
+                          }
+                        >
+                        <div className="flex flex-col gap-2">
                         <InsightRecordPanel
                           title={`Lead calls (${sortedCalls.length})`}
                           badge={
@@ -458,6 +475,8 @@ export function NewLeadsModal({
                               ))
                           )}
                         </InsightRecordPanel>
+                        </div>
+                        </InsightExpandableDetails>
                       </div>
 
                       <div className="mt-auto flex gap-2 border-t border-slate-100 p-2.5 dark:border-slate-800">
@@ -495,7 +514,7 @@ export function NewLeadsModal({
         <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-slate-500">
-              Ranked by lead call volume · full notes and tickets on each card
+              Ranked by lead call volume · expand a card to see calls and tickets
             </p>
             <Button
               type="button"

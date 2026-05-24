@@ -2,9 +2,16 @@
 
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import { useAircall } from "@/components/providers/AircallProvider";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import {
   getRecordPriorityClass,
@@ -36,9 +43,13 @@ export function getInsightSheetMaxWidthClass(cardCount: number) {
 }
 
 export function getInsightCardsGridClass(cardCount: number) {
-  if (cardCount <= 1) return "grid-cols-1";
-  if (cardCount === 2) return "grid-cols-1 sm:grid-cols-2";
-  return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
+  const cols =
+    cardCount <= 1
+      ? "grid-cols-1"
+      : cardCount === 2
+        ? "grid-cols-1 sm:grid-cols-2"
+        : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
+  return cn(cols, "items-start");
 }
 
 export function InsightSheetAccent() {
@@ -269,8 +280,72 @@ export function InsightEmptyState({
   );
 }
 
+export function InsightExpandableDetails({
+  children,
+  count,
+  className,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+}: {
+  children: ReactNode;
+  count?: number;
+  className?: string;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = openProp ?? uncontrolledOpen;
+
+  const handleOpenChange = (next: boolean) => {
+    if (openProp === undefined) {
+      setUncontrolledOpen(next);
+    }
+    onOpenChange?.(next);
+  };
+  const countLabel =
+    count !== undefined && count > 0
+      ? ` (${count})`
+      : count === 0
+        ? ""
+        : "";
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={handleOpenChange}
+      className={cn(className)}
+    >
+      <CollapsibleTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-full rounded-lg border-slate-200/80 bg-white text-[11px] font-semibold text-[#008f68] shadow-none hover:border-[#008f68]/30 hover:bg-[#f0faf5] dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+          aria-expanded={open}
+        >
+          {open ? "Hide details" : "View details"}
+          {countLabel}
+          <ChevronDown
+            className={cn(
+              "ml-auto size-3.5 shrink-0 opacity-70 transition-transform duration-200",
+              open && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2 space-y-2">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export const insightCardClass =
-  "flex h-full flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors dark:border-slate-800 dark:bg-slate-950";
+  "flex w-full flex-col self-start overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[box-shadow] duration-200 dark:border-slate-800 dark:bg-slate-950";
+
+export const insightCardExpandedClass =
+  "shadow-[0_4px_14px_rgba(0,143,104,0.12)] ring-1 ring-[#008f68]/20 dark:shadow-[0_4px_14px_rgba(0,0,0,0.35)]";
 
 /** Reserve space for the sheet close control and hide the Aircall FAB while open. */
 export const insightSheetHeaderClass =
