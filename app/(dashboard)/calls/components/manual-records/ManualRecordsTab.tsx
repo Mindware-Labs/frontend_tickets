@@ -38,6 +38,7 @@ import {
   PhoneOutgoing,
   ChevronDown,
   RotateCcw,
+  MousePointerClick,
 } from "lucide-react";
 import { ManualRecordFiltersBar } from "./ManualRecordFiltersBar";
 import { ManualRecordForm } from "./ManualRecordForm";
@@ -154,9 +155,20 @@ export function ManualRecordsTab() {
 
   const viewCounts = pageData?.viewCounts as Record<string, number> | undefined;
 
-  const { dial, status: aircallStatus, isLoggedIn: aircallLoggedIn, setSheetOpen } =
-    useAircall();
+  const {
+    dial,
+    status: aircallStatus,
+    isLoggedIn: aircallLoggedIn,
+    setSheetOpen,
+  } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const currentAgentName =
+    refData.currentAgent?.name?.trim() ||
+    [refData.currentUser?.name, refData.currentUser?.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    null;
 
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const recordGroups = useMemo<CustomerManualRecordGroup[]>(() => {
@@ -210,9 +222,8 @@ export function ManualRecordsTab() {
   // ---- Modal / sheet state ----
   const [showCreate, setShowCreate] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
-  const [drawerGroup, setDrawerGroup] = useState<CustomerManualRecordGroup | null>(
-    null,
-  );
+  const [drawerGroup, setDrawerGroup] =
+    useState<CustomerManualRecordGroup | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [selected, setSelected] = useState<ManualRecord | null>(null);
   const [showDrawerSuccess, setShowDrawerSuccess] = useState(false);
@@ -244,10 +255,13 @@ export function ManualRecordsTab() {
       const fd = new FormData();
       fd.append("file", file);
       try {
-        const upRes = await fetch(`/api/manual-records/${recordId}/attachments`, {
-          method: "POST",
-          body: fd,
-        });
+        const upRes = await fetch(
+          `/api/manual-records/${recordId}/attachments`,
+          {
+            method: "POST",
+            body: fd,
+          },
+        );
         const upResult = await upRes.json();
         if (!upResult.success) uploadErrors++;
       } catch {
@@ -279,7 +293,8 @@ export function ManualRecordsTab() {
 
   const openView = (record: ManualRecord) => {
     const group =
-      recordGroups.find((g) => g.records.some((r) => r.id === record.id)) ?? null;
+      recordGroups.find((g) => g.records.some((r) => r.id === record.id)) ??
+      null;
     setSelected(record);
     setDrawerGroup(group);
     populateFormFromRecord(record);
@@ -466,10 +481,11 @@ export function ManualRecordsTab() {
         <ManualRecordForm
           form={form}
           setForm={setForm}
-          customers={refData.customers}
+          customers={[]}
           yards={refData.yards}
           campaigns={refData.campaigns}
           mode="create"
+          createdByName={currentAgentName}
           pendingFiles={pendingFiles}
           onFilesChange={setPendingFiles}
           getAttachmentUrl={resolveAttachmentUrl}
@@ -565,16 +581,26 @@ export function ManualRecordsTab() {
       {/* Filters row */}
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
-          <div className="relative flex-1 max-w-[320px]">
-            <Search className="absolute left-3 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search customers or notes..."
-              value={filters.search}
-              onChange={(e) => filters.setSearch(e.target.value)}
-              className="h-[30px] rounded-full border-border bg-muted/30 pl-[34px] pr-8 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30"
-            />
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-background px-1.5 py-[1px] font-mono text-[10px] text-muted-foreground">
-              /
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1 max-w-[320px]">
+              <Search className="absolute left-3 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search customers or notes..."
+                value={filters.search}
+                onChange={(e) => filters.setSearch(e.target.value)}
+                className="h-[30px] rounded-full border-border bg-muted/30 pl-[34px] pr-8 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30"
+              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-background px-1.5 py-[1px] font-mono text-[10px] text-muted-foreground">
+                /
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground sm:whitespace-nowrap">
+              <MousePointerClick
+                className="h-3.5 w-3.5 shrink-0"
+                strokeWidth={2}
+              />
+              <span>Click a row to view record details.</span>
             </div>
           </div>
 
@@ -772,8 +798,7 @@ export function ManualRecordsTab() {
                                     }}
                                     disabled={!canDial}
                                     aria-label="Call customer"
-                                  >
-                                  </button>
+                                  ></button>
                                 </div>
                               )}
                             </div>
@@ -858,7 +883,10 @@ export function ManualRecordsTab() {
                           key={`${group.key}-timeline`}
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
-                          <TableCell colSpan={9} className="border-t-0 px-0 py-1.5">
+                          <TableCell
+                            colSpan={9}
+                            className="border-t-0 px-0 py-1.5"
+                          >
                             <InlineManualRecordTimeline
                               group={group}
                               onOpenRecord={openView}
@@ -930,13 +958,16 @@ export function ManualRecordsTab() {
             <AlertDialogDescription>
               Record #{selected?.id} for{" "}
               <strong>
-                {selected?.customer?.name || `Customer #${selected?.customerId}`}
+                {selected?.customer?.name ||
+                  `Customer #${selected?.customerId}`}
               </strong>{" "}
               will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isSubmitting}

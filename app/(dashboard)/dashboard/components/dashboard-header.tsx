@@ -1,7 +1,6 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { RefreshCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -24,10 +23,8 @@ type DashboardHeaderProps = {
   activeView: DashboardViewKey;
   onViewChange: (view: DashboardViewKey) => void;
   lastUpdated: string | null;
-  isLoading: boolean;
   isRealtimeConnected: boolean;
   isRealtimeSyncing: boolean;
-  onRefresh: () => void;
 };
 
 export function DashboardHeader({
@@ -35,10 +32,8 @@ export function DashboardHeader({
   activeView,
   onViewChange,
   lastUpdated,
-  isLoading,
   isRealtimeConnected,
   isRealtimeSyncing,
-  onRefresh,
 }: DashboardHeaderProps) {
   return (
     <header className="shrink-0">
@@ -91,7 +86,7 @@ export function DashboardHeader({
           <DashboardInlineActiveFilters />
         </div>
 
-        {/* Right: filter launcher, info, time, refresh */}
+        {/* Right: filter launcher, info, time */}
         <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 md:border-t-0 md:pt-0 md:justify-end">
           <DashboardFilterTrigger />
 
@@ -130,18 +125,6 @@ export function DashboardHeader({
                 {lastUpdated}
               </span>
             ) : null}
-            <button
-              type="button"
-              className="rounded-full p-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-800"
-              disabled={isLoading}
-              onClick={onRefresh}
-              title="Refresh dashboard data"
-              aria-label="Refresh dashboard data"
-            >
-              <RefreshCw
-                className={cn("size-3.5", isLoading && "animate-spin")}
-              />
-            </button>
           </div>
         </div>
       </div>

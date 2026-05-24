@@ -15,6 +15,10 @@ import {
   InspectorSelect,
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
+import {
+  AsyncCustomerCombobox,
+  type CustomerSearchOption,
+} from "../shared/AsyncCustomerCombobox";
 import { EntityAttachmentsSection } from "../shared/EntityAttachmentsSection";
 import { SelectItem } from "@/components/ui/select";
 import { ClipboardList } from "lucide-react";
@@ -49,6 +53,7 @@ export interface ManualRecordFormProps {
   campaigns: { id: number; nombre: string; tipo?: string; yardaId?: number }[];
   mode?: "create" | "edit";
   createdByName?: string | null;
+  selectedCustomer?: CustomerSearchOption | null;
   pendingFiles: File[];
   onFilesChange: (files: File[]) => void;
   existingAttachments?: string[];
@@ -63,6 +68,7 @@ export function ManualRecordForm({
   campaigns,
   mode = "create",
   createdByName,
+  selectedCustomer,
   pendingFiles,
   onFilesChange,
   existingAttachments = [],
@@ -85,6 +91,10 @@ export function ManualRecordForm({
       })),
     [customers],
   );
+  const selectedCustomerOption =
+    selectedCustomer ||
+    customers.find((customer) => customer.id.toString() === form.customerId) ||
+    null;
 
   const uploadInputId =
     mode === "create" ? "manual-record-file-upload-create" : "manual-record-file-upload-edit";
@@ -104,12 +114,12 @@ export function ManualRecordForm({
         <div className="space-y-3 px-3.5 py-3">
           <div>
             <SectionHeading>Customer Information</SectionHeading>
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-1 gap-x-3 gap-y-2.5 sm:grid-cols-2">
               <div>
                 <FieldLabel>
                   Customer <span className="normal-case text-red-400">*</span>
                 </FieldLabel>
-                <InspectorCombobox
+                <AsyncCustomerCombobox
                   value={form.customerId}
                   onChange={(v) => setForm((f) => ({ ...f, customerId: v }))}
                   placeholder="Select customer…"

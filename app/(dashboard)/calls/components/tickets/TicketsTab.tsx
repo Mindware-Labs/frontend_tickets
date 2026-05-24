@@ -39,6 +39,7 @@ import {
   ChevronDown,
   Ticket as TicketIcon,
   RotateCcw,
+  MousePointerClick,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -46,7 +47,6 @@ import {
   TableYardBadge,
 } from "@/components/entity-table-badges";
 import {
-  TableDispositionPill,
   TablePriorityPill,
   TableSupportStatusPill,
   normalizeSupportStatusKey,
@@ -110,6 +110,12 @@ const formatLabel = (v: string) =>
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const ticketPhoneLineLabel = (ticket: SupportTicketRecord) => {
+  const line = ticket.phoneLine;
+  if (!line) return "";
+  return line.label ? `${line.label} (${line.phoneNumber})` : line.phoneNumber;
+};
 
 const TICKET_STATUS_VIEW_TABS = [
   { key: "all", label: "All Tickets", countKey: "all" },
@@ -637,17 +643,19 @@ export function TicketsTab({
                     ticketFilters.handleViewChange(tab.key);
                     ticketFilters.setFilter("status", "all");
                   }}
-                  className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors -mb-px ${isActive
+                  className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors -mb-px ${
+                    isActive
                       ? "border-[#008f68] text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
+                  }`}
                 >
                   {tab.label}
                   <span
-                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${isActive
+                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
+                      isActive
                         ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
                         : "bg-muted/40 text-muted-foreground font-medium border-border"
-                      }`}
+                    }`}
                   >
                     {count}
                   </span>
@@ -675,16 +683,26 @@ export function TicketsTab({
       {/* Filters row */}
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
-          <div className="relative flex-1 max-w-[320px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
-            <Input
-              placeholder="Search tickets, customers, or issues..."
-              value={ticketFilters.search}
-              onChange={(e) => ticketFilters.setSearch(e.target.value)}
-              className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
-            />
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
-              /
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1 max-w-[320px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
+              <Input
+                placeholder="Search tickets, customers, or issues..."
+                value={ticketFilters.search}
+                onChange={(e) => ticketFilters.setSearch(e.target.value)}
+                className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
+              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+                /
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground sm:whitespace-nowrap">
+              <MousePointerClick
+                className="h-3.5 w-3.5 shrink-0"
+                strokeWidth={2}
+              />
+              <span>Click a row to view ticket details.</span>
             </div>
           </div>
 
@@ -803,7 +821,7 @@ export function TicketsTab({
                   Campaign
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Disposition
+                  Line
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
@@ -825,7 +843,11 @@ export function TicketsTab({
               ) : (
                 ticketGroups.map((group, i) => {
                   const t = group.latestTicket;
-                  const initials = (group.customerName || t.customer?.name || "?")
+                  const initials = (
+                    group.customerName ||
+                    t.customer?.name ||
+                    "?"
+                  )
                     .substring(0, 2)
                     .toUpperCase();
                   const createdDate = new Date(t.createdAt || "");
@@ -834,6 +856,7 @@ export function TicketsTab({
                     : createdDate.toDateString() === new Date().toDateString()
                       ? format(createdDate, "HH:mm")
                       : format(createdDate, "MMM d");
+                  const lineLabel = ticketPhoneLineLabel(t);
                   return (
                     <React.Fragment key={group.key}>
                       <TableRow
@@ -889,14 +912,13 @@ export function TicketsTab({
                                       e.stopPropagation();
                                       dial(
                                         group.customerPhone ||
-                                        t.customer!.phone!,
+                                          t.customer!.phone!,
                                         t.callId ?? t.id,
                                       );
                                     }}
                                     disabled={!canDial}
                                     aria-label="Call customer"
-                                  >
-                                  </button>
+                                  ></button>
                                 </div>
                               )}
                             </div>
@@ -962,8 +984,18 @@ export function TicketsTab({
                             name={t.campaign?.nombre}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
-                          <TableDispositionPill disposition={t.disposition} />
+                        <TableCell
+                          className="max-w-0 px-2 py-1 align-middle text-[11px] font-medium text-slate-600"
+                          title={lineLabel || undefined}
+                        >
+                          <span
+                            className={cn(
+                              "block truncate",
+                              !lineLabel && "text-slate-400",
+                            )}
+                          >
+                            {lineLabel || "—"}
+                          </span>
                         </TableCell>
                         <TableCell className="whitespace-nowrap px-2 py-1 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
                           {createdLabel}
@@ -974,7 +1006,10 @@ export function TicketsTab({
                           key={`${group.key}-timeline`}
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
-                          <TableCell colSpan={11} className="border-t-0 py-1.5 px-0">
+                          <TableCell
+                            colSpan={11}
+                            className="border-t-0 py-1.5 px-0"
+                          >
                             <InlineTicketTimeline
                               group={group}
                               agents={refData.agents}
@@ -1028,7 +1063,7 @@ export function TicketsTab({
             <CreateTicketForm
               form={form}
               setForm={setForm}
-              customers={refData.customers}
+              customers={[]}
               yards={refData.yards}
               agents={refData.agents}
               campaigns={refData.campaigns}
@@ -1125,7 +1160,9 @@ export function TicketsTab({
                     <Badge
                       variant="secondary"
                       className={
-                        statusColors[normalizeSupportStatusKey(selected.status)] || ""
+                        statusColors[
+                          normalizeSupportStatusKey(selected.status)
+                        ] || ""
                       }
                     >
                       {formatLabel(normalizeSupportStatusKey(selected.status))}

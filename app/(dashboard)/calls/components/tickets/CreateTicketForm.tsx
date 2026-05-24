@@ -93,12 +93,13 @@ export function CreateTicketForm({
       <TicketPropertiesCard
         editFormData={form}
         setEditFormData={setForm}
-        customers={customers}
+        customers={[]}
         yards={yards}
         agents={agents}
         campaigns={campaigns}
         showPhoneLine={false}
         forCreateForm
+        useAsyncCustomerSearch
         campaignOptionValues={campaignOptionValues}
         mainCustomerOpen={mainCustomerOpen}
         setMainCustomerOpen={setMainCustomerOpen}

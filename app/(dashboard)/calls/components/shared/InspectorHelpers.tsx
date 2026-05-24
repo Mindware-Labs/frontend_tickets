@@ -31,6 +31,29 @@ export function InspLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function InspectorReadonlyValue({
+  value,
+  muted = false,
+  className,
+}: {
+  value: string;
+  muted?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-7 items-center rounded-lg bg-slate-50 px-2.5 text-xs",
+        muted ? "font-normal text-slate-400" : "font-medium text-slate-700",
+        className,
+      )}
+      title={value}
+    >
+      <span className="truncate">{value}</span>
+    </div>
+  );
+}
+
 export function InspectorSelect({
   value,
   onChange,

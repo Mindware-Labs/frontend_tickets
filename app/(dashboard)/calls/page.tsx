@@ -1381,7 +1381,7 @@ export default function TicketsPage() {
           />
         </TabsContent>
 
-        <TabsContent value="manual-records" className="flex-1 mt-2">
+        <TabsContent value="manual-records" className="flex-1 mt-0">
           <ManualRecordsTab />
         </TabsContent>
       </Tabs>

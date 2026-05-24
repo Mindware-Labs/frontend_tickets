@@ -450,6 +450,13 @@ export function CustomerManualRecordDrawer({
                       campaigns={campaigns}
                       mode="edit"
                       createdByName={recordAgentName}
+                      selectedCustomer={{
+                        id: selectedRecord.customer?.id ?? selectedRecord.customerId,
+                        name:
+                          selectedRecord.customer?.name ||
+                          `Customer #${selectedRecord.customerId}`,
+                        phone: selectedRecord.customer?.phone ?? null,
+                      }}
                       pendingFiles={pendingFiles}
                       onFilesChange={onFilesChange}
                       existingAttachments={selectedRecord.attachments || []}

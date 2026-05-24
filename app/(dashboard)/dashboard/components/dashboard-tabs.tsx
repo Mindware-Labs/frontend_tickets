@@ -31,7 +31,6 @@ export function DashboardTabs() {
     isLoading,
     isRealtimeConnected,
     isRealtimeSyncing,
-    refresh,
   } = useSupportDashboardData();
 
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -56,10 +55,8 @@ export function DashboardTabs() {
         activeView={activeView}
         onViewChange={setActiveView}
         lastUpdated={lastUpdated}
-        isLoading={isLoading}
         isRealtimeConnected={isRealtimeConnected}
         isRealtimeSyncing={isRealtimeSyncing}
-        onRefresh={() => void refresh()}
       />
 
       {error ? (

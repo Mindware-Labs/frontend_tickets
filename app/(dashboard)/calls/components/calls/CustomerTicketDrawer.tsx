@@ -524,6 +524,22 @@ export function CustomerTicketDrawer({
     return [];
   }, [campaigns, editFormData.campaignId]);
 
+  const phoneLineLabel = useMemo(() => {
+    const selectedPhoneLine = phoneLines.find(
+      (line) => line.id.toString() === editFormData.phoneLineId,
+    );
+
+    if (selectedPhoneLine) {
+      return selectedPhoneLine.label
+        ? `${selectedPhoneLine.label} (${selectedPhoneLine.phoneNumber})`
+        : selectedPhoneLine.phoneNumber;
+    }
+
+    return editFormData.phoneLineId
+      ? `Line #${editFormData.phoneLineId}`
+      : "No line";
+  }, [editFormData.phoneLineId, phoneLines]);
+
   const followUpDateDisplay = useMemo(
     () =>
       editFormData.followUpDueDate
@@ -802,6 +818,13 @@ export function CustomerTicketDrawer({
                   <CalendarIcon className="w-3 h-3 text-slate-400" />
                   {fmtDate(selectedTicket.createdAt)}
                 </span>
+                <span
+                  className="inline-flex max-w-[260px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 cursor-default"
+                  title={phoneLineLabel}
+                >
+                  <Link2 className="w-3 h-3 shrink-0 text-slate-400" />
+                  <span className="truncate">{phoneLineLabel}</span>
+                </span>
                 {sp && (
                   <span
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
@@ -926,6 +949,7 @@ export function CustomerTicketDrawer({
                     mainCustomerSearch={mainCustomerSearch}
                     setMainCustomerSearch={setMainCustomerSearch}
                     mainFilteredCustomers={mainFilteredCustomers}
+                    showPhoneLine={false}
                     activityMode
                   />
 
@@ -1605,25 +1629,6 @@ export function CustomerTicketDrawer({
                             c.id.toString() === editFormData.customerId,
                         )?.phone || "Auto-filled"}
                       </div>
-                    </div>
-                    <div>
-                      <InspLabel>Phone Line</InspLabel>
-                      <InspectorSelect
-                        value={editFormData.phoneLineId || ""}
-                        onChange={(v) =>
-                          setEditFormData((f) => ({ ...f, phoneLineId: v }))
-                        }
-                        placeholder="Select line"
-                      >
-                        <SelectItem value="none">None</SelectItem>
-                        {phoneLines.map((pl) => (
-                          <SelectItem key={pl.id} value={pl.id.toString()}>
-                            {pl.label
-                              ? `${pl.label} (${pl.phoneNumber})`
-                              : pl.phoneNumber}
-                          </SelectItem>
-                        ))}
-                      </InspectorSelect>
                     </div>
                   </div>
                 </div>

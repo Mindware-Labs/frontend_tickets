@@ -26,7 +26,9 @@ import { formatEnumLabel } from "../../utils/call-helpers";
 import {
   InspectorSelect,
   InspectorCombobox,
+  InspectorReadonlyValue,
 } from "../shared/InspectorHelpers";
+import { AsyncCustomerCombobox } from "../shared/AsyncCustomerCombobox";
 import {
   CREATE_TICKET_STATUSES,
   TicketStatusToggle,
@@ -72,6 +74,7 @@ export interface TicketPropertiesCardProps {
   activityMode?: boolean;
   /** Manual create form: Active, Follow-up, Overdue only */
   forCreateForm?: boolean;
+  useAsyncCustomerSearch?: boolean;
 }
 
 export function TicketPropertiesCard({
@@ -91,9 +94,21 @@ export function TicketPropertiesCard({
   showPhoneLine = true,
   activityMode = false,
   forCreateForm = false,
+  useAsyncCustomerSearch = false,
   popoverClassName,
   selectContentClassName,
 }: TicketPropertiesCardProps) {
+  const selectedPhoneLine = phoneLines.find(
+    (line) => line.id.toString() === editFormData.phoneLineId,
+  );
+  const phoneLineLabel = selectedPhoneLine
+    ? selectedPhoneLine.label
+      ? `${selectedPhoneLine.label} (${selectedPhoneLine.phoneNumber})`
+      : selectedPhoneLine.phoneNumber
+    : editFormData.phoneLineId
+      ? `Line #${editFormData.phoneLineId}`
+      : "No line";
+
   return (
     <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
       <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
@@ -113,6 +128,16 @@ export function TicketPropertiesCard({
               <FieldLabel>
                 Customer <span className="text-red-400 normal-case">*</span>
               </FieldLabel>
+              {useAsyncCustomerSearch ? (
+                <AsyncCustomerCombobox
+                  value={editFormData.customerId || ""}
+                  onChange={(value) =>
+                    setEditFormData((f) => ({ ...f, customerId: value }))
+                  }
+                  placeholder="Select customer..."
+                  searchPlaceholder="Search customer..."
+                />
+              ) : (
               <Popover
                 open={mainCustomerOpen}
                 onOpenChange={(isOpen) => {
@@ -192,6 +217,7 @@ export function TicketPropertiesCard({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
             </div>
 
             <div>
@@ -212,25 +238,10 @@ export function TicketPropertiesCard({
             {showPhoneLine && (
               <div className="col-span-2">
                 <FieldLabel>Phone Line</FieldLabel>
-                <InspectorSelect
-                  value={editFormData.phoneLineId || ""}
-                  onChange={(v) =>
-                    setEditFormData((f) => ({
-                      ...f,
-                      phoneLineId: v === "none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Select line"
-                >
-                  <SelectItem value="none">None</SelectItem>
-                  {phoneLines.map((pl) => (
-                    <SelectItem key={pl.id} value={pl.id.toString()}>
-                      {pl.label
-                        ? `${pl.label} (${pl.phoneNumber})`
-                        : pl.phoneNumber}
-                    </SelectItem>
-                  ))}
-                </InspectorSelect>
+                <InspectorReadonlyValue
+                  value={phoneLineLabel}
+                  muted={!editFormData.phoneLineId}
+                />
               </div>
             )}
           </div>

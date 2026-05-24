@@ -38,6 +38,7 @@ import {
   PhoneIncoming,
   ChevronDown,
   Radio,
+  MousePointerClick,
 } from "lucide-react";
 import {
   TableCampaignBadge,
@@ -283,29 +284,46 @@ export function GroupedCallsTable({
       {isFocusMode ? (
         <div className="mt-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] px-3 py-2 text-[12px] text-slate-700">
           Showing call{" "}
-          <span className="font-mono font-bold text-[#008f68]">#{focusCallId}</span>
-          {" "}only — clear search or use back in the call panel to see all calls.
+          <span className="font-mono font-bold text-[#008f68]">
+            #{focusCallId}
+          </span>{" "}
+          only — clear search or use back in the call panel to see all calls.
         </div>
       ) : null}
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}
       <div className="my-2 flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-[320px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
-          <Input
-            placeholder="Search calls, numbers, or customers..."
-            className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
-            value={search}
-            readOnly={isFocusMode}
-            onChange={(e) => {
-              if (!isFocusMode) onSearchChange(e.target.value);
-            }}
-          />
-          <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
-            /
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-[320px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[14px] w-[14px] text-muted-foreground" />
+            <Input
+              placeholder="Search calls, numbers, or customers..."
+              className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
+              value={search}
+              readOnly={isFocusMode}
+              onChange={(e) => {
+                if (!isFocusMode) onSearchChange(e.target.value);
+              }}
+            />
+            <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
+              /
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground sm:whitespace-nowrap">
+            <MousePointerClick
+              className="h-3.5 w-3.5 shrink-0"
+              strokeWidth={2}
+            />
+            <span>Click a row to view call details.</span>
           </div>
         </div>
 
-        <div className={cn("flex items-center gap-3", isFocusMode && "opacity-60 pointer-events-none")}>
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            isFocusMode && "opacity-60 pointer-events-none",
+          )}
+        >
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -597,7 +615,10 @@ export function GroupedCallsTable({
                           key={`${group.key}-timeline`}
                           className="bg-slate-50/50 hover:bg-slate-50/50 border-b relative"
                         >
-                          <TableCell colSpan={10} className="border-t-0 py-1.5 px-0">
+                          <TableCell
+                            colSpan={10}
+                            className="border-t-0 py-1.5 px-0"
+                          >
                             <InlineCallTimeline
                               group={group}
                               agents={agents}
