@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue, useEffect } from "react";
+import { useState, useMemo, useDeferredValue, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay } from "date-fns";
@@ -100,6 +100,44 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     setActiveView("all");
     setCurrentPage(1);
   }, [focusCallId]);
+
+  const resetCallListFilters = useCallback(() => {
+    setSearch("");
+    setActiveView("all");
+    setStatusFilter("all");
+    setDirectionFilter("all");
+    setDispositionFilter("all");
+    setCampaignFilter("all");
+    setCampaignOptionFilter("all");
+    setYardFilter("all");
+    setAgentFilter("all");
+    setPhoneLineFilter("all");
+    setDateRange(undefined);
+    setCurrentPage(1);
+  }, []);
+
+  /** Clears list filters and removes call deep-link params from the URL. */
+  const leaveCallFocus = useCallback(
+    (destination?: string) => {
+      resetCallListFilters();
+
+      if (destination) {
+        router.replace(destination, { scroll: false });
+        return;
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("id");
+      params.delete("returnTo");
+      const qs = params.toString();
+      router.replace(qs ? `/calls?${qs}` : "/calls", { scroll: false });
+    },
+    [router, searchParams, resetCallListFilters],
+  );
+
+  const clearFocusMode = useCallback(() => {
+    leaveCallFocus();
+  }, [leaveCallFocus]);
 
   // Build SWR URL
   const ticketsApiUrl = useMemo(() => {
@@ -224,5 +262,8 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
     deferredSearch,
     searchParams,
     focusCallId,
+    clearFocusMode,
+    leaveCallFocus,
+    resetCallListFilters,
   };
 }

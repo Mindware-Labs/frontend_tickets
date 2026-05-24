@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface CallRecordingPlayerProps {
   callId: number | string;
   durationSec?: number | null;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "mini";
   className?: string;
 }
 
@@ -31,6 +31,7 @@ export function CallRecordingPlayer({
   className,
 }: CallRecordingPlayerProps) {
   const compact = variant === "compact";
+  const mini = variant === "mini";
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,7 @@ export function CallRecordingPlayer({
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const numericId = typeof callId === "number" ? callId : parseInt(String(callId), 10);
-  const waveBars = compact ? 48 : 60;
+  const waveBars = mini ? 32 : compact ? 48 : 60;
   const waveHeights = useMemo(
     () => buildWaveHeights(Number.isFinite(numericId) ? numericId : 1, waveBars),
     [numericId, waveBars],
@@ -145,18 +146,17 @@ export function CallRecordingPlayer({
     </div>
   ) : null;
 
-  const bodyPadding = compact ? "px-3 py-2.5" : "p-0";
+  const shellClass = cn(
+    (compact || mini) &&
+      "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-950",
+    className,
+  );
+  const bodyPadding = mini ? "px-2 py-1.5" : compact ? "px-3 py-2.5" : "p-0";
 
   if (loading) {
     return (
-      <div
-        className={cn(
-          compact &&
-            "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-950",
-          className,
-        )}
-      >
-        {header}
+      <div className={shellClass}>
+        {!mini ? header : null}
         <div
           className={cn(
             "flex items-center gap-2 text-[11px] text-slate-500",
@@ -164,7 +164,7 @@ export function CallRecordingPlayer({
           )}
         >
           <Loader2 className="h-3 w-3 animate-spin text-[#008f68]" />
-          Loading recording…
+          {mini ? "Loading…" : "Loading recording…"}
         </div>
       </div>
     );
@@ -172,19 +172,18 @@ export function CallRecordingPlayer({
 
   if (error || !blobUrl) {
     return (
-      <div
-        className={cn(
-          compact &&
-            "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-950",
-          className,
-        )}
-      >
-        {header}
+      <div className={shellClass}>
+        {!mini ? header : null}
         <div className={cn(bodyPadding)}>
-          {compact ? (
-            <div className="flex items-center gap-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/50">
-              <Mic className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-              <p className="text-[11px] font-medium text-slate-500">
+          {compact || mini ? (
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50",
+                mini ? "px-2 py-1.5" : "px-3 py-2",
+              )}
+            >
+              <Mic className="h-3 w-3 shrink-0 text-slate-300" />
+              <p className="text-[10px] font-medium text-slate-500">
                 Recording unavailable
               </p>
             </div>
@@ -196,10 +195,11 @@ export function CallRecordingPlayer({
     );
   }
 
-  const waveHeight = compact ? 28 : 40;
+  const waveHeight = mini ? 18 : compact ? 28 : 40;
 
   const player = (
     <>
+      {!mini ? (
       <svg
         className={cn("w-full cursor-pointer", compact ? "mb-2" : "mb-3")}
         height={waveHeight}
@@ -228,14 +228,15 @@ export function CallRecordingPlayer({
           );
         })}
       </svg>
+      ) : null}
 
-      <div className="flex items-center gap-2.5">
+      <div className={cn("flex items-center", mini ? "gap-1.5" : "gap-2.5")}>
         <button
           type="button"
           onClick={togglePlay}
           className={cn(
             "flex shrink-0 items-center justify-center rounded-full bg-[#008f68] text-white shadow-sm transition-all hover:bg-[#007a5a] active:scale-95",
-            compact ? "h-8 w-8" : "h-10 w-10",
+            mini ? "h-7 w-7" : compact ? "h-8 w-8" : "h-10 w-10",
           )}
           aria-label={isPlaying ? "Pause" : "Play"}
         >
@@ -256,7 +257,10 @@ export function CallRecordingPlayer({
 
         <div className="min-w-0 flex-1">
           <div
-            className="mb-1 h-1.5 cursor-pointer overflow-hidden rounded-full bg-slate-100"
+            className={cn(
+              "cursor-pointer overflow-hidden rounded-full bg-slate-100",
+              mini ? "mb-0.5 h-1" : "mb-1 h-1.5",
+            )}
             onClick={(e) => {
               const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
               seekTo((e.clientX - rect.left) / rect.width);
@@ -268,10 +272,20 @@ export function CallRecordingPlayer({
             />
           </div>
           <div className="flex justify-between">
-            <span className="font-mono text-[10px] tabular-nums text-slate-400">
+            <span
+              className={cn(
+                "font-mono tabular-nums text-slate-400",
+                mini ? "text-[9px]" : "text-[10px]",
+              )}
+            >
               {fmtTime(audioCurrentTime)}
             </span>
-            <span className="font-mono text-[10px] tabular-nums text-slate-400">
+            <span
+              className={cn(
+                "font-mono tabular-nums text-slate-400",
+                mini ? "text-[9px]" : "text-[10px]",
+              )}
+            >
               {effectiveDuration != null ? fmtTime(effectiveDuration) : "—:--"}
             </span>
           </div>
@@ -281,10 +295,13 @@ export function CallRecordingPlayer({
           href={recordingHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600",
+            mini ? "h-7 w-7" : "h-8 w-8",
+          )}
           title="Open recording"
         >
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ExternalLink className={mini ? "h-3 w-3" : "h-3.5 w-3.5"} />
         </a>
       </div>
 
@@ -313,15 +330,10 @@ export function CallRecordingPlayer({
     </>
   );
 
-  if (compact) {
+  if (compact || mini) {
     return (
-      <div
-        className={cn(
-          "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-950",
-          className,
-        )}
-      >
-        {header}
+      <div className={shellClass}>
+        {!mini ? header : null}
         <div className={bodyPadding}>{player}</div>
       </div>
     );

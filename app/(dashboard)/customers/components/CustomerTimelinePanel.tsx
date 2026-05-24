@@ -19,6 +19,7 @@ interface CustomerTimelinePanelProps {
   onClose: () => void;
   onViewCall?: (callId: number) => void;
   onViewTicket?: (ticketId: number) => void;
+  onViewManualRecord?: (recordId: number) => void;
 }
 
 export function CustomerTimelinePanel({
@@ -30,6 +31,7 @@ export function CustomerTimelinePanel({
   onClose,
   onViewCall,
   onViewTicket,
+  onViewManualRecord,
 }: CustomerTimelinePanelProps) {
   const [filters, setFilters] = useState<TimelineFilters>(
     DEFAULT_TIMELINE_FILTERS,
@@ -114,6 +116,7 @@ export function CustomerTimelinePanel({
           onMetaChange={handleMetaChange}
           onViewCall={onViewCall}
           onViewTicket={onViewTicket}
+          onViewManualRecord={onViewManualRecord}
         />
       </div>
     </aside>

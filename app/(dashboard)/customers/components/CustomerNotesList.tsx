@@ -160,84 +160,113 @@ export function CustomerNotesList({
 
   return (
     <div className={cn("space-y-2", isForm && "space-y-2")}>
-      <div
-        className={cn(
-          "flex gap-1.5",
-          isForm || isCompactSheet ? "flex-row items-center" : "flex-row items-end",
-        )}
-      >
-        <Textarea
-          placeholder="Add note…"
-          value={newNote}
-          rows={isCompactSheet ? 1 : isForm ? 2 : 2}
-          onChange={(e) => setNewNote(e.target.value)}
-          disabled={!customerId || loading}
+      {canEdit ? (
+        <div
           className={cn(
-            "min-h-0 flex-1 resize-none",
-            isCompactSheet
-              ? "h-8 max-h-20 border-slate-200 py-1.5 text-[12px]"
-              : isSheet
-                ? "border-slate-200/80 bg-white text-sm dark:border-slate-700 dark:bg-slate-900"
-                : "border-slate-200 text-sm",
-          )}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              if (customerId && newNote.trim()) handleAddNote();
-            }
-          }}
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant={isForm ? "outline" : "default"}
-          onClick={handleAddNote}
-          disabled={addingNote || !newNote.trim() || !customerId || loading}
-          className={cn(
-            "shrink-0",
-            isForm || isCompactSheet
-              ? "h-8 w-8 border-slate-200 p-0"
-              : "h-9 w-auto bg-[#008f68] px-3 text-white hover:bg-[#007a5a]",
+            "flex gap-2",
+            isForm || isCompactSheet ? "flex-row items-end" : "flex-row items-end",
           )}
         >
-          {addingNote ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
-        </Button>
-      </div>
+          <Textarea
+            placeholder={
+              isCompactSheet
+                ? "Add an audit note for this customer…"
+                : "Add note…"
+            }
+            value={newNote}
+            rows={isCompactSheet ? 2 : isForm ? 2 : 2}
+            onChange={(e) => setNewNote(e.target.value)}
+            disabled={!customerId || loading}
+            className={cn(
+              "min-h-0 flex-1 resize-none",
+              isCompactSheet
+                ? "min-h-[36px] rounded-xl border-border bg-muted/30 px-3 py-2 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30 dark:bg-slate-900/60"
+                : isSheet
+                  ? "border-slate-200/80 bg-white text-sm dark:border-slate-700 dark:bg-slate-900"
+                  : "border-slate-200 text-sm",
+            )}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (customerId && newNote.trim()) handleAddNote();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant={isForm ? "outline" : "default"}
+            onClick={handleAddNote}
+            disabled={addingNote || !newNote.trim() || !customerId || loading}
+            className={cn(
+              "shrink-0",
+              isForm
+                ? "h-8 w-8 border-slate-200 p-0"
+                : isCompactSheet
+                  ? "h-9 rounded-full bg-[#008f68] px-3.5 text-[12px] font-semibold text-white shadow-sm hover:bg-[#007a5a] disabled:opacity-50"
+                  : "h-9 w-auto bg-[#008f68] px-3 text-white hover:bg-[#007a5a]",
+            )}
+          >
+            {addingNote ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : isCompactSheet ? (
+              "Add"
+            ) : (
+              <Plus className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      ) : null}
 
       {loading ? (
-        <div className="flex items-center justify-center gap-1.5 py-4 text-[11px] text-slate-500">
+        <div className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 py-8 text-[11px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/40">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[#008f68]" />
-          Loading…
+          Loading notes…
         </div>
       ) : displayNotes.length > 0 ? (
         isSheet ? (
           <div
             className={cn(
-              "relative overflow-y-auto overscroll-contain pr-0.5",
-              isCompactSheet ? "max-h-[min(200px,28vh)]" : "max-h-[min(280px,36vh)]",
+              "overflow-y-auto overscroll-contain pr-0.5",
+              isCompactSheet
+                ? "max-h-[min(240px,32vh)] space-y-2"
+                : "relative max-h-[min(280px,36vh)]",
             )}
           >
-            <div
-              className="absolute top-0.5 bottom-0.5 left-[7px] w-px bg-slate-200 dark:bg-slate-700"
-              aria-hidden
-            />
+            {!isCompactSheet ? (
+              <div
+                className="absolute top-0.5 bottom-0.5 left-[7px] w-px bg-slate-200 dark:bg-slate-700"
+                aria-hidden
+              />
+            ) : null}
             <ul className={cn(isCompactSheet ? "space-y-2" : "space-y-2.5")}>
               {displayNotes.map((note) => {
                 const isEditing = editingNoteId === note.id;
+                const meta = formatNoteMeta(note);
                 return (
-                  <li key={note.id} className="relative pl-5">
-                    <span className="absolute left-0 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
+                  <li
+                    key={note.id}
+                    className={cn(
+                      isCompactSheet ? "group" : "relative pl-5",
+                    )}
+                  >
+                    {!isCompactSheet ? (
+                      <span className="absolute left-0 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
+                    ) : null}
                     {isEditing ? (
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
+                      <div
+                        className={cn(
+                          "space-y-2 rounded-xl border bg-white p-2.5 dark:bg-slate-900",
+                          isCompactSheet
+                            ? "border-amber-200/80 dark:border-amber-900/50"
+                            : "border-slate-200 dark:border-slate-700",
+                        )}
+                      >
                         <Textarea
                           value={editingText}
                           rows={2}
                           onChange={(e) => setEditingText(e.target.value)}
-                          className="resize-none text-sm"
+                          className="resize-none rounded-lg border-slate-200 text-[12.5px] dark:border-slate-700"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -247,56 +276,76 @@ export function CustomerNotesList({
                             if (e.key === "Escape") cancelEdit();
                           }}
                         />
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-1.5">
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
+                            size="sm"
+                            className="h-7 px-2 text-[11px]"
                             onClick={cancelEdit}
                           >
-                            <X className="h-3.5 w-3.5" />
+                            Cancel
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-emerald-600"
+                            size="sm"
+                            className="h-7 bg-[#008f68] px-3 text-[11px] text-white hover:bg-[#007a5a]"
                             onClick={handleSaveNote}
                             disabled={savingNote || !editingText.trim()}
                           >
                             {savingNote ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <Check className="h-3.5 w-3.5" />
+                              "Save"
                             )}
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <div className="group min-w-0">
-                        {formatNoteMeta(note) ? (
-                          <p className="text-[11px] tabular-nums text-slate-500">
-                            {formatNoteMeta(note)}
+                      <div
+                        className={cn(
+                          "min-w-0",
+                          isCompactSheet &&
+                            "rounded-xl border border-amber-200/70 bg-amber-50/60 px-2.5 py-2 dark:border-amber-900/40 dark:bg-amber-950/20",
+                        )}
+                      >
+                        {meta ? (
+                          <p
+                            className={cn(
+                              "font-medium tabular-nums text-slate-500",
+                              isCompactSheet
+                                ? "text-[10px] uppercase tracking-[0.08em]"
+                                : "text-[11px]",
+                            )}
+                          >
+                            {meta}
                           </p>
                         ) : null}
                         <p
                           className={cn(
-                            "mt-0.5 whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-slate-200",
-                            isCompactSheet ? "text-[12px] line-clamp-3" : "text-[13px]",
+                            "whitespace-pre-wrap break-words leading-relaxed text-slate-800 dark:text-slate-100",
+                            meta && "mt-1",
+                            isCompactSheet ? "text-[12px]" : "mt-0.5 text-[13px]",
                           )}
                         >
                           {note.content}
                         </p>
                         {canEdit ? (
-                          <div className="mt-1.5 flex gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                          <div
+                            className={cn(
+                              "mt-2 flex gap-1",
+                              isCompactSheet
+                                ? "opacity-100"
+                                : "opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100",
+                            )}
+                          >
                             <button
                               type="button"
                               onClick={() => {
                                 setEditingNoteId(note.id);
                                 setEditingText(note.content);
                               }}
-                              className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                              className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-[#008f68] transition-colors hover:bg-[#e8f8f1] dark:hover:bg-emerald-950/40"
                             >
                               Edit
                             </button>
@@ -304,7 +353,7 @@ export function CustomerNotesList({
                               type="button"
                               onClick={() => handleDeleteNote(note.id)}
                               disabled={deletingNoteId === note.id}
-                              className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-red-500 hover:bg-red-50"
+                              className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
                             >
                               {deletingNoteId === note.id ? "…" : "Delete"}
                             </button>
@@ -417,6 +466,18 @@ export function CustomerNotesList({
             })}
           </ul>
         )
+      ) : isCompactSheet ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900/30">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+            <StickyNote className="h-4 w-4 text-slate-400" />
+          </span>
+          <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">
+            No audit notes yet
+          </p>
+          <p className="max-w-[220px] text-[11px] leading-relaxed text-slate-400">
+            Add context that stays on this customer for every agent.
+          </p>
+        </div>
       ) : (
         <p className="py-3 text-center text-[11px] text-slate-400">
           No audit notes yet.

@@ -28,7 +28,10 @@ import {
   InspectorCombobox,
   InspectorReadonlyValue,
 } from "../shared/InspectorHelpers";
-import { AsyncCustomerCombobox } from "../shared/AsyncCustomerCombobox";
+import {
+  AsyncCustomerCombobox,
+  type CustomerSearchOption,
+} from "../shared/AsyncCustomerCombobox";
 import {
   CREATE_TICKET_STATUSES,
   TicketStatusToggle,
@@ -75,6 +78,8 @@ export interface TicketPropertiesCardProps {
   /** Manual create form: Active, Follow-up, Overdue only */
   forCreateForm?: boolean;
   useAsyncCustomerSearch?: boolean;
+  /** Pre-selected customer (e.g. when escalating from a call). */
+  asyncSelectedCustomer?: CustomerSearchOption | null;
 }
 
 export function TicketPropertiesCard({
@@ -95,6 +100,7 @@ export function TicketPropertiesCard({
   activityMode = false,
   forCreateForm = false,
   useAsyncCustomerSearch = false,
+  asyncSelectedCustomer = null,
   popoverClassName,
   selectContentClassName,
 }: TicketPropertiesCardProps) {
@@ -131,6 +137,7 @@ export function TicketPropertiesCard({
               {useAsyncCustomerSearch ? (
                 <AsyncCustomerCombobox
                   value={editFormData.customerId || ""}
+                  selectedCustomer={asyncSelectedCustomer}
                   onChange={(value) =>
                     setEditFormData((f) => ({ ...f, customerId: value }))
                   }

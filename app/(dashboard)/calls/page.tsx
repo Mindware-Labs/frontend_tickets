@@ -57,7 +57,11 @@ import {
   normalizeEnumValue,
   isMissedCall,
   isCallbackDisposition,
+  resolveCallCustomerId,
+  resolveCallCustomerPreview,
+  ensureCallEscalatedDisposition,
 } from "./utils/call-helpers";
+import { CallDisposition } from "./types";
 import { startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useAircall } from "@/components/providers/AircallProvider";
 
@@ -587,9 +591,18 @@ export default function TicketsPage() {
     }
   }, [searchParams, router]);
 
-  // ---- Handle URL ticket/customer params ----
-  const processedTicketIdRef = useRef<string | null>(null);
-  const ticketIdParam = searchParams.get("id");
+  // ---- Handle URL deep-link params ----
+  const processedCallIdRef = useRef<string | null>(null);
+  const processedSupportTicketIdRef = useRef<string | null>(null);
+  const processedManualRecordIdRef = useRef<string | null>(null);
+  const isNavigatingBackRef = useRef(false);
+  const entityIdParam = searchParams.get("id");
+  const callIdParam =
+    entityIdParam && (!tabParam || tabParam === "calls") ? entityIdParam : null;
+  const supportTicketIdParam =
+    tabParam === "tickets" && entityIdParam ? entityIdParam : null;
+  const manualRecordIdParam =
+    tabParam === "manual-records" && entityIdParam ? entityIdParam : null;
   const customerIdParam = searchParams.get("customerId");
   const returnToParam = searchParams.get("returnTo");
 
@@ -628,49 +641,61 @@ export default function TicketsPage() {
 
   const handleBackToReturn = () => {
     if (!safeReturnPath) return;
+    isNavigatingBackRef.current = true;
     setShowTimelineDrawer(false);
-    processedTicketIdRef.current = null;
-    router.push(safeReturnPath);
+    setShowViewModal(false);
+    processedCallIdRef.current = null;
+    processedSupportTicketIdRef.current = null;
+    processedManualRecordIdRef.current = null;
+    ticketFilters.leaveCallFocus(safeReturnPath);
+  };
+
+  const handleCloseCallDrawer = () => {
+    setShowTimelineDrawer(false);
+    setDrawerSuccessToast(false);
+    setDrawerErrorToast(false);
+    if (callIdParam && !isNavigatingBackRef.current) {
+      ticketFilters.clearFocusMode();
+    }
+    isNavigatingBackRef.current = false;
   };
 
   useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab && ["calls", "tickets", "manual-records"].includes(tab)) {
-      setActiveTab(tab);
-    }
-    if (ticketIdParam) {
+    if (tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else if (callIdParam) {
       setActiveTab("calls");
     }
-  }, [searchParams, ticketIdParam]);
+  }, [tabParam, callIdParam]);
 
   useEffect(() => {
-    if (!ticketIdParam) {
-      processedTicketIdRef.current = null;
+    if (!callIdParam) {
+      processedCallIdRef.current = null;
       return;
     }
 
-    if (processedTicketIdRef.current === ticketIdParam) return;
+    if (processedCallIdRef.current === callIdParam) return;
 
     let cancelled = false;
 
     const openFromUrl = async () => {
       const fromList = tickets.find(
-        (t: Call) => t.id.toString() === ticketIdParam,
+        (t: Call) => t.id.toString() === callIdParam,
       );
       if (fromList) {
         if (cancelled) return;
-        processedTicketIdRef.current = ticketIdParam;
+        processedCallIdRef.current = callIdParam;
         openTicketModal(fromList);
         return;
       }
 
       try {
-        const response = await fetch(`/api/calls/${ticketIdParam}`);
+        const response = await fetch(`/api/calls/${callIdParam}`);
         if (!response.ok || cancelled) return;
         const ticketData = await response.json();
         const resolvedTicket = ticketData?.data ?? ticketData;
         if (!resolvedTicket || cancelled) return;
-        processedTicketIdRef.current = ticketIdParam;
+        processedCallIdRef.current = callIdParam;
         openTicketModal(resolvedTicket);
       } catch {
         // ignore — call may not exist or user lacks access
@@ -683,7 +708,7 @@ export default function TicketsPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketIdParam, tickets]);
+  }, [callIdParam, tickets]);
 
   // ---- Helpers ----
   /** Build a minimal CustomerCallGroup from a single Call so the timeline drawer can open */
@@ -1089,13 +1114,46 @@ export default function TicketsPage() {
     }
   };
 
-  // ---- Create ticket from call ----
-  const handleCreateTicketFromCall = () => {
+  // ---- Create ticket from call (escalate) ----
+  const handleCreateTicketFromCall = async () => {
     if (!selectedTicket) return;
+
+    const customerId = resolveCallCustomerId(
+      selectedTicket,
+      editFormData.customerId,
+      timelineGroup?.customerId,
+    );
+
+    const currentDisposition =
+      editFormData.disposition?.trim() || selectedTicket.disposition?.trim() || "";
+
+    if (!currentDisposition) {
+      const updated = await ensureCallEscalatedDisposition(
+        Number(selectedTicket.id),
+        currentDisposition,
+      );
+      if (updated) {
+        setEditFormData((prev) => ({
+          ...prev,
+          disposition: CallDisposition.ESCALATED,
+        }));
+        setSelectedTicket((prev) =>
+          prev ? { ...prev, disposition: CallDisposition.ESCALATED } : prev,
+        );
+      }
+    }
+
+    const customerPreview = resolveCallCustomerPreview(
+      selectedTicket,
+      customerId,
+      timelineGroup,
+    );
+
     const data: Record<string, string> = {};
     if (selectedTicket.id) data.callId = String(selectedTicket.id);
-    if (editFormData.customerId)
-      data.customerId = String(editFormData.customerId);
+    if (customerId) data.customerId = customerId;
+    if (customerPreview?.name) data.customerName = customerPreview.name;
+    if (customerPreview?.phone) data.customerPhone = customerPreview.phone;
     if (editFormData.yardId) data.yardId = String(editFormData.yardId);
     if (editFormData.campaignId)
       data.campaignId = String(editFormData.campaignId);
@@ -1104,6 +1162,8 @@ export default function TicketsPage() {
     if (editFormData.agentId) data.agentId = String(editFormData.agentId);
     if (editFormData.phoneLineId)
       data.phoneLineId = String(editFormData.phoneLineId);
+    if (editFormData.notes?.trim()) data.issueDetail = editFormData.notes.trim();
+
     setShowTimelineDrawer(false);
     setTicketCreateData(data);
     setActiveTab("tickets");
@@ -1172,7 +1232,7 @@ export default function TicketsPage() {
             onViewOverdue={() => ticketFilters.handleViewChange("overdue")}
           />
 
-          {!ticketIdParam ? (
+          {!callIdParam ? (
           <div className="flex items-end border-b border-border">
             <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex px-0.5">
@@ -1239,7 +1299,7 @@ export default function TicketsPage() {
           <GroupedCallsTable
             tickets={tickets}
             isLoading={isLoading}
-            focusCallId={ticketIdParam}
+            focusCallId={callIdParam}
             search={ticketFilters.search}
             onSearchChange={ticketFilters.setSearch}
             dateRange={ticketFilters.dateRange}
@@ -1264,6 +1324,7 @@ export default function TicketsPage() {
                 Math.ceil(totalCustomerGroups / ticketFilters.itemsPerPage),
               )
             }
+            onClearFocus={ticketFilters.clearFocusMode}
           />
 
           <CreateCallModal
@@ -1330,11 +1391,7 @@ export default function TicketsPage() {
 
           <CustomerTimelineDrawer
             open={showTimelineDrawer}
-            onClose={() => {
-              setShowTimelineDrawer(false);
-              setDrawerSuccessToast(false);
-              setDrawerErrorToast(false);
-            }}
+            onClose={handleCloseCallDrawer}
             returnToLabel={returnBackLabel ?? undefined}
             onBackToReturn={
               safeReturnPath ? handleBackToReturn : undefined

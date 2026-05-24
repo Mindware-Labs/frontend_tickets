@@ -314,6 +314,16 @@ export function CustomerSheet({
     [buildReturnTo, router],
   );
 
+  const goToManualRecord = useCallback(
+    (recordId: number) => {
+      const returnTo = encodeURIComponent(buildReturnTo());
+      router.push(
+        `/calls?tab=manual-records&id=${recordId}&returnTo=${returnTo}`,
+      );
+    },
+    [buildReturnTo, router],
+  );
+
   useEffect(() => {
     if (!customer?.id) {
       setDetail(null);
@@ -411,6 +421,7 @@ export function CustomerSheet({
               onClose={() => setTimelineOpen(false)}
               onViewCall={goToCall}
               onViewTicket={goToTicket}
+              onViewManualRecord={goToManualRecord}
             />
           </div>
         ) : null}

@@ -929,14 +929,24 @@ export function CustomerTimelineDrawer({
   };
 
   const handleEscalateClick = async () => {
-    if (!editFormData.customerId) {
+    const customerIdForCheck =
+      editFormData.customerId?.trim() ||
+      (group?.customerId != null ? String(group.customerId) : "") ||
+      (selectedCall?.customerId != null ? String(selectedCall.customerId) : "") ||
+      (selectedCall?.customer &&
+      typeof selectedCall.customer === "object" &&
+      "id" in selectedCall.customer
+        ? String((selectedCall.customer as { id: number | string }).id)
+        : "");
+
+    if (!customerIdForCheck) {
       onCreateTicket?.();
       return;
     }
     try {
       setCheckingTickets(true);
       const res = await fetch(
-        `/api/tickets?mode=page&customerId=${editFormData.customerId}&limit=50`,
+        `/api/tickets?mode=page&customerId=${customerIdForCheck}&limit=50`,
       );
 
       // ✅ Validar respuesta HTTP
@@ -963,7 +973,7 @@ export function CustomerTimelineDrawer({
       const tickets = Array.isArray(raw) ? raw : (raw?.data ?? []);
 
       console.log(
-        `[CustomerTimelineDrawer] Found ${tickets.length} tickets for customer ${editFormData.customerId}`,
+        `[CustomerTimelineDrawer] Found ${tickets.length} tickets for customer ${customerIdForCheck}`,
       );
 
       const active = tickets.filter(

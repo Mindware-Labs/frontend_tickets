@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue, useEffect } from "react";
+import { useState, useMemo, useDeferredValue, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay } from "date-fns";
+import { buildTabUrlWithoutDeepLink } from "./useReturnToTimeline";
 
 export type TicketFilterKey =
   | "status"
@@ -79,8 +80,9 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
     setActiveView(view);
   };
 
-  const clearAllFilters = () => {
+  const resetTicketListFilters = useCallback(() => {
     setSearch("");
+    setActiveView("all");
     setStatusFilter("all");
     setPriorityFilter("all");
     setTicketTypeFilter("all");
@@ -90,12 +92,46 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
     setAgentFilter("all");
     setPhoneLineFilter("all");
     setDateRange(undefined);
+    setCurrentPage(1);
+  }, []);
+
+  const clearAllFilters = () => {
+    resetTicketListFilters();
   };
+
+  const tabParam = searchParams.get("tab");
+  const focusTicketId =
+    tabParam === "tickets" ? searchParams.get("id") : null;
+
+  useEffect(() => {
+    if (!focusTicketId) return;
+    setSearch(focusTicketId);
+    setActiveView("all");
+    setCurrentPage(1);
+  }, [focusTicketId]);
+
+  const leaveTicketFocus = useCallback(
+    (destination?: string) => {
+      resetTicketListFilters();
+      if (destination) {
+        router.replace(destination, { scroll: false });
+        return;
+      }
+      router.replace(buildTabUrlWithoutDeepLink(searchParams, "tickets"), {
+        scroll: false,
+      });
+    },
+    [router, searchParams, resetTicketListFilters],
+  );
+
+  const clearTicketFocus = useCallback(() => {
+    leaveTicketFocus();
+  }, [leaveTicketFocus]);
 
   // Build SWR URL
   const ticketsApiUrl = useMemo(() => {
     const params = new URLSearchParams();
-    const normalizedSearch = deferredSearch.trim();
+    const normalizedSearch = (focusTicketId || deferredSearch).trim();
     const dateFrom = dateRange?.from ? startOfDay(dateRange.from) : null;
     const dateTo = dateRange?.from
       ? endOfDay(dateRange.to ?? dateRange.from)
@@ -127,6 +163,7 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
 
     return `/api/tickets?${params.toString()}`;
   }, [
+    focusTicketId,
     deferredSearch,
     activeView,
     statusFilter,
@@ -186,5 +223,9 @@ export function useTicketFilters({ currentAgentId }: UseTicketFiltersOptions) {
     ticketsApiUrl,
     deferredSearch,
     searchParams,
+    focusTicketId,
+    leaveTicketFocus,
+    clearTicketFocus,
+    resetTicketListFilters,
   };
 }

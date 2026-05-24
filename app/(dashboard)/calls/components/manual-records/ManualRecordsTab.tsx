@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useReturnToTimeline } from "../../hooks/useReturnToTimeline";
+import { DeepLinkFocusBanner } from "../shared/DeepLinkFocusBanner";
 import useSWR from "swr";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -128,7 +130,11 @@ const emptyForm: CreateManualRecordFormData = {
 // ---------------------------------------------------------------------------
 export function ManualRecordsTab() {
   const refData = useReferenceData();
+  const returnTo = useReturnToTimeline(refData.customers);
+  const isNavigatingBackRef = useRef(false);
   const filters = useManualRecordFilters();
+  const focusRecordId = filters.focusRecordId;
+  const isFocusMode = Boolean(focusRecordId?.trim());
 
   // ---- SWR ----
   const {
@@ -291,7 +297,7 @@ export function ManualRecordsTab() {
     setPendingFiles([]);
   };
 
-  const openView = (record: ManualRecord) => {
+  const openView = useCallback((record: ManualRecord) => {
     const group =
       recordGroups.find((g) => g.records.some((r) => r.id === record.id)) ??
       null;
@@ -299,7 +305,68 @@ export function ManualRecordsTab() {
     setDrawerGroup(group);
     populateFormFromRecord(record);
     setShowDrawer(true);
+  }, [recordGroups]);
+
+  const processedFocusRecordIdRef = useRef<string | null>(null);
+
+  const handleBackToTimeline = () => {
+    if (!returnTo.safeReturnPath) return;
+    isNavigatingBackRef.current = true;
+    setShowDrawer(false);
+    setShowDrawerSuccess(false);
+    setShowDrawerError(false);
+    processedFocusRecordIdRef.current = null;
+    filters.leaveManualRecordFocus(returnTo.safeReturnPath);
   };
+
+  const handleCloseDrawer = () => {
+    setShowDrawer(false);
+    setShowDrawerSuccess(false);
+    setShowDrawerError(false);
+    resetForm();
+    if (focusRecordId && !isNavigatingBackRef.current) {
+      filters.clearManualRecordFocus();
+    }
+    isNavigatingBackRef.current = false;
+  };
+
+  useEffect(() => {
+    if (!focusRecordId) {
+      processedFocusRecordIdRef.current = null;
+      return;
+    }
+    if (processedFocusRecordIdRef.current === focusRecordId) return;
+
+    let cancelled = false;
+
+    const openFromUrl = async () => {
+      const fromList = records.find((r) => r.id.toString() === focusRecordId);
+      if (fromList) {
+        if (cancelled) return;
+        processedFocusRecordIdRef.current = focusRecordId;
+        openView(fromList);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/manual-records/${focusRecordId}`);
+        if (!response.ok || cancelled) return;
+        const payload = await response.json();
+        const resolved = payload?.data ?? payload;
+        if (!resolved || cancelled) return;
+        processedFocusRecordIdRef.current = focusRecordId;
+        openView(resolved as ManualRecord);
+      } catch {
+        // ignore
+      }
+    };
+
+    void openFromUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [focusRecordId, records, openView]);
 
   const handleSelectRecord = (record: ManualRecord) => {
     setSelected(record);
@@ -398,11 +465,8 @@ export function ManualRecordsTab() {
         if (pendingFiles.length > 0) {
           const uploadErrors = await uploadPendingAttachments(selected.id);
           if (uploadErrors > 0) {
-            toast({
-              title: "Warning",
-              description: `${uploadErrors} file(s) failed to upload`,
-              variant: "destructive",
-            });
+            setDrawerErrorMessage(`${uploadErrors} file(s) failed to upload`);
+            setShowDrawerError(true);
           }
         }
         setShowDrawerSuccess(true);
@@ -412,11 +476,8 @@ export function ManualRecordsTab() {
         }
         await mutate();
       } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        setDrawerErrorMessage(result.message ?? "Failed to update record");
+        setShowDrawerError(true);
       }
     } catch {
       setDrawerErrorMessage("Failed to update record");
@@ -578,6 +639,14 @@ export function ManualRecordsTab() {
         </button>
       </div>
 
+      {isFocusMode && focusRecordId ? (
+        <DeepLinkFocusBanner
+          entityLabel="record"
+          entityId={focusRecordId}
+          onClear={() => filters.clearManualRecordFocus()}
+        />
+      ) : null}
+
       {/* Filters row */}
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
@@ -587,7 +656,10 @@ export function ManualRecordsTab() {
               <Input
                 placeholder="Search customers or notes..."
                 value={filters.search}
-                onChange={(e) => filters.setSearch(e.target.value)}
+                readOnly={isFocusMode}
+                onChange={(e) => {
+                  if (!isFocusMode) filters.setSearch(e.target.value);
+                }}
                 className="h-[30px] rounded-full border-border bg-muted/30 pl-[34px] pr-8 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30"
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-border bg-background px-1.5 py-[1px] font-mono text-[10px] text-muted-foreground">
@@ -604,7 +676,12 @@ export function ManualRecordsTab() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-3 sm:justify-end",
+              isFocusMode && "pointer-events-none opacity-60",
+            )}
+          >
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -923,12 +1000,11 @@ export function ManualRecordsTab() {
 
       <CustomerManualRecordDrawer
         open={showDrawer}
-        onClose={() => {
-          setShowDrawer(false);
-          setSelected(null);
-          setDrawerGroup(null);
-          resetForm();
-        }}
+        onClose={handleCloseDrawer}
+        returnToLabel={returnTo.returnBackLabel ?? undefined}
+        onBackToTimeline={
+          returnTo.safeReturnPath ? handleBackToTimeline : undefined
+        }
         group={drawerGroup}
         selectedRecord={selected}
         onSelectRecord={handleSelectRecord}

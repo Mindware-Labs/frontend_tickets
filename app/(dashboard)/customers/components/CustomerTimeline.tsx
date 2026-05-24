@@ -394,6 +394,53 @@ function formatDuration(seconds?: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function formatAnsweredClock(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "HH:mm");
+}
+
+function formatRingDuration(
+  startedAt?: string | null,
+  answeredAt?: string | null,
+) {
+  if (!startedAt || !answeredAt) return null;
+  const startMs = new Date(startedAt).getTime();
+  const answeredMs = new Date(answeredAt).getTime();
+  if (Number.isNaN(startMs) || Number.isNaN(answeredMs) || answeredMs < startMs) {
+    return null;
+  }
+  return formatDuration(Math.round((answeredMs - startMs) / 1000));
+}
+
+function CallTimelineTiming({ entry }: { entry: TimelineEntry }) {
+  const answered = formatAnsweredClock(entry.answeredAt);
+  const ringing = formatRingDuration(entry.startedAt, entry.answeredAt);
+  if (!answered && !ringing) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {answered ? (
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+          <span className="text-[9px] uppercase tracking-[0.08em] opacity-60">
+            Answered
+          </span>
+          <span className="font-mono tabular-nums">{answered}</span>
+        </span>
+      ) : null}
+      {ringing ? (
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+          <span className="text-[9px] uppercase tracking-[0.08em] opacity-60">
+            Ringing
+          </span>
+          <span className="font-mono tabular-nums">{ringing}</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function formatLabel(value?: string | null) {
   if (!value) return "";
   return value
@@ -469,6 +516,33 @@ function ticketPriorityBadge(priority?: string) {
 
 function hasContent(value?: string | null): value is string {
   return Boolean(value?.trim());
+}
+
+function timelineLineLabel(entry: TimelineEntry) {
+  return entry.phoneLineLabel?.trim() || "";
+}
+
+function TimelineInlineLine({ line }: { line?: string | null }) {
+  if (!hasContent(line)) return null;
+  return (
+    <>
+      <span className="select-none text-gray-300">·</span>
+      <span className="text-xs text-slate-500 dark:text-slate-400">{line.trim()}</span>
+    </>
+  );
+}
+
+function TimelineLineBadge({ line }: { line?: string | null }) {
+  if (!hasContent(line)) return null;
+  return (
+    <Badge
+      variant="secondary"
+      className="h-5 max-w-[180px] truncate rounded-md bg-blue-50 px-1.5 text-[10px] font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900"
+      title={line.trim()}
+    >
+      {line.trim()}
+    </Badge>
+  );
 }
 
 function formatOptionalDate(value?: string | null) {
@@ -602,6 +676,7 @@ interface CustomerTimelineProps {
   onNavigate?: () => void;
   onViewCall?: (callId: number) => void;
   onViewTicket?: (ticketId: number) => void;
+  onViewManualRecord?: (recordId: number) => void;
 }
 
 export function CustomerTimeline({
@@ -617,6 +692,7 @@ export function CustomerTimeline({
   onNavigate,
   onViewCall,
   onViewTicket,
+  onViewManualRecord,
 }: CustomerTimelineProps) {
   const isCompact = compact && !expanded;
   const isPanelEmbed = hideToolbar && expanded;
@@ -713,6 +789,14 @@ export function CustomerTimeline({
       return;
     }
     navigateTo(`/calls?tab=tickets&id=${ticketId}`);
+  };
+
+  const openManualRecord = (recordId: number) => {
+    if (onViewManualRecord) {
+      onViewManualRecord(recordId);
+      return;
+    }
+    navigateTo(`/calls?tab=manual-records&id=${recordId}`);
   };
 
   const lastEventAgo = useMemo(() => {
@@ -813,6 +897,7 @@ export function CustomerTimeline({
               if (entry.type === "call") {
                 const meta = callMeta(entry);
                 const Icon = meta.Icon;
+                const lineLabel = timelineLineLabel(entry);
                 const hasRecording =
                   Boolean(entry.recordingUrl && entry.callId) &&
                   canPlayRecordings;
@@ -866,6 +951,7 @@ export function CustomerTimeline({
                                     {formatLabel(entry.callStatus)}
                                   </Badge>
                                 ) : null}
+                                <TimelineLineBadge line={lineLabel} />
                               </div>
                               <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
                                 {dateLabel}
@@ -880,15 +966,15 @@ export function CustomerTimeline({
                           <DetailPills
                             items={[
                               {
+                                label: "Line",
+                                value: lineLabel,
+                                icon: <PhoneOutgoing className="h-3 w-3" />,
+                                tone: "blue",
+                              },
+                              {
                                 label: "Agent",
                                 value: agentName,
                                 icon: <UserRound className="h-3 w-3" />,
-                              },
-                              {
-                                label: "Line",
-                                value: entry.phoneLineLabel,
-                                icon: <PhoneOutgoing className="h-3 w-3" />,
-                                tone: "blue",
                               },
                               {
                                 label: "Yard",
@@ -899,65 +985,31 @@ export function CustomerTimeline({
                               {
                                 label: "Campaign",
                                 value: joinDetailValues([
-                                  entry.campaignName || entry.lastLineOrigin,
+                                  entry.campaignName,
                                   formatLabel(entry.campaignOption),
                                 ]),
                                 icon: <Tag className="h-3 w-3" />,
                               },
-                              {
-                                label: "Reason",
-                                value: entry.missedCallReason,
-                                tone: "red",
-                              },
-                              {
-                                label: "Started",
-                                value: formatOptionalDate(entry.startedAt),
-                                icon: <Clock3 className="h-3 w-3" />,
-                                mono: true,
-                              },
-                              {
-                                label: "Answered",
-                                value: formatOptionalDate(entry.answeredAt),
-                                mono: true,
-                              },
-                              {
-                                label: "Ended",
-                                value: formatOptionalDate(entry.endedAt),
-                                mono: true,
-                              },
                             ]}
                           />
+                          <CallTimelineTiming entry={entry} />
                           <NotePreview label="Call notes" value={entry.callNotes} />
                           {hasRecording ? (
                             <CallRecordingPlayer
                               callId={entry.callId!}
                               durationSec={entry.duration}
-                              variant="compact"
+                              variant="mini"
                             />
                           ) : null}
-                          <div className="flex flex-wrap gap-2 pt-0.5">
-                            {entry.callId ? (
-                              <TimelineAction onClick={() => openCall(entry.callId!)}>
-                                View call
-                              </TimelineAction>
-                            ) : null}
-                            {entry.callId && !entry.hasTicket ? (
+                          {entry.callId ? (
+                            <div className="flex flex-wrap gap-2 pt-0.5">
                               <TimelineAction
-                                muted
                                 onClick={() => openCall(entry.callId!)}
                               >
-                                Create ticket
+                                View call
                               </TimelineAction>
-                            ) : null}
-                            {entry.ticketId ? (
-                              <TimelineAction
-                                muted
-                                onClick={() => openTicket(entry.ticketId!)}
-                              >
-                                View ticket
-                              </TimelineAction>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ) : (
@@ -1010,14 +1062,7 @@ export function CustomerTimeline({
                               </span>
                             </>
                           ) : null}
-                          {entry.phoneLineLabel ? (
-                            <>
-                              <span className="select-none text-gray-300">·</span>
-                              <span className="text-xs text-slate-500">
-                                {entry.phoneLineLabel}
-                              </span>
-                            </>
-                          ) : null}
+                          <TimelineInlineLine line={lineLabel} />
                         </div>
                         {entry.yardName ? (
                           <p className="mt-0.5 text-[11px] font-medium text-orange-600/90">
@@ -1036,30 +1081,17 @@ export function CustomerTimeline({
                               .join(" / ")}
                           </p>
                         ) : null}
-                        <div className="mt-1.5 flex flex-wrap gap-2">
-                          {entry.callId ? (
+                        {entry.callId ? (
+                          <div className="mt-1.5">
                             <button
                               type="button"
-                              onClick={() =>
-                                openCall(entry.callId!)
-                              }
+                              onClick={() => openCall(entry.callId!)}
                               className="text-xs font-semibold text-[#008f68] hover:underline"
                             >
                               View call
                             </button>
-                          ) : null}
-                          {entry.callId && !entry.hasTicket ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openCall(entry.callId!)
-                              }
-                              className="text-xs font-semibold text-slate-500 hover:underline"
-                            >
-                              Create ticket
-                            </button>
-                          ) : null}
-                        </div>
+                          </div>
+                        ) : null}
                       </>
                     )}
                   </li>
@@ -1068,6 +1100,7 @@ export function CustomerTimeline({
 
               if (entry.type === "ticket") {
                 const ring = ticketStatusRing(entry.ticketStatus);
+                const lineLabel = timelineLineLabel(entry);
                 return (
                   <li key={entry.id} className={entryShell}>
                     {expanded ? (
@@ -1125,6 +1158,7 @@ export function CustomerTimeline({
                                     {formatLabel(entry.ticketPriority)}
                                   </Badge>
                                 ) : null}
+                                <TimelineLineBadge line={lineLabel} />
                               </div>
                               <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
                                 {dateLabel}
@@ -1146,7 +1180,7 @@ export function CustomerTimeline({
                               },
                               {
                                 label: "Line",
-                                value: entry.phoneLineLabel,
+                                value: lineLabel,
                                 icon: <PhoneOutgoing className="h-3 w-3" />,
                                 tone: "blue",
                               },
@@ -1189,23 +1223,15 @@ export function CustomerTimeline({
                             value={entry.ticketNotes}
                             tone="amber"
                           />
-                          <div className="flex flex-wrap gap-2 pt-0.5">
-                            {entry.ticketId ? (
+                          {entry.ticketId ? (
+                            <div className="flex flex-wrap gap-2 pt-0.5">
                               <TimelineAction
                                 onClick={() => openTicket(entry.ticketId!)}
                               >
                                 View ticket
                               </TimelineAction>
-                            ) : null}
-                            {entry.callId ? (
-                              <TimelineAction
-                                muted
-                                onClick={() => openCall(entry.callId!)}
-                              >
-                                View call
-                              </TimelineAction>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ) : (
@@ -1264,6 +1290,7 @@ export function CustomerTimeline({
                           <span className="text-xs text-foreground">{agentName}</span>
                         </>
                       ) : null}
+                      <TimelineInlineLine line={lineLabel} />
                       {entry.ticketId ? (
                         <button
                           type="button"
@@ -1281,11 +1308,9 @@ export function CustomerTimeline({
                         {entrySummaryText(entry)}
                       </p>
                     ) : null}
-                    {entry.phoneLineLabel || entry.yardName ? (
+                    {entry.yardName ? (
                       <p className="mt-1 text-[11px] text-slate-500">
-                        {[entry.phoneLineLabel, entry.yardName]
-                          .filter(Boolean)
-                          .join(" · ")}
+                        {entry.yardName}
                       </p>
                     ) : null}
                       </>
@@ -1295,6 +1320,7 @@ export function CustomerTimeline({
               }
 
               if (entry.type === "manual_record") {
+                const lineLabel = timelineLineLabel(entry);
                 return (
                   <li key={entry.id} className={entryShell}>
                     {expanded ? (
@@ -1322,6 +1348,7 @@ export function CustomerTimeline({
                                     {formatLabel(entry.disposition)}
                                   </Badge>
                                 ) : null}
+                                <TimelineLineBadge line={lineLabel} />
                               </div>
                               <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
                                 {dateLabel}
@@ -1330,6 +1357,12 @@ export function CustomerTimeline({
                           </div>
                           <DetailPills
                             items={[
+                              {
+                                label: "Line",
+                                value: lineLabel,
+                                icon: <PhoneOutgoing className="h-3 w-3" />,
+                                tone: "blue",
+                              },
                               {
                                 label: "Yard",
                                 value: entry.yardName,
@@ -1355,10 +1388,10 @@ export function CustomerTimeline({
                             <div className="flex flex-wrap gap-2 pt-0.5">
                               <TimelineAction
                                 onClick={() =>
-                                  navigateTo("/calls?tab=manual-records")
+                                  openManualRecord(entry.manualRecordId!)
                                 }
                               >
-                                View manual records
+                                View record
                               </TimelineAction>
                             </div>
                           ) : null}
@@ -1394,6 +1427,7 @@ export function CustomerTimeline({
                               </span>
                             </>
                           ) : null}
+                          <TimelineInlineLine line={lineLabel} />
                         </div>
                         {entry.manualRecordNotes ? (
                           <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
@@ -1406,6 +1440,19 @@ export function CustomerTimeline({
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
+                        ) : null}
+                        {entry.manualRecordId ? (
+                          <div className="mt-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openManualRecord(entry.manualRecordId!)
+                              }
+                              className="text-xs font-semibold text-[#008f68] hover:underline"
+                            >
+                              View record
+                            </button>
+                          </div>
                         ) : null}
                       </>
                     )}

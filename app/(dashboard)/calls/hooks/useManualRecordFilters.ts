@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue, useEffect } from "react";
+import { useState, useMemo, useDeferredValue, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay } from "date-fns";
+import { buildTabUrlWithoutDeepLink } from "./useReturnToTimeline";
 
 export type ManualRecordFilterKey =
   | "status"
@@ -22,6 +24,8 @@ export interface ManualRecordFilters {
 }
 
 export function useManualRecordFilters() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeView, setActiveView] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -61,8 +65,9 @@ export function useManualRecordFilters() {
     setActiveView(view);
   };
 
-  const clearAllFilters = () => {
+  const resetManualRecordListFilters = useCallback(() => {
     setSearch("");
+    setActiveView("all");
     setStatusFilter("all");
     setCampaignFilter("all");
     setYardFilter("all");
@@ -70,11 +75,45 @@ export function useManualRecordFilters() {
     setDispositionFilter("all");
     setAgentFilter("all");
     setDateRange(undefined);
+    setCurrentPage(1);
+  }, []);
+
+  const clearAllFilters = () => {
+    resetManualRecordListFilters();
   };
+
+  const tabParam = searchParams.get("tab");
+  const focusRecordId =
+    tabParam === "manual-records" ? searchParams.get("id") : null;
+
+  useEffect(() => {
+    if (!focusRecordId) return;
+    setSearch(focusRecordId);
+    setActiveView("all");
+    setCurrentPage(1);
+  }, [focusRecordId]);
+
+  const leaveManualRecordFocus = useCallback(
+    (destination?: string) => {
+      resetManualRecordListFilters();
+      if (destination) {
+        router.replace(destination, { scroll: false });
+        return;
+      }
+      router.replace(buildTabUrlWithoutDeepLink(searchParams, "manual-records"), {
+        scroll: false,
+      });
+    },
+    [router, searchParams, resetManualRecordListFilters],
+  );
+
+  const clearManualRecordFocus = useCallback(() => {
+    leaveManualRecordFocus();
+  }, [leaveManualRecordFocus]);
 
   const apiUrl = useMemo(() => {
     const params = new URLSearchParams();
-    const normalizedSearch = deferredSearch.trim();
+    const normalizedSearch = (focusRecordId || deferredSearch).trim();
     const dateFrom = dateRange?.from ? startOfDay(dateRange.from) : null;
     const dateTo = dateRange?.from
       ? endOfDay(dateRange.to ?? dateRange.from)
@@ -101,6 +140,7 @@ export function useManualRecordFilters() {
 
     return `/api/manual-records?${params.toString()}`;
   }, [
+    focusRecordId,
     deferredSearch,
     statusFilter,
     campaignFilter,
@@ -147,5 +187,9 @@ export function useManualRecordFilters() {
     setItemsPerPage,
     apiUrl,
     deferredSearch,
+    focusRecordId,
+    leaveManualRecordFocus,
+    clearManualRecordFocus,
+    resetManualRecordListFilters,
   };
 }

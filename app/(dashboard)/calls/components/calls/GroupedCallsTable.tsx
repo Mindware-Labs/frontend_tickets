@@ -176,6 +176,7 @@ interface GroupedCallsTableProps {
   totalCount: number;
   totalCustomers?: number;
   totalPages: number;
+  onClearFocus?: () => void;
 }
 
 export function GroupedCallsTable({
@@ -200,6 +201,7 @@ export function GroupedCallsTable({
   totalCount,
   totalCustomers,
   totalPages,
+  onClearFocus,
 }: GroupedCallsTableProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const {
@@ -282,12 +284,27 @@ export function GroupedCallsTable({
   return (
     <div className="flex-1 flex flex-col gap-1">
       {isFocusMode ? (
-        <div className="mt-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] px-3 py-2 text-[12px] text-slate-700">
-          Showing call{" "}
-          <span className="font-mono font-bold text-[#008f68]">
-            #{focusCallId}
-          </span>{" "}
-          only — clear search or use back in the call panel to see all calls.
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] px-3 py-2 text-[12px] text-slate-700">
+          <p className="min-w-0 flex-1 leading-snug">
+            Showing call{" "}
+            <span className="font-mono font-bold text-[#008f68]">
+              #{focusCallId}
+            </span>{" "}
+            only — use Clear to reset filters and see all calls, or use back in
+            the call panel.
+          </p>
+          {onClearFocus ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onClearFocus}
+              className="h-7 shrink-0 border-[#008f68]/30 bg-white px-2.5 text-[11px] font-semibold text-[#008f68] hover:bg-[#e8f8f1]"
+            >
+              <X className="mr-1 h-3 w-3" />
+              Clear
+            </Button>
+          ) : null}
         </div>
       ) : null}
       {/* Search + Date + Filters ─────────────────────────────────────────────────────── */}

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useReturnToTimeline } from "../../hooks/useReturnToTimeline";
+import { DeepLinkFocusBanner } from "../shared/DeepLinkFocusBanner";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +66,7 @@ import { EditTicketModal } from "./EditTicketModal";
 import { TicketFiltersBar } from "./TicketFiltersBar";
 import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
 import { CreateTicketForm } from "./CreateTicketForm";
+import type { CustomerSearchOption } from "../shared/AsyncCustomerCombobox";
 import { DataTablePagination } from "../shared/DataTablePagination";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { SourceCallViaCallBadge } from "../calls/SourceCallViaCallModal";
@@ -169,9 +172,13 @@ export function TicketsTab({
     setSheetOpen,
   } = useAircall();
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
+  const returnTo = useReturnToTimeline(refData.customers);
+  const isNavigatingBackRef = useRef(false);
   const ticketFilters = useTicketFilters({
     currentAgentId: refData.currentAgent?.id,
   });
+  const focusTicketId = ticketFilters.focusTicketId;
+  const isFocusMode = Boolean(focusTicketId?.trim());
 
   // ---- SWR ----
   const {
@@ -263,6 +270,8 @@ export function TicketsTab({
     ...emptyForm,
   });
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [createFormCustomer, setCreateFormCustomer] =
+    useState<CustomerSearchOption | null>(null);
   // Drawer-anchored toasts
   const [showDrawerSuccess, setShowDrawerSuccess] = useState(false);
   const [showDrawerError, setShowDrawerError] = useState(false);
@@ -277,18 +286,30 @@ export function TicketsTab({
   const resetForm = () => {
     setForm({ ...emptyForm });
     setPendingFiles([]);
+    setCreateFormCustomer(null);
   };
 
   // ---- Auto-open create from call ----
   useEffect(() => {
     if (initialCreateData) {
+      const { customerName, customerPhone, ...formSeed } = initialCreateData;
       setForm({
         ...emptyForm,
-        ...initialCreateData,
-        status: (initialCreateData.status
-          ? normalizeSupportStatusKey(initialCreateData.status)
+        ...formSeed,
+        status: (formSeed.status
+          ? normalizeSupportStatusKey(formSeed.status)
           : emptyForm.status) as SupportTicketStatus,
       });
+      if (formSeed.customerId) {
+        setCreateFormCustomer({
+          id: Number(formSeed.customerId),
+          name:
+            customerName?.trim() || `Customer #${formSeed.customerId}`,
+          phone: customerPhone?.trim() || null,
+        });
+      } else {
+        setCreateFormCustomer(null);
+      }
       setShowCreate(true);
       onConsumeCreateData?.();
     }
@@ -299,7 +320,7 @@ export function TicketsTab({
     setShowCreate(true);
   };
 
-  const openView = (t: SupportTicketRecord) => {
+  const openView = useCallback((t: SupportTicketRecord) => {
     // Find the group this ticket belongs to
     const group =
       ticketGroups.find((g) => g.tickets.some((tk) => tk.id === t.id)) ?? null;
@@ -326,7 +347,68 @@ export function TicketsTab({
     });
     setPendingFiles([]);
     setShowDrawer(true);
+  }, [ticketGroups]);
+
+  const processedFocusTicketIdRef = useRef<string | null>(null);
+
+  const handleBackToTimeline = () => {
+    if (!returnTo.safeReturnPath) return;
+    isNavigatingBackRef.current = true;
+    setShowDrawer(false);
+    setShowDrawerSuccess(false);
+    setShowDrawerError(false);
+    processedFocusTicketIdRef.current = null;
+    ticketFilters.leaveTicketFocus(returnTo.safeReturnPath);
   };
+
+  const handleCloseDrawer = () => {
+    setShowDrawer(false);
+    setShowDrawerSuccess(false);
+    setShowDrawerError(false);
+    resetForm();
+    if (focusTicketId && !isNavigatingBackRef.current) {
+      ticketFilters.clearTicketFocus();
+    }
+    isNavigatingBackRef.current = false;
+  };
+
+  useEffect(() => {
+    if (!focusTicketId) {
+      processedFocusTicketIdRef.current = null;
+      return;
+    }
+    if (processedFocusTicketIdRef.current === focusTicketId) return;
+
+    let cancelled = false;
+
+    const openFromUrl = async () => {
+      const fromList = tickets.find((t) => t.id.toString() === focusTicketId);
+      if (fromList) {
+        if (cancelled) return;
+        processedFocusTicketIdRef.current = focusTicketId;
+        openView(fromList);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/tickets/${focusTicketId}`);
+        if (!response.ok || cancelled) return;
+        const payload = await response.json();
+        const resolved = payload?.data ?? payload;
+        if (!resolved || cancelled) return;
+        processedFocusTicketIdRef.current = focusTicketId;
+        openView(resolved as SupportTicketRecord);
+      } catch {
+        // ignore
+      }
+    };
+
+    void openFromUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [focusTicketId, tickets, openView]);
 
   const handleSelectTicketInDrawer = (t: SupportTicketRecord) => {
     setSelected(t);
@@ -680,6 +762,14 @@ export function TicketsTab({
         </button>
       </div>
 
+      {isFocusMode && focusTicketId ? (
+        <DeepLinkFocusBanner
+          entityLabel="ticket"
+          entityId={focusTicketId}
+          onClear={() => ticketFilters.clearTicketFocus()}
+        />
+      ) : null}
+
       {/* Filters row */}
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 my-3">
@@ -689,7 +779,10 @@ export function TicketsTab({
               <Input
                 placeholder="Search tickets, customers, or issues..."
                 value={ticketFilters.search}
-                onChange={(e) => ticketFilters.setSearch(e.target.value)}
+                readOnly={isFocusMode}
+                onChange={(e) => {
+                  if (!isFocusMode) ticketFilters.setSearch(e.target.value);
+                }}
                 className="pl-[34px] pr-8 h-[30px] rounded-full text-[12.5px] bg-muted/30 border-border shadow-none focus-visible:ring-[#008f68]/30 focus-visible:border-[#008f68]/40"
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 border border-border rounded px-1.5 py-[1px] text-[10px] text-muted-foreground font-mono bg-background">
@@ -706,7 +799,12 @@ export function TicketsTab({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-3 sm:justify-end",
+              isFocusMode && "pointer-events-none opacity-60",
+            )}
+          >
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -1069,6 +1167,7 @@ export function TicketsTab({
               campaigns={refData.campaigns}
               pendingFiles={pendingFiles}
               onFilesChange={setPendingFiles}
+              initialSelectedCustomer={createFormCustomer}
             />
           </div>
 
@@ -1332,12 +1431,11 @@ export function TicketsTab({
       {/* ── Ticket Drawer (history + edit) ───────────────────────────── */}
       <CustomerTicketDrawer
         open={showDrawer}
-        onClose={() => {
-          setShowDrawer(false);
-          setShowDrawerSuccess(false);
-          setShowDrawerError(false);
-          resetForm();
-        }}
+        onClose={handleCloseDrawer}
+        returnToLabel={returnTo.returnBackLabel ?? undefined}
+        onBackToTimeline={
+          returnTo.safeReturnPath ? handleBackToTimeline : undefined
+        }
         group={drawerGroup}
         selectedTicket={selected}
         onSelectTicket={handleSelectTicketInDrawer}

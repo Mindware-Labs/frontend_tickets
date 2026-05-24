@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   CalendarIcon,
   Trash2,
-  AlertCircle,
   X,
   PhoneOutgoing,
 } from "lucide-react";
@@ -19,6 +18,11 @@ import type { CreateManualRecordFormData, ManualRecord } from "../../types";
 import type { CustomerManualRecordGroup } from "./InlineManualRecordTimeline";
 import { ManualRecordForm } from "./ManualRecordForm";
 import { fmtDate, fmtDateTime } from "../../utils/call-helpers";
+import { TimelineReturnBar } from "../shared/TimelineReturnBar";
+import {
+  SheetAnchoredToasts,
+  useSheetAnchoredToasts,
+} from "../shared/SheetAnchoredToasts";
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   const result = await res.json();
@@ -129,6 +133,8 @@ function RecordCard({
 export interface CustomerManualRecordDrawerProps {
   open: boolean;
   onClose: () => void;
+  returnToLabel?: string;
+  onBackToTimeline?: () => void;
   group: CustomerManualRecordGroup | null;
   selectedRecord: ManualRecord | null;
   onSelectRecord: (record: ManualRecord) => void;
@@ -153,6 +159,8 @@ export interface CustomerManualRecordDrawerProps {
 export function CustomerManualRecordDrawer({
   open,
   onClose,
+  returnToLabel,
+  onBackToTimeline,
   group,
   selectedRecord,
   onSelectRecord,
@@ -237,79 +245,29 @@ export function CustomerManualRecordDrawer({
   const dialPhoneNormalized =
     dialPhone && dialPhone !== "unknown" ? dialPhone : "";
 
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastActive, setToastActive] = useState(false);
-
-  useEffect(() => {
-    if (!showSuccessToast) {
-      setToastVisible(false);
-      const t = setTimeout(() => setToastActive(false), 300);
-      return () => clearTimeout(t);
-    }
-    setToastActive(true);
-    const raf = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setToastVisible(true)),
-    );
-    const dismiss = setTimeout(() => {
-      setToastVisible(false);
-      setTimeout(() => {
-        setToastActive(false);
-        onSuccessToastDismiss?.();
-      }, 300);
-    }, 3000);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(dismiss);
-    };
-  }, [showSuccessToast, onSuccessToastDismiss]);
+  const sheetToasts = useSheetAnchoredToasts({
+    open,
+    showSuccessToast,
+    showErrorToast,
+    onSuccessToastDismiss,
+    onErrorToastDismiss,
+  });
 
   return (
     <>
-      {open && showErrorToast && (
-        <div
-          role="alert"
-          className={cn(
-            "fixed z-50 flex min-w-65 max-w-80 items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-lg",
-            "transition-all duration-300",
-          )}
-          style={{
-            right: "calc(min(80svw, 1100px) + 1rem)",
-            bottom: "4.5rem",
-          }}
-        >
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-slate-800">Error</p>
-            <p className="text-[11px] text-slate-500">
-              {errorToastMessage ?? "Failed to save"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onErrorToastDismiss}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      )}
-
-      {open && toastActive && (
-        <div
-          role="alert"
-          className={cn(
-            "fixed z-50 flex min-w-65 max-w-80 items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-lg transition-all duration-300",
-            toastVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0",
-          )}
-          style={{
-            right: "calc(min(80svw, 1100px) + 1rem)",
-            bottom: "1rem",
-          }}
-        >
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
-          <p className="text-[13px] font-semibold text-slate-800">Saved</p>
-        </div>
-      )}
+      <SheetAnchoredToasts
+        open={open}
+        toastActive={sheetToasts.toastActive}
+        toastVisible={sheetToasts.toastVisible}
+        errorToastActive={sheetToasts.errorToastActive}
+        errorToastVisible={sheetToasts.errorToastVisible}
+        onDismissSuccess={sheetToasts.dismissSuccessToast}
+        onDismissError={sheetToasts.dismissErrorToast}
+        successTitle="Saved"
+        successDescription="Manual record updated successfully"
+        errorTitle="Error"
+        errorDescription={errorToastMessage ?? "Failed to save changes"}
+      />
 
       <Sheet open={open} onOpenChange={(v) => !v && onClose()} modal={false}>
         <SheetContent
@@ -323,6 +281,12 @@ export function CustomerManualRecordDrawer({
           </SheetTitle>
 
           <div className="shrink-0 border-b border-slate-100 bg-white">
+            {onBackToTimeline && returnToLabel ? (
+              <TimelineReturnBar
+                label={returnToLabel}
+                onBack={onBackToTimeline}
+              />
+            ) : null}
             <div className="flex items-center gap-3 px-4 py-2">
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[13px] font-extrabold text-white shadow-sm ring-2 ring-white"

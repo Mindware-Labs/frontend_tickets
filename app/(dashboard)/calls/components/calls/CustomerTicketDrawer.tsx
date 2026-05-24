@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { SelectItem } from "@/components/ui/select";
 import {
   X,
+  ArrowLeft,
   PhoneOutgoing,
   Loader2,
   StickyNote,
@@ -66,6 +67,7 @@ import type { Ticket } from "@/lib/mock-data";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
 import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
+import { TimelineReturnBar } from "../shared/TimelineReturnBar";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -217,6 +219,8 @@ function TicketCard({
 interface CustomerTicketDrawerProps {
   open: boolean;
   onClose: () => void;
+  returnToLabel?: string;
+  onBackToTimeline?: () => void;
   group: CustomerTicketGroup | null;
   selectedTicket: SupportTicketRecord | null;
   onSelectTicket: (ticket: SupportTicketRecord) => void;
@@ -253,6 +257,8 @@ interface CustomerTicketDrawerProps {
 export function CustomerTicketDrawer({
   open,
   onClose,
+  returnToLabel,
+  onBackToTimeline,
   group,
   selectedTicket,
   onSelectTicket,
@@ -753,6 +759,12 @@ export function CustomerTicketDrawer({
 
           {/* ── Top Bar ── */}
           <div className="shrink-0 bg-white border-b border-slate-100">
+            {onBackToTimeline && returnToLabel ? (
+              <TimelineReturnBar
+                label={returnToLabel}
+                onBack={onBackToTimeline}
+              />
+            ) : null}
             <div className="flex items-center gap-3 px-4 py-2">
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"

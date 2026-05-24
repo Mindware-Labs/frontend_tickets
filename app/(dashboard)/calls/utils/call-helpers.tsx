@@ -9,7 +9,8 @@ import {
 import { format } from "date-fns";
 import type { Ticket } from "@/lib/mock-data";
 import type { CampaignOption, YardOption } from "../types";
-import { OnboardingOption } from "../types";
+import { CallDisposition, OnboardingOption } from "../types";
+import type { CustomerSearchOption } from "../components/shared/AsyncCustomerCombobox";
 
 export function fmtDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -326,4 +327,78 @@ export function getAttachmentLabel(value: string): string {
   if (!value) return "Attachment";
   const parts = value.split("/");
   return parts[parts.length - 1] || value;
+}
+
+/** Resolve customer id when escalating a call to a support ticket. */
+export function resolveCallCustomerId(
+  call: {
+    customerId?: number | string | null;
+    customer?: { id?: number | string } | null;
+  } | null | undefined,
+  formCustomerId?: string | null,
+  groupCustomerId?: number | null,
+): string {
+  if (formCustomerId?.trim()) return formCustomerId.trim();
+  if (call?.customerId != null && call.customerId !== "")
+    return String(call.customerId);
+  if (call?.customer && typeof call.customer === "object" && call.customer.id != null)
+    return String(call.customer.id);
+  if (groupCustomerId != null) return String(groupCustomerId);
+  return "";
+}
+
+/** Build combobox preview for pre-filled customer on ticket create from call. */
+export function resolveCallCustomerPreview(
+  call: Parameters<typeof getClientName>[0] | null | undefined,
+  customerId: string,
+  group?: { customerName?: string; customerPhone?: string } | null,
+): CustomerSearchOption | null {
+  if (!customerId.trim()) return null;
+  const id = Number(customerId);
+  if (!Number.isFinite(id)) return null;
+
+  if (call?.customer && typeof call.customer === "object") {
+    const c = call.customer as { id?: number; name?: string; phone?: string };
+    return {
+      id: c.id != null ? Number(c.id) : id,
+      name:
+        c.name?.trim() ||
+        group?.customerName?.trim() ||
+        getClientName(call) ||
+        `Customer #${id}`,
+      phone: c.phone?.trim() || group?.customerPhone?.trim() || null,
+    };
+  }
+
+  const phone = getClientPhone(call);
+  return {
+    id,
+    name:
+      group?.customerName?.trim() ||
+      getClientName(call) ||
+      `Customer #${id}`,
+    phone:
+      group?.customerPhone?.trim() ||
+      (phone && phone !== "-" ? phone : null) ||
+      null,
+  };
+}
+
+/** Set call disposition to ESCALATED when escalating if not already set. */
+export async function ensureCallEscalatedDisposition(
+  callId: number,
+  currentDisposition?: string | null,
+): Promise<boolean> {
+  if (currentDisposition?.trim()) return false;
+  try {
+    const res = await fetch(`/api/calls/${callId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ disposition: CallDisposition.ESCALATED }),
+    });
+    const result = await res.json();
+    return Boolean(result.success);
+  } catch {
+    return false;
+  }
 }

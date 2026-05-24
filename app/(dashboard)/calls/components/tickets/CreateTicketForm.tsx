@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CustomerSearchOption } from "../shared/AsyncCustomerCombobox";
 
 const normalizePhone = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
 const stripUsCode = (d: string) =>
@@ -29,6 +30,7 @@ export interface CreateTicketFormProps {
   campaigns: any[];
   pendingFiles: File[];
   onFilesChange: (files: File[]) => void;
+  initialSelectedCustomer?: CustomerSearchOption | null;
 }
 
 export function CreateTicketForm({
@@ -40,6 +42,7 @@ export function CreateTicketForm({
   campaigns,
   pendingFiles,
   onFilesChange,
+  initialSelectedCustomer = null,
 }: CreateTicketFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mainCustomerOpen, setMainCustomerOpen] = useState(false);
@@ -106,6 +109,7 @@ export function CreateTicketForm({
         mainCustomerSearch={mainCustomerSearch}
         setMainCustomerSearch={setMainCustomerSearch}
         mainFilteredCustomers={mainFilteredCustomers}
+        asyncSelectedCustomer={initialSelectedCustomer}
       />
 
       <div>
