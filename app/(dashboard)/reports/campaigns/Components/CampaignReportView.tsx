@@ -661,7 +661,7 @@ function CategoryTableSection({
     const endDate = searchParams.get("endDate") || "";
     if (startDate) params.set("reportStartDate", startDate);
     if (endDate) params.set("reportEndDate", endDate);
-    router.push(`/tickets?${params.toString()}`);
+    router.push(`/calls?tab=tickets&${params.toString()}`);
   };
 
   if (rows.length === 0) return null;

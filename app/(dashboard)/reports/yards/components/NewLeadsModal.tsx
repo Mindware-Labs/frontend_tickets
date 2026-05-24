@@ -230,7 +230,7 @@ export function NewLeadsModal({
                   if (reportEndDate) {
                     params.set("reportEndDate", reportEndDate);
                   }
-                  const ticketsUrl = `/tickets?${params.toString()}`;
+                  const ticketsUrl = `/calls?tab=calls&${params.toString()}`;
 
                   return (
                     <div

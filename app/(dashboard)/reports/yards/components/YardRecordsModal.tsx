@@ -2,20 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Calendar,
   ClipboardList,
-  FileText,
+  FilePenLine,
   Inbox,
-  Link2,
+  Layers,
   Loader2,
   Phone,
   Search,
   Ticket,
-  User,
   X,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/api-client";
-import { Badge } from "@/components/ui/badge";
+import { UnifiedRecordsList } from "@/components/records/UnifiedRecordsList";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,15 +26,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+  YardContextChip,
+  YardSegmentedTabs,
+  YardStatusBadge,
+  yardDashboardToolbarClass,
+} from "./yard-dashboard-chrome";
 import type { YardRecord, YardRecordType } from "./types";
 
 type RecordTab = "all" | YardRecordType;
@@ -68,134 +62,22 @@ const emptyCounts: YardRecordCounts = {
   manualRecords: 0,
 };
 
-const tabs: Array<{
+const recordTabs: Array<{
   value: RecordTab;
   label: string;
   countKey: keyof YardRecordCounts;
+  icon: typeof Layers;
 }> = [
-  { value: "all", label: "All Records", countKey: "all" },
-  { value: "call", label: "Calls", countKey: "calls" },
-  { value: "ticket", label: "Tickets", countKey: "tickets" },
-  { value: "manual_record", label: "Manual Records", countKey: "manualRecords" },
+  { value: "all", label: "All", countKey: "all", icon: Layers },
+  { value: "call", label: "Calls", countKey: "calls", icon: Phone },
+  { value: "ticket", label: "Tickets", countKey: "tickets", icon: Ticket },
+  {
+    value: "manual_record",
+    label: "Manual",
+    countKey: "manualRecords",
+    icon: FilePenLine,
+  },
 ];
-
-const formatLabel = (value?: string | null) =>
-  (value || "Unspecified")
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-
-const formatDate = (value?: string | null) => {
-  if (!value) return "-";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return parsed.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const customerLabel = (record: YardRecord) =>
-  record.customer?.name ||
-  record.customerPhone ||
-  record.customer?.phone ||
-  (record.customerId ? `Customer #${record.customerId}` : "Unknown");
-
-const phoneLabel = (record: YardRecord) =>
-  record.customer?.phone || record.customerPhone || "-";
-
-const agentLabel = (record: YardRecord) =>
-  record.agent?.name || (record.recordType === "manual_record" ? "Manual" : "Unassigned");
-
-const recordDate = (record: YardRecord) =>
-  record.occurredAt || record.updatedAt || null;
-
-const detailText = (record: YardRecord) =>
-  record.issueDetail?.trim() || record.notes?.trim() || "";
-
-const statusBadgeVariant = (status?: string | null) => {
-  const normalized = (status || "").toUpperCase();
-  if (normalized === "OVERDUE") return "destructive" as const;
-  if (normalized === "RESOLVED" || normalized === "CLOSED") {
-    return "secondary" as const;
-  }
-  return "outline" as const;
-};
-
-function RecordTypeBadge({ record }: { record: YardRecord }) {
-  if (record.recordType === "call") {
-    return (
-      <Badge variant="outline" className="gap-1">
-        <Phone className="size-3" />
-        Call
-      </Badge>
-    );
-  }
-
-  if (record.recordType === "ticket") {
-    return (
-      <Badge variant="outline" className="gap-1">
-        <Ticket className="size-3" />
-        Ticket
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge variant="outline" className="gap-1">
-      <ClipboardList className="size-3" />
-      Manual
-    </Badge>
-  );
-}
-
-function RelationshipCell({ record }: { record: YardRecord }) {
-  if (record.recordType === "call") {
-    const tickets = record.tickets || [];
-    if (tickets.length === 0) {
-      return <span className="text-muted-foreground">No ticket linked</span>;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {tickets.slice(0, 2).map((ticket) => (
-          <Badge key={ticket.id} variant="secondary" className="gap-1">
-            <Ticket className="size-3" />
-            #{ticket.id}
-            <span className="text-muted-foreground">
-              {formatLabel(ticket.status)}
-            </span>
-          </Badge>
-        ))}
-        {tickets.length > 2 ? (
-          <Badge variant="outline">+{tickets.length - 2}</Badge>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (record.recordType === "ticket") {
-    return record.callId ? (
-      <Badge variant="outline" className="gap-1">
-        <Link2 className="size-3" />
-        Call #{record.callId}
-      </Badge>
-    ) : (
-      <span className="text-muted-foreground">Standalone ticket</span>
-    );
-  }
-
-  return <span className="text-muted-foreground">Manual entry</span>;
-}
-
-function recordPrimaryLabel(record: YardRecord) {
-  if (record.recordType === "call") return `Call #${record.sourceId}`;
-  if (record.recordType === "ticket") return `Ticket #${record.sourceId}`;
-  return `Manual #${record.sourceId}`;
-}
 
 export function YardRecordsModal({
   open,
@@ -215,7 +97,10 @@ export function YardRecordsModal({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [detailRecord, setDetailRecord] = useState<YardRecord | null>(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
+  const [detail, setDetail] = useState<{ title: string; body: string } | null>(
+    null,
+  );
 
   const canFetch = Boolean(open && yardId && reportStartDate && reportEndDate);
   const pageSize = 100;
@@ -234,7 +119,8 @@ export function YardRecordsModal({
     setSearch("");
     setDebouncedSearch("");
     setPage(1);
-    setDetailRecord(null);
+    setDetail(null);
+    setLastLoadedAt(null);
   }, [open]);
 
   useEffect(() => {
@@ -290,6 +176,12 @@ export function YardRecordsModal({
         setCounts(response?.counts || emptyCounts);
         setTotal(nextTotal);
         setTotalPages(nextTotalPages);
+        setLastLoadedAt(
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        );
 
         if (page > nextTotalPages) {
           setPage(nextTotalPages);
@@ -323,86 +215,116 @@ export function YardRecordsModal({
 
   const periodLabel = useMemo(() => {
     if (!reportStartDate || !reportEndDate) return "All dates";
-    return `${reportStartDate} to ${reportEndDate}`;
+    return `${reportStartDate} → ${reportEndDate}`;
   }, [reportStartDate, reportEndDate]);
+
+  const segmentedTabs = useMemo(
+    () =>
+      recordTabs.map((tab) => ({
+        value: tab.value,
+        label: tab.label,
+        icon: tab.icon,
+        count: counts[tab.countKey],
+      })),
+    [counts],
+  );
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-lg p-0 sm:max-w-[min(96vw,1320px)]">
-          <DialogHeader className="border-b px-5 py-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex min-w-0 flex-col gap-1">
-                <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
-                  <ClipboardList className="size-5 text-primary" />
-                  Yard Records
-                </DialogTitle>
-                <DialogDescription className="text-sm">
-                  {yardName} - {periodLabel}
-                </DialogDescription>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{counts.calls} calls</Badge>
-                <Badge variant="outline">{counts.tickets} tickets</Badge>
-                <Badge variant="outline">
-                  {counts.manualRecords} manual
-                </Badge>
-                {counts.linkedTickets > 0 ? (
-                  <Badge variant="secondary">
-                    {counts.linkedTickets} linked
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 pt-2 lg:flex-row lg:items-center lg:justify-between">
-              <Tabs
-                value={activeTab}
-                onValueChange={(value) => setActiveTab(value as RecordTab)}
-                className="w-full lg:w-auto"
-              >
-                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-4 lg:w-auto">
-                  {tabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="gap-2"
-                    >
-                      <span>{tab.label}</span>
-                      <Badge variant="secondary" className="px-1.5">
-                        {counts[tab.countKey]}
-                      </Badge>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-
-              <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search records"
-                  className="h-9 pl-9 pr-10"
-                />
-                {search ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2"
-                    aria-label="Clear search"
-                    onClick={() => setSearch("")}
-                  >
-                    <X data-icon="inline-start" />
-                  </Button>
-                ) : null}
-              </div>
-            </div>
+        <DialogContent className="flex h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200/80 p-0 shadow-lg sm:max-w-[min(96vw,1320px)]">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Yard Records — {yardName}</DialogTitle>
+            <DialogDescription>
+              Unified calls, tickets, and manual records for the selected period.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="min-h-0 flex-1">
+          <div className="shrink-0 border-b border-slate-100 bg-[#f4f5f7]/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className={yardDashboardToolbarClass}>
+              <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+                <YardSegmentedTabs
+                  tabs={segmentedTabs}
+                  activeValue={activeTab}
+                  onChange={setActiveTab}
+                  ariaLabel="Record types"
+                  layout="grid"
+                  className="w-full min-w-0 sm:min-w-[360px]"
+                />
+
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <YardContextChip label="Yard" value={yardName} />
+                  <YardContextChip label="Range" value={periodLabel} />
+                  {counts.linkedTickets > 0 ? (
+                    <YardContextChip
+                      label="Linked"
+                      value={`${counts.linkedTickets} tickets`}
+                    />
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-3 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between md:border-t-0 md:pt-0">
+                <div className="relative w-full sm:max-w-xs">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
+                    aria-hidden
+                  />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search records"
+                    className="h-8 rounded-lg border-slate-200 bg-white pl-9 pr-9 text-xs shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                  />
+                  {search ? (
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label="Clear search"
+                      onClick={() => setSearch("")}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <div
+                    className="hidden h-4 w-px shrink-0 bg-slate-200 sm:block dark:bg-slate-700"
+                    aria-hidden
+                  />
+
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <YardStatusBadge
+                      label={
+                        loading
+                          ? "Loading"
+                          : error
+                            ? "Error"
+                            : `${total} records`
+                      }
+                      tone={loading ? "loading" : error ? "muted" : "ready"}
+                    />
+                    {lastLoadedAt ? (
+                      <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                        {lastLoadedAt}
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onOpenChange(false)}
+                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                    >
+                      <ClipboardList className="size-3.5" aria-hidden />
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 bg-white dark:bg-slate-950">
             <ScrollArea className="h-full">
               {loading ? (
                 <div className="flex h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -426,130 +348,35 @@ export function YardRecordsModal({
                   <div className="flex flex-col gap-1">
                     <p className="font-medium text-foreground">No records</p>
                     <p className="text-sm text-muted-foreground">
-                      {search ? "No matches for this search." : "No records in this period."}
+                      {search
+                        ? "No matches for this search."
+                        : "No records in this period."}
                     </p>
                   </div>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-background">
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Record</TableHead>
-                      <TableHead className="min-w-[180px]">Customer</TableHead>
-                      <TableHead className="min-w-[220px]">Relation</TableHead>
-                      <TableHead className="min-w-[150px]">Status</TableHead>
-                      <TableHead className="min-w-[170px]">Outcome</TableHead>
-                      <TableHead className="min-w-[160px]">Owner</TableHead>
-                      <TableHead className="min-w-[160px]">Date</TableHead>
-                      <TableHead className="w-[90px]">Detail</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {records.map((record) => {
-                      const detail = detailText(record);
-                      return (
-                        <TableRow key={record.id}>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <RecordTypeBadge record={record} />
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {recordPrimaryLabel(record)}
-                              </span>
-                              {record.aircallId ? (
-                                <span className="font-mono text-[11px] text-muted-foreground">
-                                  Aircall {record.aircallId}
-                                </span>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex min-w-0 flex-col gap-1">
-                              <span className="truncate font-medium">
-                                {customerLabel(record)}
-                              </span>
-                              <span className="truncate text-xs text-muted-foreground">
-                                {phoneLabel(record)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <RelationshipCell record={record} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1.5">
-                              <Badge
-                                variant={statusBadgeVariant(record.status)}
-                              >
-                                {formatLabel(record.status)}
-                              </Badge>
-                              {record.priority ? (
-                                <Badge variant="outline">
-                                  {formatLabel(record.priority)}
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1 text-sm">
-                              {record.direction ? (
-                                <span>{formatLabel(record.direction)}</span>
-                              ) : null}
-                              <span
-                                className={cn(
-                                  !record.direction && "text-muted-foreground",
-                                )}
-                              >
-                                {formatLabel(record.disposition)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="inline-flex max-w-[150px] items-center gap-1 truncate text-sm text-muted-foreground">
-                              <User className="size-3.5 shrink-0" />
-                              {agentLabel(record)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                              <Calendar className="size-3.5" />
-                              {formatDate(recordDate(record))}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {detail ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDetailRecord(record)}
-                              >
-                                <FileText data-icon="inline-start" />
-                                View
-                              </Button>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                -
-                              </span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <UnifiedRecordsList
+                  records={records}
+                  onViewDetail={(body, title) => setDetail({ body, title })}
+                />
               )}
             </ScrollArea>
           </div>
 
-          <DialogFooter className="border-t px-5 py-3">
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{total}</span>{" "}
-                record{total === 1 ? "" : "s"}
-                <span className="mx-1">|</span>
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {total}
+                </span>{" "}
+                top-level record{total === 1 ? "" : "s"}
+                <span className="mx-1.5 text-slate-300">|</span>
                 Page{" "}
-                <span className="font-medium text-foreground">{page}</span> of{" "}
-                <span className="font-medium text-foreground">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {page}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
                   {Math.max(totalPages, 1)}
                 </span>
               </p>
@@ -558,6 +385,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="h-8 rounded-lg border-slate-200 text-xs"
                   disabled={loading || page <= 1}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
@@ -567,6 +395,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="h-8 rounded-lg border-slate-200 text-xs"
                   disabled={loading || page >= Math.max(totalPages, 1)}
                   onClick={() =>
                     setPage((current) =>
@@ -576,9 +405,6 @@ export function YardRecordsModal({
                 >
                   Next
                 </Button>
-                <Button type="button" onClick={() => onOpenChange(false)}>
-                  Done
-                </Button>
               </div>
             </div>
           </DialogFooter>
@@ -586,30 +412,34 @@ export function YardRecordsModal({
       </Dialog>
 
       <Dialog
-        open={Boolean(detailRecord)}
+        open={Boolean(detail)}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen) setDetailRecord(null);
+          if (!nextOpen) setDetail(null);
         }}
       >
-        <DialogContent className="max-h-[82vh] overflow-hidden rounded-lg p-0 sm:max-w-[560px]">
-          <DialogHeader className="border-b px-5 py-4">
-            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-              <FileText className="size-4 text-primary" />
-              Record Detail
+        <DialogContent className="max-h-[82vh] overflow-hidden rounded-xl border border-slate-200/80 p-0 sm:max-w-[560px]">
+          <DialogHeader className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <DialogTitle className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {detail?.title}
             </DialogTitle>
-            <DialogDescription>
-              {detailRecord ? recordPrimaryLabel(detailRecord) : "Selected record"}
+            <DialogDescription className="text-[11px]">
+              Record detail
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[58vh]">
             <div className="p-5">
               <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
-                {detailRecord ? detailText(detailRecord) : ""}
+                {detail?.body}
               </p>
             </div>
           </ScrollArea>
-          <DialogFooter className="border-t px-5 py-3">
-            <Button type="button" onClick={() => setDetailRecord(null)}>
+          <DialogFooter className="border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 rounded-lg text-xs"
+              onClick={() => setDetail(null)}
+            >
               Close
             </Button>
           </DialogFooter>

@@ -18,6 +18,7 @@ import { YardDashboard } from "./components/YardDashboard";
 import { YardRecordsModal } from "./components/YardRecordsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
+import { dashboardCanvasClass } from "@/app/(dashboard)/dashboard/dashboard-theme";
 import type { Ticket, Yard, YardStats } from "./components/types";
 
 const parseLocalDateStart = (value: string) => {
@@ -67,6 +68,15 @@ const buildEmptyYardStats = (yard: Yard): YardStats => ({
   ticketsByAgent: [],
   ticketsByCampaign: [],
   ticketsByNewLead: [],
+  newLeadCallsCount: 0,
+  newLeadCustomersCount: 0,
+  missedInbound: 0,
+  missedOutbound: 0,
+  activeAgents: 0,
+  callResolutionRate: 0,
+  callsByDay: [],
+  manualRecordsByDay: [],
+  newLeadPreview: [],
   avgResolutionTime: undefined,
   peakDay: undefined,
   peakDayCount: undefined,
@@ -129,6 +139,9 @@ export default function YardReportsPage() {
   const [showYardRecordsModal, setShowYardRecordsModal] = useState(false);
   const [startDate, setStartDate] = useState<string>(startDateParam || "");
   const [endDate, setEndDate] = useState<string>(endDateParam || "");
+  const [reportLastUpdated, setReportLastUpdated] = useState<string | null>(
+    null,
+  );
 
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return true;
@@ -378,6 +391,7 @@ export default function YardReportsPage() {
   useEffect(() => {
     if (!selectedYardQueryKey) {
       setSelectedYardStats(null);
+      setReportLastUpdated(null);
       return;
     }
 
@@ -396,6 +410,12 @@ export default function YardReportsPage() {
 
         const stats = (response?.data || response) as YardStats | null;
         setSelectedYardStats(stats || null);
+        setReportLastUpdated(
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        );
       } catch (error: any) {
         if (cancelled) return;
         console.error("Error fetching selected yard report detail:", error);
@@ -463,6 +483,17 @@ export default function YardReportsPage() {
     router.push(`/reports/yards?${params.toString()}`);
   };
 
+  const handleSelectOverview = () => {
+    setSelectedYardId("");
+    setSelectedYardStats(null);
+    setReportLastUpdated(null);
+    const params = new URLSearchParams();
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    const query = params.toString();
+    router.push(query ? `/reports/yards?${query}` : "/reports/yards");
+  };
+
   const handleDateChange = () => {
     const params = new URLSearchParams();
     if (selectedYardId) params.set("yardId", selectedYardId);
@@ -524,9 +555,25 @@ export default function YardReportsPage() {
       ? `${window.location.origin}/images/logo.jpeg`
       : "/images/logo.jpeg";
 
-  const activeChartData = useMemo(() => {
+  const activeTicketChartData = useMemo(() => {
     if (!selectedYardStats?.ticketsByDay) return [];
-    return selectedYardStats.ticketsByDay.filter((day) => day.total > 0);
+    return selectedYardStats.ticketsByDay.filter(
+      (day) => day.total > 0 || day.closed > 0,
+    );
+  }, [selectedYardStats]);
+
+  const activeCallsChartData = useMemo(() => {
+    if (!selectedYardStats?.callsByDay) return [];
+    return selectedYardStats.callsByDay.filter(
+      (day) => (day.created ?? day.total) > 0 || day.closed > 0,
+    );
+  }, [selectedYardStats]);
+
+  const activeManualChartData = useMemo(() => {
+    if (!selectedYardStats?.manualRecordsByDay) return [];
+    return selectedYardStats.manualRecordsByDay.filter(
+      (day) => (day.created ?? day.total) > 0 || day.closed > 0,
+    );
   }, [selectedYardStats]);
 
   const handleExportPDF = async () => {
@@ -651,8 +698,8 @@ export default function YardReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-2 md:p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 animate-in fade-in duration-500">
-      <div className="mx-auto max-w-[1600px] space-y-4">
+    <div className="flex min-h-[calc(100dvh-4.25rem)] min-h-0 flex-col px-4 pb-4 pt-2 animate-in fade-in duration-500">
+      <div className="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-2">
         <ReportHeader
           selectedYard={selectedYard}
           startDate={startDate}
@@ -661,6 +708,8 @@ export default function YardReportsPage() {
           canViewTickets={Boolean(
             selectedYard && startDate && endDate && isDateRangeValid,
           )}
+          lastUpdated={reportLastUpdated}
+          onSelectOverview={handleSelectOverview}
           onOpenFilters={() => setFiltersModalOpen(true)}
           onViewAllTickets={handleViewAllTickets}
           onExportPDF={handleExportPDF}
@@ -769,20 +818,28 @@ export default function YardReportsPage() {
             </Button>
           </div>
         ) : loadingStats || !selectedYardStats ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-1 items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             <span className="ml-2 text-muted-foreground">
               Loading dashboard...
             </span>
           </div>
         ) : (
-          <YardDashboard
-            stats={selectedYardStats}
-            yardTickets={selectedYardTickets}
-            activeChartData={activeChartData}
-            reportStartDate={startDate}
-            reportEndDate={endDate}
-          />
+          <div
+            className={`min-h-0 flex-1 overflow-hidden ${dashboardCanvasClass}`}
+          >
+            <div className="scrollbar-app-hover h-full overflow-y-auto pb-2">
+              <YardDashboard
+                stats={selectedYardStats}
+                yardTickets={selectedYardTickets}
+                activeTicketChartData={activeTicketChartData}
+                activeCallsChartData={activeCallsChartData}
+                activeManualChartData={activeManualChartData}
+                reportStartDate={startDate}
+                reportEndDate={endDate}
+              />
+            </div>
+          </div>
         )}
       </div>
 

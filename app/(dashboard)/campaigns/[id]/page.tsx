@@ -995,7 +995,7 @@ export default function CampaignReportPage() {
                                         );
                                       }
 
-                                      const ticketsUrl = `/tickets?${params.toString()}`;
+                                      const ticketsUrl = `/calls?tab=calls&${params.toString()}`;
                                       router.push(ticketsUrl);
                                     }}
                                   >

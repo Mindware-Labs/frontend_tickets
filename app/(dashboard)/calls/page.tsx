@@ -314,7 +314,7 @@ export default function TicketsPage() {
   const [activeTab, setActiveTab] = useState(
     tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)
       ? tabParam
-      : "calls"
+      : "calls",
   );
   const [ticketCreateData, setTicketCreateData] = useState<Record<
     string,
@@ -660,13 +660,34 @@ export default function TicketsPage() {
     isNavigatingBackRef.current = false;
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   useEffect(() => {
-    if (tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)) {
+    if (
+      tabParam &&
+      ["calls", "tickets", "manual-records"].includes(tabParam)
+    ) {
       setActiveTab(tabParam);
-    } else if (callIdParam) {
+      return;
+    }
+
+    if (tabParam === "all") {
+      setActiveTab("calls");
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "calls");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      return;
+    }
+
+    if (callIdParam) {
       setActiveTab("calls");
     }
-  }, [tabParam, callIdParam]);
+  }, [tabParam, callIdParam, pathname, router, searchParams]);
 
   useEffect(() => {
     if (!callIdParam) {
@@ -1166,7 +1187,7 @@ export default function TicketsPage() {
 
     setShowTimelineDrawer(false);
     setTicketCreateData(data);
-    setActiveTab("tickets");
+    handleTabChange("tickets");
   };
 
   // ---- Computed ----
@@ -1177,7 +1198,7 @@ export default function TicketsPage() {
     <div className="h-screen flex flex-col px-4 pt-2 pb-4 gap-0">
       <Tabs
         value={activeTab}
-        onValueChange={setActiveTab}
+        onValueChange={handleTabChange}
         className="flex-1 flex flex-col"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
@@ -1211,7 +1232,7 @@ export default function TicketsPage() {
                 return (
                   <button
                     key={tab.value}
-                    onClick={() => setActiveTab(tab.value)}
+                    onClick={() => handleTabChange(tab.value)}
                     className={`flex-1 md:flex-none relative inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md text-[12.5px] font-semibold transition-all duration-200 whitespace-nowrap ${
                       isActive
                         ? "bg-white dark:bg-slate-900 text-[#008f68] shadow-sm border border-[#d1e7dd] dark:border-[#008f68]/30"

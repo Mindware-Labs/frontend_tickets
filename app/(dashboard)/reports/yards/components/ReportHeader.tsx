@@ -1,12 +1,22 @@
 "use client";
 
 import {
+  Building2,
+  ClipboardList,
   Download,
   FileSpreadsheet,
-  SlidersHorizontal,
-  ClipboardList,
+  Filter,
+  LayoutGrid,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
+import { cn } from "@/lib/utils";
+import {
+  YardContextChip,
+  yardDashboardTabClass,
+  yardDashboardTabIconClass,
+  yardDashboardTabListClass,
+  yardDashboardToolbarClass,
+} from "./yard-dashboard-chrome";
 import type { Yard } from "./types";
 
 type ReportHeaderProps = {
@@ -15,6 +25,8 @@ type ReportHeaderProps = {
   endDate: string;
   canExport: boolean;
   canViewTickets: boolean;
+  lastUpdated: string | null;
+  onSelectOverview: () => void;
   onOpenFilters: () => void;
   onViewAllTickets: () => void;
   onExportPDF: () => void;
@@ -27,79 +39,157 @@ export function ReportHeader({
   endDate,
   canExport,
   canViewTickets,
+  lastUpdated,
+  onSelectOverview,
   onOpenFilters,
   onViewAllTickets,
   onExportPDF,
   onExportExcel,
 }: ReportHeaderProps) {
-  const hasCompleteData = selectedYard && startDate && endDate;
-
-  
+  const hasDateRange = Boolean(startDate && endDate);
+  const hasYardDetail = Boolean(selectedYard);
+  const filtersConfigured = hasDateRange && hasYardDetail;
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pb-5 border-b mb-6">
-      <div className="space-y-1.5">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground drop-shadow-sm">
-          Yard Reports
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {hasCompleteData
-            ? `${selectedYard.name} • ${startDate} to ${endDate}`
-            : "Select a yard and date range to view analytics"}
-            
-        </p>
-         {canViewTickets && (
-          <Button
-            variant="default"
-            onClick={onViewAllTickets}
-            className="gap-2 w-full sm:w-auto shadow-sm"
+    <header className="shrink-0">
+      <div className={yardDashboardToolbarClass}>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 md:gap-4">
+          <div
+            className={yardDashboardTabListClass}
+            role="tablist"
+            aria-label="Yard report views"
           >
-            <ClipboardList data-icon="inline-start" />
-            Yard Records
-          </Button>
-        )}
-      </div>
-      
-
-      <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-        {/* Botón Principal: Destaca por ser la acción requerida para filtrar */}
-        <Button
-          variant="default"
-          onClick={onOpenFilters}
-          className="gap-2 w-full sm:w-auto shadow-sm"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Configure Report
-        </Button>
-
-       
-
-        {canExport && (
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Exportar PDF: Hover semántico en tonos rojos */}
-            <Button
+            <button
               type="button"
-              variant="outline"
-              onClick={onExportPDF}
-              className="gap-2 flex-1 sm:flex-none hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 transition-colors"
+              role="tab"
+              aria-selected={!hasYardDetail}
+              onClick={onSelectOverview}
+              className={yardDashboardTabClass(!hasYardDetail)}
             >
-              <Download className="w-4 h-4" />
-              PDF
-            </Button>
-
-            {/* Exportar Excel: Hover semántico en tonos verdes */}
-            <Button
+              <LayoutGrid
+                className={yardDashboardTabIconClass(!hasYardDetail)}
+                aria-hidden
+              />
+              All yards
+            </button>
+            <button
               type="button"
-              variant="outline"
-              onClick={onExportExcel}
-              className="gap-2 flex-1 sm:flex-none hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors"
+              role="tab"
+              aria-selected={hasYardDetail}
+              disabled={!hasYardDetail}
+              onClick={hasYardDetail ? undefined : onOpenFilters}
+              className={cn(
+                yardDashboardTabClass(hasYardDetail),
+                !hasYardDetail &&
+                  "disabled:cursor-not-allowed disabled:opacity-60",
+              )}
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              Excel
-            </Button>
+              <Building2
+                className={yardDashboardTabIconClass(hasYardDetail)}
+                aria-hidden
+              />
+              <span className="max-w-[140px] truncate">
+                {selectedYard?.name ?? "Yard detail"}
+              </span>
+            </button>
           </div>
-        )}
+
+          {filtersConfigured ? (
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+              <YardContextChip label="Yard" value={selectedYard!.name} />
+              <YardContextChip
+                label="Range"
+                value={`${startDate} → ${endDate}`}
+              />
+            </div>
+          ) : hasDateRange ? (
+            <YardContextChip
+              label="Range"
+              value={`${startDate} → ${endDate}`}
+            />
+          ) : null}
+        </div>
+
+        <div className="flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-2 md:w-auto md:border-t-0 md:pt-0 md:justify-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenFilters}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm transition-colors",
+                filtersConfigured || hasDateRange
+                  ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+              )}
+            >
+              <Filter className="size-3.5" aria-hidden />
+              <span>Configure</span>
+            </button>
+
+            {canViewTickets ? (
+              <button
+                type="button"
+                onClick={onViewAllTickets}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+              >
+                <ClipboardList className="size-3.5" aria-hidden />
+                <span>Records</span>
+              </button>
+            ) : null}
+
+            {canExport ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onExportPDF}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                >
+                  <Download className="size-3.5" aria-hidden />
+                  <span>PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onExportExcel}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                >
+                  <FileSpreadsheet className="size-3.5" aria-hidden />
+                  <span>Excel</span>
+                </button>
+              </>
+            ) : null}
+          </div>
+
+          <div
+            className="hidden h-4 w-px shrink-0 bg-slate-200 md:block dark:bg-slate-700"
+            aria-hidden
+          />
+
+          <div className="flex shrink-0 items-center gap-3 text-slate-400">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-semibold",
+                filtersConfigured
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400",
+              )}
+            >
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  filtersConfigured ? "bg-emerald-500" : "bg-slate-400",
+                )}
+                aria-hidden
+              />
+              {filtersConfigured ? "Ready" : "Setup"}
+            </span>
+            {lastUpdated ? (
+              <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                {lastUpdated}
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

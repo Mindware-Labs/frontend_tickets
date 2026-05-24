@@ -128,6 +128,7 @@ export type YardRecord = {
   } | null;
   tickets?: YardRecordLinkedTicket[];
   linkedTicketCount?: number;
+  callOutsidePeriod?: boolean;
 };
 
 export type YardStatsDay = {
@@ -137,7 +138,21 @@ export type YardStatsDay = {
   total: number;
   open: number;
   closed: number;
+  created?: number;
   dayOfMonth?: number;
+};
+
+export type YardNewLeadPreview = {
+  callId: number;
+  customerId?: number | string | null;
+  customerName: string;
+  phone?: string | null;
+  direction?: string | null;
+  status?: string | null;
+  disposition?: string | null;
+  agentName?: string | null;
+  issueDetail?: string | null;
+  createdAt?: string | null;
 };
 
 export type YardStats = {
@@ -171,8 +186,20 @@ export type YardStats = {
       ticketId: number;
       issueDetail: string;
       createdAt?: string | null;
+      direction?: string | null;
+      status?: string | null;
+      agentName?: string | null;
     }[];
   }[];
+  newLeadCallsCount?: number;
+  newLeadCustomersCount?: number;
+  missedInbound?: number;
+  missedOutbound?: number;
+  activeAgents?: number;
+  callResolutionRate?: number;
+  callsByDay?: YardStatsDay[];
+  manualRecordsByDay?: YardStatsDay[];
+  newLeadPreview?: YardNewLeadPreview[];
   avgResolutionTime?: number;
   peakDay?: string;
   peakDayCount?: number;

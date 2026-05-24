@@ -66,6 +66,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname === "/tickets" || pathname.startsWith("/tickets/")) {
+    const redirectUrl = new URL("/calls", request.url);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      redirectUrl.searchParams.set(key, value);
+    });
+    if (!redirectUrl.searchParams.has("tab")) {
+      redirectUrl.searchParams.set("tab", "tickets");
+    }
+    return NextResponse.redirect(redirectUrl);
+  }
+
   if (!authToken && !publicRoutes.includes(pathname)) {
     const loginUrl = new URL("/login", request.url);
     if (pathname !== "/") {
@@ -85,7 +96,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith("/dashboard") && role !== "admin") {
-    return NextResponse.redirect(new URL("/tickets", request.url));
+    return NextResponse.redirect(new URL("/calls", request.url));
   }
 
   // Allow agents to access their dashboard
@@ -110,11 +121,11 @@ export function middleware(request: NextRequest) {
       pathname.startsWith("/reports/agents")) &&
     role !== "admin"
   ) {
-    return NextResponse.redirect(new URL("/tickets", request.url));
+    return NextResponse.redirect(new URL("/calls", request.url));
   }
 
   if (pathname.startsWith("/users") && role !== "admin") {
-    return NextResponse.redirect(new URL("/tickets", request.url));
+    return NextResponse.redirect(new URL("/calls", request.url));
   }
 
   if (authToken && publicRoutes.includes(pathname)) {

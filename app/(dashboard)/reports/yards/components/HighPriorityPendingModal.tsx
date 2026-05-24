@@ -29,6 +29,7 @@ import {
   User,
   XCircle,
 } from "lucide-react";
+import { buildContactCenterUrl } from "@/lib/contact-center-url";
 import type { Ticket } from "./types";
 
 type HighPriorityPendingModalProps = {
@@ -240,7 +241,19 @@ export function HighPriorityPendingModal({
         if (reportEndDate) {
           params.set("reportEndDate", reportEndDate);
         }
-        const ticketsUrl = `/tickets?${params.toString()}`;
+        const ticketsUrl = buildContactCenterUrl({
+          tab: "tickets",
+          id: ticket.id,
+          fromReport: params.get("fromReport") || undefined,
+          view: params.get("view") || undefined,
+          reportSection: params.get("reportSection") || undefined,
+          reportTicketId: params.get("reportTicketId") || undefined,
+          reportYardName: params.get("reportYardName") || undefined,
+          yardId: params.get("yardId") || undefined,
+          status: params.get("status") || undefined,
+          reportStartDate: params.get("reportStartDate") || undefined,
+          reportEndDate: params.get("reportEndDate") || undefined,
+        });
 
         return (
           <div

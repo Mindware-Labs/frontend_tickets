@@ -179,6 +179,7 @@ type SmsSummary = {
     received: number;
     delivered?: number;
     failed?: number;
+    replyRate?: number;
   }[];
   byLine?: { line: string; sent: number; received: number; replyRate: number }[];
 };
@@ -272,7 +273,7 @@ function formatNumber(value: number) {
 
 function percent(numerator: number, denominator: number) {
   if (!denominator) return 0;
-  return Math.round((numerator / denominator) * 100);
+  return Math.min(100, Math.round((numerator / denominator) * 100));
 }
 
 const SCORECARD_CALL_RESPONSE_TARGET_SEC = 90;
@@ -1095,7 +1096,9 @@ function buildSmsTrend(sms?: SmsSummary | null): DashboardDataSet["smsTrend"] {
     week: labelFromDate(item.day) || item.day,
     sent: numberValue(item.sent),
     replies: numberValue(item.received),
-    rate: percent(numberValue(item.received), numberValue(item.sent)),
+    rate:
+      item.replyRate ??
+      percent(numberValue(item.received), numberValue(item.sent)),
   }));
 
   return rows;
