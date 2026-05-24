@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  ClipboardList,
   Contact,
   FilePenLine,
   Phone,
   Target,
   Ticket,
-  TrendingUp,
   UserPlus,
 } from "lucide-react";
 import { MetricCard } from "@/app/(dashboard)/dashboard/components/metric-card";
@@ -24,9 +24,9 @@ import {
   DIRECTION_COLORS,
   PRIORITY_COLORS,
 } from "./chart-colors";
-import { ActiveCampaignsModal } from "./ActiveCampaignsModal";
 import { HighPriorityPendingModal } from "./HighPriorityPendingModal";
 import { NewLeadsModal } from "./NewLeadsModal";
+import { OpenTicketsModal } from "./OpenTicketsModal";
 import type { Ticket as YardTicket, YardStats, YardStatsDay } from "./types";
 import { InsightActionCard } from "./yard-insight-action-card";
 import { YardActivityChart } from "./yard-activity-chart";
@@ -55,7 +55,7 @@ export function YardDashboard({
   const [showNewLeadsModal, setShowNewLeadsModal] = useState(false);
   const [showHighPriorityPendingModal, setShowHighPriorityPendingModal] =
     useState(false);
-  const [showCampaignsModal, setShowCampaignsModal] = useState(false);
+  const [showOpenTicketsModal, setShowOpenTicketsModal] = useState(false);
 
   const totalCalls = stats.totalCalls ?? 0;
   const totalTickets = stats.totalTickets;
@@ -133,6 +133,23 @@ export function YardDashboard({
           (highPriorityPendingTickets.length / stats.totalTickets) * 100,
         )
       : 0;
+
+  const openWorkloadTickets = useMemo(
+    () =>
+      yardTickets.filter((ticket) => {
+        const status = (ticket.status || "").toUpperCase();
+        return (
+          status !== "COMPLETED" &&
+          status !== "CLOSED" &&
+          status !== "RESOLVED"
+        );
+      }),
+    [yardTickets],
+  );
+
+  const openWorkloadCount = openWorkloadTickets.length;
+  const openOnlyCount = stats.openTickets ?? 0;
+  const inProgressCount = stats.inProgressTickets ?? 0;
 
   const dispositionChartData = useMemo(
     () =>
@@ -228,11 +245,17 @@ export function YardDashboard({
           secondaryHint={`Closed / resolved high priority: ${highPriorityClosedCount}`}
         />
         <InsightActionCard
-          label="Active campaigns"
-          value={stats.ticketsByCampaign.length}
-          tone="indigo"
-          icon={TrendingUp}
-          onClick={() => setShowCampaignsModal(true)}
+          label="Open workload"
+          value={openWorkloadCount}
+          tone="sky"
+          icon={ClipboardList}
+          onClick={() => setShowOpenTicketsModal(true)}
+          primaryHint={`${openOnlyCount} open · ${inProgressCount} in progress`}
+          secondaryHint={
+            openWorkloadCount > 0
+              ? "Review issue and owner on each card"
+              : "No active tickets in period"
+          }
         />
       </div>
 
@@ -312,6 +335,7 @@ export function YardDashboard({
         reportStartDate={reportStartDate}
         reportEndDate={reportEndDate}
         customersByNewLead={stats.ticketsByNewLead}
+        yardTickets={yardTickets}
       />
 
       <HighPriorityPendingModal
@@ -325,15 +349,15 @@ export function YardDashboard({
         tickets={yardTickets}
       />
 
-      <ActiveCampaignsModal
-        open={showCampaignsModal}
-        onOpenChange={setShowCampaignsModal}
+      <OpenTicketsModal
+        open={showOpenTicketsModal}
+        onOpenChange={setShowOpenTicketsModal}
         side="right"
         yardId={stats.yard.id}
         yardName={stats.yard.name}
         reportStartDate={reportStartDate}
         reportEndDate={reportEndDate}
-        campaignsByTickets={stats.ticketsByCampaign}
+        tickets={yardTickets}
       />
     </div>
   );

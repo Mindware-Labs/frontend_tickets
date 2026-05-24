@@ -576,7 +576,8 @@ function AircallDock({
           "pointer-events-auto",
           open && !dragRef.current?.moved && "scale-90",
           isFullscreen && "hidden",
-          !pos && (sheetOpen ? "bottom-6 left-6" : "bottom-6 right-6"),
+          sheetOpen && "hidden",
+          !pos && !sheetOpen && "bottom-6 right-6",
         )}
         style={
           pos
@@ -614,9 +615,7 @@ function AircallDock({
                   "z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl",
                   pos
                     ? "fixed origin-bottom"
-                    : sheetOpen
-                      ? "fixed bottom-24 left-6 origin-bottom-left"
-                      : "fixed bottom-24 right-6 origin-bottom-right",
+                    : "fixed bottom-24 right-6 origin-bottom-right",
                   open
                     ? "opacity-100 scale-100 pointer-events-auto"
                     : "opacity-0 scale-95 pointer-events-none",

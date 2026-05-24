@@ -185,12 +185,15 @@ export type YardStats = {
     count: number;
     phone?: string | null;
     issueDetails: {
+      callId?: number;
       ticketId: number;
       issueDetail: string;
       createdAt?: string | null;
       direction?: string | null;
       status?: string | null;
+      disposition?: string | null;
       agentName?: string | null;
+      duration?: number | null;
     }[];
   }[];
   newLeadCallsCount?: number;
