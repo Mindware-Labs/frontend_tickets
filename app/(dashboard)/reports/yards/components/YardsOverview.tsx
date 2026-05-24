@@ -96,12 +96,30 @@ export function YardsOverview({
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="col-span-3 rounded-xl border bg-muted/20 p-3 sm:p-4">
+              <div className="rounded-xl border bg-muted/20 p-3 sm:p-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Total Tickets
                 </p>
                 <p className="mt-1 text-2xl font-bold sm:text-3xl">
                   {stats.totalTickets}
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-muted/20 p-3 sm:p-4">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Calls
+                </p>
+                <p className="mt-1 text-2xl font-bold sm:text-3xl">
+                  {stats.totalCalls ?? 0}
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-muted/20 p-3 sm:p-4">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Manual
+                </p>
+                <p className="mt-1 text-2xl font-bold sm:text-3xl">
+                  {stats.totalManualRecords ?? 0}
                 </p>
               </div>
 

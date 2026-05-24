@@ -15,7 +15,7 @@ import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
 import { YardDashboard } from "./components/YardDashboard";
-import { YardCallsModal } from "./components/YardCallsModal";
+import { YardRecordsModal } from "./components/YardRecordsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
 import type { Ticket, Yard, YardStats } from "./components/types";
@@ -37,6 +37,8 @@ type YardsOverviewReportRow = {
   commonName?: string | null;
   isActive?: boolean | null;
   totalTickets?: number | string | null;
+  totalCalls?: number | string | null;
+  totalManualRecords?: number | string | null;
   openTickets?: number | string | null;
   inProgressTickets?: number | string | null;
   closedTickets?: number | string | null;
@@ -93,6 +95,8 @@ const mapOverviewRowToYardStats = (row: YardsOverviewReportRow): YardStats | nul
   return {
     ...buildEmptyYardStats(yard),
     totalTickets: toSafeNumber(row.totalTickets),
+    totalCalls: toSafeNumber(row.totalCalls),
+    totalManualRecords: toSafeNumber(row.totalManualRecords),
     openTickets: toSafeNumber(row.openTickets),
     inProgressTickets: toSafeNumber(row.inProgressTickets),
     closedTickets: toSafeNumber(row.closedTickets),
@@ -122,7 +126,7 @@ export default function YardReportsPage() {
   const [loadingSelectedYardDetail, setLoadingSelectedYardDetail] =
     useState(false);
   const [selectedYardTickets, setSelectedYardTickets] = useState<Ticket[]>([]);
-  const [showYardCallsModal, setShowYardCallsModal] = useState(false);
+  const [showYardRecordsModal, setShowYardRecordsModal] = useState(false);
   const [startDate, setStartDate] = useState<string>(startDateParam || "");
   const [endDate, setEndDate] = useState<string>(endDateParam || "");
 
@@ -512,7 +516,7 @@ export default function YardReportsPage() {
       return;
     }
 
-    setShowYardCallsModal(true);
+    setShowYardRecordsModal(true);
   };
 
   const getLogoUrl = () =>
@@ -782,13 +786,13 @@ export default function YardReportsPage() {
         )}
       </div>
 
-      <YardCallsModal
-        open={showYardCallsModal}
-        onOpenChange={setShowYardCallsModal}
+      <YardRecordsModal
+        open={showYardRecordsModal}
+        onOpenChange={setShowYardRecordsModal}
         yardName={selectedYard?.name || "Selected Yard"}
+        yardId={selectedYard?.id || selectedYardId}
         reportStartDate={startDate}
         reportEndDate={endDate}
-        tickets={selectedYardTickets}
       />
     </div>
   );

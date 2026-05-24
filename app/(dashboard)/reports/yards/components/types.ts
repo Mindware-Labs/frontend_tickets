@@ -48,9 +48,87 @@ export type Call = {
   followUpAssignedToId?: number | string | null;
   campaignId?: number | string | null;
   campaign?: { id?: number | string | null; nombre?: string | null } | null;
+  callId?: number | string | null;
+  call?: {
+    id?: number | string | null;
+    direction?: string | null;
+    disposition?: string | null;
+    status?: string | null;
+    createdAt?: string | null;
+  } | null;
+  ticketId?: number | string | null;
+  ticketType?: string | null;
+  campaignOption?: string | null;
+  phoneLine?: {
+    id?: number | string | null;
+    phoneNumber?: string | null;
+    label?: string | null;
+  } | null;
 };
 
 export type Ticket = Call;
+
+export type YardRecordType = "call" | "ticket" | "manual_record";
+
+export type YardRecordLinkedTicket = {
+  id: number;
+  status?: string | null;
+  priority?: string | null;
+  ticketType?: string | null;
+  campaignOption?: string | null;
+  issueDetail?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  assignedTo?: {
+    id?: number | string | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+};
+
+export type YardRecord = {
+  id: string;
+  recordType: YardRecordType;
+  sourceId: number;
+  occurredAt?: string | null;
+  updatedAt?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  disposition?: string | null;
+  direction?: string | null;
+  customerId?: number | string | null;
+  customer?: {
+    id?: number | string | null;
+    name?: string | null;
+    phone?: string | null;
+  } | null;
+  customerPhone?: string | null;
+  agent?: {
+    id?: number | string | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+  campaign?: { id?: number | string | null; nombre?: string | null } | null;
+  notes?: string | null;
+  issueDetail?: string | null;
+  callId?: number | string | null;
+  ticketId?: number | string | null;
+  manualRecordId?: number | string | null;
+  aircallId?: string | null;
+  startedAt?: string | null;
+  answeredAt?: string | null;
+  endedAt?: string | null;
+  duration?: number | null;
+  call?: {
+    id: number;
+    direction?: string | null;
+    disposition?: string | null;
+    status?: string | null;
+    createdAt?: string | null;
+  } | null;
+  tickets?: YardRecordLinkedTicket[];
+  linkedTicketCount?: number;
+};
 
 export type YardStatsDay = {
   date: string;

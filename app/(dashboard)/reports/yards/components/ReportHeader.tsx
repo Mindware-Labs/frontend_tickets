@@ -4,7 +4,7 @@ import {
   Download,
   FileSpreadsheet,
   SlidersHorizontal,
-  Ticket,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Yard } from "./types";
@@ -54,8 +54,8 @@ export function ReportHeader({
             onClick={onViewAllTickets}
             className="gap-2 w-full sm:w-auto shadow-sm"
           >
-            <Ticket className="w-4 h-4" />
-            Yard Tickets
+            <ClipboardList data-icon="inline-start" />
+            Yard Records
           </Button>
         )}
       </div>
