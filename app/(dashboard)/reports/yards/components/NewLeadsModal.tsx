@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { useMemo } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  ArrowDownLeft,
+  ArrowUpRight,
+  Calendar,
+  ExternalLink,
+  Phone,
+  Ticket as TicketIcon,
+  User,
+  UserPlus,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -18,29 +23,29 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { buildContactCenterUrl } from "@/lib/contact-center-url";
+import { cn } from "@/lib/utils";
+import { YardContextChip } from "./yard-dashboard-chrome";
 import {
-  ExternalLink,
-  Phone,
-  UserPlus,
-  XCircle,
-  Ticket,
-  FileText,
-} from "lucide-react";
+  InsightEmptyState,
+  InsightIssueBlock,
+  InsightKpiStrip,
+  InsightMetaRow,
+  InsightRecordPanel,
+  InsightSheetAccent,
+  InsightStatusPill,
+  InsightSummaryBadge,
+  formatInsightDateTime,
+  formatInsightLabel,
+  getInsightCardsGridClass,
+  getInsightSheetMaxWidthClass,
+  insightCardClass,
+  insightSheetHeaderClass,
+  useInsightSheetChrome,
+} from "./yard-insight-ui";
+import type { Ticket, YardStats } from "./types";
 
-type NewLeadCustomer = {
-  customerId: number | null;
-  customerName: string;
-  count: number;
-  phone?: string | null;
-  issueDetails: {
-    ticketId: number;
-    issueDetail: string;
-    createdAt?: string | null;
-  }[];
-};
+type NewLeadCustomer = YardStats["ticketsByNewLead"][number];
 
 type NewLeadsModalProps = {
   open: boolean;
@@ -51,37 +56,30 @@ type NewLeadsModalProps = {
   reportStartDate?: string;
   reportEndDate?: string;
   customersByNewLead: NewLeadCustomer[];
+  yardTickets?: Ticket[];
 };
 
-const getRankBadgeClass = () => {
-  return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50";
-};
+function formatPhoneLabel(value?: string | null) {
+  if (!value) return "—";
+  return value.replace(/\s+/g, "\u00a0");
+}
 
-const getSheetMaxWidthClass = (cardCount: number) => {
-  if (cardCount <= 1) {
-    return "sm:max-w-[min(92vw,480px)]";
-  }
-  if (cardCount === 2) {
-    return "sm:max-w-[min(92vw,840px)]";
-  }
-  return "sm:max-w-[min(92vw,1200px)]";
-};
+function DirectionChip({ direction }: { direction?: string | null }) {
+  const normalized = (direction || "").toUpperCase();
+  const isInbound =
+    normalized === "INBOUND" || normalized === "INCOMING";
+  const Icon = isInbound ? ArrowDownLeft : ArrowUpRight;
+  const color = isInbound
+    ? "text-sky-600 dark:text-sky-400"
+    : "text-amber-600 dark:text-amber-400";
 
-const getSheetMaxWidthExpression = (cardCount: number) => {
-  if (cardCount <= 1) return "min(92vw,480px)";
-  if (cardCount === 2) return "min(92vw,840px)";
-  return "min(92vw,1200px)";
-};
-
-const getCardsGridClass = (cardCount: number) => {
-  if (cardCount <= 1) {
-    return "grid-cols-1";
-  }
-  if (cardCount === 2) {
-    return "grid-cols-1 sm:grid-cols-2";
-  }
-  return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
-};
+  return (
+    <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium capitalize", color)}>
+      <Icon className="size-3" aria-hidden />
+      {formatInsightLabel(direction)}
+    </span>
+  );
+}
 
 export function NewLeadsModal({
   open,
@@ -92,6 +90,7 @@ export function NewLeadsModal({
   reportStartDate,
   reportEndDate,
   customersByNewLead,
+  yardTickets = [],
 }: NewLeadsModalProps) {
   const leads = useMemo(
     () =>
@@ -102,225 +101,390 @@ export function NewLeadsModal({
     [customersByNewLead],
   );
 
-  const totalLeadTickets = useMemo(
+  const totalLeadCalls = useMemo(
     () => leads.reduce((sum, lead) => sum + lead.count, 0),
     [leads],
   );
-  const [selectedLeadForIssues, setSelectedLeadForIssues] =
-    useState<NewLeadCustomer | null>(null);
-  const [showIssueDetailsModal, setShowIssueDetailsModal] = useState(false);
-  const sheetWidthClass = getSheetMaxWidthClass(leads.length);
-  const cardsGridClass = getCardsGridClass(leads.length);
-  const issueDialogSheetMaxWidth = getSheetMaxWidthExpression(leads.length);
 
-  useEffect(() => {
-    if (!open) {
-      setShowIssueDetailsModal(false);
-      setSelectedLeadForIssues(null);
-    }
-  }, [open]);
-
-  const issueDetailsDialogPositionClass =
-    side === "right"
-      ? "2xl:left-[max(1rem,calc((100vw-var(--sheet-max-width)-var(--issue-dialog-width))/2))] 2xl:right-auto 2xl:translate-x-0"
-      : "2xl:right-[max(1rem,calc((100vw-var(--sheet-max-width)-var(--issue-dialog-width))/2))] 2xl:left-auto 2xl:translate-x-0";
-  const issueDetailsDialogStyle = {
-    "--sheet-max-width": issueDialogSheetMaxWidth,
-    "--issue-dialog-width": "520px",
-  } as CSSProperties;
-
-  const openIssueDetails = (lead: NewLeadCustomer) => {
-    setSelectedLeadForIssues(lead);
-    setShowIssueDetailsModal(true);
-  };
-
-  const formatIssueDate = (value?: string | null) => {
-    if (!value) return "Unknown date";
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return "Unknown date";
-    return parsed.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  const ticketsByCustomerId = useMemo(() => {
+    const map = new Map<string, Ticket[]>();
+    yardTickets.forEach((ticket) => {
+      const key =
+        ticket.customerId !== null && ticket.customerId !== undefined
+          ? String(ticket.customerId)
+          : null;
+      if (!key) return;
+      const existing = map.get(key) || [];
+      existing.push(ticket);
+      map.set(key, existing);
     });
-  };
+    return map;
+  }, [yardTickets]);
+
+  const periodLabel =
+    reportStartDate && reportEndDate
+      ? `${reportStartDate} → ${reportEndDate}`
+      : "All dates";
+
+  useInsightSheetChrome(open);
+
+  const sheetWidthClass = getInsightSheetMaxWidthClass(leads.length);
+  const cardsGridClass = getInsightCardsGridClass(leads.length);
 
   return (
-    <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 ${sheetWidthClass}`}
+        className={cn(
+          "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+          sheetWidthClass,
+        )}
       >
-        {/* Header */}
-        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
-                  <UserPlus className="size-3.5" />
-                </div>
-                New Lead Customers
-              </SheetTitle>
-              <SheetDescription className="ml-10 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Customers marked as{" "}
-                <span className="font-semibold text-foreground">new lead</span>{" "}
-                in{" "}
-                <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">
-                  {yardName}
-                </span>
-              </SheetDescription>
-            </div>
-
-            {/* Badges de Resumen */}
-            <div className="ml-10 flex flex-wrap items-center gap-1.5 sm:ml-0">
-              <div className="flex h-7 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-                <UserPlus className="size-3.5 text-slate-400" />
-                <span className="text-[11px] font-semibold">
-                  {leads.length} {leads.length === 1 ? "Customer" : "Customers"}
-                </span>
+        <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <InsightSheetAccent />
+          <SheetHeader className={insightSheetHeaderClass}>
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 flex-1 pr-1">
+                <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <UserPlus className="size-3.5" aria-hidden />
+                  </span>
+                  New Lead Customers
+                </SheetTitle>
+                <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Customers with{" "}
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    new lead
+                  </span>{" "}
+                  calls in{" "}
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    {yardName}
+                  </span>
+                </SheetDescription>
               </div>
-              <div className="flex h-7 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[#008f68] dark:border-emerald-800/60 dark:bg-emerald-900/20 dark:text-emerald-400">
-                <Ticket className="size-3.5" />
-                <span className="text-[11px] font-semibold">
-                  {totalLeadTickets} Tickets
-                </span>
+              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-start gap-1.5 lg:max-w-[min(100%,22rem)] lg:justify-end">
+                <YardContextChip label="Range" value={periodLabel} />
+                <InsightSummaryBadge
+                  icon={UserPlus}
+                  label={`${leads.length} ${leads.length === 1 ? "customer" : "customers"}`}
+                />
+                <InsightSummaryBadge
+                  icon={Phone}
+                  label={`${totalLeadCalls} lead ${totalLeadCalls === 1 ? "call" : "calls"}`}
+                  tone="brand"
+                />
               </div>
             </div>
-          </div>
-        </SheetHeader>
+          </SheetHeader>
+        </div>
 
-        {/* Contenido Principal */}
-        <ScrollArea className="min-h-0 flex-1 bg-[#f4f5f7] scrollbar-app dark:bg-slate-950">
+        <ScrollArea className="min-h-0 flex-1 scrollbar-app">
           <div className="p-3 sm:p-4">
             {leads.length === 0 ? (
-              <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
-                  <XCircle className="size-10 text-slate-400" />
-                </div>
-                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  No new leads
-                </h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  No new lead customers were found in this date range.
-                </p>
-              </div>
+              <InsightEmptyState
+                icon={UserPlus}
+                title="No new leads"
+                description="No new lead customers were found in this date range."
+              />
             ) : (
-              <div className={`grid gap-3 ${cardsGridClass}`}>
+              <div className={cn("grid gap-3", cardsGridClass)}>
                 {leads.map((lead, index) => {
-                  const rankClass = getRankBadgeClass();
-
-                  // URL params building
-                  const params = new URLSearchParams({
+                  const customerKey =
+                    lead.customerId !== null
+                      ? String(lead.customerId)
+                      : null;
+                  const relatedTickets = customerKey
+                    ? ticketsByCustomerId.get(customerKey) || []
+                    : [];
+                  const sortedCalls = [...lead.issueDetails].sort(
+                    (left, right) =>
+                      new Date(right.createdAt || 0).getTime() -
+                      new Date(left.createdAt || 0).getTime(),
+                  );
+                  const displayName =
+                    lead.phone?.trim() || lead.customerName;
+                  const callsUrl = buildContactCenterUrl({
+                    tab: "calls",
                     fromReport: "newLead",
-                    yardId: yardId.toString(),
-                    reportLeadName: lead.customerName,
+                    yardId: String(yardId),
+                    customerId:
+                      lead.customerId !== null
+                        ? String(lead.customerId)
+                        : undefined,
+                    search:
+                      lead.customerId === null
+                        ? lead.customerName
+                        : undefined,
+                    reportStartDate,
+                    reportEndDate,
                     reportYardName: yardName,
+                    reportLeadName: lead.customerName,
                   });
-                  if (lead.customerId !== null) {
-                    params.set("customerId", lead.customerId.toString());
-                  } else {
-                    params.set("search", lead.customerName);
-                  }
-                  if (reportStartDate) {
-                    params.set("reportStartDate", reportStartDate);
-                  }
-                  if (reportEndDate) {
-                    params.set("reportEndDate", reportEndDate);
-                  }
-                  const ticketsUrl = `/calls?tab=calls&${params.toString()}`;
+                  const ticketsUrl = buildContactCenterUrl({
+                    tab: "tickets",
+                    fromReport: "newLead",
+                    yardId: String(yardId),
+                    customerId:
+                      lead.customerId !== null
+                        ? String(lead.customerId)
+                        : undefined,
+                    search:
+                      lead.customerId === null
+                        ? lead.customerName
+                        : undefined,
+                    reportStartDate,
+                    reportEndDate,
+                    reportYardName: yardName,
+                    reportLeadName: lead.customerName,
+                  });
 
                   return (
-                    <div
+                    <article
                       key={`${lead.customerId ?? lead.customerName}-${index}`}
-                      className="group flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors hover:border-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950"
+                      className={cn(insightCardClass, "hover:border-[#008f68]/35")}
                     >
-                      {/* Top Tarjeta */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="truncate text-[13px] font-semibold leading-tight text-slate-900 dark:text-slate-100"
-                            title={lead.customerName}
-                          >
-                            {lead.customerName}
-                          </p>
-                          <p className="mt-1 font-mono text-[10px] font-medium text-slate-400">
-                            {lead.customerId !== null
-                              ? `ID: ${lead.customerId}`
-                              : "ID: N/A"}
-                          </p>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={`shrink-0 px-2 py-0.5 text-[10px] font-semibold shadow-sm ${rankClass}`}
-                        >
-                          #{index + 1}
-                        </Badge>
-                      </div>
-
-                      {/* Info & Tickets (Empujado al fondo para alinear botones) */}
-                      <div className="mt-auto space-y-3 pt-3">
-                        {/* Box de Tickets Destacado */}
-                        <div className="flex items-center justify-between rounded-lg border border-emerald-100 bg-[#f0faf5] px-3 py-2 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#008f68] dark:text-emerald-400">
-                            Lead Tickets
-                          </p>
-                          <p className="text-xl font-bold leading-none text-[#008f68] dark:text-emerald-300">
-                            {lead.count}
-                          </p>
-                        </div>
-
-                        {/* Contacto */}
-                        <div className="flex items-center gap-2 px-1 text-xs text-slate-500">
-                          <Phone className="size-3.5 shrink-0 text-slate-400" />
-                          {lead.phone ? (
-                            <span className="truncate font-medium text-slate-700 dark:text-slate-200">
-                              {lead.phone}
-                            </span>
-                          ) : (
-                            <span className="italic opacity-60">
-                              No phone provided
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Botón Acción */}
-                        <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-8 w-full rounded-lg text-xs"
-                              onClick={() => openIssueDetails(lead)}
-                              disabled={lead.issueDetails.length === 0}
+                      <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-slate-800">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="truncate text-[13px] font-bold tracking-tight text-slate-900 dark:text-slate-100"
+                              title={displayName}
                             >
-                              <FileText className="mr-2 h-3.5 w-3.5" />
-                              {lead.issueDetails.length > 0
-                                ? `View Issue Detail${
-                                    lead.issueDetails.length > 1 ? "s" : ""
-                                  } (${lead.issueDetails.length})`
-                                : "No Issue Detail"}
-                            </Button>
-
-                            <Button
-                              asChild
-                              variant="secondary"
-                              className="h-8 w-full rounded-lg bg-slate-100 text-xs hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
-                            >
-                              <Link
-                                href={ticketsUrl}
-                                onClick={() => onOpenChange(false)}
-                              >
-                                View tickets
-                                <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
-                              </Link>
-                            </Button>
+                              {displayName}
+                            </p>
+                            <p className="mt-0.5 font-mono text-[10px] text-slate-400">
+                              {lead.customerId !== null
+                                ? `Customer ID ${lead.customerId}`
+                                : "Customer ID N/A"}
+                            </p>
                           </div>
+                          <span className="inline-flex h-5 items-center rounded-md border border-emerald-200/80 bg-emerald-50 px-1.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            #{index + 1}
+                          </span>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <InsightKpiStrip
+                            label="Lead calls"
+                            value={lead.count}
+                            tone="brand"
+                          />
+                          <InsightKpiStrip
+                            label="Tickets"
+                            value={relatedTickets.length}
+                            tone="sky"
+                          />
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                          <Phone className="size-3.5 shrink-0 text-slate-400" />
+                          <span className="truncate font-medium">
+                            {lead.phone
+                              ? formatPhoneLabel(lead.phone)
+                              : "No phone on file"}
+                          </span>
                         </div>
                       </div>
-                    </div>
+
+                      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2.5">
+                        <InsightRecordPanel
+                          title={`Lead calls (${sortedCalls.length})`}
+                          badge={
+                            <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-[#008f68] ring-1 ring-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                              New lead
+                            </span>
+                          }
+                        >
+                          {sortedCalls.length === 0 ? (
+                            <p className="text-[11px] text-slate-500">
+                              No call rows returned for this customer.
+                            </p>
+                          ) : (
+                            sortedCalls.map((call, callIndex) => {
+                              const callId = call.callId ?? call.ticketId;
+                              return (
+                                <div
+                                  key={`${callId}-${callIndex}`}
+                                  className="rounded-lg border border-slate-200/80 bg-white p-2 dark:border-slate-700 dark:bg-slate-950"
+                                >
+                                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#008f68] ring-1 ring-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                      <Phone className="size-3" aria-hidden />
+                                      Call #{callId}
+                                    </span>
+                                    <InsightStatusPill status={call.status} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <InsightMetaRow
+                                      label="When"
+                                      value={
+                                        <span className="inline-flex items-center gap-1">
+                                          <Calendar className="size-3 text-slate-400" />
+                                          {formatInsightDateTime(call.createdAt)}
+                                        </span>
+                                      }
+                                    />
+                                    <InsightMetaRow
+                                      label="Direction"
+                                      value={
+                                        <DirectionChip direction={call.direction} />
+                                      }
+                                    />
+                                    <InsightMetaRow
+                                      label="Agent"
+                                      value={
+                                        <span className="inline-flex items-center gap-1">
+                                          <User className="size-3 text-slate-400" />
+                                          {call.agentName || "Unassigned"}
+                                        </span>
+                                      }
+                                    />
+                                    <InsightMetaRow
+                                      label="Disposition"
+                                      value={formatInsightLabel(
+                                        call.disposition || "NEW_LEAD",
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="mt-2">
+                                    <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                                      Notes
+                                    </p>
+                                    <InsightIssueBlock
+                                      text={call.issueDetail}
+                                      emptyLabel="No call notes"
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </InsightRecordPanel>
+
+                        <InsightRecordPanel
+                          title={`Tickets (${relatedTickets.length})`}
+                          badge={
+                            <span className="inline-flex items-center gap-0.5 rounded-md bg-sky-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-sky-700 ring-1 ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300">
+                              <TicketIcon className="size-2.5" aria-hidden />
+                              Ticket
+                            </span>
+                          }
+                        >
+                          {relatedTickets.length === 0 ? (
+                            <p className="text-[11px] text-slate-500">
+                              No tickets linked to this customer in the
+                              selected range.
+                            </p>
+                          ) : (
+                            relatedTickets
+                              .slice()
+                              .sort(
+                                (left, right) =>
+                                  new Date(right.createdAt || 0).getTime() -
+                                  new Date(left.createdAt || 0).getTime(),
+                              )
+                              .map((ticket) => (
+                                <div
+                                  key={ticket.id}
+                                  className="rounded-lg border border-sky-200/70 border-l-2 border-l-sky-400 bg-sky-50/35 p-2 dark:border-sky-800 dark:border-l-sky-500 dark:bg-sky-950/20"
+                                >
+                                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-sky-100/80 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 ring-1 ring-sky-200/80 dark:bg-sky-900/40 dark:text-sky-200">
+                                      <TicketIcon className="size-3" aria-hidden />
+                                      Ticket #{ticket.id}
+                                    </span>
+                                    <InsightStatusPill status={ticket.status} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <InsightMetaRow
+                                      label="Priority"
+                                      value={
+                                        <span className="uppercase text-[10px]">
+                                          {ticket.priority || "—"}
+                                        </span>
+                                      }
+                                    />
+                                    <InsightMetaRow
+                                      label="Type"
+                                      value={formatInsightLabel(
+                                        ticket.ticketType ||
+                                          ticket.disposition ||
+                                          ticket.campaignOption,
+                                      )}
+                                    />
+                                    <InsightMetaRow
+                                      label="Agent"
+                                      value={
+                                        ticket.assignedTo?.name ||
+                                        ticket.agent?.name ||
+                                        "Unassigned"
+                                      }
+                                    />
+                                    <InsightMetaRow
+                                      label="Opened"
+                                      value={formatInsightDateTime(
+                                        ticket.createdAt,
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="mt-2">
+                                    <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                                      Issue
+                                    </p>
+                                    <InsightIssueBlock
+                                      text={ticket.issueDetail}
+                                      emptyLabel="No issue detail"
+                                    />
+                                  </div>
+                                  <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 h-7 w-full rounded-lg text-[11px]"
+                                  >
+                                    <Link
+                                      href={buildContactCenterUrl({
+                                        tab: "tickets",
+                                        id: ticket.id,
+                                        yardId: String(yardId),
+                                        fromReport: "newLead",
+                                        reportYardName: yardName,
+                                      })}
+                                      onClick={() => onOpenChange(false)}
+                                    >
+                                      Open ticket
+                                      <ExternalLink className="ml-1 size-3 opacity-70" />
+                                    </Link>
+                                  </Button>
+                                </div>
+                              ))
+                          )}
+                        </InsightRecordPanel>
+                      </div>
+
+                      <div className="mt-auto flex gap-2 border-t border-slate-100 p-2.5 dark:border-slate-800">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="h-8 flex-1 rounded-lg text-[11px]"
+                        >
+                          <Link href={callsUrl} onClick={() => onOpenChange(false)}>
+                            <Phone className="mr-1.5 size-3.5" />
+                            Calls
+                          </Link>
+                        </Button>
+                        <Button
+                          asChild
+                          className="h-8 flex-1 rounded-lg bg-[#008f68] text-[11px] hover:bg-[#007a5a]"
+                        >
+                          <Link
+                            href={ticketsUrl}
+                            onClick={() => onOpenChange(false)}
+                          >
+                            <TicketIcon className="mr-1.5 size-3.5" />
+                            All tickets
+                          </Link>
+                        </Button>
+                      </div>
+                    </article>
                   );
                 })}
               </div>
@@ -328,85 +492,21 @@ export function NewLeadsModal({
           </div>
         </ScrollArea>
 
-        {/* Footer */}
-        <SheetFooter className="border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-medium text-slate-500">
-              Ranked descending by ticket volume
+        <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-slate-500">
+              Ranked by lead call volume · full notes and tickets on each card
             </p>
             <Button
-              variant="default"
+              type="button"
               onClick={() => onOpenChange(false)}
-              className="h-8 w-full rounded-lg bg-[#008f68] text-xs shadow-sm hover:bg-[#007a5a] sm:w-auto sm:min-w-[96px]"
+              className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a] sm:min-w-[96px]"
             >
               Done
             </Button>
           </div>
         </SheetFooter>
       </SheetContent>
-      </Sheet>
-
-      <Dialog
-        open={showIssueDetailsModal}
-        onOpenChange={setShowIssueDetailsModal}
-      >
-        <DialogContent
-          className={`flex flex-col gap-0 w-[calc(100vw-1rem)] max-h-[82vh] overflow-hidden rounded-2xl p-0 sm:size-[min(520px,calc(100vh-2rem))] sm:max-w-none sm:max-h-none ${issueDetailsDialogPositionClass}`}
-          style={issueDetailsDialogStyle}
-        >
-          <DialogHeader className="border-b bg-card/60 px-5 py-4">
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              Issue Detail
-            </DialogTitle>
-            <DialogDescription className="text-sm">
-              {selectedLeadForIssues?.customerName || "Lead"} -{" "}
-              {selectedLeadForIssues?.issueDetails.length || 0} detail
-              {selectedLeadForIssues?.issueDetails.length === 1 ? "" : "s"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="min-h-0 flex-1 bg-muted/10">
-            <div className="space-y-3 p-4">
-              {selectedLeadForIssues?.issueDetails?.length ? (
-                selectedLeadForIssues.issueDetails.map((item, index) => (
-                  <div
-                    key={`${item.ticketId}-${index}`}
-                    className="rounded-xl border bg-card p-3.5 shadow-sm"
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <Badge variant="outline" className="font-mono">
-                        Ticket #{item.ticketId}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatIssueDate(item.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">
-                      {item.issueDetail}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed bg-card/60 p-6 text-center text-sm text-muted-foreground">
-                  No Issue Detail available for this lead.
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-
-          <DialogFooter className="border-t bg-card/60 px-5 py-3">
-            <Button
-              type="button"
-              variant="default"
-              className="w-full sm:w-auto"
-              onClick={() => setShowIssueDetailsModal(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </Sheet>
   );
 }
