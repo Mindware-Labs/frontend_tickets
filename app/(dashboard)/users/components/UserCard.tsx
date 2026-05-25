@@ -84,7 +84,7 @@ export function UserCard({
         }
       }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all duration-200",
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition-all duration-200",
         "border-slate-200/80 hover:border-[#008f68]/35 hover:shadow-[0_12px_32px_rgba(0,111,80,0.12)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/40 focus-visible:ring-offset-2",
         "dark:border-slate-800 dark:bg-slate-950 dark:hover:border-emerald-500/30",
@@ -100,12 +100,12 @@ export function UserCard({
         )}
       />
 
-      <div className="flex flex-1 flex-col p-4 pt-5">
+      <div className="flex flex-1 flex-col p-2">
         <div className="flex items-start gap-3">
           <UserMark
             initials={initials}
-            className="h-12 w-12 text-[15px]"
-            textClassName="text-[15px]"
+            className="h-10 w-10 text-[13px]"
+            textClassName="text-[13px]"
           />
 
           <div className="min-w-0 flex-1 pt-0.5">
@@ -116,7 +116,7 @@ export function UserCard({
               <RolePill role={user.role} />
             </div>
             <h3
-              className="mt-1.5 truncate text-[16px] font-bold leading-tight text-slate-900 dark:text-slate-50"
+              className="mt-1.5 truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-50"
               title={fullName}
             >
               {fullName}
@@ -137,7 +137,7 @@ export function UserCard({
                 Email
               </p>
               <p
-                className="truncate text-[13px] font-medium text-slate-700 dark:text-slate-200"
+                className="truncate text-[12px] font-medium text-slate-700 dark:text-slate-200"
                 title={user.email}
               >
                 {user.email}
@@ -153,7 +153,7 @@ export function UserCard({
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
                 Last login
               </p>
-              <p className="truncate text-[12px] font-medium text-slate-600 dark:text-slate-300">
+              <p className="truncate text-[10px] font-medium text-slate-600 dark:text-slate-300">
                 {formatLastLogin(user.lastLogin)}
               </p>
             </div>

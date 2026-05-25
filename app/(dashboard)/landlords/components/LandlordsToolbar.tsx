@@ -27,10 +27,7 @@ export function LandlordsToolbar({
         </span>
       </div>
 
-      <div className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground lg:whitespace-nowrap">
-        <MousePointerClick className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-        <span>Click a row to view landlord details.</span>
-      </div>
+      
     </div>
   );
 }

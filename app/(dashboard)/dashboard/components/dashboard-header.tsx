@@ -102,42 +102,9 @@ export function DashboardHeader({
 
         {/* Right: filters, status, time */}
         <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 md:border-t-0 md:pt-0 md:justify-end">
-          <div className="flex items-center gap-2">
-            <DashboardFilterTrigger />
-            <FilterHelpPopover />
-          </div>
+          
 
           <div className="flex items-center gap-2 text-slate-400">
-            <span
-              className={cn(
-                "flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide",
-                statusActive
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-slate-400",
-              )}
-              title={
-                hasLive
-                  ? "Active calls in progress"
-                  : isRealtimeConnected
-                    ? "Realtime socket connected"
-                    : "Realtime socket disconnected"
-              }
-            >
-              <span className="relative flex size-1.5 shrink-0">
-                {hasLive ? (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60" />
-                ) : null}
-                <span
-                  className={cn(
-                    "relative inline-flex size-1.5 rounded-full",
-                    statusActive
-                      ? "bg-emerald-500"
-                      : "bg-slate-300 dark:bg-slate-600",
-                  )}
-                />
-              </span>
-              {statusLabel}
-            </span>
             {lastUpdated ? (
               <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 {lastUpdated}
