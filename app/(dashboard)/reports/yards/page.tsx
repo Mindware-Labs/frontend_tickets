@@ -174,7 +174,9 @@ export default function YardReportsPage() {
     return `${selectedYardId}|${startDate}|${endDate}`;
   }, [selectedYardId, startDate, endDate, isDateRangeValid]);
 
-  const loadingStats = loadingOverviewStats || loadingSelectedYardDetail;
+  const loadingStats = selectedYardId
+    ? loadingSelectedYardDetail
+    : loadingOverviewStats;
 
   useEffect(() => {
     const fetchYards = async () => {
@@ -214,9 +216,16 @@ export default function YardReportsPage() {
   }, []);
 
   useEffect(() => {
-    if (!startDate || !endDate || !isDateRangeValid) {
+    if (
+      selectedYardId ||
+      !startDate ||
+      !endDate ||
+      !isDateRangeValid
+    ) {
       setLoadingOverviewStats(false);
-      setYardsStats([]);
+      if (selectedYardId) {
+        setYardsStats([]);
+      }
       return;
     }
 
@@ -274,7 +283,7 @@ export default function YardReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [startDate, endDate, isDateRangeValid]);
+  }, [selectedYardId, startDate, endDate, isDateRangeValid]);
 
   useEffect(() => {
     if (!selectedYardQueryKey) {
@@ -506,17 +515,6 @@ export default function YardReportsPage() {
     router.push(`/reports/yards?${params.toString()}`);
   };
 
-  const handleSelectOverview = () => {
-    setSelectedYardId("");
-    setSelectedYardStats(null);
-    setReportLastUpdated(null);
-    const params = new URLSearchParams();
-    if (startDate) params.set("startDate", startDate);
-    if (endDate) params.set("endDate", endDate);
-    const query = params.toString();
-    router.push(query ? `/reports/yards?${query}` : "/reports/yards");
-  };
-
   const handleDateChange = () => {
     const params = new URLSearchParams();
     if (selectedYardId) params.set("yardId", selectedYardId);
@@ -741,7 +739,6 @@ export default function YardReportsPage() {
             )}
             lastUpdated={reportLastUpdated}
             showCrossFilters={showYardDetailDashboard}
-            onSelectOverview={handleSelectOverview}
             onOpenFilters={() => setFiltersModalOpen(true)}
             onViewAllTickets={handleViewAllTickets}
             onExportPDF={handleExportPDF}

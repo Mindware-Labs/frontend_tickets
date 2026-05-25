@@ -10,13 +10,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  YardContextChip,
-  yardDashboardTabClass,
-  yardDashboardTabIconClass,
-  yardDashboardTabListClass,
-  yardDashboardToolbarClass,
-} from "./yard-dashboard-chrome";
+import { YardContextChip, yardDashboardToolbarClass } from "./yard-dashboard-chrome";
 import { YardFilterTrigger } from "./yard-filter-bar";
 import type { Yard } from "./types";
 
@@ -27,7 +21,6 @@ type ReportHeaderProps = {
   canExport: boolean;
   canViewTickets: boolean;
   lastUpdated: string | null;
-  onSelectOverview: () => void;
   onOpenFilters: () => void;
   onViewAllTickets: () => void;
   onExportPDF: () => void;
@@ -41,7 +34,6 @@ export function ReportHeader({
   endDate,
   canExport,
   canViewTickets,
-  onSelectOverview,
   onOpenFilters,
   onViewAllTickets,
   onExportPDF,
@@ -56,44 +48,26 @@ export function ReportHeader({
     <header className="shrink-0">
       <div className={yardDashboardToolbarClass}>
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:gap-3">
-          <div
-            className={yardDashboardTabListClass}
-            role="tablist"
-            aria-label="Yard report views"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!hasYardDetail}
-              onClick={onSelectOverview}
-              className={yardDashboardTabClass(!hasYardDetail)}
-            >
-              <LayoutGrid
-                className={yardDashboardTabIconClass(!hasYardDetail)}
-                aria-hidden
-              />
-              All yards
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={hasYardDetail}
-              disabled={!hasYardDetail}
-              onClick={hasYardDetail ? undefined : onOpenFilters}
-              className={cn(
-                yardDashboardTabClass(hasYardDetail),
-                !hasYardDetail &&
-                  "disabled:cursor-not-allowed disabled:opacity-60",
-              )}
-            >
+          <div className="flex min-w-0 items-center gap-2">
+            {hasYardDetail ? (
               <Building2
-                className={yardDashboardTabIconClass(hasYardDetail)}
+                className="size-4 shrink-0 text-[#008f68] dark:text-emerald-400"
                 aria-hidden
               />
-              <span className="max-w-[140px] truncate">
-                {selectedYard?.name ?? "Yard detail"}
-              </span>
-            </button>
+            ) : (
+              <LayoutGrid
+                className="size-4 shrink-0 text-[#008f68] dark:text-emerald-400"
+                aria-hidden
+              />
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {hasYardDetail ? selectedYard?.name : "All yards"}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                {hasYardDetail ? "Yard report" : "Overview"}
+              </p>
+            </div>
           </div>
 
           {filtersConfigured ? (
