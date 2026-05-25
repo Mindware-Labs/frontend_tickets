@@ -5,7 +5,6 @@ import {
   Bell,
   CheckCheck,
   Clock,
-  AlertTriangle,
   Ticket,
   BellOff,
   ArrowRight,
@@ -26,45 +25,51 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { topbarIconBtnClass } from "@/components/layout/sidebar-theme";
 import { cn } from "@/lib/utils";
 
-const typeConfig: Record<
-  NotificationItem["type"],
-  {
-    icon: React.ElementType;
-    bg: string;
-    color: string;
-    border: string;
-    label: string;
-  }
-> = {
+// ─── Type → DS-aligned palette (DESIGN_SYSTEM §10.4 / §10.6) ──────────────
+type NotificationToneClasses = {
+  icon: React.ElementType;
+  /** Soft tinted surface for the icon square + label chip. */
+  surface: string;
+  /** Foreground colour pairing with `surface`. */
+  text: string;
+  /** Accent dot / unread bar colour (saturated). */
+  accent: string;
+  /** Short uppercase chip label. */
+  label: string;
+};
+
+const typeConfig: Record<NotificationItem["type"], NotificationToneClasses> = {
   CALLBACK_OVERDUE: {
     icon: Phone,
-    bg: "bg-red-100",
-    color: "text-red-600",
-    border: "border-red-400",
+    surface: "bg-rose-50 dark:bg-rose-500/10",
+    text: "text-rose-600 dark:text-rose-400",
+    accent: "bg-rose-500",
     label: "Overdue",
   },
   TICKET_FOLLOWUP_OVERDUE: {
     icon: Ticket,
-    bg: "bg-orange-100",
-    color: "text-orange-600",
-    border: "border-orange-400",
+    surface: "bg-amber-50 dark:bg-amber-500/10",
+    text: "text-amber-700 dark:text-amber-400",
+    accent: "bg-amber-500",
     label: "Follow-up",
   },
   CALLBACK_REMINDER: {
     icon: Clock,
-    bg: "bg-amber-100",
-    color: "text-amber-600",
-    border: "border-amber-400",
+    surface: "bg-sky-50 dark:bg-sky-500/10",
+    text: "text-sky-700 dark:text-sky-400",
+    accent: "bg-sky-500",
     label: "Reminder",
   },
   TICKET_ASSIGNED: {
     icon: Ticket,
-    bg: "bg-blue-100",
-    color: "text-blue-600",
-    border: "border-blue-400",
+    surface: "bg-[#f0faf5] dark:bg-emerald-500/10",
+    text: "text-[#008f68] dark:text-emerald-400",
+    accent: "bg-[#008f68] dark:bg-emerald-400",
     label: "Assigned",
   },
 };
+
+const FALLBACK_TONE = typeConfig.CALLBACK_REMINDER;
 
 export function NotificationBell() {
   const router = useRouter();
@@ -82,18 +87,26 @@ export function NotificationBell() {
     }
   };
 
+  const badgeLabel = unreadCount > 9 ? "9+" : String(unreadCount);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           className={cn(topbarIconBtnClass, "relative")}
-          aria-label="Notifications"
+          aria-label={
+            unreadCount > 0
+              ? `Notifications (${unreadCount} unread)`
+              : "Notifications"
+          }
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+            <span
+              className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white tabular-nums ring-2 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] dark:ring-slate-900"
+              aria-hidden
+            >
+              {badgeLabel}
             </span>
           )}
         </button>
@@ -102,120 +115,156 @@ export function NotificationBell() {
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[min(400px,calc(100vw-12px))] p-0 shadow-2xl rounded-2xl border border-slate-200/80 overflow-hidden bg-white"
+        className="w-[min(400px,calc(100vw-12px))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-[0_18px_40px_-20px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-950"
       >
-        {/* Header */}
-        <div className="relative px-5 pt-4 pb-3.5 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
-                <Bell className="h-3.5 w-3.5 text-white" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900 leading-none">
+        {/* ── Header — accent bar + section label + title ── */}
+        <div className="relative border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+          <span
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
+            aria-hidden
+          />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span
+                className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]"
+                aria-hidden
+              />
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30">
+                <Bell className="size-3.5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  {unreadCount > 0
+                    ? `${unreadCount} unread`
+                    : "Inbox"}
+                </p>
+                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-slate-100">
                   Notifications
-                </h4>
-                {unreadCount > 0 && (
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {unreadCount} unread
-                  </p>
-                )}
+                </p>
               </div>
             </div>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={() => markAllRead()}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#008f68]"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-slate-600 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
               >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Mark all read
+                <CheckCheck className="size-3.5" aria-hidden />
+                Mark all
               </button>
             )}
           </div>
         </div>
 
-        {/* List */}
+        {/* ── List ── */}
         <ScrollArea className="max-h-[min(460px,60svh)]">
           {listLoading ? (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-50 dark:divide-slate-800/80">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3.5 px-5 py-4 animate-pulse"
+                  className="flex items-start gap-3 px-4 py-3 animate-pulse"
                 >
-                  <div className="mt-0.5 h-9 w-9 rounded-xl bg-slate-100 shrink-0" />
+                  <div className="mt-0.5 size-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800" />
                   <div className="flex-1 space-y-2 pt-1">
-                    <div className="h-2.5 bg-slate-100 rounded-full w-2/3" />
-                    <div className="h-2 bg-slate-100 rounded-full w-full" />
-                    <div className="h-2 bg-slate-100 rounded-full w-1/3" />
+                    <div className="h-2 w-2/3 rounded-full bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-2 w-1/3 rounded-full bg-slate-100 dark:bg-slate-800" />
                   </div>
                 </div>
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3.5 py-14 px-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                <BellOff className="h-6 w-6 text-slate-400" />
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30">
+                <BellOff className="size-5" aria-hidden />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="space-y-1">
+                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">
                   All caught up
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-[11.5px] text-slate-500 dark:text-slate-400">
                   No new notifications right now
                 </p>
               </div>
             </div>
           ) : (
-            <div className="py-1">
+            <div className="divide-y divide-slate-50 py-0.5 dark:divide-slate-800/70">
               {notifications.map((notif) => {
-                const cfg =
-                  typeConfig[notif.type] ?? typeConfig.CALLBACK_REMINDER;
+                const cfg = typeConfig[notif.type] ?? FALLBACK_TONE;
                 const Icon = cfg.icon;
                 return (
                   <button
                     key={notif.id}
+                    type="button"
                     onClick={() => handleClick(notif)}
-                    className={`group relative flex w-full items-start gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-slate-50 ${
-                      !notif.read ? "bg-slate-50/80" : ""
-                    }`}
+                    className={cn(
+                      "group relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:bg-slate-50 dark:hover:bg-slate-900/50 dark:focus-visible:bg-slate-900/50",
+                      !notif.read && "bg-slate-50/60 dark:bg-slate-900/30",
+                    )}
                   >
-                    {/* Unread left bar */}
+                    {/* Unread accent rail */}
                     {!notif.read && (
                       <span
-                        className={`absolute left-0 top-3 bottom-3 w-0.5 rounded-full ${cfg.border} border-l-2`}
+                        className={cn(
+                          "absolute inset-y-2 left-0 w-0.5 rounded-r-full",
+                          cfg.accent,
+                        )}
+                        aria-hidden
                       />
                     )}
 
-                    {/* Icon */}
-                    <div
-                      className={`relative mt-0.5 shrink-0 flex items-center justify-center h-9 w-9 rounded-xl ${cfg.bg}`}
-                    >
-                      <Icon className={`h-4 w-4 ${cfg.color}`} />
-                      {!notif.read && (
-                        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#008f68] ring-1 ring-white" />
+                    {/* Icon tile (DS metric-card pattern) */}
+                    <span
+                      className={cn(
+                        "relative mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-black/5 dark:ring-white/10",
+                        cfg.surface,
+                        cfg.text,
                       )}
-                    </div>
+                      aria-hidden
+                    >
+                      <Icon className="size-4" />
+                      {!notif.read && (
+                        <span
+                          className={cn(
+                            "absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-white dark:ring-slate-950",
+                            cfg.accent,
+                          )}
+                        />
+                      )}
+                    </span>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <div className="mb-1 flex items-center gap-1.5">
                         <span
-                          className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}
+                          className={cn(
+                            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                            cfg.surface,
+                            cfg.text,
+                          )}
                         >
                           {cfg.label}
                         </span>
                       </div>
-                      <p className="text-[13px] leading-snug text-slate-700 font-medium">
+                      <p
+                        className={cn(
+                          "text-[12.5px] leading-snug text-slate-700 dark:text-slate-200",
+                          !notif.read && "font-semibold text-slate-900 dark:text-slate-100",
+                        )}
+                      >
                         {notif.message}
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-[10.5px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {formatDistanceToNow(new Date(notif.createdAt), {
                           addSuffix: true,
                         })}
                       </p>
                     </div>
 
-                    <ArrowRight className="mt-2.5 h-3.5 w-3.5 text-slate-300 shrink-0 translate-x-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-150" />
+                    <ArrowRight
+                      className="mt-2.5 size-3.5 shrink-0 translate-x-0 text-slate-300 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 dark:text-slate-600"
+                      aria-hidden
+                    />
                   </button>
                 );
               })}
@@ -223,12 +272,11 @@ export function NotificationBell() {
           )}
         </ScrollArea>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         {!listLoading && notifications.length > 0 && (
-          <div className="border-t border-slate-100 px-5 py-2.5 flex items-center justify-center">
-            <span className="text-[11px] text-slate-400">
-              {notifications.length} notification
-              {notifications.length !== 1 ? "s" : ""} · Showing latest
+          <div className="flex items-center justify-center border-t border-slate-100 bg-slate-50/40 px-4 py-2 dark:border-slate-800 dark:bg-slate-900/30">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+              Showing latest {notifications.length}
             </span>
           </div>
         )}
