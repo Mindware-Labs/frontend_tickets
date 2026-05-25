@@ -764,6 +764,11 @@ function isOpaqueAircallLineKey(line: string): boolean {
   return /^\d{5,}$/.test(trimmed);
 }
 
+function isMissingLineLabel(line: string): boolean {
+  const normalized = line.trim().toLowerCase();
+  return ["unknown", "desconocido", "unassigned"].includes(normalized);
+}
+
 function buildLinePerformance({
   performance,
   wallboard,
@@ -776,7 +781,7 @@ function buildLinePerformance({
     return performance.linePerformance
       .filter((line) => {
         const label = (line.line || "").trim();
-        return label && !isOpaqueAircallLineKey(label);
+        return label && !isOpaqueAircallLineKey(label) && !isMissingLineLabel(label);
       })
       .map((line) => {
         const total = numberValue(line.total);
@@ -795,7 +800,7 @@ function buildLinePerformance({
   const rows = (wallboard?.linePerformance || [])
     .filter((line) => {
       const label = (line.line || "").trim();
-      return label && !isOpaqueAircallLineKey(label);
+      return label && !isOpaqueAircallLineKey(label) && !isMissingLineLabel(label);
     })
     .slice(0, 8)
     .map((line) => {

@@ -1,6 +1,28 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowDownToLine,
+  ArrowUp,
+  ArrowUpDown,
+  Bell,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Clock3,
+  FileText,
+  List,
+  Phone,
+  Search,
+  Table2,
+  X,
+} from "lucide-react";
+import { appPanelClass } from "@/components/layout/sidebar-theme";
+import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type NotificationType =
@@ -57,11 +79,44 @@ const MOCK_DATA: AuditEntry[] = [
 ];
 
 // ─── Type config ──────────────────────────────────────────────────────────────
-const TYPE_CFG: Record<NotificationType, { label: string; color: string; bg: string; border: string; dot: string }> = {
-  CALLBACK_OVERDUE:        { label: "Callback overdue",       color: "#991B1B", bg: "#FEF2F2", border: "#FECACA", dot: "#EF4444" },
-  CALLBACK_REMINDER:       { label: "Callback reminder",      color: "#92400E", bg: "#FFFBEB", border: "#FDE68A", dot: "#F59E0B" },
-  TICKET_ASSIGNED:         { label: "Ticket assigned",        color: "#1E40AF", bg: "#EFF6FF", border: "#BFDBFE", dot: "#3B82F6" },
-  TICKET_FOLLOWUP_OVERDUE: { label: "Ticket follow-up OD",    color: "#065F46", bg: "#ECFDF5", border: "#A7F3D0", dot: "#10B981" },
+const TYPE_CFG: Record<
+  NotificationType,
+  {
+    label: string;
+    badgeClass: string;
+    dotClass: string;
+    bg: string;
+    dot: string;
+  }
+> = {
+  CALLBACK_OVERDUE: {
+    label: "Callback overdue",
+    badgeClass: "border-red-200 bg-red-50 text-red-700",
+    dotClass: "bg-red-500",
+    bg: "#FEF2F2",
+    dot: "#EF4444",
+  },
+  CALLBACK_REMINDER: {
+    label: "Callback reminder",
+    badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
+    dotClass: "bg-amber-500",
+    bg: "#FFFBEB",
+    dot: "#F59E0B",
+  },
+  TICKET_ASSIGNED: {
+    label: "Ticket assigned",
+    badgeClass: "border-sky-200 bg-sky-50 text-sky-700",
+    dotClass: "bg-sky-500",
+    bg: "#EFF6FF",
+    dot: "#3B82F6",
+  },
+  TICKET_FOLLOWUP_OVERDUE: {
+    label: "Ticket follow-up OD",
+    badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    dotClass: "bg-emerald-500",
+    bg: "#ECFDF5",
+    dot: "#10B981",
+  },
 };
 
 const AGENT_COLORS: [string, string][] = [
@@ -114,15 +169,13 @@ function groupByDay(entries: AuditEntry[]): Record<string, AuditEntry[]> {
 function TypeBadge({ type }: { type: NotificationType }) {
   const c = TYPE_CFG[type];
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "2px 7px", borderRadius: 999,
-      fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
-      background: c.bg, color: c.color,
-      border: `1px solid ${c.border}`,
-      whiteSpace: "nowrap",
-    }}>
-      <span style={{ width: 4, height: 4, borderRadius: "50%", background: c.dot, display: "inline-block", flexShrink: 0 }} />
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+        c.badgeClass,
+      )}
+    >
+      <span className={cn("h-1 w-1 shrink-0 rounded-full", c.dotClass)} />
       {c.label}
     </span>
   );
@@ -130,17 +183,18 @@ function TypeBadge({ type }: { type: NotificationType }) {
 
 function ReadBadge({ read }: { read: boolean }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 3,
-      padding: "2px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600,
-      background: read ? "#F0FDF4" : "#FEF2F2",
-      color: read ? "#166534" : "#991B1B",
-      border: `1px solid ${read ? "#BBF7D0" : "#FECACA"}`,
-    }}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+        read
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-red-200 bg-red-50 text-red-700",
+      )}
+    >
       {read ? (
-        <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#166534" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <Check className="h-3 w-3" aria-hidden="true" />
       ) : (
-        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#EF4444", display: "inline-block" }} />
+        <span className="h-1 w-1 rounded-full bg-red-500" />
       )}
       {read ? "Read" : "Unread"}
     </span>
@@ -188,9 +242,7 @@ function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: 
           padding: "1px 5px", borderRadius: 5, background: "#EFF6FF", border: "1px solid #BFDBFE",
           width: "fit-content",
         }}>
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.08 6.08l1.71-1.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-          </svg>
+          <Phone className="h-3 w-3" aria-hidden="true" />
           Call #{callId}
         </a>
       )}
@@ -201,9 +253,7 @@ function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: 
           padding: "1px 5px", borderRadius: 5, background: "#ECFDF5", border: "1px solid #A7F3D0",
           width: "fit-content",
         }}>
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-          </svg>
+          <FileText className="h-3 w-3" aria-hidden="true" />
           Ticket #{ticketId}
         </a>
       )}
@@ -216,18 +266,23 @@ function StatCard({ label, value, sub, color, bg, border, icon }: {
   color: string; bg: string; border: string; icon: React.ReactNode;
 }) {
   return (
-    <div style={{
-      background: bg, border: `1px solid ${border}`,
-      borderRadius: 10, padding: "10px 12px",
-      display: "flex", alignItems: "flex-start", justifyContent: "space-between",
-      minWidth: 0,
-    }}>
+    <div
+      className="flex min-w-0 items-start justify-between rounded-xl border bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-slate-950"
+      style={{ background: bg, borderColor: border }}
+    >
       <div>
-        <div style={{ fontSize: 9, fontWeight: 600, color: "#6B7280", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-        <div style={{ fontSize: 24, fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-        {sub && <div style={{ fontSize: 9, color: "#9CA3AF", marginTop: 2 }}>{sub}</div>}
+        <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+          {label}
+        </div>
+        <div
+          className="text-xl font-bold leading-none tabular-nums"
+          style={{ color }}
+        >
+          {value}
+        </div>
+        {sub && <div className="mt-1 text-[10px] text-slate-400">{sub}</div>}
       </div>
-      <div style={{ opacity: 0.5, marginTop: 2 }}>{icon}</div>
+      <div className="mt-0.5 text-slate-400">{icon}</div>
     </div>
   );
 }
@@ -450,8 +505,16 @@ export default function NotificationsAuditPage() {
   const hasFilters = Object.values(filters).some(v => v !== "");
 
   const SortIcon = ({ field }: { field: SortField }) => (
-    <span style={{ marginLeft: 3, opacity: sortField === field ? 1 : 0.3, fontSize: 9 }}>
-      {sortField === field ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+    <span className={cn("ml-1 inline-flex align-middle", sortField === field ? "opacity-100" : "opacity-30")}>
+      {sortField === field ? (
+        sortDir === "asc" ? (
+          <ArrowUp className="h-3 w-3" aria-hidden="true" />
+        ) : (
+          <ArrowDown className="h-3 w-3" aria-hidden="true" />
+        )
+      ) : (
+        <ArrowUpDown className="h-3 w-3" aria-hidden="true" />
+      )}
     </span>
   );
 
@@ -470,116 +533,93 @@ export default function NotificationsAuditPage() {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#F9FAFB",
-      fontFamily: "'Geist', 'DM Sans', 'Helvetica Neue', sans-serif",
-      padding: "20px 20px 60px",
-      opacity: animIn ? 1 : 0,
-      transform: animIn ? "none" : "translateY(4px)",
-      transition: "opacity 0.3s ease, transform 0.3s ease",
-      boxSizing: "border-box",
-      maxWidth: "100%",
-      overflowX: "hidden",
-    }}>
+    <div
+      className="min-h-dvh max-w-full overflow-x-hidden bg-[#f4f5f7] px-3 pb-8 pt-2 transition-[opacity,transform] duration-300 sm:px-4 lg:px-5 dark:bg-slate-950"
+      style={{
+        opacity: animIn ? 1 : 0,
+        transform: animIn ? "none" : "translateY(4px)",
+      }}
+    >
       <style>{`
         .notif-audit * { box-sizing: border-box; }
-        .fi { height: 32px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 0 10px; font-size: 12px; background: white; color: #111827; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s; }
-        .fi:focus { border-color: #10B981; box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
-        .tab { padding: 5px 10px; font-size: 12px; font-weight: 500; border-radius: 7px; border: none; cursor: pointer; transition: all .15s; background: transparent; color: #6B7280; }
-        .tab:hover { background: #F3F4F6; color: #374151; }
-        .tab.active { background: white; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04); }
-        .view-btn { width: 30px; height: 30px; border: 1px solid #E5E7EB; border-radius: 7px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6B7280; transition: all .15s; }
-        .view-btn.active { background: #111827; border-color: #111827; color: white; }
-        .view-btn:hover:not(.active) { background: #F9FAFB; }
-        .page-btn { min-width: 28px; height: 28px; padding: 0 6px; border: 1px solid #E5E7EB; border-radius: 6px; background: white; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; color: #374151; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-        .page-btn:hover:not(:disabled) { background: #F3F4F6; border-color: #D1D5DB; }
+        .fi { height: 36px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
+        .fi:focus { border-color: #008f68; box-shadow: 0 0 0 2px rgba(0,143,104,0.14); }
+        .tab { padding: 6px 10px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: color .15s, background .15s, box-shadow .15s; background: transparent; color: #64748b; }
+        .tab:hover { color: #1e293b; }
+        .tab.active { background: white; color: #008f68; box-shadow: 0 1px 2px rgba(15,23,42,0.08); font-weight: 600; }
+        .view-btn { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; transition: color .15s, background .15s, box-shadow .15s; }
+        .view-btn.active { background: white; color: #008f68; box-shadow: 0 1px 2px rgba(15,23,42,0.08); }
+        .view-btn:hover:not(.active) { background: rgba(255,255,255,.55); color: #1e293b; }
+        .page-btn { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; background: white; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+        .page-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
         .page-btn:disabled { opacity: 0.35; cursor: default; }
-        .page-btn.active { background: #111827; color: white; border-color: #111827; }
-        .export-btn { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #E5E7EB; background: white; font-size: 12px; font-family: inherit; font-weight: 500; color: #374151; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
-        .export-btn:hover { background: #F9FAFB; border-color: #D1D5DB; }
-        .clear-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #FCA5A5; background: #FEF2F2; font-size: 12px; font-family: inherit; font-weight: 500; color: #991B1B; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
-        .clear-btn:hover { background: #FEE2E2; }
-        .section-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden; }
-        .row:hover td { background: #FAFAFA !important; }
+        .page-btn.active { background: #f0faf5; color: #008f68; border-color: rgba(0,143,104,.25); font-weight: 700; }
+        .export-btn { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid rgb(226 232 240 / .8); background: white; font-size: 12px; font-family: inherit; font-weight: 600; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; }
+        .export-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+        .clear-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
+        .clear-btn:hover { background: #fee2e2; }
+        .section-card { background: white; border: 1px solid rgb(226 232 240 / .8); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .row:hover td { background: #f8fafc !important; }
         td { transition: background .12s; }
       `}</style>
 
       {/* ── Page header ── */}
-      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: "#32CD30",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
+      <div className={cn(appPanelClass, "mb-2.5 flex flex-wrap items-center justify-between gap-3 px-3.5 py-3")}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#008f68] text-white shadow-[0_1px_2px_rgba(0,143,104,0.18)]">
+            <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>Notifications Audit</h1>
-            <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 1 }}>
-              Complete delivery log · all agents · {allData.length} total records
+            <h1 className="text-[15px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notifications Audit</h1>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500">
+              Complete delivery log - all agents - {allData.length} total records
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ position: "relative" }}>
-            <svg style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}
-              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input ref={searchRef} className="fi" style={{ paddingLeft: 28, width: 200, height: 32 }}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input ref={searchRef} className="fi w-[220px] pl-8"
               placeholder="Search..."
               onChange={e => handleSearch(e.target.value)} />
           </div>
-          <div style={{ display: "flex", gap: 3 }}>
+          <div className="flex gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
             <button className={`view-btn ${viewMode === "table" ? "active" : ""}`} onClick={() => setViewMode("table")} title="Table view">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
-              </svg>
+              <Table2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
             <button className={`view-btn ${viewMode === "timeline" ? "active" : ""}`} onClick={() => setViewMode("timeline")} title="Timeline view">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
+              <List className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
           <button className="export-btn">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
+            <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
             Export Csv
           </button>
         </div>
       </div>
 
       {/* ── Stats grid (4 cards) ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total" value={stats.total}
           sub={`${stats.broadcast} broadcast`}
           color="#111827" bg="white" border="#E5E7EB"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
+          icon={<Bell className="h-4 w-4" aria-hidden="true" />}
         />
         <StatCard label="Unread" value={stats.unread}
           sub={`${Math.round(stats.unread / stats.total * 100)}% of total`}
           color="#991B1B" bg="#FEF2F2" border="#FECACA"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+          icon={<AlertCircle className="h-4 w-4 text-red-500" aria-hidden="true" />}
         />
         <StatCard label="Overdue" value={stats.overdue}
           sub="callbacks + tickets"
           color="#92400E" bg="#FFFBEB" border="#FDE68A"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          icon={<Clock3 className="h-4 w-4 text-amber-500" aria-hidden="true" />}
         />
         <StatCard label="Read" value={stats.read}
           sub={`${Math.round(stats.read / stats.total * 100)}% read rate`}
           color="#065F46" bg="#ECFDF5" border="#A7F3D0"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="1.5"><polyline points="20 6 9 17 4 12"/></svg>}
+          icon={<Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
         />
       </div>
 
@@ -606,7 +646,7 @@ export default function NotificationsAuditPage() {
           </div>
           {hasFilters && (
             <button className="clear-btn" onClick={clearFilters}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              <X className="h-3 w-3" aria-hidden="true" />
               Clear
             </button>
           )}
@@ -673,7 +713,7 @@ export default function NotificationsAuditPage() {
           <div style={{ padding: "14px 18px" }}>
             {slice.length === 0 ? (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🔍</div>
+                <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
                 <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>No notifications found</div>
                 <div style={{ fontSize: 11, marginTop: 2 }}>Try adjusting your filters</div>
               </div>
@@ -709,7 +749,7 @@ export default function NotificationsAuditPage() {
                 {slice.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF", border: "none" }}>
-                      <div style={{ fontSize: 28, marginBottom: 8 }}>🔍</div>
+                      <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>No notifications match</div>
                       <div style={{ fontSize: 11, marginTop: 2 }}>Try adjusting or clearing your filters</div>
                     </td>
@@ -789,8 +829,12 @@ export default function NotificationsAuditPage() {
               <strong style={{ color: "#374151" }}>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong> of <strong style={{ color: "#374151" }}>{filtered.length}</strong>
             </span>
             <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-              <button className="page-btn" disabled={page === 1} onClick={() => setPage(1)}>«</button>
-              <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+              <button className="page-btn" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
+                <ChevronsLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
               {(() => {
                 const pages: (number | "…")[] = [];
                 for (let p = 1; p <= totalPages; p++) {
@@ -803,8 +847,12 @@ export default function NotificationsAuditPage() {
                     : <button key={p} className={`page-btn ${page === p ? "active" : ""}`} onClick={() => setPage(p as number)} style={{ minWidth: 28, height: 28 }}>{p}</button>
                 );
               })()}
-              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
-              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(totalPages)}>»</button>
+              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
+                <ChevronsRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
             </div>
           </div>
         )}
