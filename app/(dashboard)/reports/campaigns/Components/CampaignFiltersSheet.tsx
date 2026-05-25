@@ -1,27 +1,22 @@
 "use client";
 
+import { useEffect, useState, type WheelEvent } from "react";
+import { format } from "date-fns";
 import {
+  AlertCircle,
   Calendar,
   Check,
   ChevronsUpDown,
   Download,
   FileSpreadsheet,
-  X,
-  AlertCircle,
   Filter,
   Megaphone,
+  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -35,9 +30,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 type Campaign = {
   id: number;
@@ -45,7 +46,6 @@ type Campaign = {
   yarda?: { name?: string | null } | null;
   isActive?: boolean;
   tipo?: string;
-  createdAt?: string;
 };
 
 type CampaignFiltersSheetProps = {
@@ -87,20 +87,21 @@ export function CampaignFiltersSheet({
 }: CampaignFiltersSheetProps) {
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
+  const [localStartDate, setLocalStartDate] = useState<Date | undefined>();
+  const [localEndDate, setLocalEndDate] = useState<Date | undefined>();
 
-  const [localStartDate, setLocalStartDate] = useState<Date | undefined>(undefined);
-  const [localEndDate, setLocalEndDate] = useState<Date | undefined>(undefined);
-
-  const selectedCampaignName = selectedCampaignId
-    ? campaigns.find((c) => c.id.toString() === selectedCampaignId)?.nombre
+  const selectedCampaign = selectedCampaignId
+    ? campaigns.find((campaign) => campaign.id.toString() === selectedCampaignId)
     : null;
 
   useEffect(() => {
-    setLocalStartDate(startDate ? new Date(startDate + "T12:00:00") : undefined);
+    setLocalStartDate(
+      startDate ? new Date(`${startDate}T12:00:00`) : undefined,
+    );
   }, [startDate]);
 
   useEffect(() => {
-    setLocalEndDate(endDate ? new Date(endDate + "T12:00:00") : undefined);
+    setLocalEndDate(endDate ? new Date(`${endDate}T12:00:00`) : undefined);
   }, [endDate]);
 
   useEffect(() => {
@@ -110,30 +111,20 @@ export function CampaignFiltersSheet({
     setEndPopoverOpen(false);
   }, [open, onCampaignOpenChange]);
 
-  const handleStartSelect = (date: Date | undefined) => {
-    setLocalStartDate(date);
-    if (!date) {
-      onStartDateChange("");
-    } else {
-      onStartDateChange(format(date, "yyyy-MM-dd"));
-      setStartPopoverOpen(false);
-    }
-  };
-
-  const handleEndSelect = (date: Date | undefined) => {
-    setLocalEndDate(date);
-    if (!date) {
-      onEndDateChange("");
-    } else {
-      onEndDateChange(format(date, "yyyy-MM-dd"));
-      setEndPopoverOpen(false);
-    }
-  };
-
-  const handleCampaignSelect = (campaignId: string) => {
-    onCampaignSelect(campaignId);
-    onCampaignOpenChange(false);
-  };
+  const hasDateRange = Boolean(startDate && endDate);
+  const isDateRangeValid = hasDateRange
+    ? new Date(startDate) <= new Date(endDate)
+    : true;
+  const showMissingDateAlert = Boolean(selectedCampaignId) && !hasDateRange;
+  const isCampaignPopoverOpen = open && campaignOpen;
+  const isStartDatePopoverOpen = open && startPopoverOpen;
+  const isEndDatePopoverOpen = open && endPopoverOpen;
+  const formattedStartDate = localStartDate
+    ? format(localStartDate, "MMM d, yyyy")
+    : null;
+  const formattedEndDate = localEndDate
+    ? format(localEndDate, "MMM d, yyyy")
+    : null;
 
   const handleSheetOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -144,45 +135,70 @@ export function CampaignFiltersSheet({
     onOpenChange(nextOpen);
   };
 
-  const hasDateRange = Boolean(startDate && endDate);
-  const isDateRangeValid = hasDateRange
-    ? new Date(startDate) <= new Date(endDate)
-    : true;
-  const showMissingDateAlert = Boolean(selectedCampaignId) && !hasDateRange;
-  const isCampaignPopoverOpen = open && campaignOpen;
-  const isStartDatePopoverOpen = open && startPopoverOpen;
-  const isEndDatePopoverOpen = open && endPopoverOpen;
+  const handleStartSelect = (date: Date | undefined) => {
+    setLocalStartDate(date);
+    if (!date) {
+      onStartDateChange("");
+      return;
+    }
+    onStartDateChange(format(date, "yyyy-MM-dd"));
+    setStartPopoverOpen(false);
+  };
+
+  const handleEndSelect = (date: Date | undefined) => {
+    setLocalEndDate(date);
+    if (!date) {
+      onEndDateChange("");
+      return;
+    }
+    onEndDateChange(format(date, "yyyy-MM-dd"));
+    setEndPopoverOpen(false);
+  };
+
+  const handleCampaignListWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const list = event.currentTarget;
+    if (list.scrollHeight <= list.clientHeight) return;
+    event.preventDefault();
+    event.stopPropagation();
+    list.scrollTop += event.deltaY;
+  };
 
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-lg"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-slate-800 dark:bg-slate-950"
       >
-        <SheetHeader className="px-6 py-5 border-b bg-card/50 backdrop-blur-sm z-10">
-          <SheetTitle className="flex items-center gap-2.5 text-xl font-bold">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Filter className="h-5 w-5" />
+        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
+          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
+              <Filter className="size-4" aria-hidden />
+            </span>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span>Report filters</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                Campaign report setup
+              </span>
             </div>
-            Report Filters
           </SheetTitle>
-          <SheetDescription className="ml-11 text-sm">
-            Configure the parameters to generate your campaign report.
+          <SheetDescription className="pl-11 text-xs leading-5 text-slate-500">
+            Choose a campaign and a valid date range before applying the report.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Campaign */}
-          <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
-            <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
-              <Megaphone className="h-4 w-4 text-primary" />
+        <div className="scrollbar-app flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <Megaphone className="size-3.5 text-[#008f68]" aria-hidden />
               Campaign
             </label>
 
             <Popover
               modal
               open={isCampaignPopoverOpen}
-              onOpenChange={(nextOpen) => onCampaignOpenChange(open ? nextOpen : false)}
+              onOpenChange={(nextOpen) =>
+                onCampaignOpenChange(open ? nextOpen : false)
+              }
             >
               <PopoverTrigger asChild>
                 <Button
@@ -190,28 +206,34 @@ export function CampaignFiltersSheet({
                   role="combobox"
                   aria-expanded={campaignOpen}
                   className={cn(
-                    "w-full justify-between bg-background transition-colors hover:bg-muted/50",
-                    !selectedCampaignId && "text-muted-foreground",
+                    "h-9 w-full justify-between rounded-lg border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                    !selectedCampaignId && "text-slate-500",
                   )}
                   disabled={loadingCampaigns}
                 >
                   <span className="truncate">
-                    {selectedCampaignName || "Select a campaign..."}
+                    {selectedCampaign?.nombre || "Select a campaign..."}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown data-icon="inline-end" className="opacity-50" />
                 </Button>
               </PopoverTrigger>
 
               <PopoverContent
-                className="z-[60] w-[var(--radix-popover-trigger-width)] p-0 rounded-xl"
+                className="z-[60] w-[var(--radix-popover-trigger-width)] rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
                 align="start"
               >
                 <Command>
-                  <CommandInput placeholder="Search campaign..." className="h-10" />
-                  <CommandList className="max-h-[220px]">
-                    <CommandEmpty className="py-6 text-center text-sm">
+                  <CommandInput
+                    placeholder="Search campaign..."
+                    className="h-9 text-xs"
+                  />
+                  <CommandList
+                    className="max-h-[220px]"
+                    onWheel={handleCampaignListWheel}
+                  >
+                    <CommandEmpty className="py-6 text-center text-xs">
                       {loadingCampaigns ? (
-                        <span className="animate-pulse text-muted-foreground">
+                        <span className="animate-pulse text-slate-500">
                           Loading campaigns...
                         </span>
                       ) : (
@@ -219,27 +241,30 @@ export function CampaignFiltersSheet({
                       )}
                     </CommandEmpty>
                     <CommandGroup>
-                      {campaigns.map((c) => (
+                      {campaigns.map((campaign) => (
                         <CommandItem
-                          key={c.id}
-                          value={c.nombre}
-                          onSelect={() => handleCampaignSelect(c.id.toString())}
-                          className="cursor-pointer my-0.5 rounded-lg"
+                          key={campaign.id}
+                          value={campaign.nombre}
+                          onSelect={() => {
+                            onCampaignSelect(campaign.id.toString());
+                            onCampaignOpenChange(false);
+                          }}
+                          className="my-0.5 cursor-pointer rounded-lg text-xs"
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4 transition-opacity",
-                              selectedCampaignId === c.id.toString()
-                                ? "opacity-100 text-primary"
+                              "mr-2 size-3.5 transition-opacity",
+                              selectedCampaignId === campaign.id.toString()
+                                ? "text-[#008f68] opacity-100"
                                 : "opacity-0",
                             )}
                           />
-                          <span className="font-medium">{c.nombre}</span>
-                          {c.yarda?.name && (
-                            <span className="ml-2 text-xs text-muted-foreground truncate">
-                              ({c.yarda.name})
+                          <span className="font-medium">{campaign.nombre}</span>
+                          {campaign.yarda?.name ? (
+                            <span className="ml-2 truncate text-[11px] text-slate-500">
+                              ({campaign.yarda.name})
                             </span>
-                          )}
+                          ) : null}
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -249,17 +274,23 @@ export function CampaignFiltersSheet({
             </Popover>
           </div>
 
-          {/* Date Range */}
-          <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
-            <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-foreground">
-              <Calendar className="h-4 w-4 text-primary" />
-              Date Range
-            </label>
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-start justify-between gap-3">
+              <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
+                Date range
+              </label>
+              {hasDateRange ? (
+                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  Selected
+                </span>
+              ) : null}
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground ml-1">
-                  Start Date
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Start date
                 </label>
                 <Popover
                   modal
@@ -272,20 +303,23 @@ export function CampaignFiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal w-full h-10 bg-background transition-colors hover:bg-muted/50",
-                        !localStartDate && "text-muted-foreground",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        !localStartDate && "text-slate-500",
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                      {localStartDate ? (
-                        <span className="truncate">{format(localStartDate, "MMM d, yyyy")}</span>
+                      <Calendar data-icon="inline-start" className="text-slate-400" />
+                      {formattedStartDate ? (
+                        <span className="truncate">{formattedStartDate}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="z-[60] w-auto p-0 rounded-xl" align="start">
-                    <div className="p-3">
+                  <PopoverContent
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    align="start"
+                  >
+                    <div className="flex flex-col gap-2 p-2">
                       <CalendarWidget
                         mode="single"
                         selected={localStartDate}
@@ -294,27 +328,27 @@ export function CampaignFiltersSheet({
                         disabled={{ after: new Date() }}
                         className="rounded-md"
                       />
-                      {localStartDate && (
-                        <div className="flex justify-end pt-2 border-t mt-2">
+                      {localStartDate ? (
+                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs text-muted-foreground hover:text-foreground w-full"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                             onClick={() => handleStartSelect(undefined)}
                           >
-                            <X className="mr-2 h-3.5 w-3.5" />
+                            <X data-icon="inline-start" />
                             Clear selection
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </PopoverContent>
                 </Popover>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-medium text-muted-foreground ml-1">
-                  End Date
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  End date
                 </label>
                 <Popover
                   modal
@@ -327,20 +361,23 @@ export function CampaignFiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "justify-start text-left font-normal w-full h-10 bg-background transition-colors hover:bg-muted/50",
-                        !localEndDate && "text-muted-foreground",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        !localEndDate && "text-slate-500",
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                      {localEndDate ? (
-                        <span className="truncate">{format(localEndDate, "MMM d, yyyy")}</span>
+                      <Calendar data-icon="inline-start" className="text-slate-400" />
+                      {formattedEndDate ? (
+                        <span className="truncate">{formattedEndDate}</span>
                       ) : (
                         <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="z-[60] w-auto p-0 rounded-xl" align="end">
-                    <div className="p-3">
+                  <PopoverContent
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    align="end"
+                  >
+                    <div className="flex flex-col gap-2 p-2">
                       <CalendarWidget
                         mode="single"
                         selected={localEndDate}
@@ -349,93 +386,106 @@ export function CampaignFiltersSheet({
                         disabled={{ after: new Date() }}
                         className="rounded-md"
                       />
-                      {localEndDate && (
-                        <div className="flex justify-end pt-2 border-t mt-2">
+                      {localEndDate ? (
+                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs text-muted-foreground hover:text-foreground w-full"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                             onClick={() => handleEndSelect(undefined)}
                           >
-                            <X className="mr-2 h-3.5 w-3.5" />
+                            <X data-icon="inline-start" />
                             Clear selection
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </PopoverContent>
                 </Popover>
               </div>
             </div>
 
-            {showMissingDateAlert && (
-              <Alert className="mt-2 border-sky-200 bg-sky-50/50 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
-                <AlertCircle className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                <AlertTitle className="text-sm font-semibold">Missing Dates</AlertTitle>
-                <AlertDescription className="text-xs mt-1">
-                  Select both Start Date and End Date to generate the report.
+            {hasDateRange && isDateRangeValid ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  Range:
+                </span>{" "}
+                {formattedStartDate} to {formattedEndDate}
+              </div>
+            ) : null}
+
+            {showMissingDateAlert ? (
+              <Alert className="border-sky-200 bg-sky-50/70 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
+                <AlertCircle className="size-4 text-sky-600 dark:text-sky-400" />
+                <AlertTitle className="text-xs font-semibold">
+                  Missing dates
+                </AlertTitle>
+                <AlertDescription className="mt-1 text-xs">
+                  Select both start date and end date to generate the report.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
 
-            {hasDateRange && !isDateRangeValid && (
-              <Alert className="mt-2 border-amber-200 bg-amber-50/50 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-sm font-semibold">Invalid Range</AlertTitle>
-                <AlertDescription className="text-xs mt-1">
+            {hasDateRange && !isDateRangeValid ? (
+              <Alert className="border-amber-200 bg-amber-50/70 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-xs font-semibold">
+                  Invalid range
+                </AlertTitle>
+                <AlertDescription className="mt-1 text-xs">
                   Start date cannot be later than end date. Please adjust the range.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
           </div>
 
-          {canExport && (
-            <div className="space-y-3 rounded-xl border border-primary/10 bg-primary/5 p-4">
-              <label className="text-sm font-semibold tracking-tight flex items-center gap-2 text-primary">
-                <Download className="h-4 w-4" />
-                Quick Export
+          {canExport ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-emerald-500/20 dark:bg-emerald-500/10">
+              <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-[#008f68] dark:text-emerald-300">
+                <Download className="size-3.5" aria-hidden />
+                Quick export
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onExportPDF}
-                  className="gap-2 h-10 bg-background hover:border-primary/50 hover:text-primary transition-all"
-                  disabled={!hasDateRange || !isDateRangeValid}
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950"
+                  disabled={!selectedCampaignId || !hasDateRange || !isDateRangeValid}
                 >
-                  <Download className="w-4 h-4" />
+                  <Download data-icon="inline-start" />
                   PDF
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onExportExcel}
-                  className="gap-2 h-10 bg-background hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
-                  disabled={!hasDateRange || !isDateRangeValid}
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950 dark:hover:text-emerald-400"
+                  disabled={!selectedCampaignId || !hasDateRange || !isDateRangeValid}
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <FileSpreadsheet data-icon="inline-start" />
                   Excel
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t bg-card/50 backdrop-blur-sm flex-col-reverse sm:flex-row gap-3">
+        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-slate-800 dark:bg-slate-950">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto sm:flex-1 h-11 font-medium"
+            className="h-9 w-full rounded-lg text-xs font-medium sm:w-auto sm:flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={onApplyFilters}
-            className="gap-2 w-full sm:w-auto sm:flex-1 h-11 font-semibold shadow-md"
+            className="h-9 w-full rounded-lg bg-[#008f68] text-xs font-semibold shadow-sm hover:bg-[#007a5a] sm:w-auto sm:flex-1"
             disabled={!selectedCampaignId || !hasDateRange || !isDateRangeValid}
           >
-            <Check className="h-4 w-4" />
-            Apply Filters
+            <Check data-icon="inline-start" />
+            Apply filters
           </Button>
         </SheetFooter>
       </SheetContent>
