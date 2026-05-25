@@ -14,33 +14,27 @@ export type MarketingUseCaseRow = {
   source: string;
 };
 
-export type ExecutiveLiveSnapshot = {
+export type ExecutiveCallIntentRow = {
+  reason: string;
+  calls: number;
+  share: number;
+};
+
+export type ExecutiveCallIntentMix = {
   periodLabel: string;
-  calls: {
-    active: number;
-    queued: number;
-    ringing: number;
-  };
-  wait: {
-    avgLabel: string;
-    longestLabel: string;
-  };
-  agents: {
-    available: number;
-    unavailable: number;
-    offline: number;
-    total: number;
-  };
-  tickets: {
-    open: number;
-    overdue: number;
-    pending: number;
-  };
-  lineAlerts: {
-    line: string;
-    detail: string;
-    tone: Tone;
-  }[];
+  totalClassified: number;
+  topReason: string | null;
+  rows: ExecutiveCallIntentRow[];
+};
+
+export type LiveSnapshot = {
+  hasLive: boolean;
+  active: number;
+  queued: number;
+  ringing: number;
+  longestWaitLabel: string;
+  available: number;
+  totalAgents: number;
 };
 
 export type DashboardDataSet = {
@@ -57,8 +51,15 @@ export type DashboardDataSet = {
   agentActivity: {
     agent: string;
     calls: number;
+    callsResolved: number;
+    callsUnresolved: number;
     talk: number;
+    resolved: number;
+    totalTickets: number;
+    ticketsUnresolved: number;
     resolution: number;
+    callResolution: number;
+    combinedResolution: number;
   }[];
   operationsInsights: OperationsInsightItem[];
   linePerformance: {
@@ -97,7 +98,8 @@ export type DashboardDataSet = {
   /** Raw hour keys (00–23) aligned with heatmapHours display labels. */
   heatmapHourKeys: string[];
   peakHourHeatmap: { day: string; values: number[] }[];
-  executiveLiveSnapshot: ExecutiveLiveSnapshot;
+  executiveCallIntentMix: ExecutiveCallIntentMix;
+  liveSnapshot: LiveSnapshot;
   campaignRates: {
     campaign: string;
     /** Share of named-campaign call volume in the period (0–100). */

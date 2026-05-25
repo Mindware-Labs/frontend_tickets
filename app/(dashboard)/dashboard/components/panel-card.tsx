@@ -17,6 +17,7 @@ export function PanelCard({
   className,
   bodyClassName,
   action,
+  subtitleAction,
   fill,
   headerAlign = "start",
 }: {
@@ -27,6 +28,8 @@ export function PanelCard({
   className?: string;
   bodyClassName?: string;
   action?: ReactNode;
+  /** Renders on the same row as the subtitle, aligned to the right. */
+  subtitleAction?: ReactNode;
   /** Stretch to match sibling height in a grid row. */
   fill?: boolean;
   /** Centered header for chart cards (pie labels layout). */
@@ -80,15 +83,30 @@ export function PanelCard({
             >
               {title}
             </h3>
-            {subtitle ? (
-              <p
+            {subtitle || subtitleAction ? (
+              <div
                 className={cn(
-                  "mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500 dark:text-slate-400",
-                  centered && "line-clamp-none",
+                  "mt-0.5 flex items-center justify-between gap-3",
+                  centered && "justify-center",
                 )}
               >
-                {subtitle}
-              </p>
+                {subtitle ? (
+                  <p
+                    className={cn(
+                      "min-w-0 flex-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400",
+                      centered && "text-center",
+                      !subtitleAction && "line-clamp-2",
+                    )}
+                  >
+                    {subtitle}
+                  </p>
+                ) : (
+                  <span className="flex-1" />
+                )}
+                {subtitleAction ? (
+                  <div className="shrink-0">{subtitleAction}</div>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>

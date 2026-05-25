@@ -1252,6 +1252,7 @@ export function CustomerTicketDrawer({
                       </div>
                     </div>
                   )}
+
                 </div>
               )}
               {selectedTicket && (

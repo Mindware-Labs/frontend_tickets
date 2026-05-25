@@ -186,17 +186,26 @@ export function MarketingDashboard() {
           {data.dispositionBreakdown.length === 0 ? (
             <DashboardEmptyState message="No disposition breakdown." compact />
           ) : (
-            <div className={`grid min-h-0 flex-1 gap-2 lg:grid-cols-[140px_1fr] ${DASHBOARD_CHART_HEIGHT_SM_CLASS}`}>
-              <div className="h-full min-h-[140px]">
-                <DashboardChart size="sm">
+            <div
+              className={cn(
+                "flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center",
+                DASHBOARD_CHART_HEIGHT_SM_CLASS,
+              )}
+            >
+              <div className="flex shrink-0 items-center justify-center sm:w-[168px]">
+                <DashboardChart size="sm" className="aspect-square w-full max-w-[168px]">
                   <PieChart>
                     <Pie
                       data={data.dispositionBreakdown}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={40}
-                      outerRadius={62}
-                      paddingAngle={2}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={data.dispositionBreakdown.length === 1 ? 52 : 44}
+                      outerRadius={data.dispositionBreakdown.length === 1 ? 72 : 64}
+                      paddingAngle={
+                        data.dispositionBreakdown.length > 1 ? 3 : 0
+                      }
                       cursor="pointer"
                       onClick={(slice) => {
                         const row = slice as { name?: string };
@@ -218,35 +227,47 @@ export function MarketingDashboard() {
                   </PieChart>
                 </DashboardChart>
               </div>
-              <div className="grid min-h-0 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
-                {data.dispositionBreakdown.map((item) => (
-                  <button
-                    key={item.name}
-                    type="button"
-                    onClick={() => toggleFilter("disposition", item.name)}
-                    className={cn(
-                      "flex items-center justify-between gap-2 py-1.5 text-left",
-                      dashboardListItemClass,
-                      crossFilterRowClass(
-                        isFilterActive("disposition", item.name),
-                      ),
-                    )}
-                  >
-                    <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-foreground">
-                      <span
-                        className="size-2 shrink-0 rounded-sm"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="truncate">{item.name}</span>
-                    </span>
-                    <span className="shrink-0 text-[11px] font-semibold tabular-nums">
-                      {item.value}
-                      {dispositionTotal > 0
-                        ? ` (${Math.round((item.value / dispositionTotal) * 100)}%)`
-                        : ""}
-                    </span>
-                  </button>
-                ))}
+              <div className="min-h-0 min-w-0 flex-1">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {dispositionTotal} calls · {data.dispositionBreakdown.length}{" "}
+                  {data.dispositionBreakdown.length === 1 ? "disposition" : "dispositions"}
+                </p>
+                <ul
+                  className={cn(
+                    "space-y-1.5",
+                    data.dispositionBreakdown.length > 2 &&
+                      "sm:grid sm:grid-cols-2 sm:gap-x-2",
+                  )}
+                >
+                  {data.dispositionBreakdown.map((item) => (
+                    <li key={item.name}>
+                      <button
+                        type="button"
+                        onClick={() => toggleFilter("disposition", item.name)}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-left dark:border-slate-800 dark:bg-slate-900/50",
+                          crossFilterRowClass(
+                            isFilterActive("disposition", item.name),
+                          ),
+                        )}
+                      >
+                        <span className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-slate-800 dark:text-slate-100">
+                          <span
+                            className="size-2.5 shrink-0 rounded-sm"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </span>
+                        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+                          {item.value}
+                          {dispositionTotal > 0
+                            ? ` (${Math.round((item.value / dispositionTotal) * 100)}%)`
+                            : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}

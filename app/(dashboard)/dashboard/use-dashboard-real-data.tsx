@@ -25,7 +25,11 @@ import {
   formatLiveQueueTrend,
   sanitizeLiveQueueWaitSeconds,
 } from "./dashboard-format";
-import type { DashboardDataSet, ExecutiveLiveSnapshot } from "./dashboard-types";
+import type {
+  DashboardDataSet,
+  ExecutiveCallIntentMix,
+  LiveSnapshot,
+} from "./dashboard-types";
 import {
   buildPerformanceFilterQuery,
   emptyDashboardFilters,
@@ -116,11 +120,14 @@ type PerformanceReport = {
     agentName?: string;
     totalCalls?: number;
     answeredCalls?: number;
+    resolvedCalls?: number;
     totalCallDurationSec?: number;
     avgCallDurationSec?: number;
     totalTickets?: number;
     closedTickets?: number;
     resolutionRate?: number;
+    callResolutionRate?: number;
+    combinedResolutionRate?: number;
   }[];
   peakHourHeatmap?: { day: string; hours: Record<string, number> }[];
   linePerformance?: {
@@ -660,13 +667,41 @@ function buildAgentActivity(
 ): DashboardDataSet["agentActivity"] {
   const rows = (performance?.agentPerformance || [])
     .slice(0, 8)
-    .map((agent) => ({
-      agent: agent.agentName || "Unassigned",
-      calls: numberValue(agent.totalCalls),
-      talk: Math.round(numberValue(agent.totalCallDurationSec) / 60),
-      resolution: numberValue(agent.resolutionRate),
-    }))
-    .filter((agent) => agent.calls || agent.resolution);
+    .map((agent) => {
+      const calls = numberValue(agent.totalCalls);
+      const callsResolved = Math.min(calls, numberValue(agent.resolvedCalls));
+      const totalTickets = numberValue(agent.totalTickets);
+      const resolved = Math.min(totalTickets, numberValue(agent.closedTickets));
+      const denominator = calls + totalTickets;
+      const fallbackCombined = denominator
+        ? Math.round(((callsResolved + resolved) / denominator) * 100)
+        : 0;
+      const fallbackCallResolution = calls
+        ? Math.round((callsResolved / calls) * 100)
+        : 0;
+      return {
+        agent: agent.agentName || "Unassigned",
+        calls,
+        callsResolved,
+        callsUnresolved: Math.max(0, calls - callsResolved),
+        talk: Math.round(numberValue(agent.totalCallDurationSec) / 60),
+        resolved,
+        totalTickets,
+        ticketsUnresolved: Math.max(0, totalTickets - resolved),
+        resolution: numberValue(agent.resolutionRate),
+        callResolution:
+          numberValue(agent.callResolutionRate) || fallbackCallResolution,
+        combinedResolution:
+          numberValue(agent.combinedResolutionRate) || fallbackCombined,
+      };
+    })
+    .filter(
+      (agent) =>
+        agent.calls > 0 ||
+        agent.totalTickets > 0 ||
+        agent.resolved > 0 ||
+        agent.callsResolved > 0,
+    );
 
   return rows;
 }
@@ -1136,68 +1171,50 @@ function buildYardVolume({
   return rows.slice(0, 8);
 }
 
-function buildExecutiveLiveSnapshot({
-  performance,
-  wallboard,
-}: DashboardSources): ExecutiveLiveSnapshot {
-  const summary = performance?.summary;
-  const live = wallboard?.live;
-  const agents = wallboard?.agents;
-  const periodLabel = performance?.period?.label || wallboard?.period?.label || "Last 30 days";
-  const queued = numberValue(live?.queuedCalls);
-  const longest = sanitizeLiveQueueWaitSeconds(live?.longestCurrentWaitSeconds);
-
-  const lineAlerts: ExecutiveLiveSnapshot["lineAlerts"] = [];
-  for (const line of wallboard?.linePerformance || []) {
-    if (lineAlerts.length >= 5) break;
-    const label = line.line || "Unassigned";
-    const active = numberValue(line.active);
-    const missed = numberValue(line.missed);
-    const wait = numberValue(line.avgWaitSeconds);
-    if (active >= 3) {
-      lineAlerts.push({
-        line: label,
-        detail: `${formatNumber(active)} active calls now`,
-        tone: "amber",
-      });
-    } else if (missed >= 5) {
-      lineAlerts.push({
-        line: label,
-        detail: `${formatNumber(missed)} missed in period`,
-        tone: "rose",
-      });
-    } else if (wait >= 120) {
-      lineAlerts.push({
-        line: label,
-        detail: `Avg wait ${formatDuration(wait)}`,
-        tone: "sky",
-      });
-    }
-  }
+function buildExecutiveCallIntentMix(
+  performance?: PerformanceReport | null,
+): ExecutiveCallIntentMix {
+  const periodLabel = performance?.period?.label || "Last 30 days";
+  const items = (performance?.callCampaignOptionBreakdown || []).map(
+    breakdownValue,
+  );
+  const totalClassified = items.reduce((sum, item) => sum + item.value, 0);
+  const rows = items
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8)
+    .map((item) => ({
+      reason: item.name,
+      calls: item.value,
+      share: totalClassified
+        ? Math.round((item.value / totalClassified) * 100)
+        : 0,
+    }));
 
   return {
     periodLabel,
-    calls: {
-      active: numberValue(live?.activeCalls),
-      queued,
-      ringing: numberValue(live?.ringingCalls),
-    },
-    wait: {
-      avgLabel: formatDuration(live?.avgWaitSeconds),
-      longestLabel: queued ? formatDuration(longest) : "—",
-    },
-    agents: {
-      available: numberValue(agents?.available),
-      unavailable: numberValue(agents?.unavailable),
-      offline: numberValue(agents?.offline),
-      total: numberValue(agents?.totalTracked),
-    },
-    tickets: {
-      open: numberValue(summary?.openTickets),
-      overdue: numberValue(summary?.overdueTickets),
-      pending: numberValue(summary?.pendingTickets),
-    },
-    lineAlerts,
+    totalClassified,
+    topReason: rows[0]?.reason ?? null,
+    rows,
+  };
+}
+
+function buildLiveSnapshot(wallboard?: WallboardReport | null): LiveSnapshot {
+  const live = wallboard?.live;
+  const agents = wallboard?.agents;
+  const active = numberValue(live?.activeCalls);
+  const queued = numberValue(live?.queuedCalls);
+  const ringing = numberValue(live?.ringingCalls);
+  const longestWaitSec = sanitizeLiveQueueWaitSeconds(
+    live?.longestCurrentWaitSeconds,
+  );
+  return {
+    hasLive: active + queued + ringing > 0,
+    active,
+    queued,
+    ringing,
+    longestWaitLabel: queued ? formatDuration(longestWaitSec) : "—",
+    available: numberValue(agents?.available),
+    totalAgents: numberValue(agents?.totalTracked),
   };
 }
 
@@ -1317,7 +1334,8 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
     ticketRisk: buildTicketRisk(sources),
     heatmapHours: heatmap.heatmapHours,
     peakHourHeatmap: heatmap.peakHourHeatmap,
-    executiveLiveSnapshot: buildExecutiveLiveSnapshot(sources),
+    executiveCallIntentMix: buildExecutiveCallIntentMix(sources.performance),
+    liveSnapshot: buildLiveSnapshot(sources.wallboard),
     campaignRates: buildCampaignRates(sources),
     leadFunnel: funnels.leadFunnel,
     arFunnel: funnels.arFunnel,

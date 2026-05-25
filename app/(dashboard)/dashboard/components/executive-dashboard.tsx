@@ -37,7 +37,10 @@ import { DashboardChart } from "./dashboard-chart";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { MetricsGrid } from "./metrics-grid";
 import { PanelCard } from "./panel-card";
-import { ExecutiveLivePanel } from "./executive-live-panel";
+import {
+  ExecutiveCallIntentPanel,
+  ExecutiveCallIntentTopDriver,
+} from "./executive-call-intent-panel";
 import { KpiScorecardGrid } from "./kpi-scorecard-grid";
 import { StatusBadge } from "./status-badge";
 
@@ -255,11 +258,16 @@ export function ExecutiveDashboard() {
       </div>
 
       <PanelCard
-        title="Live operations snapshot"
-        subtitle="Real-time queue, agents, tickets, and lines that need attention."
+        title="Customer call reasons"
+        subtitle="Share of calls by campaign option on the call — billing, registration, move-out, and similar drivers."
+        subtitleAction={
+          <ExecutiveCallIntentTopDriver
+            topReason={data.executiveCallIntentMix.topReason}
+          />
+        }
         bodyClassName="py-2"
       >
-        <ExecutiveLivePanel snapshot={data.executiveLiveSnapshot} />
+        <ExecutiveCallIntentPanel mix={data.executiveCallIntentMix} />
       </PanelCard>
     </div>
   );

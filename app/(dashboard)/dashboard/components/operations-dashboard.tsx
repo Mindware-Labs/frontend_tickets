@@ -3,18 +3,18 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
   Line,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 
 import {
-  DASHBOARD_CHART_HEIGHT_SM_CLASS,
   chartAxisTickStyle,
   chartGridStroke,
   chartLegendStyle,
@@ -24,6 +24,7 @@ import {
   dashboardTableCellClass,
   dashboardTableCellStrongClass,
   dashboardTableHeadClass,
+  DASHBOARD_CHART_HEIGHT_SM_CLASS,
   toneClasses,
   tooltipStyle,
 } from "../dashboard-theme";
@@ -39,6 +40,75 @@ import { InsightsMetricGrid } from "./insights-metric-grid";
 import { MetricsGrid } from "./metrics-grid";
 import { PanelCard } from "./panel-card";
 import { StatusBadge } from "./status-badge";
+
+const AGENT_BAR_RADIUS_TOP: [number, number, number, number] = [6, 6, 0, 0];
+const AGENT_BAR_RADIUS_FLAT: [number, number, number, number] = [0, 0, 0, 0];
+const AGENT_BAR_MAX_SIZE = 22;
+
+const CALLS_RESOLVED_COLOR = toneClasses.emerald.chart;
+const CALLS_UNRESOLVED_COLOR = "#cbd5e1";
+const TICKETS_RESOLVED_COLOR = toneClasses.indigo.chart;
+const TICKETS_UNRESOLVED_COLOR = toneClasses.amber.chart;
+const COMBINED_RESOLUTION_COLOR = toneClasses.sky.chart;
+
+type AgentActivityRow = {
+  agent: string;
+  calls: number;
+  callsResolved: number;
+  callsUnresolved: number;
+  talk: number;
+  resolved: number;
+  totalTickets: number;
+  ticketsUnresolved: number;
+  resolution: number;
+  callResolution: number;
+  combinedResolution: number;
+};
+
+function AgentActivityTooltip({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload as AgentActivityRow | undefined;
+  if (!row) return null;
+
+  return (
+    <div
+      className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs shadow-sm dark:border-slate-700 dark:bg-slate-900"
+      style={tooltipStyle}
+    >
+      <p className="mb-1 font-semibold text-slate-900 dark:text-slate-100">
+        {label}
+      </p>
+      <p className="text-slate-600 dark:text-slate-300">
+        Calls: <span className="font-semibold tabular-nums">{row.calls}</span>
+        {row.calls > 0 ? (
+          <span className="ml-1 text-slate-500">
+            ({row.callsResolved} resolved · {row.callResolution}%)
+          </span>
+        ) : null}
+      </p>
+      <p className="text-slate-600 dark:text-slate-300">
+        Tickets:{" "}
+        <span className="font-semibold tabular-nums">{row.totalTickets}</span>
+        {row.totalTickets > 0 ? (
+          <span className="ml-1 text-slate-500">
+            ({row.resolved} resolved · {row.resolution}%)
+          </span>
+        ) : null}
+      </p>
+      <p className="text-slate-600 dark:text-slate-300">Talk: {row.talk} min</p>
+      <p className="mt-1 text-[#008f68] dark:text-emerald-300">
+        Combined resolution:{" "}
+        <span className="font-semibold tabular-nums">
+          {row.combinedResolution}%
+        </span>
+      </p>
+    </div>
+  );
+}
 
 export function OperationsDashboard() {
   const { data } = useSupportDashboardData();
@@ -138,24 +208,49 @@ export function OperationsDashboard() {
         <PanelCard
           fill
           title="Agent activity"
-          subtitle="Click an agent bar to filter by agent."
+          subtitle="Resolved vs pending for calls and tickets per agent. Line shows combined resolution. Click a bar to filter."
         >
           {data.agentActivity.length === 0 ? (
             <DashboardEmptyState message="No agent performance data for this period." compact />
           ) : (
             <DashboardChart size="sm">
-              <BarChart data={data.agentActivity} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
+              <ComposedChart
+                data={data.agentActivity}
+                margin={{ left: -12, right: 8, top: 4, bottom: 0 }}
+                barCategoryGap="22%"
+                barGap={6}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="agent" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={28} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <YAxis
+                  yAxisId="left"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={28}
+                  allowDecimals={false}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={[0, 100]}
+                  tickLine={false}
+                  axisLine={false}
+                  unit="%"
+                  tick={chartAxisTickStyle}
+                  width={36}
+                />
+                <Tooltip content={<AgentActivityTooltip />} />
                 <Legend wrapperStyle={chartLegendStyle} />
-                <Bar dataKey="talk" name="Talk (min)" fill={toneClasses.amber.chart} radius={[4, 4, 0, 0]} />
+
                 <Bar
-                  dataKey="calls"
-                  name="Calls"
-                  fill={toneClasses.emerald.chart}
-                  radius={[4, 4, 0, 0]}
+                  yAxisId="left"
+                  stackId="calls"
+                  dataKey="callsResolved"
+                  name="Resolved calls"
+                  fill={CALLS_RESOLVED_COLOR}
+                  radius={AGENT_BAR_RADIUS_FLAT}
+                  maxBarSize={AGENT_BAR_MAX_SIZE}
                   cursor="pointer"
                   onClick={(bar) => {
                     const row = bar as { agent?: string };
@@ -164,8 +259,8 @@ export function OperationsDashboard() {
                 >
                   {data.agentActivity.map((entry) => (
                     <Cell
-                      key={entry.agent}
-                      fill={toneClasses.emerald.chart}
+                      key={`callsResolved-${entry.agent}`}
+                      fill={CALLS_RESOLVED_COLOR}
                       fillOpacity={crossFilterBarOpacity(
                         isFilterActive("agent", entry.agent),
                         agentFilterActive,
@@ -173,8 +268,102 @@ export function OperationsDashboard() {
                     />
                   ))}
                 </Bar>
-                <Bar dataKey="resolution" name="Resolution %" fill={toneClasses.indigo.chart} radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Bar
+                  yAxisId="left"
+                  stackId="calls"
+                  dataKey="callsUnresolved"
+                  name="Unresolved calls"
+                  fill={CALLS_UNRESOLVED_COLOR}
+                  radius={AGENT_BAR_RADIUS_TOP}
+                  maxBarSize={AGENT_BAR_MAX_SIZE}
+                  cursor="pointer"
+                  onClick={(bar) => {
+                    const row = bar as { agent?: string };
+                    if (row.agent) toggleFilter("agent", row.agent);
+                  }}
+                >
+                  {data.agentActivity.map((entry) => (
+                    <Cell
+                      key={`callsUnresolved-${entry.agent}`}
+                      fill={CALLS_UNRESOLVED_COLOR}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive("agent", entry.agent),
+                        agentFilterActive,
+                      )}
+                    />
+                  ))}
+                </Bar>
+
+                <Bar
+                  yAxisId="left"
+                  stackId="tickets"
+                  dataKey="resolved"
+                  name="Resolved tickets"
+                  fill={TICKETS_RESOLVED_COLOR}
+                  radius={AGENT_BAR_RADIUS_FLAT}
+                  maxBarSize={AGENT_BAR_MAX_SIZE}
+                  cursor="pointer"
+                  onClick={(bar) => {
+                    const row = bar as { agent?: string };
+                    if (row.agent) toggleFilter("agent", row.agent);
+                  }}
+                >
+                  {data.agentActivity.map((entry) => (
+                    <Cell
+                      key={`resolved-${entry.agent}`}
+                      fill={TICKETS_RESOLVED_COLOR}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive("agent", entry.agent),
+                        agentFilterActive,
+                      )}
+                    />
+                  ))}
+                </Bar>
+                <Bar
+                  yAxisId="left"
+                  stackId="tickets"
+                  dataKey="ticketsUnresolved"
+                  name="Pending tickets"
+                  fill={TICKETS_UNRESOLVED_COLOR}
+                  radius={AGENT_BAR_RADIUS_TOP}
+                  maxBarSize={AGENT_BAR_MAX_SIZE}
+                  cursor="pointer"
+                  onClick={(bar) => {
+                    const row = bar as { agent?: string };
+                    if (row.agent) toggleFilter("agent", row.agent);
+                  }}
+                >
+                  {data.agentActivity.map((entry) => (
+                    <Cell
+                      key={`ticketsUnresolved-${entry.agent}`}
+                      fill={TICKETS_UNRESOLVED_COLOR}
+                      fillOpacity={crossFilterBarOpacity(
+                        isFilterActive("agent", entry.agent),
+                        agentFilterActive,
+                      )}
+                    />
+                  ))}
+                </Bar>
+
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="combinedResolution"
+                  name="Combined resolution %"
+                  stroke={COMBINED_RESOLUTION_COLOR}
+                  strokeWidth={2}
+                  dot={{ r: 4, cursor: "pointer" }}
+                  activeDot={{
+                    r: 6,
+                    cursor: "pointer",
+                    onClick: (_event, dot) => {
+                      const agent = (dot as { payload?: { agent?: string } })
+                        .payload?.agent;
+                      if (agent) toggleFilter("agent", agent);
+                    },
+                  }}
+                />
+              </ComposedChart>
             </DashboardChart>
           )}
         </PanelCard>
