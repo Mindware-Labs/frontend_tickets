@@ -30,43 +30,18 @@ export function CampaignsPagination({
   if (totalCount === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2">
-        <p className="text-[12px] font-medium text-slate-500">
-          Showing{" "}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
-            {(currentPage - 1) * itemsPerPage + 1}–
-            {Math.min(currentPage * itemsPerPage, totalCount)}
-          </span>{" "}
-          of {totalCount}
-        </p>
-        <Select
-          value={itemsPerPage.toString()}
-          onValueChange={(v) => onItemsPerPageChange(Number(v))}
-        >
-          <SelectTrigger className="h-8 w-[108px] rounded-lg text-[12px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="6">6 / page</SelectItem>
-            <SelectItem value="9">9 / page</SelectItem>
-            <SelectItem value="12">12 / page</SelectItem>
-            <SelectItem value="18">18 / page</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="flex items-center justify-between px-1 pb-2 pt-3">
+      <Button
+        variant="outline"
+        className="h-8 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+        onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+        disabled={currentPage === 1}
+      >
+        Previous
+      </Button>
 
-      <div className="flex items-center justify-between gap-2 sm:justify-end">
-        <Button
-          variant="outline"
-          className="h-9 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm"
-          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-
-        <div className="hidden items-center gap-1 md:flex">
+      <div className="flex flex-col items-center gap-0.5 text-center">
+        <div className="hidden items-center justify-center gap-1 md:flex">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum = i + 1;
             if (totalPages > 5 && currentPage > 3) {
@@ -81,10 +56,10 @@ export function CampaignsPagination({
                 type="button"
                 onClick={() => onPageChange(pageNum)}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-[10px] text-[13px] transition-colors",
+                  "flex h-8 w-8 items-center justify-center rounded-lg text-[12px] transition-colors",
                   active
                     ? "border border-[#a6f0c3] bg-[#e2fae9] font-semibold text-[#008f68]"
-                    : "font-medium text-muted-foreground hover:bg-muted/50",
+                    : "border border-transparent font-medium text-muted-foreground hover:bg-muted/50",
                 )}
               >
                 {pageNum}
@@ -92,16 +67,19 @@ export function CampaignsPagination({
             );
           })}
         </div>
-
-        <Button
-          variant="outline"
-          className="h-9 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm"
-          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-          disabled={currentPage >= totalPages}
-        >
-          Next
-        </Button>
+        <span className="text-[10px] font-medium text-muted-foreground">
+          {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}
+        </span>
       </div>
+
+      <Button
+        variant="outline"
+        className="h-8 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+        onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+        disabled={currentPage >= totalPages}
+      >
+        Next
+      </Button>
     </div>
   );
 }
