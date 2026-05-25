@@ -283,6 +283,8 @@ export interface SupportTicketRecord {
   campaignOption?: string | null;
   disposition?: CallDisposition | string | null;
   issueDetail?: string | null;
+  /** Original / first issue detail (kept independent from `issueDetail`). */
+  originalIssueDetail?: string | null;
   attachments?: string[] | null;
   followUpDueDate?: string | null;
   followUpAssignedToId?: number | null;
@@ -304,6 +306,7 @@ export interface CreateSupportTicketFormData {
   ticketType: string;
   disposition: string;
   issueDetail: string;
+  originalIssueDetail: string;
   followUpDueDate: string;
   followUpAssignedToId: string;
 }

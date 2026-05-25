@@ -148,6 +148,7 @@ const emptyForm: CreateSupportTicketFormData = {
   ticketType: "",
   disposition: "",
   issueDetail: "",
+  originalIssueDetail: "",
   followUpDueDate: "",
   followUpAssignedToId: "",
 };
@@ -340,6 +341,7 @@ export function TicketsTab({
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
+      originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
         : "",
@@ -425,6 +427,7 @@ export function TicketsTab({
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
+      originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
         : "",
@@ -448,6 +451,7 @@ export function TicketsTab({
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
+      originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
         : "",
@@ -481,6 +485,8 @@ export function TicketsTab({
       if (form.callId) payload.callId = Number(form.callId);
       if (form.ticketType) payload.ticketType = form.ticketType;
       if (form.issueDetail) payload.issueDetail = form.issueDetail;
+      if (form.originalIssueDetail)
+        payload.originalIssueDetail = form.originalIssueDetail;
       if (form.followUpDueDate)
         payload.followUpDueDate = new Date(form.followUpDueDate).toISOString();
       if (form.followUpAssignedToId)
@@ -588,7 +594,7 @@ export function TicketsTab({
     else payload.phoneLineId = null;
     if (form.ticketType) payload.ticketType = form.ticketType;
     else payload.ticketType = null;
-    payload.issueDetail = form.issueDetail || null;
+    payload.originalIssueDetail = form.originalIssueDetail || null;
     if (includeStatusAndFollowUp) {
       if (form.followUpDueDate) {
         payload.followUpDueDate = new Date(form.followUpDueDate).toISOString();
@@ -614,6 +620,7 @@ export function TicketsTab({
       ticketType: t.ticketType || "",
       disposition: t.disposition || "",
       issueDetail: t.issueDetail || "",
+      originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
       followUpDueDate: t.followUpDueDate
         ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
         : "",

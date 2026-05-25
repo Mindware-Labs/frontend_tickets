@@ -292,6 +292,7 @@ export function CustomerTicketDrawer({
   // ── Source call peek (CallPeekPanel) ───────────────────────────────────────
   const [sourcePeekCallId, setSourcePeekCallId] = useState<number | null>(null);
   const [showUpdatePeek, setShowUpdatePeek] = useState(false);
+  const [railTab, setRailTab] = useState<"activity" | "tickets">("activity");
   const { data: sourcePeekData, isLoading: isSourcePeekLoading } = useSWR(
     sourcePeekCallId ? `/api/calls/${sourcePeekCallId}` : null,
     fetcher,
@@ -881,45 +882,106 @@ export function CustomerTicketDrawer({
 
           {/* ── 3-Column Body ── */}
           <div className="flex-1 overflow-hidden min-h-0 flex">
-            {/* ═══ COL 1 (18%): Ticket Feed ═══ */}
-            <div className="hidden sm:flex w-72 xl:w-80 order-last shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Other tickets
-                  </p>
-                </div>
-                {isLoadingHistory ? (
-                  <Loader2 className="w-3 h-3 animate-spin text-slate-300" />
-                ) : (
-                  <span className="text-[10px] font-semibold text-slate-400 tabular-nums">
-                    {allTickets.length}
+            {/* ═══ COL 1 (right rail): Activity + Other tickets tabs ═══ */}
+            <aside className="hidden sm:flex w-72 xl:w-80 order-last shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
+              <div className="flex shrink-0 border-b border-slate-100 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setRailTab("activity")}
+                  aria-pressed={railTab === "activity"}
+                  className={cn(
+                    "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
+                    railTab === "activity"
+                      ? "text-violet-700 bg-violet-50/70"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Activity</span>
+                  {ticketUpdates.length > 0 ? (
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums leading-none",
+                        railTab === "activity"
+                          ? "bg-violet-200/80 text-violet-800"
+                          : "bg-slate-100 text-slate-500",
+                      )}
+                    >
+                      {ticketUpdates.length}
+                    </span>
+                  ) : null}
+                  {railTab === "activity" ? (
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-violet-500" />
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRailTab("tickets")}
+                  aria-pressed={railTab === "tickets"}
+                  className={cn(
+                    "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
+                    railTab === "tickets"
+                      ? "text-[#008f68] bg-[#f0faf5]"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  <TicketIcon className="w-3.5 h-3.5" />
+                  <span>Tickets</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums leading-none",
+                      railTab === "tickets"
+                        ? "bg-[#008f68]/15 text-[#006d50]"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    {isLoadingHistory ? "…" : allTickets.length}
                   </span>
-                )}
+                  {railTab === "tickets" ? (
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#008f68]" />
+                  ) : null}
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-                {isLoadingHistory && allTickets.length === 0 ? (
-                  <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                ) : allTickets.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
-                    <TicketIcon className="w-5 h-5 opacity-40" />
-                    <span className="text-xs">No tickets</span>
-                  </div>
+
+              {railTab === "activity" ? (
+                selectedTicket ? (
+                  <TicketSheetActivitySection
+                    ticket={selectedTicket}
+                    updates={ticketUpdates}
+                    isLoading={isLoadingUpdates}
+                    currentStatus={editFormData.status}
+                    className="flex-1 min-h-0 rounded-none border-0 shadow-none"
+                  />
                 ) : (
-                  allTickets.map((t) => (
-                    <TicketCard
-                      key={t.id}
-                      ticket={t}
-                      isActive={t.id === activeTicketId}
-                      onClick={() => onSelectTicket(t)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 text-slate-400 py-10">
+                    <Activity className="w-5 h-5 opacity-40" />
+                    <span className="text-xs">Select a ticket to see activity</span>
+                  </div>
+                )
+              ) : (
+                <div className="flex-1 overflow-y-auto py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                  {isLoadingHistory && allTickets.length === 0 ? (
+                    <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  ) : allTickets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
+                      <TicketIcon className="w-5 h-5 opacity-40" />
+                      <span className="text-xs">No tickets</span>
+                    </div>
+                  ) : (
+                    allTickets.map((t) => (
+                      <TicketCard
+                        key={t.id}
+                        ticket={t}
+                        isActive={t.id === activeTicketId}
+                        onClick={() => onSelectTicket(t)}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </aside>
 
             {/* ═══ COL 2 (flex): Hub ═══ */}
             <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-slate-50/80 border-t border-slate-100">
@@ -969,47 +1031,83 @@ export function CustomerTicketDrawer({
                     ticket={selectedTicket}
                     updates={ticketUpdates}
                     isLoading={isLoadingUpdates}
+                    currentStatus={editFormData.status}
+                    className="sm:hidden"
                   />
 
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                      Issue Detail
-                    </p>
-                    <div className="space-y-1.5">
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                          Initial problem
+                        </p>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 border border-slate-200 rounded-full px-1.5 py-0.5">
+                          Editable
+                        </span>
+                      </div>
                       <textarea
                         rows={4}
-                        value={editFormData.issueDetail || ""}
+                        value={editFormData.originalIssueDetail || ""}
                         onChange={(e) =>
                           setEditFormData((f) => ({
                             ...f,
-                            issueDetail: e.target.value,
+                            originalIssueDetail: e.target.value,
                           }))
                         }
-                        placeholder="Describe the issue…"
-                        className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed shadow-sm"
+                        placeholder="Original problem reported by the customer…"
+                        className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 leading-relaxed shadow-sm"
                       />
-                      <div className="hidden">
-                        <button
-                          type="button"
-                          onClick={onSaveProperties}
-                          disabled={isUpdating}
-                          className="flex items-center gap-1.5 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                          style={{ background: "#008f68" }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.background = "#007a5a")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.background = "#008f68")
-                          }
-                        >
-                          {isUpdating ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3 h-3" />
-                          )}
-                          {isUpdating ? "Saving…" : "Save Note"}
-                        </button>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                        Initial wording. Editable but does not change the
+                        update below.
+                      </p>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
+                          Update
+                        </p>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600/80 uppercase tracking-wider bg-emerald-50 border border-emerald-100 rounded-full px-1.5 py-0.5">
+                          <Activity className="w-2.5 h-2.5" />
+                          Log update only
+                        </span>
                       </div>
+                      <textarea
+                        rows={4}
+                        value={selectedTicket.issueDetail || ""}
+                        readOnly
+                        placeholder="No updates logged yet"
+                        className="w-full text-xs text-slate-700 placeholder:text-slate-400 bg-emerald-50/40 border border-dashed border-emerald-200 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                        Auto-updated by{" "}
+                        <span className="font-semibold text-violet-700">
+                          Log update
+                        </span>
+                        . Cannot be edited inline.
+                      </p>
+                    </div>
+                    <div className="hidden">
+                      <button
+                        type="button"
+                        onClick={onSaveProperties}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        style={{ background: "#008f68" }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "#007a5a")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "#008f68")
+                        }
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3 h-3" />
+                        )}
+                        {isUpdating ? "Saving…" : "Save Note"}
+                      </button>
                     </div>
                   </div>
 
