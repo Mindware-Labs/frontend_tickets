@@ -29,6 +29,19 @@ export function CampaignsPagination({
 }: CampaignsPaginationProps) {
   if (totalCount === 0) return null;
 
+  const visiblePageCount = Math.min(5, totalPages);
+  const firstVisiblePage =
+    totalPages <= visiblePageCount
+      ? 1
+      : Math.min(
+          Math.max(currentPage - 2, 1),
+          totalPages - visiblePageCount + 1,
+        );
+  const visiblePages = Array.from(
+    { length: visiblePageCount },
+    (_, index) => firstVisiblePage + index,
+  );
+
   return (
     <div className="flex items-center justify-between px-1 pb-2 pt-3">
       <Button
@@ -42,13 +55,7 @@ export function CampaignsPagination({
 
       <div className="flex flex-col items-center gap-0.5 text-center">
         <div className="hidden items-center justify-center gap-1 md:flex">
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum = i + 1;
-            if (totalPages > 5 && currentPage > 3) {
-              pageNum = currentPage - 2 + i;
-              if (pageNum > totalPages) pageNum = totalPages - 4 + i;
-            }
-            if (pageNum <= 0 || pageNum > totalPages) return null;
+          {visiblePages.map((pageNum) => {
             const active = pageNum === currentPage;
             return (
               <button
