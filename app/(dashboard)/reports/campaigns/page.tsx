@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { CampaignReportView } from "./Components/CampaignReportView";
 import { CampaignFiltersSheet } from "./Components/CampaignFiltersSheet";
 import { toast } from "@/hooks/use-toast";
+import { useReportSession } from "@/hooks/use-report-session";
 import { fetchFromBackend, fetchBlobFromBackend } from "@/lib/api-client";
 import {
   FileText,
@@ -706,6 +707,23 @@ export default function CampaignReportsPage() {
   useEffect(() => {
     if (endDateParam) setEndDate(decodeURIComponent(endDateParam));
   }, [endDateParam]);
+
+  // ── Remember "where I left off" between sidebar navigations ────────────
+  // Saves the URL search (campaignId + dates) per tab for ~30 minutes so a
+  // round-trip to /calls and back doesn't lose the active campaign report.
+  const reportSessionSearch = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedCampaignId) params.set("campaignId", selectedCampaignId);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    return params.toString();
+  }, [selectedCampaignId, startDate, endDate]);
+
+  useReportSession({
+    scope: "reports/campaigns",
+    isUrlBare: !campaignIdParam && !startDateParam && !endDateParam,
+    searchString: reportSessionSearch,
+  });
 
   // Fetch report when URL params change
   useEffect(() => {

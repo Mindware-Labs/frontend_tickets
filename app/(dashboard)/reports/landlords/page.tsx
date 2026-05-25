@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { useReportSession } from "@/hooks/use-report-session";
 import { fetchBlobFromBackend } from "@/lib/api-client";
 import { fetchFromBackend } from "@/lib/api-client";
 import type { Landlord, YardOption } from "../../landlords/types";
@@ -200,6 +201,35 @@ export default function LandlordReportsPage() {
   useEffect(() => {
     setConfirmOpen(false);
   }, [pathname]);
+
+  // ── Remember "where I left off" between sidebar navigations ────────────
+  // Most of this report's state lives in component state (dates, yard
+  // filter), so we ship it through the snapshot's `state` blob and only the
+  // landlordId travels via URL — that lets the existing param effect
+  // re-hydrate the selection.
+  const reportSessionSearch = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedLandlordId) params.set("landlordId", selectedLandlordId);
+    return params.toString();
+  }, [selectedLandlordId]);
+
+  useReportSession<{
+    reportStartDate: string;
+    reportEndDate: string;
+    reportYardId: string;
+  }>({
+    scope: "reports/landlords",
+    isUrlBare: !landlordIdParam,
+    searchString: reportSessionSearch,
+    state: { reportStartDate, reportEndDate, reportYardId },
+    onRestoreState: (saved) => {
+      if (!saved) return;
+      if (saved.reportStartDate) setReportStartDate(saved.reportStartDate);
+      if (saved.reportEndDate) setReportEndDate(saved.reportEndDate);
+      if (saved.reportYardId) setReportYardId(saved.reportYardId);
+    },
+    enabled: !isAgent,
+  });
 
   if (isAgent) return null;
 

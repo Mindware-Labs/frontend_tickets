@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/empty";
 import { toast } from "@/hooks/use-toast";
 import { useDialogCleanup } from "@/hooks/use-dialog-cleanup";
+import { useReportSession } from "@/hooks/use-report-session";
 import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
@@ -412,8 +413,19 @@ export default function YardReportsPage() {
     };
   }, [selectedYardQueryKey, selectedYardId, startDate, endDate]);
 
+  // Reset chart cross-filters only when the user actually switches between
+  // two real yards. Skipping the initial empty → "<saved>" transition lets
+  // `useReportSession` rehydrate previously saved cross-filters.
+  const previousSelectedYardIdRef = useRef<string>("");
   useEffect(() => {
-    setYardFilters(emptyYardDashboardFilters());
+    if (
+      previousSelectedYardIdRef.current &&
+      selectedYardId &&
+      previousSelectedYardIdRef.current !== selectedYardId
+    ) {
+      setYardFilters(emptyYardDashboardFilters());
+    }
+    previousSelectedYardIdRef.current = selectedYardId;
   }, [selectedYardId]);
 
   useEffect(() => {
@@ -492,11 +504,51 @@ export default function YardReportsPage() {
     }
   }, [yardIdParam]);
 
+  // Keep local date state in sync with URL params so that a session-restore
+  // `router.replace` (or any other late URL mutation) actually updates the
+  // visible filters — without this, the dates seeded at first render stay
+  // empty even though the snapshot replaces the URL with the saved range.
+  useEffect(() => {
+    if (startDateParam) setStartDate(decodeURIComponent(startDateParam));
+  }, [startDateParam]);
+
+  useEffect(() => {
+    if (endDateParam) setEndDate(decodeURIComponent(endDateParam));
+  }, [endDateParam]);
+
   useEffect(() => {
     if (openFiltersParam === "1" || openFiltersParam === "true") {
       setFiltersModalOpen(true);
     }
   }, [openFiltersParam]);
+
+  // ── Remember "where I left off" between sidebar navigations ────────────
+  // Persists yardId / dates (already in the URL) plus the chart-driven
+  // cross filters (which are only in component state) for ~30 minutes per
+  // tab. Restoring on a bare URL triggers a `router.replace` so the existing
+  // URL → state effects re-hydrate everything.
+  const reportSessionSearch = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedYardId) params.set("yardId", selectedYardId);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    return params.toString();
+  }, [selectedYardId, startDate, endDate]);
+
+  useReportSession<{ yardFilters: YardDashboardFilters }>({
+    scope: "reports/yards",
+    isUrlBare: !yardIdParam && !startDateParam && !endDateParam,
+    searchString: reportSessionSearch,
+    state: { yardFilters },
+    onRestoreState: (saved) => {
+      if (saved?.yardFilters) {
+        setYardFilters({
+          ...emptyYardDashboardFilters(),
+          ...saved.yardFilters,
+        });
+      }
+    },
+  });
 
   const selectedYard =
     yards.find((yard) => yard.id.toString() === selectedYardId) ||
