@@ -85,6 +85,7 @@ import {
   InspectorSelect,
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
+import { CustomerNotesAlert } from "../shared/CustomerNotesAlert";
 import type { Filters } from "../../hooks/useCallFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
@@ -1336,7 +1337,7 @@ export function CustomerTimelineDrawer({
               </div>
             ) : null}
             {/* Row 1: avatar · name+phone · note-trigger · call-count · actions */}
-            <div className="flex items-center gap-3 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3">
               {/* 1. Avatar */}
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
@@ -1361,81 +1362,6 @@ export function CustomerTimelineDrawer({
 
               {/* Context indicators: note trigger + call count */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Note trigger — only when notes exist */}
-                {(() => {
-                  const structuredNotes = selectedCall?.customer?.notes ?? [];
-                  const legacyNote = selectedCall?.customer?.note;
-                  const notes =
-                    structuredNotes.length > 0
-                      ? structuredNotes
-                      : legacyNote
-                        ? [
-                            {
-                              id: 0,
-                              content: legacyNote,
-                              createdAt: undefined as string | undefined,
-                              createdBy: undefined as string | undefined,
-                            },
-                          ]
-                        : [];
-                  if (notes.length === 0) return null;
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Ver notas del cliente"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer"
-                        >
-                          <StickyNote className="w-3 h-3 text-amber-500 shrink-0" />
-                          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest leading-none whitespace-nowrap">
-                            {notes.length === 1
-                              ? "Customer Note"
-                              : `${notes.length} Notes`}
-                          </span>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="bottom"
-                        align="start"
-                        sideOffset={8}
-                        className="w-80 p-0 shadow-xl rounded-2xl border border-amber-200 overflow-hidden z-50 bg-white"
-                      >
-                        <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-amber-100 bg-amber-50">
-                          <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
-                            {notes.length === 1
-                              ? "Customer Note"
-                              : `Customer Notes (${notes.length})`}
-                          </p>
-                        </div>
-                        <div className="divide-y divide-amber-50 max-h-72 overflow-y-auto">
-                          {notes.map((note, i) => {
-                            const meta = [
-                              note.createdBy ? `— ${note.createdBy}` : null,
-                              note.createdAt ? fmtDate(note.createdAt) : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ");
-                            return (
-                              <div key={note.id ?? i} className="px-4 py-3">
-                                <p className="text-[13px] text-gray-800 leading-relaxed">
-                                  {note.content}
-                                </p>
-                                {meta && (
-                                  <p className="text-[10px] text-amber-400 font-mono mt-1.5">
-                                    {meta}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  );
-                })()}
-
                 {/* Call count badge */}
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] bg-[#008f68]/8 px-2 py-0.5 rounded-full">
                   <PhoneCall className="w-2.5 h-2.5" />
@@ -1447,11 +1373,18 @@ export function CustomerTimelineDrawer({
                 </span>
               </div>
 
-              {/* Spacer */}
-              <div className="flex-1" />
+              {selectedCall ? (
+                <div className="order-last min-w-full empty:hidden sm:order-none sm:min-w-[260px] sm:flex-1 lg:max-w-xl">
+                  <CustomerNotesAlert
+                    customer={selectedCall.customer}
+                    compact
+                    inline
+                  />
+                </div>
+              ) : null}
 
               {/* Action buttons */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => {

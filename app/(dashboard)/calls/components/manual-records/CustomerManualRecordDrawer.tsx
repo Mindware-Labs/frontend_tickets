@@ -23,6 +23,7 @@ import {
   SheetAnchoredToasts,
   useSheetAnchoredToasts,
 } from "../shared/SheetAnchoredToasts";
+import { CustomerNotesAlert } from "../shared/CustomerNotesAlert";
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   const result = await res.json();
@@ -360,6 +361,15 @@ export function CustomerManualRecordDrawer({
                 )}
               </div>
             )}
+
+            {selectedRecord ? (
+              <div className="px-4 pb-2">
+                <CustomerNotesAlert
+                  customer={selectedRecord.customer}
+                  compact
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">

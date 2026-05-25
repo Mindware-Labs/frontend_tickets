@@ -17,7 +17,6 @@ import {
   ArrowLeft,
   PhoneOutgoing,
   Loader2,
-  StickyNote,
   Activity,
   CalendarIcon,
   CheckCircle2,
@@ -68,6 +67,7 @@ import { useAircall } from "@/components/providers/AircallProvider";
 import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
 import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
 import { TimelineReturnBar } from "../shared/TimelineReturnBar";
+import { CustomerNotesAlert } from "../shared/CustomerNotesAlert";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -878,6 +878,15 @@ export function CustomerTicketDrawer({
                 )}
               </div>
             )}
+
+            {selectedTicket ? (
+              <div className="px-4 pb-2">
+                <CustomerNotesAlert
+                  customer={selectedTicket.customer}
+                  compact
+                />
+              </div>
+            ) : null}
           </div>
 
           {/* ── 3-Column Body ── */}
@@ -1332,24 +1341,6 @@ export function CustomerTicketDrawer({
                         )}
                     </div>
                   </section>
-
-                  {/* ── Customer Notes banner ── */}
-                  {((selectedTicket.customer?.notes &&
-                    selectedTicket.customer.notes.length > 0) ||
-                    selectedTicket.customer?.note) && (
-                    <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <StickyNote className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-semibold text-amber-800">
-                          Customer Notes
-                        </p>
-                        <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                          {selectedTicket.customer?.notes?.[0]?.content ||
-                            selectedTicket.customer?.note}
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                 </div>
               )}
