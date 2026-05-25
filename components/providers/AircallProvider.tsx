@@ -608,9 +608,9 @@ function AircallDock({
           data-aircall-panel="true"
           onPointerDown={stopDockDismissPropagation}
           className={cn(
-            "border bg-background overflow-hidden transition-all duration-200",
+            "flex flex-col border bg-background overflow-hidden transition-all duration-200",
             movedToContainer
-              ? "absolute inset-0 rounded-none shadow-none opacity-100 scale-100 pointer-events-auto"
+              ? "absolute inset-0 rounded-none border-0 shadow-none opacity-100 scale-100 pointer-events-auto"
               : cn(
                   "z-[60] w-95 max-w-[92vw] rounded-xl shadow-2xl",
                   pos
@@ -628,84 +628,141 @@ function AircallDock({
           }
           aria-hidden={!panelVisible}
         >
-          {/* Dock header */}
-          <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/40">
-            <div className="flex items-center gap-2 min-w-0">
-              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm font-medium truncate">
-                {agent
-                  ? `${agent.firstName} ${agent.lastName}`.trim() || agent.email
-                  : "Aircall"}
+          {/* Dock header — uses the same section-label + title + accent-pill
+              pattern as the topbar/dashboard headers (DESIGN_SYSTEM §3, §6.3,
+              §10.6). Slightly more breathing room when portaled into the
+              fullscreen `/aircall` view, otherwise a compact dock bar. */}
+          <div
+            className={cn(
+              "relative flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950",
+              movedToContainer ? "px-4 py-2.5 sm:px-5" : "px-3 py-2",
+            )}
+          >
+            {/* Top accent line — same as the app topbar */}
+            <span
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
+              aria-hidden
+            />
+
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]" />
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30">
+                <Phone className="size-3.5" aria-hidden strokeWidth={2.25} />
               </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  {agent ? "Signed in as" : "Aircall softphone"}
+                </p>
+                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+                  {agent
+                    ? `${agent.firstName} ${agent.lastName}`.trim() ||
+                      agent.email
+                    : "Not signed in"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5">
               {status === "ready" && (
                 <span
                   className={cn(
-                    "text-[10px] uppercase px-1.5 py-0.5 rounded",
+                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider",
                     isLoggedIn
-                      ? "bg-green-500/10 text-green-700 dark:text-green-400"
-                      : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                      ? "border-[#008f68]/25 bg-[#f0faf5] text-[#006b4f] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "border-amber-300/40 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",
                   )}
                 >
-                  {isLoggedIn ? "Online" : "Sign in"}
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      isLoggedIn
+                        ? "bg-[#008f68] dark:bg-emerald-400"
+                        : "bg-amber-500",
+                    )}
+                  />
+                  {isLoggedIn ? "Online" : "Sign in needed"}
                 </span>
               )}
-            </div>
-            <div
-              className={cn(
-                "flex items-center gap-1",
-                movedToContainer && "hidden",
+              {status === "loading" && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                  <span className="size-1.5 animate-pulse rounded-full bg-slate-400" />
+                  Loading
+                </span>
               )}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={(e) => {
-                  stopDockDismissPropagation(e);
-                  onClose();
-                }}
-                aria-label="Minimize"
+              {status === "error" && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/40 bg-rose-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+                  <span className="size-1.5 rounded-full bg-rose-500" />
+                  Error
+                </span>
+              )}
+
+              <div
+                className={cn(
+                  "ml-1 flex items-center gap-0.5 rounded-md border border-slate-200/60 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80",
+                  movedToContainer && "hidden",
+                )}
               >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={(e) => {
-                  stopDockDismissPropagation(e);
-                  onClose();
-                }}
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  onClick={(e) => {
+                    stopDockDismissPropagation(e);
+                    onClose();
+                  }}
+                  aria-label="Minimize"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  onClick={(e) => {
+                    stopDockDismissPropagation(e);
+                    onClose();
+                  }}
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Status overlays */}
-          {status === "loading" && (
-            <div className="absolute inset-x-0 top-11 bottom-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-              <p className="text-sm text-muted-foreground">Loading Aircall…</p>
-            </div>
-          )}
-          {status === "error" && (
-            <div className="absolute inset-x-0 top-11 bottom-0 flex flex-col items-center justify-center gap-2 p-4 bg-background">
-              <AlertCircle className="h-6 w-6 text-destructive" />
-              <p className="text-sm font-medium text-destructive">
-                Failed to load Aircall
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                {errorMessage}
-              </p>
-            </div>
-          )}
+          {/* Body — flex-1 so the SDK iframe and status overlays fill the
+              remaining space regardless of how tall the header renders.
+              Wrapped in `relative` so the absolute overlays sit only over
+              the iframe area, not over the header pill/buttons. */}
+          <div className="relative flex-1 min-h-0">
+            {status === "loading" && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[#f4f5f7]/85 backdrop-blur-sm dark:bg-slate-950/80">
+                <span className="flex size-9 items-center justify-center rounded-xl bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30">
+                  <Phone className="size-4 animate-pulse" aria-hidden />
+                </span>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  Loading Aircall…
+                </p>
+              </div>
+            )}
+            {status === "error" && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-4 bg-background">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+                <p className="text-sm font-semibold text-destructive">
+                  Failed to load Aircall
+                </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  {errorMessage}
+                </p>
+              </div>
+            )}
 
-          {/* SDK iframe container — always mounted */}
-          <div
-            id={DOM_CONTAINER_ID}
-            className="w-full h-[calc(100%-2.75rem)] [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0 [&>iframe]:block"
-          />
+            {/* SDK iframe container — always mounted */}
+            <div
+              id={DOM_CONTAINER_ID}
+              className="h-full w-full [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0 [&>iframe]:block"
+            />
+          </div>
         </div>
       </div>
     </>

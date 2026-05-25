@@ -873,6 +873,7 @@ export default function YardReportsPage() {
         yardId={selectedYard?.id || selectedYardId}
         reportStartDate={startDate}
         reportEndDate={endDate}
+        inheritedFilters={yardFilters}
       />
       </div>
     </YardDashboardDataProvider>

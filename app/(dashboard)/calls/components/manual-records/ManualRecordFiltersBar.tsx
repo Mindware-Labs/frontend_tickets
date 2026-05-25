@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -252,13 +258,13 @@ export function ManualRecordFiltersBar({
                   value={draft.agent}
                   onValueChange={(v) => setDraftKey("agent", v)}
                 >
-                  <SelectTrigger className="h-auto rounded-lg border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Agents</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Agents</SelectItem>
                     {agents.map((a) => (
-                      <SelectItem key={a.id} value={a.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={a.id} value={a.id.toString()}>
                         {a.name}
                       </SelectItem>
                     ))}
@@ -272,10 +278,10 @@ export function ManualRecordFiltersBar({
                   value={draft.yard}
                   onValueChange={(v) => setDraftKey("yard", v)}
                 >
-                  <SelectTrigger className="h-auto rounded-lg border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search yard..."
@@ -283,12 +289,12 @@ export function ManualRecordFiltersBar({
                         onChange={(e) => setYardSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
-                        className="h-8 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Yards</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Yards</SelectItem>
                     {filteredYards.map((y) => (
-                      <SelectItem key={y.id} value={y.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={y.id} value={y.id.toString()}>
                         {y.name}
                       </SelectItem>
                     ))}
@@ -318,10 +324,10 @@ export function ManualRecordFiltersBar({
                     }
                   }}
                 >
-                  <SelectTrigger className="h-auto rounded-lg border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search campaign..."
@@ -329,12 +335,12 @@ export function ManualRecordFiltersBar({
                         onChange={(e) => setCampaignSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
-                        className="h-8 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Campaigns</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Campaigns</SelectItem>
                     {filteredCampaigns.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={c.id} value={c.id.toString()}>
                         {c.nombre}
                       </SelectItem>
                     ))}
@@ -353,13 +359,13 @@ export function ManualRecordFiltersBar({
                   }
                   onValueChange={(v) => setDraftKey("campaignOption", v)}
                 >
-                  <SelectTrigger className="h-auto rounded-lg border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Options</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
                     {availableCampaignOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
+                      <SelectItem className={filterSelectItemClassName} key={opt} value={opt}>
                         {formatLabel(opt)}
                       </SelectItem>
                     ))}
@@ -373,13 +379,13 @@ export function ManualRecordFiltersBar({
                   value={draft.disposition}
                   onValueChange={(v) => setDraftKey("disposition", v)}
                 >
-                  <SelectTrigger className="h-auto rounded-lg border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Dispositions</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Dispositions</SelectItem>
                     {Object.values(CallDisposition).map((d) => (
-                      <SelectItem key={d} value={d}>
+                      <SelectItem className={filterSelectItemClassName} key={d} value={d}>
                         {formatLabel(d)}
                       </SelectItem>
                     ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,6 +41,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
 import type { Landlord } from "../../../landlords/types";
 
 interface YardOption {
@@ -90,8 +97,14 @@ export function LandlordFiltersSheet({
   onExportPDF,
   onExportExcel,
 }: LandlordFiltersSheetProps) {
+  const [yardSearch, setYardSearch] = useState("");
   const isDateRangeValid = !startDate || !endDate || new Date(startDate) <= new Date(endDate);
   const canGenerate = Boolean(selectedLandlordId && startDate && endDate && isDateRangeValid);
+  const filteredYardOptions = useMemo(() => {
+    const term = yardSearch.trim().toLowerCase();
+    if (!term) return yardOptions;
+    return yardOptions.filter((yard) => yard.label.toLowerCase().includes(term));
+  }, [yardSearch, yardOptions]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -164,13 +177,23 @@ export function LandlordFiltersSheet({
               Yard
             </label>
             <Select value={reportYardId} onValueChange={onReportYardIdChange} disabled={!selectedLandlordId}>
-              <SelectTrigger>
+              <SelectTrigger className={filterSelectTriggerClassName}>
                 <SelectValue placeholder="All yards" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All yards</SelectItem>
-                {yardOptions.map((y) => (
-                  <SelectItem key={y.id} value={y.id.toString()}>
+              <SelectContent className={filterSelectContentClassName}>
+                <div className="p-1">
+                  <Input
+                    value={yardSearch}
+                    onChange={(event) => setYardSearch(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    placeholder="Search yards..."
+                    className={filterSelectSearchInputClassName}
+                  />
+                </div>
+                <SelectItem className={filterSelectItemClassName} value="all">All yards</SelectItem>
+                {filteredYardOptions.map((y) => (
+                  <SelectItem className={filterSelectItemClassName} key={y.id} value={y.id.toString()}>
                     {y.label}
                   </SelectItem>
                 ))}

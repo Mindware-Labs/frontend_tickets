@@ -213,6 +213,7 @@ const DISPOSITION_COLORS: Record<
 
 function dirStyle(dir: string, hasMissed: boolean) {
   const d = dir.toLowerCase();
+  if (d === "voicemail") return { color: "#7c3aed", label: "Voicemail" };
   if (d === "missed" || hasMissed) return { color: "#c0392b", label: "Missed" };
   if (d === "outbound") return { color: "#2563eb", label: "Outbound" };
   return { color: "#008f68", label: "Inbound" };
@@ -801,6 +802,26 @@ export function CustomerTimelineDrawer({
     raw?.duration ??
     (editFormData.duration ? parseInt(editFormData.duration) : null);
   const recordingUrl = raw?.recordingUrl || editFormData.recordingUrl;
+  const voicemailUrl = raw?.voicemailUrl || editFormData.voicemailUrl;
+  // A call is treated as a voicemail when the direction says so OR there's
+  // only a voicemail asset (no real recording). Drives both the section
+  // label ("Voicemail" vs "Recording") and the "Open in browser" link.
+  const isVoicemailCall =
+    String(raw?.direction || "").toUpperCase() === "VOICEMAIL" ||
+    (!recordingUrl && !!voicemailUrl);
+  const audioUrl = isVoicemailCall
+    ? voicemailUrl || recordingUrl
+    : recordingUrl || voicemailUrl;
+  const audioOpenUrl = isVoicemailCall
+    ? voicemailUrl || recordingUrl
+    : recordingUrl || voicemailUrl;
+  const audioSectionLabel = isVoicemailCall ? "Voicemail" : "Recording";
+  const audioMissingTitle = isVoicemailCall
+    ? "No voicemail available"
+    : "No recording available";
+  const audioErrorTitle = isVoicemailCall
+    ? "Unable to play voicemail"
+    : "Unable to play recording";
   const phoneLine = raw?.phoneLine
     ? raw.phoneLine.label || raw.phoneLine.phoneNumber
     : editFormData.phoneLineId || "—";
@@ -826,7 +847,7 @@ export function CustomerTimelineDrawer({
 
   const togglePlay = () => {
     const audio = audioRef.current;
-    if (!audio || !recordingUrl) return;
+    if (!audio || !audioUrl) return;
     if (isPlaying) {
       audio.pause();
     } else {
@@ -2242,7 +2263,7 @@ export function CustomerTimelineDrawer({
                           <Mic className="w-3 h-3 text-[#008f68]" />
                         </div>
                         <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex-1">
-                          Recording
+                          {audioSectionLabel}
                         </span>
                         {durationSec != null && (
                           <span className="text-[10px] font-mono text-slate-400">
@@ -2251,17 +2272,17 @@ export function CustomerTimelineDrawer({
                         )}
                       </div>
 
-                      {recordingUrl ? (
+                      {audioUrl ? (
                         audioError ? (
                           <div className="px-5 pb-5">
                             <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
                               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-[12px] font-semibold text-slate-700">
-                                  Unable to play recording
+                                  {audioErrorTitle}
                                 </p>
                                 <a
-                                  href={recordingUrl}
+                                  href={audioOpenUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#008f68] hover:underline mt-0.5"
@@ -2364,7 +2385,7 @@ export function CustomerTimelineDrawer({
                               </div>
 
                               <a
-                                href={recordingUrl}
+                                href={audioOpenUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
@@ -2382,12 +2403,14 @@ export function CustomerTimelineDrawer({
                           </div>
                           <div>
                             <p className="text-[12px] font-semibold text-slate-500">
-                              No recording available
+                              {audioMissingTitle}
                             </p>
                             <p className="text-[11px] text-slate-400">
                               {durationSec != null
                                 ? `Lasted ${fmtTime(durationSec)}`
-                                : "This call was not recorded"}
+                                : isVoicemailCall
+                                  ? "No voicemail asset attached"
+                                  : "This call was not recorded"}
                             </p>
                           </div>
                         </div>

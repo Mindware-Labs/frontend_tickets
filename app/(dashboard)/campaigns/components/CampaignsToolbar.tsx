@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,11 +13,18 @@ import {
   ChevronDown,
   CircleDot,
   MapPin,
-  MousePointerClick,
   Search,
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  filterPillActiveClassName,
+  filterPillIdleClassName,
+  filterPillTriggerClassName,
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+} from "@/components/filters/filter-select-styles";
 import { ManagementType } from "../../calls/types";
 import { CAMPAIGN_TYPE_LABELS } from "../utils";
 import type { YardSummary } from "../types";
@@ -47,11 +55,17 @@ export function CampaignsToolbar({
   yards,
   onClearFilters,
 }: CampaignsToolbarProps) {
+  const [yardSearch, setYardSearch] = useState("");
   const hasActiveFilters =
     search.length > 0 ||
     yardFilter !== "all" ||
     filters.type !== "all" ||
     filters.status !== "all";
+  const filteredYards = useMemo(() => {
+    const term = yardSearch.trim().toLowerCase();
+    if (!term) return yards;
+    return yards.filter((yard) => yard.name.toLowerCase().includes(term));
+  }, [yardSearch, yards]);
 
   return (
     <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
@@ -77,10 +91,10 @@ export function CampaignsToolbar({
         >
           <SelectTrigger
             className={cn(
-              "h-[30px] gap-1.5 rounded-full border bg-white pl-2.5 pr-2 text-[12.5px] font-medium shadow-none dark:bg-slate-900 [&>svg]:hidden",
+              filterPillTriggerClassName,
               filters.type !== "all"
-                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8]"
-                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300",
+                ? filterPillActiveClassName
+                : filterPillIdleClassName,
             )}
           >
             <Tag
@@ -92,15 +106,15 @@ export function CampaignsToolbar({
             <SelectValue placeholder="Campaign type" />
             <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value={ManagementType.ONBOARDING}>
+          <SelectContent className={filterSelectContentClassName}>
+            <SelectItem className={filterSelectItemClassName} value="all">All types</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value={ManagementType.ONBOARDING}>
               {CAMPAIGN_TYPE_LABELS[ManagementType.ONBOARDING]}
             </SelectItem>
-            <SelectItem value={ManagementType.AR}>
+            <SelectItem className={filterSelectItemClassName} value={ManagementType.AR}>
               {CAMPAIGN_TYPE_LABELS[ManagementType.AR]}
             </SelectItem>
-            <SelectItem value={ManagementType.OTHER}>
+            <SelectItem className={filterSelectItemClassName} value={ManagementType.OTHER}>
               {CAMPAIGN_TYPE_LABELS[ManagementType.OTHER]}
             </SelectItem>
           </SelectContent>
@@ -112,10 +126,10 @@ export function CampaignsToolbar({
         >
           <SelectTrigger
             className={cn(
-              "h-[30px] gap-1.5 rounded-full border bg-white pl-2.5 pr-2 text-[12.5px] font-medium shadow-none dark:bg-slate-900 [&>svg]:hidden",
+              filterPillTriggerClassName,
               filters.status !== "all"
-                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8]"
-                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300",
+                ? filterPillActiveClassName
+                : filterPillIdleClassName,
             )}
           >
             <CircleDot
@@ -127,20 +141,20 @@ export function CampaignsToolbar({
             <SelectValue placeholder="Status" />
             <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+          <SelectContent className={filterSelectContentClassName}>
+            <SelectItem className={filterSelectItemClassName} value="all">All statuses</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="active">Active</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={yardFilter} onValueChange={onYardFilterChange}>
           <SelectTrigger
             className={cn(
-              "h-[30px] gap-1.5 rounded-full border bg-white pl-2.5 pr-2 text-[12.5px] font-medium shadow-none dark:bg-slate-900 [&>svg]:hidden",
+              filterPillTriggerClassName,
               yardFilter !== "all"
-                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8]"
-                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300",
+                ? filterPillActiveClassName
+                : filterPillIdleClassName,
             )}
           >
             <MapPin
@@ -152,10 +166,20 @@ export function CampaignsToolbar({
             <SelectValue placeholder="All yards" />
             <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All yards</SelectItem>
-            {yards.map((yard) => (
-              <SelectItem key={yard.id} value={yard.id.toString()}>
+          <SelectContent className={filterSelectContentClassName}>
+            <div className="p-1">
+              <Input
+                value={yardSearch}
+                onChange={(event) => setYardSearch(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                placeholder="Search yards..."
+                className={filterSelectSearchInputClassName}
+              />
+            </div>
+            <SelectItem className={filterSelectItemClassName} value="all">All yards</SelectItem>
+            {filteredYards.map((yard) => (
+              <SelectItem className={filterSelectItemClassName} key={yard.id} value={yard.id.toString()}>
                 <span className="block max-w-[220px] truncate">{yard.name}</span>
               </SelectItem>
             ))}

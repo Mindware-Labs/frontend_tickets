@@ -45,6 +45,7 @@ export const DIRECTION_COLORS: Record<string, string> = {
   INBOUND: "oklch(0.72 0.16 250)",
   OUTBOUND: "oklch(0.65 0.18 160)",
   MISSED: "oklch(0.65 0.22 25)",
+  VOICEMAIL: "oklch(0.70 0.20 300)",
   TEXT_MESSAGE: "oklch(0.70 0.20 300)",
 };
 

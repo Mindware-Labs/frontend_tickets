@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -272,13 +278,13 @@ export function TicketFiltersBar({
                   value={draft.priority}
                   onValueChange={(value) => setDraftKey("priority", value)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priority</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Priority</SelectItem>
                     {Object.values(SupportTicketPriority).map((priority) => (
-                      <SelectItem key={priority} value={priority}>
+                      <SelectItem className={filterSelectItemClassName} key={priority} value={priority}>
                         {formatLabel(priority)}
                       </SelectItem>
                     ))}
@@ -292,13 +298,13 @@ export function TicketFiltersBar({
                   value={draft.ticketType}
                   onValueChange={(value) => setDraftKey("ticketType", value)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Types</SelectItem>
                     {Object.values(SupportTicketType).map((type) => (
-                      <SelectItem key={type} value={type}>
+                      <SelectItem className={filterSelectItemClassName} key={type} value={type}>
                         {formatLabel(type)}
                       </SelectItem>
                     ))}
@@ -312,13 +318,13 @@ export function TicketFiltersBar({
                   value={draft.agent}
                   onValueChange={(value) => setDraftKey("agent", value)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Agents</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Agents</SelectItem>
                     {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={agent.id} value={agent.id.toString()}>
                         {agent.name}
                       </SelectItem>
                     ))}
@@ -348,10 +354,10 @@ export function TicketFiltersBar({
                     }
                   }}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search..."
@@ -361,12 +367,13 @@ export function TicketFiltersBar({
                         }
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
-                        className="h-7 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Campaigns</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Campaigns</SelectItem>
                     {filteredCampaigns.map((campaign) => (
                       <SelectItem
+                        className={filterSelectItemClassName}
                         key={campaign.id}
                         value={campaign.id.toString()}
                       >
@@ -390,13 +397,13 @@ export function TicketFiltersBar({
                     setDraftKey("campaignOption", value)
                   }
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Options</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
                     {availableCampaignOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
+                      <SelectItem className={filterSelectItemClassName} key={option} value={option}>
                         {formatLabel(option)}
                       </SelectItem>
                     ))}
@@ -410,10 +417,10 @@ export function TicketFiltersBar({
                   value={draft.yard}
                   onValueChange={(value) => setDraftKey("yard", value)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search..."
@@ -421,12 +428,12 @@ export function TicketFiltersBar({
                         onChange={(event) => setYardSearch(event.target.value)}
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
-                        className="h-7 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Yards</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Yards</SelectItem>
                     {filteredYards.map((yard) => (
-                      <SelectItem key={yard.id} value={yard.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={yard.id} value={yard.id.toString()}>
                         {yard.name}
                       </SelectItem>
                     ))}
@@ -440,13 +447,13 @@ export function TicketFiltersBar({
                   value={draft.phoneLine}
                   onValueChange={(value) => setDraftKey("phoneLine", value)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Lines</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Lines</SelectItem>
                     {phoneLines.map((line) => (
-                      <SelectItem key={line.id} value={line.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={line.id} value={line.id.toString()}>
                         {line.label || line.phoneNumber}
                       </SelectItem>
                     ))}

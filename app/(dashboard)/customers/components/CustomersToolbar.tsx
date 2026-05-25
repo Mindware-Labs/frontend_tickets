@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,12 +14,19 @@ import {
   ChevronDown,
   MapPin,
   Megaphone,
-  MousePointerClick,
   Pin,
   Search,
   TicketCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  filterPillActiveClassName,
+  filterPillIdleClassName,
+  filterPillTriggerClassName,
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+} from "@/components/filters/filter-select-styles";
 import type { CampaignOption, YardOption } from "../types";
 
 export type CustomersFilterState = {
@@ -59,10 +66,8 @@ function FilterSelect({
       <SelectTrigger
         aria-label={placeholder}
         className={cn(
-          "h-[30px] gap-1.5 rounded-full border bg-white pl-2.5 pr-2 text-[12.5px] font-medium shadow-none transition-colors [&>svg]:hidden dark:bg-slate-900",
-          active
-            ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8] dark:border-[#00c98d]/40 dark:text-[#5bebb8] dark:hover:bg-[#00c98d]/10"
-            : "border-[#e2e8f0] text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400",
+          filterPillTriggerClassName,
+          active ? filterPillActiveClassName : filterPillIdleClassName,
         )}
       >
         <Icon
@@ -83,7 +88,9 @@ function FilterSelect({
           )}
         />
       </SelectTrigger>
-      <SelectContent>{children}</SelectContent>
+      <SelectContent className={filterSelectContentClassName}>
+        {children}
+      </SelectContent>
     </Select>
   );
 }
@@ -98,6 +105,8 @@ export function CustomersToolbar({
   yards,
 }: CustomersToolbarProps) {
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const [campaignSearch, setCampaignSearch] = useState("");
+  const [yardSearch, setYardSearch] = useState("");
   const hasActiveFilters =
     filters.campaign !== "all" ||
     filters.yard !== "all" ||
@@ -120,6 +129,20 @@ export function CustomersToolbar({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const filteredCampaigns = useMemo(() => {
+    const term = campaignSearch.trim().toLowerCase();
+    if (!term) return campaigns;
+    return campaigns.filter((campaign) =>
+      campaign.nombre.toLowerCase().includes(term),
+    );
+  }, [campaignSearch, campaigns]);
+
+  const filteredYards = useMemo(() => {
+    const term = yardSearch.trim().toLowerCase();
+    if (!term) return yards;
+    return yards.filter((yard) => yard.name.toLowerCase().includes(term));
+  }, [yardSearch, yards]);
 
   return (
     <div className="flex flex-col items-stretch gap-2.5 lg:flex-row lg:items-center">
@@ -147,9 +170,25 @@ export function CustomersToolbar({
           icon={Megaphone}
           placeholder="All campaigns"
         >
-          <SelectItem value="all">All campaigns</SelectItem>
-          {campaigns.map((campaign) => (
-            <SelectItem key={campaign.id} value={String(campaign.id)}>
+          <div className="p-1">
+            <Input
+              value={campaignSearch}
+              onChange={(event) => setCampaignSearch(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder="Search campaigns..."
+              className={filterSelectSearchInputClassName}
+            />
+          </div>
+          <SelectItem className={filterSelectItemClassName} value="all">
+            All campaigns
+          </SelectItem>
+          {filteredCampaigns.map((campaign) => (
+            <SelectItem
+              key={campaign.id}
+              className={filterSelectItemClassName}
+              value={String(campaign.id)}
+            >
               {campaign.nombre}
             </SelectItem>
           ))}
@@ -162,9 +201,25 @@ export function CustomersToolbar({
           icon={MapPin}
           placeholder="All yards"
         >
-          <SelectItem value="all">All yards</SelectItem>
-          {yards.map((yard) => (
-            <SelectItem key={yard.id} value={String(yard.id)}>
+          <div className="p-1">
+            <Input
+              value={yardSearch}
+              onChange={(event) => setYardSearch(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder="Search yards..."
+              className={filterSelectSearchInputClassName}
+            />
+          </div>
+          <SelectItem className={filterSelectItemClassName} value="all">
+            All yards
+          </SelectItem>
+          {filteredYards.map((yard) => (
+            <SelectItem
+              key={yard.id}
+              className={filterSelectItemClassName}
+              value={String(yard.id)}
+            >
               {yard.name}
             </SelectItem>
           ))}
@@ -179,9 +234,15 @@ export function CustomersToolbar({
           icon={TicketCheck}
           placeholder="Open tickets"
         >
-          <SelectItem value="all">Open tickets: All</SelectItem>
-          <SelectItem value="yes">Open tickets: Yes</SelectItem>
-          <SelectItem value="no">Open tickets: No</SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="all">
+            Open tickets: All
+          </SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="yes">
+            Open tickets: Yes
+          </SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="no">
+            Open tickets: No
+          </SelectItem>
         </FilterSelect>
 
         <FilterSelect
@@ -193,9 +254,15 @@ export function CustomersToolbar({
           icon={Pin}
           placeholder="Pinned note"
         >
-          <SelectItem value="all">Pinned note: All</SelectItem>
-          <SelectItem value="yes">Pinned note: Yes</SelectItem>
-          <SelectItem value="no">Pinned note: No</SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="all">
+            Pinned note: All
+          </SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="yes">
+            Pinned note: Yes
+          </SelectItem>
+          <SelectItem className={filterSelectItemClassName} value="no">
+            Pinned note: No
+          </SelectItem>
         </FilterSelect>
 
         {hasActiveFilters ? (

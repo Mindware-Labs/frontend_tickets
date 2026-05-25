@@ -118,6 +118,21 @@ function CriticalTicketCard({
 }) {
   const resolvedYardId =
     yardId ?? ticket.yardId ?? ticket.yard?.id ?? undefined;
+
+  // Build a safe path back to the yard report so the ticket drawer can
+  // surface a `TimelineReturnBar` (mirrors the customer-timeline pattern)
+  // instead of a corner toast.
+  const returnTo = (() => {
+    const params = new URLSearchParams();
+    if (resolvedYardId !== null && resolvedYardId !== undefined) {
+      params.set("yardId", String(resolvedYardId));
+    }
+    if (reportStartDate) params.set("startDate", reportStartDate);
+    if (reportEndDate) params.set("endDate", reportEndDate);
+    const qs = params.toString();
+    return qs ? `/reports/yards?${qs}` : "/reports/yards";
+  })();
+
   const ticketsUrl = buildContactCenterUrl({
     tab: "tickets",
     id: ticket.id,
@@ -133,6 +148,7 @@ function CriticalTicketCard({
     status: ticket.status || undefined,
     reportStartDate,
     reportEndDate,
+    returnTo,
   });
   const isEmergency =
     (ticket.priority || "").toUpperCase() === "EMERGENCY";

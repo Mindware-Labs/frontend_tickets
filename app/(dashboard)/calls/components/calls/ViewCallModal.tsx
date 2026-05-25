@@ -452,17 +452,24 @@ export function ViewCallModal({
                 </div>
               </div>
 
-              {/* Call Recording */}
-              {(ticket as any).recordingUrl && ticket.id && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Headphones className="h-4 w-4" /> Call Recording
-                  </h4>
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                    <CallRecordingPlayer callId={ticket.id} />
+              {/* Call Recording / Voicemail */}
+              {((ticket as any).recordingUrl || (ticket as any).voicemailUrl) &&
+                ticket.id && (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Headphones className="h-4 w-4" />
+                      {String((ticket as any).direction || "").toUpperCase() ===
+                        "VOICEMAIL" ||
+                      (!(ticket as any).recordingUrl &&
+                        !!(ticket as any).voicemailUrl)
+                        ? "Voicemail"
+                        : "Call Recording"}
+                    </h4>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <CallRecordingPlayer callId={ticket.id} />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {savedAttachments.length > 0 && (
                 <div className="space-y-4">

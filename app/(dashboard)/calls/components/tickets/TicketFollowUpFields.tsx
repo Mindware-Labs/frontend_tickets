@@ -96,11 +96,11 @@ export function TicketFollowUpFields({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-lg p-2.5 bg-amber-50 border border-amber-200/70">
-      <div>
-        <div className="flex items-center gap-1.5 mb-1.5">
+    <div className="grid grid-cols-1 gap-2 rounded-lg border border-amber-200/70 bg-amber-50 p-2.5 sm:grid-cols-2">
+      <div className="min-w-0">
+        <div className="mb-1.5 flex h-4 min-w-0 items-center gap-1.5">
           <FieldLabel>Follow-up Date</FieldLabel>
-          <span className="text-[8.5px] font-black text-amber-600 bg-amber-100 border border-amber-300/60 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+          <span className="ml-auto shrink-0 rounded-md border border-amber-300/60 bg-amber-100 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-wide text-amber-600">
             Follow-up
           </span>
         </div>
@@ -241,7 +241,7 @@ export function TicketFollowUpFields({
         </Popover>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <FieldLabel>Assignee</FieldLabel>
         <InspectorSelect
           value={followUpAssignedToId || ""}

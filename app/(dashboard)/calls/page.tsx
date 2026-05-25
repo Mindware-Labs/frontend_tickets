@@ -544,50 +544,15 @@ export default function TicketsPage() {
       const yardId = searchParams.get("yardId");
       const status = searchParams.get("status");
       const view = searchParams.get("view");
-      const reportYardName = searchParams.get("reportYardName");
-      const reportTicketId = searchParams.get("reportTicketId");
-      const reportSection = searchParams.get("reportSection");
 
+      // The in-drawer `TimelineReturnBar` (driven by the `returnTo` param the
+      // High & Emergency modal now encodes) takes the place of the previous
+      // corner toast — same UX as the customer-timeline flow. Filter side
+      // effects are still applied so the underlying ticket list reflects the
+      // report context if the user closes the drawer.
       if (yardId) ticketFilters.setFilter("yard", yardId);
       if (status) ticketFilters.setFilter("status", status);
       if (view) ticketFilters.setActiveView(view);
-
-      const params = new URLSearchParams();
-      if (yardId) params.set("yardId", yardId);
-      if (reportStartDate) params.set("startDate", reportStartDate);
-      if (reportEndDate) params.set("endDate", reportEndDate);
-      const reportUrl = params.toString()
-        ? `/reports/yards?${params.toString()}`
-        : "/reports/yards";
-
-      const sectionLabel =
-        reportSection === "closed" ? "Closed / Resolved" : "Pending";
-      const contextLabel = reportYardName || "the yard report";
-
-      const { dismiss } = toast({
-        title: "Viewing filtered tickets",
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>
-              You are viewing ticket
-              {reportTicketId ? ` #${reportTicketId}` : ""} from High Priority{" "}
-              {sectionLabel} in {contextLabel}.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                dismiss();
-                router.push(reportUrl);
-              }}
-              className="w-fit"
-            >
-              Back to Report
-            </Button>
-          </div>
-        ),
-        duration: Infinity,
-      });
     }
   }, [searchParams, router]);
 

@@ -28,6 +28,7 @@ import {
   PhoneOutgoing,
   PhoneCall,
   ArrowDownLeft,
+  Voicemail,
   User,
   Tag,
   MapPin,
@@ -116,6 +117,8 @@ const DISPOSITION_COLORS: Record<
 
 function dirStyle(dir: string, hasMissed: boolean) {
   const d = dir.toLowerCase();
+  if (d === "voicemail")
+    return { color: "#7c3aed", label: "Voicemail", Icon: Voicemail };
   if (d === "missed" || hasMissed)
     return { color: "#c0392b", label: "Missed", Icon: PhoneCall };
   if (d === "outbound")

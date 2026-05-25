@@ -13,9 +13,15 @@ import {
   ChevronDown,
   Layers,
   CircleDot,
-  MousePointerClick,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  filterPillActiveClassName,
+  filterPillIdleClassName,
+  filterPillTriggerClassName,
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+} from "@/components/filters/filter-select-styles";
 
 export type YardsFilterState = {
   type: string;
@@ -61,10 +67,10 @@ export function YardsToolbar({
         <Select value={filters.type} onValueChange={(v) => onFilterChange("type", v)}>
           <SelectTrigger
             className={cn(
-              "h-[30px] gap-1.5 rounded-full pl-2.5 pr-2 border bg-white text-[12.5px] font-medium shadow-none transition-colors [&>svg]:hidden dark:bg-slate-900",
+              filterPillTriggerClassName,
               filters.type !== "all"
-                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8] dark:border-[#00c98d]/40 dark:text-[#5bebb8] dark:hover:bg-[#00c98d]/10"
-                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400",
+                ? filterPillActiveClassName
+                : filterPillIdleClassName,
             )}
           >
             <Layers className={cn(
@@ -77,10 +83,10 @@ export function YardsToolbar({
               filters.type !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-slate-500",
             )} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="SAAS">SaaS</SelectItem>
-            <SelectItem value="FULL_SERVICE">Full Service</SelectItem>
+          <SelectContent className={filterSelectContentClassName}>
+            <SelectItem className={filterSelectItemClassName} value="all">All types</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="SAAS">SaaS</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="FULL_SERVICE">Full Service</SelectItem>
           </SelectContent>
         </Select>
 
@@ -88,10 +94,10 @@ export function YardsToolbar({
         <Select value={filters.status} onValueChange={(v) => onFilterChange("status", v)}>
           <SelectTrigger
             className={cn(
-              "h-[30px] gap-1.5 rounded-full pl-2.5 pr-2 border bg-white text-[12.5px] font-medium shadow-none transition-colors [&>svg]:hidden dark:bg-slate-900",
+              filterPillTriggerClassName,
               filters.status !== "all"
-                ? "border-[#008f68]/40 text-[#006b4f] hover:border-[#008f68]/60 hover:bg-[#f0fdf8] dark:border-[#00c98d]/40 dark:text-[#5bebb8] dark:hover:bg-[#00c98d]/10"
-                : "border-[#e2e8f0] text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400",
+                ? filterPillActiveClassName
+                : filterPillIdleClassName,
             )}
           >
             <CircleDot className={cn(
@@ -104,10 +110,10 @@ export function YardsToolbar({
               filters.status !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-slate-500",
             )} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+          <SelectContent className={filterSelectContentClassName}>
+            <SelectItem className={filterSelectItemClassName} value="all">All statuses</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="active">Active</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
 

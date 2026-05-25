@@ -882,22 +882,29 @@ export function CallEditFormContent({
         </div>
       </div>
 
-      {/* ── CALL RECORDING ── */}
-      {(ticket as any).recordingUrl && (ticket as any).id && (
-        <div>
-          <SectionHeading>Call Recording</SectionHeading>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <CallRecordingPlayer
-              callId={(ticket as any).id}
-              durationSec={
-                (ticket as any).duration
-                  ? parseInt(String((ticket as any).duration), 10)
-                  : null
-              }
-            />
+      {/* ── CALL RECORDING / VOICEMAIL ── */}
+      {((ticket as any).recordingUrl || (ticket as any).voicemailUrl) &&
+        (ticket as any).id && (
+          <div>
+            <SectionHeading>
+              {String((ticket as any).direction || "").toUpperCase() ===
+                "VOICEMAIL" ||
+              (!(ticket as any).recordingUrl && !!(ticket as any).voicemailUrl)
+                ? "Voicemail"
+                : "Call Recording"}
+            </SectionHeading>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <CallRecordingPlayer
+                callId={(ticket as any).id}
+                durationSec={
+                  (ticket as any).duration
+                    ? parseInt(String((ticket as any).duration), 10)
+                    : null
+                }
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* ── SECTION 4: DETAILS & RESOLUTION ── */}
       <div>

@@ -13,6 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -43,6 +49,14 @@ interface CallFiltersBarProps {
   yards: YardOption[];
   phoneLines: { id: number; label: string | null; phoneNumber: string }[];
 }
+
+const CALL_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: CallStatus.ACTIVE, label: "Active" },
+  { value: CallStatus.PENDING_FOLLOWUP, label: "Follow-up" },
+  { value: CallStatus.OVERDUE, label: "Overdue" },
+  { value: CallStatus.COMPLETED, label: "Resolved" },
+] as const;
 
 export function CallFiltersBar({
   filters,
@@ -250,24 +264,27 @@ export function CallFiltersBar({
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Status */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2">
                 <FilterLabel>Status</FilterLabel>
-                <Select
-                  value={draft.status}
-                  onValueChange={(v) => setDraftKey("status", v)}
-                >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {Object.values(CallStatus).map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {formatEnumLabel(value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+                  {CALL_STATUS_FILTER_OPTIONS.map((option) => {
+                    const isActive = draft.status === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setDraftKey("status", option.value)}
+                        className={
+                          isActive
+                            ? "h-8 rounded-lg border border-[#008f68]/35 bg-[#e6f5f0] px-2 text-[10px] font-semibold leading-tight text-[#008f68] shadow-sm transition-colors"
+                            : "h-8 rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold leading-tight text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Direction */}
@@ -277,13 +294,13 @@ export function CallFiltersBar({
                   value={draft.direction}
                   onValueChange={(v) => setDraftKey("direction", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Directions</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Directions</SelectItem>
                     {Object.values(CallDirection).map((value) => (
-                      <SelectItem key={value} value={value}>
+                      <SelectItem className={filterSelectItemClassName} key={value} value={value}>
                         {formatEnumLabel(value)}
                       </SelectItem>
                     ))}
@@ -298,13 +315,13 @@ export function CallFiltersBar({
                   value={draft.disposition}
                   onValueChange={(v) => setDraftKey("disposition", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Dispositions</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Dispositions</SelectItem>
                     {Object.values(CallDisposition).map((value) => (
-                      <SelectItem key={value} value={value}>
+                      <SelectItem className={filterSelectItemClassName} key={value} value={value}>
                         {formatEnumLabel(value)}
                       </SelectItem>
                     ))}
@@ -319,13 +336,13 @@ export function CallFiltersBar({
                   value={draft.agent}
                   onValueChange={(v) => setDraftKey("agent", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Agents</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Agents</SelectItem>
                     {agents.map((a) => (
-                      <SelectItem key={a.id} value={a.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={a.id} value={a.id.toString()}>
                         {a.name}
                       </SelectItem>
                     ))}
@@ -356,10 +373,10 @@ export function CallFiltersBar({
                     }
                   }}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search..."
@@ -367,12 +384,12 @@ export function CallFiltersBar({
                         onChange={(e) => setCampaignSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
-                        className="h-7 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Campaigns</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Campaigns</SelectItem>
                     {filteredCampaigns.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={c.id} value={c.id.toString()}>
                         {c.nombre}
                       </SelectItem>
                     ))}
@@ -392,13 +409,13 @@ export function CallFiltersBar({
                   }
                   onValueChange={(v) => setDraftKey("campaignOption", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Options</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
                     {availableCampaignOptions.map((value) => (
-                      <SelectItem key={value} value={value}>
+                      <SelectItem className={filterSelectItemClassName} key={value} value={value}>
                         {formatEnumLabel(value)}
                       </SelectItem>
                     ))}
@@ -413,10 +430,10 @@ export function CallFiltersBar({
                   value={draft.yard}
                   onValueChange={(v) => setDraftKey("yard", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className={filterSelectContentClassName}>
                     <div className="p-2">
                       <Input
                         placeholder="Search..."
@@ -424,12 +441,12 @@ export function CallFiltersBar({
                         onChange={(e) => setYardSearch(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
-                        className="h-7 text-xs"
+                        className={filterSelectSearchInputClassName}
                       />
                     </div>
-                    <SelectItem value="all">All Yards</SelectItem>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Yards</SelectItem>
                     {filteredYards.map((y) => (
-                      <SelectItem key={y.id} value={y.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={y.id} value={y.id.toString()}>
                         {y.name}
                       </SelectItem>
                     ))}
@@ -444,13 +461,13 @@ export function CallFiltersBar({
                   value={draft.phoneLine}
                   onValueChange={(v) => setDraftKey("phoneLine", v)}
                 >
-                  <SelectTrigger className="border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm p-2.5 h-auto">
+                  <SelectTrigger className={filterSelectTriggerClassName}>
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Lines</SelectItem>
+                  <SelectContent className={filterSelectContentClassName}>
+                    <SelectItem className={filterSelectItemClassName} value="all">All Lines</SelectItem>
                     {phoneLines.map((l) => (
-                      <SelectItem key={l.id} value={l.id.toString()}>
+                      <SelectItem className={filterSelectItemClassName} key={l.id} value={l.id.toString()}>
                         {l.label || l.phoneNumber}
                       </SelectItem>
                     ))}

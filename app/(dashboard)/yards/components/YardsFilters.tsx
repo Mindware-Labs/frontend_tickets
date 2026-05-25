@@ -9,6 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
 import { Plus } from "lucide-react";
 
 interface YardsFiltersProps {
@@ -48,13 +53,13 @@ export function YardsFilters({
         <div className="space-y-1.5">
           <Label className="text-xs">Type</Label>
           <Select value={typeFilter} onValueChange={onTypeChange}>
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger className={filterSelectTriggerClassName}>
               <SelectValue placeholder="All types" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="SAAS">SaaS</SelectItem>
-              <SelectItem value="FULL_SERVICE">Full Service</SelectItem>
+            <SelectContent className={filterSelectContentClassName}>
+              <SelectItem className={filterSelectItemClassName} value="all">All types</SelectItem>
+              <SelectItem className={filterSelectItemClassName} value="SAAS">SaaS</SelectItem>
+              <SelectItem className={filterSelectItemClassName} value="FULL_SERVICE">Full Service</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -62,13 +67,13 @@ export function YardsFilters({
         <div className="space-y-1.5">
           <Label className="text-xs">Status</Label>
           <Select value={statusFilter} onValueChange={onStatusChange}>
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger className={filterSelectTriggerClassName}>
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectContent className={filterSelectContentClassName}>
+              <SelectItem className={filterSelectItemClassName} value="all">All statuses</SelectItem>
+              <SelectItem className={filterSelectItemClassName} value="active">Active</SelectItem>
+              <SelectItem className={filterSelectItemClassName} value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>

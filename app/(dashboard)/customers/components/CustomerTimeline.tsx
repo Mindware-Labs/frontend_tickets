@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -38,6 +39,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CallRecordingPlayer } from "@/app/(dashboard)/calls/components/calls/CallRecordingPlayer";
 import { fetchFromBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import {
+  filterSelectContentClassName,
+  filterSelectItemClassName,
+  filterSelectSearchInputClassName,
+  filterSelectTriggerClassName,
+} from "@/components/filters/filter-select-styles";
 import type {
   CampaignOption,
   PhoneLineOption,
@@ -169,10 +176,12 @@ function FilterSelect({
 }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="h-9 w-full min-w-0 rounded-xl border-border bg-background px-3 text-[13px] font-medium shadow-sm shadow-slate-200/40 focus:ring-[#008f68]/20 dark:shadow-none">
+      <SelectTrigger className={filterSelectTriggerClassName}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>{children}</SelectContent>
+      <SelectContent className={filterSelectContentClassName}>
+        {children}
+      </SelectContent>
     </Select>
   );
 }
@@ -189,6 +198,8 @@ export function CustomerTimelineToolbar({
   const [phoneLines, setPhoneLines] = useState<PhoneLineOption[]>([]);
   const [yards, setYards] = useState<YardOption[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
+  const [yardSearch, setYardSearch] = useState("");
+  const [campaignSearch, setCampaignSearch] = useState("");
   const isPanel = variant === "panel";
   const activeFilters = hasActiveTimelineFilters(filters);
 
@@ -217,6 +228,18 @@ export function CustomerTimelineToolbar({
   };
 
   const resetFilters = () => onFiltersChange(DEFAULT_TIMELINE_FILTERS);
+  const filteredYards = useMemo(() => {
+    const term = yardSearch.trim().toLowerCase();
+    if (!term) return yards;
+    return yards.filter((yard) => yard.name.toLowerCase().includes(term));
+  }, [yardSearch, yards]);
+  const filteredCampaigns = useMemo(() => {
+    const term = campaignSearch.trim().toLowerCase();
+    if (!term) return campaigns;
+    return campaigns.filter((campaign) =>
+      campaign.nombre.toLowerCase().includes(term),
+    );
+  }, [campaignSearch, campaigns]);
 
   const showLineFilter =
     filters.entryType === "all" || filters.entryType === "call";
@@ -232,9 +255,9 @@ export function CustomerTimelineToolbar({
             onValueChange={(value) => updateFilter("disposition", value)}
             placeholder="Disposition"
           >
-            <SelectItem value="all">Any disposition</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="all">Any disposition</SelectItem>
             {CALL_DISPOSITIONS.map((disposition) => (
-              <SelectItem key={disposition} value={disposition}>
+              <SelectItem className={filterSelectItemClassName} key={disposition} value={disposition}>
                 {formatLabel(disposition)}
               </SelectItem>
             ))}
@@ -249,9 +272,9 @@ export function CustomerTimelineToolbar({
             onValueChange={(value) => updateFilter("lineId", value)}
             placeholder="Line"
           >
-            <SelectItem value="all">All lines</SelectItem>
+            <SelectItem className={filterSelectItemClassName} value="all">All lines</SelectItem>
             {phoneLines.map((line) => (
-              <SelectItem key={line.id} value={String(line.id)}>
+              <SelectItem className={filterSelectItemClassName} key={line.id} value={String(line.id)}>
                 {line.label || line.phoneNumber}
               </SelectItem>
             ))}
@@ -265,9 +288,19 @@ export function CustomerTimelineToolbar({
           onValueChange={(value) => updateFilter("yardId", value)}
           placeholder="Yard"
         >
-          <SelectItem value="all">All yards</SelectItem>
-          {yards.map((yard) => (
-            <SelectItem key={yard.id} value={String(yard.id)}>
+          <div className="p-1">
+            <Input
+              value={yardSearch}
+              onChange={(event) => setYardSearch(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder="Search yards..."
+              className={filterSelectSearchInputClassName}
+            />
+          </div>
+          <SelectItem className={filterSelectItemClassName} value="all">All yards</SelectItem>
+          {filteredYards.map((yard) => (
+            <SelectItem className={filterSelectItemClassName} key={yard.id} value={String(yard.id)}>
               {yard.name}
             </SelectItem>
           ))}
@@ -280,9 +313,19 @@ export function CustomerTimelineToolbar({
           onValueChange={(value) => updateFilter("campaignId", value)}
           placeholder="Campaign"
         >
-          <SelectItem value="all">All campaigns</SelectItem>
-          {campaigns.map((campaign) => (
-            <SelectItem key={campaign.id} value={String(campaign.id)}>
+          <div className="p-1">
+            <Input
+              value={campaignSearch}
+              onChange={(event) => setCampaignSearch(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder="Search campaigns..."
+              className={filterSelectSearchInputClassName}
+            />
+          </div>
+          <SelectItem className={filterSelectItemClassName} value="all">All campaigns</SelectItem>
+          {filteredCampaigns.map((campaign) => (
+            <SelectItem className={filterSelectItemClassName} key={campaign.id} value={String(campaign.id)}>
               {campaign.nombre}
             </SelectItem>
           ))}

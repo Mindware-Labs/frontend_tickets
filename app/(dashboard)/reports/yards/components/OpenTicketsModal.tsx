@@ -130,6 +130,20 @@ export function OpenTicketsModal({
     const resolvedYardId =
       yardId ?? ticket.yardId ?? ticket.yard?.id ?? undefined;
 
+    // Build the report path so the ticket drawer can surface a
+    // `TimelineReturnBar` (mirrors the customer-timeline / High Priority
+    // pattern) instead of letting the user free-fall after clicking through.
+    const returnTo = (() => {
+      const params = new URLSearchParams();
+      if (resolvedYardId !== null && resolvedYardId !== undefined) {
+        params.set("yardId", String(resolvedYardId));
+      }
+      if (reportStartDate) params.set("startDate", reportStartDate);
+      if (reportEndDate) params.set("endDate", reportEndDate);
+      const qs = params.toString();
+      return qs ? `/reports/yards?${qs}` : "/reports/yards";
+    })();
+
     return (
       <article key={ticket.id} className={insightCardClass}>
         <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-slate-800">
@@ -224,8 +238,10 @@ export function OpenTicketsModal({
                     ? String(resolvedYardId)
                     : undefined,
                 reportYardName: yardName,
+                reportTicketId: String(ticket.id),
                 reportStartDate,
                 reportEndDate,
+                returnTo,
               })}
               onClick={() => onOpenChange(false)}
             >

@@ -1048,10 +1048,10 @@ export function CustomerTicketDrawer({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                          Initial problem
+                          Original report
                         </p>
                         <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 border border-slate-200 rounded-full px-1.5 py-0.5">
-                          Editable
+                          Editable record
                         </span>
                       </div>
                       <textarea
@@ -1063,37 +1063,37 @@ export function CustomerTicketDrawer({
                             originalIssueDetail: e.target.value,
                           }))
                         }
-                        placeholder="Original problem reported by the customer…"
+                        placeholder="Original issue reported by the customer..."
                         className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 leading-relaxed shadow-sm"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                        Initial wording. Editable but does not change the
-                        update below.
+                        Official intake summary. Changes here do not modify
+                        the latest activity update below.
                       </p>
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
-                          Update
+                          Latest activity update
                         </p>
                         <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600/80 uppercase tracking-wider bg-emerald-50 border border-emerald-100 rounded-full px-1.5 py-0.5">
                           <Activity className="w-2.5 h-2.5" />
-                          Log update only
+                          Activity log
                         </span>
                       </div>
                       <textarea
                         rows={4}
                         value={selectedTicket.issueDetail || ""}
                         readOnly
-                        placeholder="No updates logged yet"
+                        placeholder="No activity update has been recorded yet"
                         className="w-full text-xs text-slate-700 placeholder:text-slate-400 bg-emerald-50/40 border border-dashed border-emerald-200 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                        Auto-updated by{" "}
+                        Maintained through{" "}
                         <span className="font-semibold text-violet-700">
                           Log update
                         </span>
-                        . Cannot be edited inline.
+                        . This field is read-only in this section.
                       </p>
                     </div>
                     <div className="hidden">
