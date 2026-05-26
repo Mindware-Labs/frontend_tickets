@@ -1,5 +1,6 @@
 "use client";
 
+import { PageNumberButtons } from "@/components/common/page-number-buttons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -25,13 +26,13 @@ export function DataTablePagination({
   return (
     <div
       className={cn(
-        "flex items-center justify-between pt-4 pb-2 px-1",
+        "flex items-center justify-between gap-2 px-1 pb-2 pt-4",
         className,
       )}
     >
       <Button
         variant="outline"
-        className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
+        className="h-[36px] shrink-0 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
         onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
         disabled={currentPage === 1}
       >
@@ -50,74 +51,20 @@ export function DataTablePagination({
         Previous
       </Button>
 
-      <div className="hidden md:flex items-center justify-center gap-1.5">
-        {(() => {
-          const windowSize = Math.min(5, safeTotalPages);
-          let startPage = 1;
-          if (safeTotalPages > 5 && currentPage > 3) {
-            startPage = currentPage - 2;
-            if (startPage + 4 > safeTotalPages) {
-              startPage = safeTotalPages - 4;
-            }
-          }
-          const pages = Array.from(
-            { length: windowSize },
-            (_, i) => startPage + i,
-          );
-          const lastInWindow = pages[pages.length - 1];
-          const showEllipsis =
-            safeTotalPages > 5 && lastInWindow < safeTotalPages - 1;
-          const showLastPage =
-            safeTotalPages > 5 && lastInWindow < safeTotalPages;
-
-          return (
-            <>
-              {pages.map((pageNum) => {
-                if (pageNum <= 0 || pageNum > safeTotalPages) return null;
-                const active = pageNum === currentPage;
-                return (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    onClick={() => onPageChange(pageNum)}
-                    className={cn(
-                      "flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors",
-                      active
-                        ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
-                        : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent",
-                    )}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              {showEllipsis && (
-                <span className="flex h-[36px] w-[36px] items-center justify-center text-[13px] text-muted-foreground select-none">
-                  …
-                </span>
-              )}
-              {showLastPage && (
-                <button
-                  type="button"
-                  onClick={() => onPageChange(safeTotalPages)}
-                  className={cn(
-                    "flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors",
-                    currentPage === safeTotalPages
-                      ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
-                      : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent",
-                  )}
-                >
-                  {safeTotalPages}
-                </button>
-              )}
-            </>
-          );
-        })()}
+      <div className="min-w-0 flex-1 overflow-x-auto px-2">
+        <PageNumberButtons
+          currentPage={currentPage}
+          totalPages={safeTotalPages}
+          onPageChange={onPageChange}
+          className="min-w-max"
+          buttonClassName="h-[36px] w-[36px]"
+          ellipsisClassName="h-[36px] w-[36px]"
+        />
       </div>
 
       <Button
         variant="outline"
-        className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
+        className="h-[36px] shrink-0 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
         onClick={() => onPageChange(Math.min(currentPage + 1, safeTotalPages))}
         disabled={currentPage >= safeTotalPages}
       >

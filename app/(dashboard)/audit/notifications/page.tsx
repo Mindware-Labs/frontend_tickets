@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
+import { getPaginationPageItems } from "@/lib/pagination-pages";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -835,18 +836,13 @@ export default function NotificationsAuditPage() {
               <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-              {(() => {
-                const pages: (number | "…")[] = [];
-                for (let p = 1; p <= totalPages; p++) {
-                  if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pages.push(p);
-                  else if (pages[pages.length - 1] !== "…") pages.push("…");
-                }
-                return pages.map((p, i) =>
-                  p === "…"
-                    ? <span key={`e${i}`} style={{ width: 28, textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>…</span>
-                    : <button key={p} className={`page-btn ${page === p ? "active" : ""}`} onClick={() => setPage(p as number)} style={{ minWidth: 28, height: 28 }}>{p}</button>
-                );
-              })()}
+              {getPaginationPageItems(page, totalPages).map((item, i) =>
+                item === "ellipsis" ? (
+                  <span key={`e${i}`} style={{ width: 28, textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>...</span>
+                ) : (
+                  <button key={item} className={`page-btn ${page === item ? "active" : ""}`} onClick={() => setPage(item)} style={{ minWidth: 28, height: 28 }}>{item}</button>
+                ),
+              )}
               <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
                 <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
               </button>

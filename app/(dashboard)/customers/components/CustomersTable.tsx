@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { PageNumberButtons } from "@/components/common/page-number-buttons";
 import { Button } from "@/components/ui/button";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { Clock, Pencil, Phone, Pin, Trash2 } from "lucide-react";
@@ -268,42 +269,26 @@ export function CustomersTable({
       </div>
 
       {totalFiltered > 0 && onPageChange ? (
-        <div className="flex items-center justify-between px-1 pb-2 pt-3">
+        <div className="flex items-center justify-between gap-2 px-1 pb-2 pt-3">
           <Button
             variant="outline"
-            className="h-8 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+            className="h-8 shrink-0 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
             onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
             disabled={currentPage === 1 || loading}
           >
             Previous
           </Button>
 
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <div className="hidden items-center justify-center gap-1 md:flex">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum = i + 1;
-                if (totalPages > 5 && currentPage > 3) {
-                  pageNum = currentPage - 2 + i;
-                  if (pageNum > totalPages) pageNum = totalPages - 4 + i;
-                }
-                if (pageNum <= 0 || pageNum > totalPages) return null;
-                const active = pageNum === currentPage;
-                return (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    onClick={() => onPageChange(pageNum)}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg text-[12px] transition-colors",
-                      active
-                        ? "border border-[#a6f0c3] bg-[#e2fae9] font-semibold text-[#008f68]"
-                        : "border border-transparent font-medium text-muted-foreground hover:bg-muted/50",
-                    )}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+            <div className="w-full overflow-x-auto px-2">
+              <PageNumberButtons
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+                className="min-w-max"
+                buttonClassName="h-8 w-8 rounded-lg text-[12px]"
+                ellipsisClassName="h-8 w-8 text-[12px]"
+              />
             </div>
             <span className="text-[10px] font-medium text-muted-foreground">
               {getResultRange(currentPage, itemsPerPage, totalFiltered)}
@@ -312,7 +297,7 @@ export function CustomersTable({
 
           <Button
             variant="outline"
-            className="h-8 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
+            className="h-8 shrink-0 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
             onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
             disabled={currentPage >= totalPages || loading}
           >

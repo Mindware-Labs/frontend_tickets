@@ -23,7 +23,7 @@ export const sidebarSectionLabelClass =
   "mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500";
 
 export const sidebarItemBaseClass =
-  "group relative flex w-full items-center rounded-lg text-[12px] font-medium leading-none transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25";
+  "group relative flex w-full items-center rounded-lg text-[12px] font-medium leading-5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25";
 
 export const sidebarItemIdleClass =
   "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-100";

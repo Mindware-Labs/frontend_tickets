@@ -42,6 +42,8 @@ interface FollowUpDateTimePickerProps {
   onClear?: () => void;
   placeholder?: string;
   className?: string;
+  popoverClassName?: string;
+  disablePast?: boolean;
   disabled?: boolean;
 }
 
@@ -51,6 +53,8 @@ export function FollowUpDateTimePicker({
   onClear,
   placeholder = "Date & time",
   className,
+  popoverClassName,
+  disablePast = true,
   disabled,
 }: FollowUpDateTimePickerProps) {
   const [open, setOpen] = useState(false);
@@ -144,74 +148,91 @@ export function FollowUpDateTimePicker({
 
       <PopoverContent
         data-ticket-sheet-overlay="true"
-        align="start"
+        align="center"
         sideOffset={6}
-        className="w-[296px] overflow-hidden rounded-xl border border-slate-200/90 p-0 shadow-xl"
+        avoidCollisions
+        collisionPadding={16}
+        className={cn(
+          "w-[min(calc(100vw-2rem),20rem)] overflow-hidden rounded-xl border border-slate-200/90 bg-white p-0 shadow-xl",
+          popoverClassName,
+        )}
       >
         {/* Compact calendar — outside days are kept (faded) so the first /
             last week of the month never render with awkward empty cells. */}
-        <Calendar
-          mode="single"
-          selected={calendarSelected}
-          onSelect={handleDateSelect}
-          disabled={{ before: minSelectableDate }}
-          initialFocus
-          showWeekNumber={false}
-          showOutsideDays
-          className="p-2 [--cell-size:--spacing(8)]"
-          classNames={{
-            month: "gap-1.5",
-            month_caption:
-              "flex items-center justify-center h-7 w-full px-7 text-[13px] font-semibold text-slate-700",
-            caption_label: "select-none text-[13px] font-semibold",
-            month_grid: "w-full border-collapse",
-            weekdays: "flex",
-            week: "flex w-full mt-1",
-            weekday:
-              "flex-1 p-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400",
-            week_number: "hidden",
-            week_number_header: "hidden",
-            day: "relative w-full h-full p-0 text-center group/day aspect-square select-none",
-            outside:
-              "text-slate-300 aria-selected:text-slate-300 dark:text-slate-700",
-          }}
-        />
+        <div className="px-4 pt-3.5 pb-3">
+          <Calendar
+            mode="single"
+            selected={calendarSelected}
+            onSelect={handleDateSelect}
+            disabled={disablePast ? { before: minSelectableDate } : undefined}
+            initialFocus
+            showWeekNumber={false}
+            showOutsideDays
+            className="mx-auto w-full p-0 [--cell-size:2rem]"
+            classNames={{
+              root: "w-full",
+              months: "relative flex w-full flex-col",
+              month: "flex w-full flex-col gap-2",
+              nav: "absolute inset-x-0 top-0 flex h-8 items-center justify-between",
+              button_previous:
+                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+              button_next:
+                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+              month_caption:
+                "flex h-8 w-full items-center justify-center px-10 text-[13px] font-semibold text-slate-700",
+              caption_label: "select-none text-[13px] font-semibold leading-none",
+              month_grid: "w-full table-fixed border-separate border-spacing-0",
+              weekdays: "grid w-full grid-cols-7",
+              week: "mt-1 grid w-full grid-cols-7",
+              weekday:
+                "flex h-6 items-center justify-center p-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400",
+              week_number: "hidden",
+              week_number_header: "hidden",
+              day: "flex size-8 items-center justify-center p-0 text-center group/day select-none",
+              day_button:
+                "mx-auto flex size-8! min-w-8! items-center justify-center rounded-lg text-[13px] font-medium leading-none text-slate-800 transition-colors hover:bg-slate-100 hover:text-slate-950 data-[selected-single=true]:bg-[#e2f5ef] data-[selected-single=true]:text-slate-950 data-[selected-single=true]:shadow-none group-data-[focused=true]/day:ring-2 group-data-[focused=true]/day:ring-[#008f68]/20",
+              today: "rounded-lg bg-transparent text-slate-900",
+              outside:
+                "text-slate-300 aria-selected:text-slate-300 dark:text-slate-700",
+              disabled: "text-slate-200 opacity-70",
+            }}
+          />
+        </div>
 
-        <div className="border-t border-slate-100 bg-slate-50/80 px-2 py-2">
-          {/* Two-row footer: time controls on top, actions on the bottom.
-              Splitting them avoids horizontal overflow ("Done" being clipped)
-              while staying compact vertically. */}
-          <div className="flex items-center gap-1.5">
-            <Clock
-              className="h-3.5 w-3.5 shrink-0 text-slate-400"
-              aria-hidden
-            />
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={2}
-              value={hourInput}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) =>
-                setHourInput(e.target.value.replace(/\D/g, "").slice(0, 2))
-              }
-              className="h-7 w-9 rounded-md border border-slate-200 bg-white text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:outline-none focus:ring-1 focus:ring-[#008f68]/30"
-              aria-label="Hour"
-            />
-            <span className="text-[12px] font-bold text-slate-400">:</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={2}
-              value={minuteInput}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) =>
-                setMinuteInput(e.target.value.replace(/\D/g, "").slice(0, 2))
-              }
-              className="h-7 w-9 rounded-md border border-slate-200 bg-white text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:outline-none focus:ring-1 focus:ring-[#008f68]/30"
-              aria-label="Minute"
-            />
-            <div className="ml-auto flex rounded-md border border-slate-200 bg-white p-0.5">
+        <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2.5">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-slate-200/70 bg-white px-2.5 py-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Clock
+                className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                aria-hidden
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                value={hourInput}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) =>
+                  setHourInput(e.target.value.replace(/\D/g, "").slice(0, 2))
+                }
+                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30"
+                aria-label="Hour"
+              />
+              <span className="text-[12px] font-bold text-slate-400">:</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                value={minuteInput}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) =>
+                  setMinuteInput(e.target.value.replace(/\D/g, "").slice(0, 2))
+                }
+                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30"
+                aria-label="Minute"
+              />
+            </div>
+            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5">
               {(["AM", "PM"] as const).map((period) => {
                 const active = period === "PM" ? isPM : !isPM;
                 return (
@@ -220,7 +241,7 @@ export function FollowUpDateTimePicker({
                     type="button"
                     onClick={() => setIsPM(period === "PM")}
                     className={cn(
-                      "rounded px-2 py-0.5 text-[10px] font-bold transition-colors",
+                      "h-6 min-w-8 rounded px-2 text-[10px] font-bold transition-colors",
                       active
                         ? "bg-[#008f68] text-white shadow-sm"
                         : "text-slate-500 hover:text-slate-700",
@@ -233,18 +254,18 @@ export function FollowUpDateTimePicker({
             </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-end gap-1.5">
+          <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-slate-200/70 pt-2.5">
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-white hover:text-rose-600"
+              className="h-7 rounded-md px-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-white hover:text-rose-600"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={handleDone}
-              className="rounded-md bg-[#008f68] px-3 py-1 text-[11px] font-semibold text-white shadow-sm hover:bg-[#007a5a] focus:outline-none focus:ring-2 focus:ring-[#008f68]/30"
+              className="h-7 rounded-md bg-[#008f68] px-4 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-[#007a5a] focus:outline-none focus:ring-2 focus:ring-[#008f68]/30"
             >
               Done
             </button>

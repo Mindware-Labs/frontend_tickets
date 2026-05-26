@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageNumberButtons } from "@/components/common/page-number-buttons";
 import { Button } from "@/components/ui/button";
 import { Mail, Pencil, Phone, Trash2 } from "lucide-react";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
@@ -211,34 +212,16 @@ export function LandlordsTable({
             Previous
           </Button>
 
-          <div className="hidden md:flex items-center justify-center gap-1.5">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
-              if (totalPages > 5 && currentPage > 3) {
-                pageNum = currentPage - 2 + i;
-                if (pageNum > totalPages) pageNum = totalPages - 4 + i;
-              }
-              if (pageNum <= 0 || pageNum > totalPages) return null;
-              const active = pageNum === currentPage;
-              return (
-                <button
-                  key={pageNum}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPageChange(pageNum);
-                  }}
-                  className={cn(
-                    "flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[13px] transition-colors",
-                    active
-                      ? "bg-[#e2fae9] text-[#008f68] border border-[#a6f0c3] font-semibold"
-                      : "text-muted-foreground font-medium hover:bg-muted/50 border border-transparent",
-                  )}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+          <div className="min-w-0 overflow-x-auto px-2">
+            <PageNumberButtons
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={onPageChange}
+              stopPropagation
+              className="min-w-max"
+              buttonClassName="h-[36px] w-[36px]"
+              ellipsisClassName="h-[36px] w-[36px]"
+            />
           </div>
 
           <Button

@@ -70,6 +70,15 @@ import {
   YardOption,
 } from "../../types";
 import { cn } from "@/lib/utils"; // Utilidad estándar de shadcn
+import { FollowUpDateTimePicker } from "./FollowUpDateTimePicker";
+
+function toDateTimeLocalValue(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 interface CreateCallModalProps {
   open: boolean;
@@ -781,16 +790,20 @@ export function CreateCallModal({
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />{" "}
                     Date & Time
                   </Label>
-                  <Input
-                    type="datetime-local"
-                    className="block w-full"
-                    value={createFormData.startedAt}
-                    onChange={(e) =>
+                  <FollowUpDateTimePicker
+                    value={
+                      createFormData.startedAt
+                        ? new Date(createFormData.startedAt).toISOString()
+                        : ""
+                    }
+                    onChange={(iso) =>
                       setCreateFormData({
                         ...createFormData,
-                        startedAt: e.target.value,
+                        startedAt: toDateTimeLocalValue(iso),
                       })
                     }
+                    placeholder="Date & time"
+                    disablePast={false}
                   />
                 </div>
               </div>

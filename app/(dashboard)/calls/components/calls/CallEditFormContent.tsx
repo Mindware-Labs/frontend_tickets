@@ -944,8 +944,8 @@ export function CallEditFormContent({
           {/* Follow-up fields */}
           {(formData.disposition === TicketDisposition.CALLBACK_REQUIRED ||
             formData.disposition === TicketDisposition.CALLBACK_SCHEDULED) && (
-            <>
-              <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+            <div className="col-span-2 grid grid-cols-1 gap-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 shadow-sm animate-in fade-in-0 slide-in-from-top-2 duration-200 sm:grid-cols-2">
+              <div className="min-w-0">
                 <FieldLabel>Follow-up Date</FieldLabel>
                 <FollowUpDateTimePicker
                   value={
@@ -963,7 +963,7 @@ export function CallEditFormContent({
                   className={inputCls}
                 />
               </div>
-              <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <div className="min-w-0">
                 <FieldLabel>Follow-up Assigned To</FieldLabel>
                 <Select
                   value={formData.followUpAssignedToId || "none"}
@@ -987,7 +987,7 @@ export function CallEditFormContent({
                   </SelectContent>
                 </Select>
               </div>
-            </>
+            </div>
           )}
         </div>
 

@@ -151,16 +151,16 @@ export default function TicketsPage() {
     const currentCustomerIdParam = searchParams.get("customerId");
 
     return (viewType: string): number => {
-      if (viewType === "all" && typeof ticketsPageData?.totalCalls === "number") {
-        return ticketsPageData.totalCalls;
-      }
-
       if (
         serverViewCounts &&
         typeof serverViewCounts === "object" &&
         typeof (serverViewCounts as any)[viewType] === "number"
       ) {
         return (serverViewCounts as any)[viewType];
+      }
+
+      if (viewType === "all" && typeof ticketsPageData?.totalCalls === "number") {
+        return ticketsPageData.totalCalls;
       }
 
       if (viewType === ticketFilters.activeView) {
@@ -281,6 +281,14 @@ export default function TicketsPage() {
           matchesView = !hasAssignee && !isMissed;
         else if (viewType === "assigned")
           matchesView = hasAssignee && !isMissed;
+        else if (viewType === "active")
+          matchesView = status === "ACTIVE" && !isMissed;
+        else if (viewType === "pending_followup")
+          matchesView = status === "PENDING_FOLLOWUP" && !isMissed;
+        else if (viewType === "overdue")
+          matchesView = status === "OVERDUE" && !isMissed;
+        else if (viewType === "complete")
+          matchesView = status === "COMPLETED" && !isMissed;
         else if (viewType === "all") matchesView = true;
 
         return (
@@ -1243,6 +1251,11 @@ export default function TicketsPage() {
                 label: "Overdue",
                 count: getFilteredCountForView("overdue") || 0,
                 isOverdue: true,
+              },
+              {
+                id: "missed",
+                label: "Missed",
+                count: getFilteredCountForView("missed") || 0,
               },
               {
                 id: "complete",

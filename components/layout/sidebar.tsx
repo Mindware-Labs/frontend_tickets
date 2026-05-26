@@ -246,7 +246,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [pathname, visibleSections]);
 
   const itemBase = cn(
-    "group flex w-full items-center rounded-lg text-[12px] font-medium leading-none antialiased transition-all duration-150",
+    "group flex w-full items-center rounded-lg text-[12px] font-medium leading-5 antialiased transition-all duration-150",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
   );
 

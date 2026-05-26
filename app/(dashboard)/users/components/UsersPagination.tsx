@@ -1,5 +1,6 @@
 "use client";
 
+import { PageNumberButtons } from "@/components/common/page-number-buttons";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -8,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 interface UsersPaginationProps {
   totalCount: number;
@@ -29,13 +29,15 @@ export function UsersPagination({
 }: UsersPaginationProps) {
   if (totalCount === 0) return null;
 
+  const safeTotalPages = Math.max(1, totalPages);
+
   return (
     <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
         <p className="text-[12px] font-medium text-slate-500">
           Showing{" "}
           <span className="font-semibold text-slate-700 dark:text-slate-200">
-            {(currentPage - 1) * itemsPerPage + 1}–
+            {(currentPage - 1) * itemsPerPage + 1}-
             {Math.min(currentPage * itemsPerPage, totalCount)}
           </span>{" "}
           of {totalCount}
@@ -56,48 +58,30 @@ export function UsersPagination({
         </Select>
       </div>
 
-      <div className="flex items-center justify-between gap-2 sm:justify-end">
+      <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
         <Button
           variant="outline"
-          className="h-9 rounded-[10px] px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm border-border"
+          className="h-9 shrink-0 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm"
           onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
         >
           Previous
         </Button>
 
-        <div className="hidden items-center gap-1 md:flex">
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum = i + 1;
-            if (totalPages > 5 && currentPage > 3) {
-              pageNum = currentPage - 2 + i;
-              if (pageNum > totalPages) pageNum = totalPages - 4 + i;
-            }
-            if (pageNum <= 0 || pageNum > totalPages) return null;
-            const active = pageNum === currentPage;
-            return (
-              <button
-                key={pageNum}
-                type="button"
-                onClick={() => onPageChange(pageNum)}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-[10px] text-[13px] transition-colors",
-                  active
-                    ? "border border-[#a6f0c3] bg-[#e2fae9] font-semibold text-[#008f68]"
-                    : "font-medium text-muted-foreground hover:bg-muted/50",
-                )}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
+        <div className="min-w-0 overflow-x-auto">
+          <PageNumberButtons
+            currentPage={currentPage}
+            totalPages={safeTotalPages}
+            onPageChange={onPageChange}
+            className="min-w-max gap-1"
+          />
         </div>
 
         <Button
           variant="outline"
-          className="h-9 rounded-[10px] px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm border-border"
-          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-          disabled={currentPage >= totalPages}
+          className="h-9 shrink-0 rounded-[10px] border-border px-3.5 text-[13px] font-medium text-muted-foreground shadow-sm"
+          onClick={() => onPageChange(Math.min(currentPage + 1, safeTotalPages))}
+          disabled={currentPage >= safeTotalPages}
         >
           Next
         </Button>

@@ -55,7 +55,7 @@ const CALL_STATUS_FILTER_OPTIONS = [
   { value: CallStatus.ACTIVE, label: "Active" },
   { value: CallStatus.PENDING_FOLLOWUP, label: "Follow-up" },
   { value: CallStatus.OVERDUE, label: "Overdue" },
-  { value: CallStatus.COMPLETED, label: "Resolved" },
+  { value: CallStatus.COMPLETED, label: "Complete" },
 ] as const;
 
 export function CallFiltersBar({
