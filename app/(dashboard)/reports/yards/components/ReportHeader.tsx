@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   Filter,
   LayoutGrid,
+  Loader2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -26,6 +27,8 @@ type ReportHeaderProps = {
   onExportPDF: () => void;
   onExportExcel: () => void;
   showCrossFilters?: boolean;
+  isExportingPdf?: boolean;
+  isExportingExcel?: boolean;
 };
 
 export function ReportHeader({
@@ -39,6 +42,8 @@ export function ReportHeader({
   onExportPDF,
   onExportExcel,
   showCrossFilters = false,
+  isExportingPdf = false,
+  isExportingExcel = false,
 }: ReportHeaderProps) {
   const hasDateRange = Boolean(startDate && endDate);
   const hasYardDetail = Boolean(selectedYard);
@@ -119,18 +124,36 @@ export function ReportHeader({
                 <button
                   type="button"
                   onClick={onExportPDF}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                  disabled={isExportingPdf}
+                  aria-busy={isExportingPdf}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                    isExportingPdf && "cursor-not-allowed opacity-70",
+                  )}
                 >
-                  <Download className="size-3.5" aria-hidden />
-                  <span>PDF</span>
+                  {isExportingPdf ? (
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <Download className="size-3.5" aria-hidden />
+                  )}
+                  <span>{isExportingPdf ? "Preparing…" : "PDF"}</span>
                 </button>
                 <button
                   type="button"
                   onClick={onExportExcel}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                  disabled={isExportingExcel}
+                  aria-busy={isExportingExcel}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                    isExportingExcel && "cursor-not-allowed opacity-70",
+                  )}
                 >
-                  <FileSpreadsheet className="size-3.5" aria-hidden />
-                  <span>Excel</span>
+                  {isExportingExcel ? (
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <FileSpreadsheet className="size-3.5" aria-hidden />
+                  )}
+                  <span>{isExportingExcel ? "Preparing…" : "Excel"}</span>
                 </button>
               </>
             ) : null}

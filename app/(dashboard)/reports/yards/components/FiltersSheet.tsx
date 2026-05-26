@@ -6,6 +6,7 @@ import {
   ChevronsUpDown,
   Download,
   FileSpreadsheet,
+  Loader2,
   X,
   MapPin,
   AlertCircle,
@@ -57,6 +58,8 @@ type FiltersSheetProps = {
   onExportPDF: () => void;
   onExportExcel: () => void;
   onApplyFilters: () => void;
+  isExportingPdf?: boolean;
+  isExportingExcel?: boolean;
 };
 
 export function FiltersSheet({
@@ -76,6 +79,8 @@ export function FiltersSheet({
   onExportPDF,
   onExportExcel,
   onApplyFilters,
+  isExportingPdf = false,
+  isExportingExcel = false,
 }: FiltersSheetProps) {
   // Popover states for auto-closing dates
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
@@ -463,20 +468,30 @@ export function FiltersSheet({
                   variant="outline"
                   onClick={onExportPDF}
                   className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950"
-                  disabled={!hasDateRange || !isDateRangeValid}
+                  disabled={!hasDateRange || !isDateRangeValid || isExportingPdf}
+                  aria-busy={isExportingPdf}
                 >
-                  <Download data-icon="inline-start" />
-                  PDF
+                  {isExportingPdf ? (
+                    <Loader2 className="animate-spin" data-icon="inline-start" />
+                  ) : (
+                    <Download data-icon="inline-start" />
+                  )}
+                  {isExportingPdf ? "Preparing…" : "PDF"}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onExportExcel}
                   className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950 dark:hover:text-emerald-400"
-                  disabled={!hasDateRange || !isDateRangeValid}
+                  disabled={!hasDateRange || !isDateRangeValid || isExportingExcel}
+                  aria-busy={isExportingExcel}
                 >
-                  <FileSpreadsheet data-icon="inline-start" />
-                  Excel
+                  {isExportingExcel ? (
+                    <Loader2 className="animate-spin" data-icon="inline-start" />
+                  ) : (
+                    <FileSpreadsheet data-icon="inline-start" />
+                  )}
+                  {isExportingExcel ? "Preparing…" : "Excel"}
                 </Button>
               </div>
             </div>

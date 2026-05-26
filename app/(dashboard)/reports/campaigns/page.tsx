@@ -774,6 +774,8 @@ function CampaignReportHeader({
   onClearFilters,
   onExportPDF,
   onExportExcel,
+  isExportingPdf = false,
+  isExportingExcel = false,
 }: {
   report: CampaignFullReport | null;
   selectedCampaign: Campaign | null;
@@ -789,6 +791,8 @@ function CampaignReportHeader({
   onClearFilters: () => void;
   onExportPDF: () => void;
   onExportExcel: () => void;
+  isExportingPdf?: boolean;
+  isExportingExcel?: boolean;
 }) {
   const title =
     report?.campaign.nombre || selectedCampaign?.nombre || "Campaign report";
@@ -898,18 +902,36 @@ function CampaignReportHeader({
               <button
                 type="button"
                 onClick={onExportPDF}
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                disabled={isExportingPdf}
+                aria-busy={isExportingPdf}
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                  isExportingPdf && "cursor-not-allowed opacity-70",
+                )}
               >
-                <Download className="size-3.5" aria-hidden />
-                <span>PDF</span>
+                {isExportingPdf ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <Download className="size-3.5" aria-hidden />
+                )}
+                <span>{isExportingPdf ? "Preparing…" : "PDF"}</span>
               </button>
               <button
                 type="button"
                 onClick={onExportExcel}
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                disabled={isExportingExcel}
+                aria-busy={isExportingExcel}
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                  isExportingExcel && "cursor-not-allowed opacity-70",
+                )}
               >
-                <FileSpreadsheet className="size-3.5" aria-hidden />
-                <span>Excel</span>
+                {isExportingExcel ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <FileSpreadsheet className="size-3.5" aria-hidden />
+                )}
+                <span>{isExportingExcel ? "Preparing…" : "Excel"}</span>
               </button>
             </>
           ) : null}
@@ -2652,6 +2674,8 @@ export default function CampaignReportsPage() {
   const [crossFilters, setCrossFilters] =
     useState<CampaignFilters>(emptyFilters);
   const [activeTab, setActiveTab] = useState<CampaignReportTab>("dashboard");
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return true;
@@ -2840,6 +2864,15 @@ export default function CampaignReportsPage() {
 
   const exportPdfBackend = async () => {
     if (!report || !campaignIdParam || !startDateParam || !endDateParam) return;
+    if (isExportingPdf) return;
+
+    setIsExportingPdf(true);
+    const pendingToast = toast({
+      variant: "loading",
+      title: "Preparing PDF",
+      description: `Generating the campaign report for ${report.campaign.nombre || "campaign"}…`,
+    });
+
     try {
       const logoUrl =
         typeof window !== "undefined"
@@ -2862,17 +2895,35 @@ export default function CampaignReportsPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+
+      pendingToast.dismiss();
+      toast({
+        title: "PDF ready",
+        description: "Your campaign report download has started.",
+      });
     } catch (error: any) {
+      pendingToast.dismiss();
       toast({
         title: "Error",
         description: error?.message || "Failed to download PDF",
         variant: "destructive",
       });
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
   const exportExcelBackend = async () => {
     if (!report || !campaignIdParam || !startDateParam || !endDateParam) return;
+    if (isExportingExcel) return;
+
+    setIsExportingExcel(true);
+    const pendingToast = toast({
+      variant: "loading",
+      title: "Preparing Excel",
+      description: `Generating the campaign spreadsheet for ${report.campaign.nombre || "campaign"}…`,
+    });
+
     try {
       const start = decodeURIComponent(startDateParam);
       const end = decodeURIComponent(endDateParam);
@@ -2895,16 +2946,21 @@ export default function CampaignReportsPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+
+      pendingToast.dismiss();
       toast({
-        title: "Success",
-        description: "Excel file downloaded successfully.",
+        title: "Excel ready",
+        description: "Your spreadsheet download has started.",
       });
     } catch (error: any) {
+      pendingToast.dismiss();
       toast({
         title: "Error",
         description: error?.message || "Failed to download Excel file",
         variant: "destructive",
       });
+    } finally {
+      setIsExportingExcel(false);
     }
   };
 
@@ -3192,6 +3248,8 @@ export default function CampaignReportsPage() {
           onClearFilters={() => setCrossFilters(emptyFilters())}
           onExportPDF={exportPdfBackend}
           onExportExcel={exportExcelBackend}
+          isExportingPdf={isExportingPdf}
+          isExportingExcel={isExportingExcel}
         />
 
         <CampaignFiltersSheet
@@ -3211,6 +3269,8 @@ export default function CampaignReportsPage() {
           onExportPDF={exportPdfBackend}
           onExportExcel={exportExcelBackend}
           onApplyFilters={applyFilters}
+          isExportingPdf={isExportingPdf}
+          isExportingExcel={isExportingExcel}
         />
 
         {!hasParams && !campaignIdParam ? (

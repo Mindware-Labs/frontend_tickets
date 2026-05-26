@@ -161,6 +161,8 @@ export default function YardReportsPage() {
     emptyYardDashboardFilters,
   );
   const [isYardFilterLoading, setIsYardFilterLoading] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return true;
@@ -667,7 +669,7 @@ export default function YardReportsPage() {
   }, [selectedYardStats]);
 
   const handleExportPDF = async () => {
-    if (!selectedYardStats) return;
+    if (!selectedYardStats || isExportingPdf) return;
     if (!startDate || !endDate) {
       toast({
         title: "Select dates",
@@ -685,6 +687,13 @@ export default function YardReportsPage() {
       });
       return;
     }
+
+    setIsExportingPdf(true);
+    const pendingToast = toast({
+      variant: "loading",
+      title: "Preparing PDF",
+      description: `Generating the report for ${selectedYardStats.yard.name}…`,
+    });
 
     try {
       const params = new URLSearchParams({
@@ -706,17 +715,26 @@ export default function YardReportsPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+
+      pendingToast.dismiss();
+      toast({
+        title: "PDF ready",
+        description: "Your yard report download has started.",
+      });
     } catch (error: any) {
+      pendingToast.dismiss();
       toast({
         title: "Error",
         description: error.message || "Failed to download PDF",
         variant: "destructive",
       });
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
   const handleExportExcel = async () => {
-    if (!selectedYardStats) return;
+    if (!selectedYardStats || isExportingExcel) return;
     if (!startDate || !endDate) {
       toast({
         title: "Select dates",
@@ -734,6 +752,13 @@ export default function YardReportsPage() {
       });
       return;
     }
+
+    setIsExportingExcel(true);
+    const pendingToast = toast({
+      variant: "loading",
+      title: "Preparing Excel",
+      description: `Generating the spreadsheet for ${selectedYardStats.yard.name}…`,
+    });
 
     try {
       const params = new URLSearchParams({
@@ -761,17 +786,21 @@ export default function YardReportsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
+      pendingToast.dismiss();
       toast({
-        title: "Success",
-        description: "Excel file downloaded successfully",
+        title: "Excel ready",
+        description: "Your spreadsheet download has started.",
       });
     } catch (error: any) {
       console.error("Excel export error:", error);
+      pendingToast.dismiss();
       toast({
         title: "Error",
         description: error.message || "Failed to download Excel",
         variant: "destructive",
       });
+    } finally {
+      setIsExportingExcel(false);
     }
   };
 
@@ -812,6 +841,8 @@ export default function YardReportsPage() {
             onViewAllTickets={handleViewAllTickets}
             onExportPDF={handleExportPDF}
             onExportExcel={handleExportExcel}
+            isExportingPdf={isExportingPdf}
+            isExportingExcel={isExportingExcel}
           />
 
         <FiltersSheet
@@ -831,6 +862,8 @@ export default function YardReportsPage() {
           onExportPDF={handleExportPDF}
           onExportExcel={handleExportExcel}
           onApplyFilters={applyFilters}
+          isExportingPdf={isExportingPdf}
+          isExportingExcel={isExportingExcel}
         />
 
         {!selectedYardId || !selectedYard ? (
