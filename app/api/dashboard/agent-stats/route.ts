@@ -12,9 +12,21 @@ type Ticket = {
   disposition?: string | null;
   createdAt?: string;
   priority?: string | null;
+  direction?: string | null;
+  duration?: number | null;
+  callDuration?: number | null;
   customer?: { name?: string | null };
   assignedTo?: number | null;
   assignedToUser?: { id?: number; name?: string } | null;
+};
+
+type ManualRecord = {
+  id: number;
+  status?: string | null;
+  disposition?: string | null;
+  createdAt?: string | null;
+  createdByAgentId?: number | null;
+  customer?: { name?: string | null; phone?: string | null } | null;
 };
 
 type Campaign = {
@@ -137,7 +149,8 @@ async function getUserIdFromRequest(
       const payloadPart = authToken.split(".")[1];
       if (payloadPart) {
         const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-        const payloadString = atob(base64);
+        const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+        const payloadString = atob(padded);
         const payload = JSON.parse(payloadString);
         console.log("[agent-stats] Token payload keys:", Object.keys(payload));
         const userId = payload?.id || payload?.userId || payload?.sub;
@@ -189,6 +202,8 @@ async function fetchTicketsWithLimit(
   limit: number,
   maxPages: number,
   agentId: number | null,
+  endpoint = "/tickets",
+  agentParam = "assignedMeAgentId",
 ) {
   const tickets: Ticket[] = [];
   let total = 0;
@@ -201,13 +216,12 @@ async function fetchTicketsWithLimit(
     // Build query with assignedTo filter if agentId is provided
     let queryParams = `page=${page}&limit=${limit}`;
     if (agentId !== null) {
-      // Pass assignedTo as query parameter to filter in the database
-      queryParams += `&assignedTo=${agentId}`;
+      queryParams += `&${agentParam}=${agentId}`;
     }
 
     const response = await fetchFromBackendServer(
       request,
-      `/tickets?${queryParams}`,
+      `${endpoint}?${queryParams}`,
     );
     const pageTickets: Ticket[] = response?.data || response || [];
     if (page === 1 && typeof response?.total === "number") {
@@ -229,6 +243,56 @@ async function fetchTicketsWithLimit(
   );
 
   return { tickets, total: total || tickets.length };
+}
+
+async function fetchAgentCollection<T>(
+  request: NextRequest,
+  endpoint: string,
+  agentId: number,
+  agentParam: string,
+  limit = 500,
+  maxPages = 3,
+) {
+  const items: T[] = [];
+  let total = 0;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const response = await fetchFromBackendServer(
+      request,
+      `${endpoint}?page=${page}&limit=${limit}&${agentParam}=${agentId}`,
+    );
+    const pageItems: T[] = response?.data || response || [];
+    if (page === 1 && typeof response?.total === "number") total = response.total;
+    items.push(...pageItems);
+    if (pageItems.length < limit) break;
+    if (total && items.length >= total) break;
+  }
+
+  return { items, total: total || items.length };
+}
+
+async function fetchCollection<T>(
+  request: NextRequest,
+  endpoint: string,
+  limit = 500,
+  maxPages = 3,
+) {
+  const items: T[] = [];
+  let total = 0;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const response = await fetchFromBackendServer(
+      request,
+      `${endpoint}?page=${page}&limit=${limit}`,
+    );
+    const pageItems: T[] = response?.data || response || [];
+    if (page === 1 && typeof response?.total === "number") total = response.total;
+    items.push(...pageItems);
+    if (pageItems.length < limit) break;
+    if (total && items.length >= total) break;
+  }
+
+  return { items, total: total || items.length };
 }
 
 async function fetchCampaigns(request: NextRequest, limit: number) {
@@ -264,27 +328,65 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { tickets, total } = await fetchTicketsWithLimit(
+    let { tickets } = await fetchTicketsWithLimit(
       request,
       200,
       5,
       agentId,
+      "/tickets",
+      "assignedMeAgentId",
+    );
+
+    if (tickets.length === 0) {
+      const fallback = await fetchTicketsWithLimit(
+        request,
+        200,
+        3,
+        agentId,
+        "/tickets",
+        "agentId",
+      );
+      tickets = fallback.tickets;
+    }
+
+    let { items: calls } = await fetchAgentCollection<Ticket>(
+      request,
+      "/calls",
+      agentId,
+      "agentId",
+      500,
+      3,
+    );
+
+    if (calls.length === 0) {
+      const fallbackCalls = await fetchAgentCollection<Ticket>(
+        request,
+        "/calls",
+        agentId,
+        "assignedMeAgentId",
+        500,
+        3,
+      );
+      calls = fallbackCalls.items;
+    }
+
+    const { items: manualRecords } = await fetchAgentCollection<ManualRecord>(
+      request,
+      "/manual-records",
+      agentId,
+      "createdByAgentId",
+      500,
+      3,
     );
 
     console.log(
-      `[agent-stats] Processing ${tickets.length} tickets for agent ${agentId}`,
+      `[agent-stats] Processing agent ${agentId}: ${calls.length} calls, ${tickets.length} tickets, ${manualRecords.length} manual records`,
     );
 
-    // If no tickets found, log warning but continue
-    if (tickets.length === 0) {
+    if (tickets.length === 0 && calls.length === 0 && manualRecords.length === 0) {
       console.warn(
-        `[agent-stats] WARNING: No tickets found for agent ${agentId}. This might mean:`,
+        `[agent-stats] No assigned records found for agent ${agentId}.`,
       );
-      console.warn(`[agent-stats] 1. No tickets are assigned to this agent`);
-      console.warn(
-        `[agent-stats] 2. The agentId doesn't match the assignedTo field format`,
-      );
-      console.warn(`[agent-stats] 3. All tickets are unassigned`);
     }
 
     let campaigns: Campaign[] = [];
@@ -295,8 +397,8 @@ export async function GET(request: NextRequest) {
       console.error(`[agent-stats] Error fetching campaigns:`, error);
       campaigns = [];
     }
-    const totalTickets = tickets.length; // Use actual filtered count
-    const totalCalls = totalTickets;
+    const totalTickets = tickets.length;
+    const totalCalls = calls.length;
 
     console.log(
       `[agent-stats] Total tickets: ${totalTickets}, Total calls: ${totalCalls}`,
@@ -311,9 +413,7 @@ export async function GET(request: NextRequest) {
       {},
     );
 
-    const openTickets = tickets.filter(
-      (ticket) => ticket.status === "OPEN",
-    ).length;
+    const openTickets = tickets.filter((ticket) => ticket.status === "OPEN").length;
     const inProgressTickets = tickets.filter(
       (ticket) =>
         ticket.status === "IN_PROGRESS" ||
@@ -330,8 +430,35 @@ export async function GET(request: NextRequest) {
         !STATUS_CLOSED.has(ticket.status || ""),
     ).length;
 
+    const resolvedCalls = calls.filter(
+      (call) =>
+        STATUS_CLOSED.has(call.status || "") ||
+        call.disposition?.toUpperCase() === "RESOLVED",
+    ).length;
+    const missedCalls = calls.filter(
+      (call) => call.direction?.toUpperCase() === "MISSED",
+    ).length;
+    const totalDuration = calls.reduce(
+      (sum, call) => sum + Number(call.duration || call.callDuration || 0),
+      0,
+    );
+    const avgDurationSec = totalCalls ? Math.round(totalDuration / totalCalls) : 0;
+    const pendingFollowupTickets = tickets.filter(
+      (ticket) => ticket.status === "PENDING_FOLLOWUP",
+    ).length;
+    const overdueTickets = tickets.filter(
+      (ticket) => ticket.status === "OVERDUE",
+    ).length;
     const resolutionRate =
       totalTickets > 0 ? Math.round((closedTickets / totalTickets) * 100) : 0;
+    const resolvedManualRecords = manualRecords.filter(
+      (record) =>
+        STATUS_CLOSED.has(record.status || "") ||
+        record.disposition?.toUpperCase() === "RESOLVED",
+    ).length;
+    const completionRate = manualRecords.length
+      ? Math.round((resolvedManualRecords / manualRecords.length) * 100)
+      : 0;
 
     // Fix: Use campaignId to get actual campaign names
     const campaignCounts = tickets.reduce<Record<string, number>>(
@@ -388,9 +515,9 @@ export async function GET(request: NextRequest) {
       {},
     );
 
-    tickets.forEach((ticket) => {
-      if (!ticket.createdAt) return;
-      const key = getTicketDateKey(ticket.createdAt);
+    calls.forEach((call) => {
+      if (!call.createdAt) return;
+      const key = getTicketDateKey(call.createdAt);
       if (!key) return;
       const bucketIndex = bucketMap[key];
       if (bucketIndex === undefined) return;
@@ -436,6 +563,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    const recentManualRecords = [...manualRecords]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime(),
+      )
+      .slice(0, 5)
+      .map((record) => ({
+        id: record.id,
+        status: record.status || "OPEN",
+        disposition: record.disposition || null,
+        createdAt: record.createdAt || null,
+        createdByAgentId: record.createdByAgentId || agentId,
+        customer: record.customer || null,
+      }));
+
     console.log(`[agent-stats] Recent tickets:`, recentTickets);
 
     return NextResponse.json({
@@ -453,6 +596,30 @@ export async function GET(request: NextRequest) {
           resolutionRate,
           callsLast7Days: callsByDay.reduce((sum, item) => sum + item.calls, 0),
         },
+        agentKpis: {
+          totalCalls,
+          resolvedCalls,
+          missedCalls,
+          avgDurationSec,
+          totalTickets,
+          resolvedTickets: closedTickets,
+          pendingFollowupTickets,
+          overdueTickets,
+          resolutionRate,
+          totalManualRecords: manualRecords.length,
+          resolvedManualRecords,
+          completionRate,
+        },
+        summary: {
+          agentId,
+          totalActivity: totalCalls + totalTickets + manualRecords.length,
+          totalCalls,
+          totalTickets,
+          totalManualRecords: manualRecords.length,
+          needsAttention: pendingFollowupTickets + overdueTickets + pendingActions,
+          completionRate,
+          resolutionRate,
+        },
         charts: {
           callsByDay,
           ticketsByCampaign: ticketsByCampaign.length
@@ -463,6 +630,7 @@ export async function GET(request: NextRequest) {
             : FALLBACK_CHART_ITEM,
         },
         recentTickets,
+        recentManualRecords,
       },
     });
   } catch (error: any) {

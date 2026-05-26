@@ -70,6 +70,7 @@ export default function SmsAuditPage() {
   const [direction, setDirection] = useState<SmsDirectionFilter>("all");
   const [status, setStatus] = useState<SmsStatusFilter>("all");
   const [search, setSearch] = useState("");
+  const [serverSearch, setServerSearch] = useState("");
 
   const [messages, setMessages] = useState<SmsMessageRecord[]>([]);
   const [page, setPage] = useState(1);
@@ -103,6 +104,9 @@ export default function SmsAuditPage() {
       const params = periodToParams(currentPeriod);
       params.set("page", String(pageToLoad));
       params.set("limit", String(PAGE_LIMIT));
+      if (direction !== "all") params.set("direction", direction);
+      if (status !== "all") params.set("status", status);
+      if (serverSearch.trim()) params.set("search", serverSearch.trim());
 
       if (append) setLoadingMore(true);
       else setLoadingList(true);
@@ -138,13 +142,20 @@ export default function SmsAuditPage() {
         setLoadingMore(false);
       }
     },
-    [],
+    [direction, status, serverSearch],
   );
 
-  // Refetch the message list whenever the server-side period changes.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setServerSearch(search.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  // Refetch the message list whenever the server-side filters change.
   useEffect(() => {
     void fetchList(1, period, false);
-  }, [period, fetchList]);
+  }, [period, direction, status, serverSearch, fetchList]);
 
   // ──────────────────────────────────────────────────────────────────
   // Derived state
@@ -266,6 +277,7 @@ export default function SmsAuditPage() {
     setDirection("all");
     setStatus("all");
     setSearch("");
+    setServerSearch("");
   }, []);
 
   const handleRefresh = useCallback(() => {

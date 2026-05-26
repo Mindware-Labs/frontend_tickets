@@ -17,6 +17,7 @@ import {
   FileText,
   List,
   Phone,
+  RefreshCw,
   Search,
   Table2,
   X,
@@ -164,6 +165,90 @@ function groupByDay(entries: AuditEntry[]): Record<string, AuditEntry[]> {
     acc[day].push(e);
     return acc;
   }, {} as Record<string, AuditEntry[]>);
+}
+
+const NOTIFICATION_TYPES = new Set<NotificationType>([
+  "CALLBACK_OVERDUE",
+  "CALLBACK_REMINDER",
+  "TICKET_ASSIGNED",
+  "TICKET_FOLLOWUP_OVERDUE",
+]);
+
+function normalizeNotificationType(type: unknown): NotificationType {
+  const normalized = String(type || "").toUpperCase();
+  return NOTIFICATION_TYPES.has(normalized as NotificationType)
+    ? (normalized as NotificationType)
+    : "CALLBACK_REMINDER";
+}
+
+function normalizeAgent(raw: any, agentId: number | null): AuditEntry["agent"] {
+  const agent = raw?.agent || raw?.recipient || raw?.user || null;
+  if (agent && typeof agent === "object") {
+    const id = Number(agent.id ?? agentId);
+    return {
+      id: Number.isFinite(id) ? id : agentId ?? 0,
+      name:
+        agent.name ||
+        [agent.firstName, agent.lastName].filter(Boolean).join(" ") ||
+        agent.email,
+      role: agent.role,
+    };
+  }
+  return agentId ? { id: agentId, name: `Agent #${agentId}` } : null;
+}
+
+function normalizeAuditEntry(raw: any): AuditEntry | null {
+  const id = Number(raw?.id);
+  if (!Number.isFinite(id)) return null;
+
+  const agentIdValue = raw?.agentId ?? raw?.recipientId ?? raw?.userId ?? null;
+  const agentId =
+    agentIdValue === null || agentIdValue === undefined
+      ? null
+      : Number(agentIdValue);
+  const callIdValue = raw?.callId ?? raw?.call?.id ?? null;
+  const ticketIdValue = raw?.ticketId ?? raw?.ticket?.id ?? null;
+
+  return {
+    id,
+    type: normalizeNotificationType(raw?.type),
+    message: String(raw?.message || raw?.title || "Notification"),
+    agentId: Number.isFinite(agentId) ? agentId : null,
+    agent: normalizeAgent(raw, Number.isFinite(agentId) ? agentId : null),
+    callId:
+      callIdValue === null || callIdValue === undefined
+        ? null
+        : Number(callIdValue),
+    ticketId:
+      ticketIdValue === null || ticketIdValue === undefined
+        ? null
+        : Number(ticketIdValue),
+    read: Boolean(raw?.read ?? raw?.isRead),
+    createdAt: raw?.createdAt || raw?.created_at || new Date().toISOString(),
+    readAt: raw?.readAt || raw?.read_at || null,
+    deliveredVia: raw?.deliveredVia || raw?.deliveryChannel || undefined,
+  };
+}
+
+function extractNotificationRows(payload: any): AuditEntry[] {
+  const rows: any[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.notifications)
+        ? payload.notifications
+        : Array.isArray(payload?.data?.data)
+          ? payload.data.data
+          : [];
+
+  return rows
+    .map(normalizeAuditEntry)
+    .filter((entry): entry is AuditEntry => Boolean(entry));
+}
+
+function csvEscape(value: unknown) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -402,7 +487,10 @@ function TimelineView({ entries }: { entries: AuditEntry[] }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function NotificationsAuditPage() {
-  const [allData, setAllData] = useState<AuditEntry[]>(MOCK_DATA);
+  const [allData, setAllData] = useState<AuditEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -423,6 +511,39 @@ export default function NotificationsAuditPage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => setAnimIn(true), 50); }, []);
+
+  const loadNotifications = useCallback(async (showRefresh = false) => {
+    if (showRefresh) setIsRefreshing(true);
+    else setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      const response = await fetch(
+        "/api/notifications?audit=true&includeTotal=true&limit=1000",
+        { cache: "no-store" },
+      );
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || payload?.success === false) {
+        throw new Error(
+          payload?.message || `Failed to load notifications (${response.status})`,
+        );
+      }
+
+      setAllData(extractNotificationRows(payload));
+      setPage(1);
+    } catch (error: any) {
+      setLoadError(error?.message || "Failed to load notifications");
+      setAllData([]);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   // ── Derived stats ────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -496,11 +617,58 @@ export default function NotificationsAuditPage() {
     });
   };
 
-  const handleRowClick = (n: AuditEntry) => {
+  const handleRowClick = async (n: AuditEntry) => {
     if (!n.read) {
       setAllData(prev => prev.map(item => item.id === n.id ? { ...item, read: true, readAt: new Date().toISOString() } : item));
+      try {
+        const response = await fetch(`/api/notifications/${n.id}/read`, {
+          method: "PATCH",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to mark notification read");
+        }
+      } catch {
+        setAllData(prev => prev.map(item => item.id === n.id ? { ...item, read: false, readAt: null } : item));
+      }
     }
     toggleExpand(n.id);
+  };
+
+  const exportCsv = () => {
+    const headers = [
+      "id",
+      "type",
+      "message",
+      "agentId",
+      "agentName",
+      "callId",
+      "ticketId",
+      "read",
+      "createdAt",
+      "readAt",
+    ];
+    const rows = filtered.map((n) => [
+      n.id,
+      n.type,
+      n.message,
+      n.agentId ?? "",
+      n.agent?.name ?? "Broadcast",
+      n.callId ?? "",
+      n.ticketId ?? "",
+      n.read,
+      n.createdAt,
+      n.readAt ?? "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `notifications-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const hasFilters = Object.values(filters).some(v => v !== "");
@@ -573,7 +741,7 @@ export default function NotificationsAuditPage() {
           <div>
             <h1 className="text-[15px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notifications Audit</h1>
             <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-              Complete delivery log - all agents - {allData.length} total records
+              Backend delivery log - {allData.length} total records
             </p>
           </div>
         </div>
@@ -593,12 +761,22 @@ export default function NotificationsAuditPage() {
               <List className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
-          <button className="export-btn">
+          <button className="export-btn" onClick={() => loadNotifications(true)} disabled={isRefreshing || isLoading}>
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} aria-hidden="true" />
+            Refresh
+          </button>
+          <button className="export-btn" onClick={exportCsv} disabled={filtered.length === 0}>
             <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
             Export Csv
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+          {loadError}
+        </div>
+      )}
 
       {/* ── Stats grid (4 cards) ── */}
       <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -608,7 +786,7 @@ export default function NotificationsAuditPage() {
           icon={<Bell className="h-4 w-4" aria-hidden="true" />}
         />
         <StatCard label="Unread" value={stats.unread}
-          sub={`${Math.round(stats.unread / stats.total * 100)}% of total`}
+        sub={`${stats.total ? Math.round(stats.unread / stats.total * 100) : 0}% of total`}
           color="#991B1B" bg="#FEF2F2" border="#FECACA"
           icon={<AlertCircle className="h-4 w-4 text-red-500" aria-hidden="true" />}
         />
@@ -618,7 +796,7 @@ export default function NotificationsAuditPage() {
           icon={<Clock3 className="h-4 w-4 text-amber-500" aria-hidden="true" />}
         />
         <StatCard label="Read" value={stats.read}
-          sub={`${Math.round(stats.read / stats.total * 100)}% read rate`}
+        sub={`${stats.total ? Math.round(stats.read / stats.total * 100) : 0}% read rate`}
           color="#065F46" bg="#ECFDF5" border="#A7F3D0"
           icon={<Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
         />
@@ -712,7 +890,12 @@ export default function NotificationsAuditPage() {
 
         {viewMode === "timeline" ? (
           <div style={{ padding: "14px 18px" }}>
-            {slice.length === 0 ? (
+            {isLoading ? (
+              <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
+                <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-slate-300" aria-hidden="true" />
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>Loading notifications</div>
+              </div>
+            ) : slice.length === 0 ? (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
                 <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
                 <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>No notifications found</div>
@@ -747,7 +930,14 @@ export default function NotificationsAuditPage() {
                 </tr>
               </thead>
               <tbody>
-                {slice.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF", border: "none" }}>
+                      <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-slate-300" aria-hidden="true" />
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Loading notifications</div>
+                    </td>
+                  </tr>
+                ) : slice.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF", border: "none" }}>
                       <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
