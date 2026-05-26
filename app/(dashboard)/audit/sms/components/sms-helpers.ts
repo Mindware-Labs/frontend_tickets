@@ -305,8 +305,8 @@ export function formatTimeShort(date: Date): string {
   });
 }
 
-export function formatRelativeShort(date: Date): string {
-  const diffMs = Date.now() - date.getTime();
+export function formatRelativeShort(date: Date, now = Date.now()): string {
+  const diffMs = now - date.getTime();
   if (diffMs < 60_000) return "Just now";
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 60) return `${minutes}m`;

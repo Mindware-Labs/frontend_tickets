@@ -15,6 +15,7 @@ interface SmsConversationListProps {
   selectedKey: string | null;
   onSelect: (conversation: SmsConversation) => void;
   loading?: boolean;
+  now?: number;
   /** Optional helper text shown when the filtered list is empty. */
   emptyHint?: string;
 }
@@ -26,6 +27,7 @@ export function SmsConversationList({
   selectedKey,
   onSelect,
   loading = false,
+  now = Date.now(),
   emptyHint = "Adjust the period or clear filters to see SMS activity here.",
 }: SmsConversationListProps) {
   if (loading && conversations.length === 0) {
@@ -71,6 +73,7 @@ export function SmsConversationList({
           convo={convo}
           selected={selectedKey === convo.key}
           onSelect={() => onSelect(convo)}
+          now={now}
         />
       ))}
     </ul>
@@ -81,10 +84,12 @@ function ConversationRow({
   convo,
   selected,
   onSelect,
+  now,
 }: {
   convo: SmsConversation;
   selected: boolean;
   onSelect: () => void;
+  now: number;
 }) {
   const lastDate = getMessageDate(convo.lastMessage);
   const lastBody =
@@ -98,7 +103,7 @@ function ConversationRow({
   const hue = avatarHueFromString(convo.displayName);
   const initials = getInitials(convo.displayName);
   const hasFailures = convo.failedCount > 0;
-  const isRecent = Date.now() - convo.lastTimestamp < RECENT_MS;
+  const isRecent = now - convo.lastTimestamp < RECENT_MS;
   // "Pending reply" — last message is RECEIVED, treated as the audit-equivalent
   // of an unread thread.
   const pendingReply = lastDirection === "RECEIVED";
@@ -170,7 +175,7 @@ function ConversationRow({
                   : "text-slate-400 dark:text-slate-500",
               )}
             >
-              {formatRelativeShort(lastDate)}
+              {formatRelativeShort(lastDate, now)}
             </span>
           </div>
 
