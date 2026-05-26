@@ -1,11 +1,9 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Excluir rutas estáticas y API para reducir invocaciones de funciones
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
@@ -49,12 +47,8 @@ export function middleware(request: NextRequest) {
 
   if (authToken) {
     try {
-      // NOTE: The Edge Runtime cannot verify the JWT signature (no secret access).
-      // This decode is used ONLY for client-side navigation/redirects.
-      // All real authorization is enforced by the backend on each API request.
       const payloadPart = authToken.split(".")[1];
       if (payloadPart) {
-        // Convert base64url → base64 and add required padding
         const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
         const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
         const payloadString = atob(padded);
@@ -85,7 +79,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect root to dashboard based on role
   if (pathname === "/" && authToken) {
     const redirectPath = role === "agent" ? "/agent-dashboard" : "/dashboard";
     return NextResponse.redirect(new URL(redirectPath, request.url));
@@ -99,7 +92,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/calls", request.url));
   }
 
-  // Allow agents to access their dashboard
   if (pathname.startsWith("/agent-dashboard") && role !== "agent") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -129,7 +121,6 @@ export function middleware(request: NextRequest) {
   }
 
   if (authToken && publicRoutes.includes(pathname)) {
-    // Redirect based on role
     const redirectPath = role === "agent" ? "/agent-dashboard" : "/dashboard";
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }

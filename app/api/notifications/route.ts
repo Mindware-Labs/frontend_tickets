@@ -5,10 +5,33 @@ import { fetchFromBackendServer } from "@/lib/api-server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const unread = searchParams.get("unread") || "";
-    const qs = unread ? `?unread=${unread}` : "";
+    const backendParams = new URLSearchParams();
+    const passthroughKeys = [
+      "unread",
+      "type",
+      "agentId",
+      "read",
+      "from",
+      "to",
+      "search",
+      "page",
+      "limit",
+      "includeTotal",
+      "audit",
+    ];
 
-    const data = await fetchFromBackendServer(request, `/notifications${qs}`);
+    for (const key of passthroughKeys) {
+      const value = searchParams.get(key);
+      if (value !== null && value !== "") {
+        backendParams.set(key, value);
+      }
+    }
+
+    const qs = backendParams.toString();
+    const data = await fetchFromBackendServer(
+      request,
+      `/notifications${qs ? `?${qs}` : ""}`,
+    );
 
     return NextResponse.json(data);
   } catch (error: any) {
