@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,8 @@ import {
   Phone,
 } from "lucide-react";
 
-interface TicketDetailPageProps {
-  params: { id: string };
-}
-
-export default function TicketDetailPage({ params }: TicketDetailPageProps) {
-  const { id } = params;
+export default function TicketDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [ticket, setTicket] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);

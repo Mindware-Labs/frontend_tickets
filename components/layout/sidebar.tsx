@@ -86,18 +86,6 @@ const sections: NavSection[] = [
     ],
   },
   {
-    title: "Reports",
-    items: [
-      {
-        title: "Performance",
-        url: "/reports/performance",
-        icon: BarChart3,
-        adminOnly: true,
-      },
-      { title: "Agents", url: "/reports/agents", icon: Users, adminOnly: true },
-    ],
-  },
-  {
     title: "Management",
     items: [
       {

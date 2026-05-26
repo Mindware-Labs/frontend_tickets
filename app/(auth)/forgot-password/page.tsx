@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -241,7 +242,7 @@ export default function ForgotPasswordPage() {
       <div className="fp-logo" style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:12, paddingTop:0 }}>
         <div style={{ width:80, height:80, borderRadius:20, background:"linear-gradient(145deg,#0D1A16 0%,#091310 100%)", border:"1px solid rgba(46,169,142,0.20)", boxShadow:"0 0 0 5px rgba(46,169,142,0.06),0 14px 36px -10px rgba(15,93,78,.38)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/LOGO CQ-12.png" alt="Center Quest" style={{ width:56, height:56, objectFit:"contain", filter:"brightness(0) invert(1)" }}/>
+          <Image src="/images/LOGO CQ-12.png" alt="Center Quest" width={56} height={56} style={{ objectFit:"contain", filter:"brightness(0) invert(1)" }} priority />
         </div>
         <div className="fp-title" style={{ textAlign:"center" }}>
           <h1 style={{ margin:0, fontSize:28, letterSpacing:-.7, fontWeight:800, background:"linear-gradient(160deg,#0B1714 0%,#1F4038 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>

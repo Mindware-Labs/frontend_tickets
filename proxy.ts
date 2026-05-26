@@ -108,14 +108,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/yards", request.url));
   }
 
-  if (
-    (pathname.startsWith("/reports/performance") ||
-      pathname.startsWith("/reports/agents")) &&
-    role !== "admin"
-  ) {
-    return NextResponse.redirect(new URL("/calls", request.url));
-  }
-
   if (pathname.startsWith("/users") && role !== "admin") {
     return NextResponse.redirect(new URL("/calls", request.url));
   }

@@ -60,12 +60,6 @@ function resolvePageMeta(pathname: string): PageMeta {
   if (path.startsWith("/campaigns"))
     return { section: "Operations", title: "Campaigns" };
 
-  if (path.startsWith("/reports/performance"))
-    return { section: "Reports", title: "Performance" };
-
-  if (path.startsWith("/reports/agents"))
-    return { section: "Reports", title: "Agents" };
-
   if (path.startsWith("/reports/campaigns"))
     return { section: "Operations", title: "Campaign Reports" };
 
