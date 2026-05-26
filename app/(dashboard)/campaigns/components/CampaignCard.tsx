@@ -30,75 +30,90 @@ import {
 } from "../utils";
 
 function StatusPill({ active }: { active: boolean }) {
-  return active ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-[2px] text-[10px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-      Active
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-[2px] text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-      Inactive
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold",
+        active
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+      )}
+    >
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full",
+          active ? "bg-emerald-500" : "bg-slate-400",
+        )}
+      />
+      {active ? "Active" : "Inactive"}
     </span>
   );
 }
 
-function MetricChip({
+function StatTile({
   icon: Icon,
   label,
   value,
+  helper,
   tone = "neutral",
 }: {
   icon: LucideIcon;
   label: string;
-  value: number;
-  tone?: "success" | "danger" | "warning" | "neutral";
+  value: string | number;
+  helper?: string;
+  tone?: "success" | "danger" | "warning" | "neutral" | "brand";
 }) {
   const toneClass =
-    tone === "success"
-      ? "border-emerald-100 bg-emerald-50/50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
-      : tone === "danger"
-        ? "border-red-100 bg-red-50/50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
-        : tone === "warning"
-          ? "border-yellow-100 bg-yellow-50/50 text-yellow-700 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-200"
-          : "border-slate-100 bg-slate-50/60 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200";
+    tone === "brand"
+      ? "border-emerald-100 bg-[#f0faf5] text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+      : tone === "success"
+        ? "border-emerald-100 bg-emerald-50/60 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+        : tone === "danger"
+          ? "border-red-100 bg-red-50/60 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+          : tone === "warning"
+            ? "border-amber-100 bg-amber-50/70 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+            : "border-slate-100 bg-slate-50/70 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200";
 
   return (
-    <div className={cn("min-w-0 rounded-md border px-2 pb-2 pt-2", toneClass)}>
-      <p className="flex items-start gap-1 text-[8px] font-semibold uppercase leading-tight tracking-normal">
-        <Icon className="mt-px h-2.5 w-2.5 shrink-0" />
-        <span className="min-w-0 whitespace-normal break-words">{label}</span>
+    <div className={cn("min-w-0 rounded-lg border px-2.5 py-2", toneClass)}>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Icon className="h-3 w-3 shrink-0" strokeWidth={2} />
+        <p className="truncate text-[9px] font-semibold uppercase tracking-wide">
+          {label}
+        </p>
+      </div>
+      <p className="mt-1 text-xl font-bold leading-none tabular-nums">
+        {value}
       </p>
-      <p className="mt-1 text-base font-bold leading-none">{value}</p>
+      {helper ? (
+        <p className="mt-1 truncate text-[10px] font-medium opacity-75">
+          {helper}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function InfoLine({
+function MetaItem({
   icon: Icon,
   label,
   value,
   className,
-  wrap = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   className?: string;
-  wrap?: boolean;
 }) {
   return (
     <div className={cn("flex min-w-0 items-start gap-1.5", className)}>
-      <Icon className="mt-0.5 h-3 w-3 shrink-0 text-slate-500" />
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
       <div className="min-w-0">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
           {label}
         </p>
         <p
-          className={cn(
-            "text-xs font-medium text-slate-800 dark:text-slate-100",
-            wrap ? "whitespace-normal break-words" : "truncate",
-          )}
+          className="mt-0.5 truncate text-[12px] font-semibold text-slate-800 dark:text-slate-100"
           title={value}
         >
           {value}
@@ -178,8 +193,11 @@ export function CampaignCard({
   const coverageRate = outcome
     ? getPercent(classifiedCount, totalActivities)
     : 0;
-  const classifiedWidth = outcome
-    ? getSegmentPercent(classifiedCount, totalActivities)
+  const positiveWidth = outcome
+    ? getSegmentPercent(outcome.positiveValue, totalActivities)
+    : 0;
+  const negativeWidth = outcome
+    ? getSegmentPercent(outcome.negativeValue, totalActivities)
     : 0;
   const unclassifiedWidth = outcome
     ? getSegmentPercent(unclassifiedCount, totalActivities)
@@ -190,33 +208,35 @@ export function CampaignCard({
       role="button"
       tabIndex={0}
       onClick={() => onOpen(campaign)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
           onOpen(campaign);
         }
       }}
       className={cn(
-        "group flex flex-col rounded-xl border border-t-2 border-slate-200 border-t-emerald-600 bg-white p-3 text-left shadow-sm transition-all duration-200",
-        "hover:border-slate-300 hover:border-t-emerald-600 hover:shadow-md",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/40 focus-visible:ring-offset-2",
+        "group relative flex min-h-[350px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-all duration-200",
+        "hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.10)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/30 focus-visible:ring-offset-2",
         "dark:border-slate-800 dark:bg-slate-950",
       )}
     >
-      <div className="flex flex-1 flex-col">
-        <div className="flex items-center gap-3">
-          <div className="m-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-0 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+      <div className="h-1 bg-gradient-to-r from-[#008f68] via-emerald-400 to-transparent" />
+
+      <div className="flex flex-1 flex-col p-3.5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
             <Megaphone className="h-4 w-4" strokeWidth={2} />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full bg-slate-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
+              <span className="inline-flex h-5 items-center rounded-full bg-slate-50 px-2 font-mono text-[9px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
                 #{campaign.id}
               </span>
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold",
+                  "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[9px] font-semibold",
                   getTypePillStyles(campaign.tipo),
                 )}
               >
@@ -227,7 +247,7 @@ export function CampaignCard({
             </div>
 
             <h3
-              className="mt-1 truncate text-sm font-bold leading-tight text-slate-800 dark:text-slate-50"
+              className="mt-1.5 line-clamp-2 text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-50"
               title={campaign.nombre}
             >
               {campaign.nombre}
@@ -235,129 +255,117 @@ export function CampaignCard({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <InfoLine
-            icon={MapPin}
-            label="Yard"
-            value={yardLabel}
-            className="col-span-2"
-            wrap
+        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900/70">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            <MetaItem
+              icon={MapPin}
+              label="Yard"
+              value={yardLabel}
+              className="col-span-2"
+            />
+            <MetaItem
+              icon={Clock3}
+              label="Duration"
+              value={campaign.duracion || "-"}
+            />
+            <MetaItem
+              icon={CalendarClock}
+              label="Created"
+              value={formatCampaignDate(campaign.createdAt)}
+            />
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <StatTile
+            icon={ActivitiesIcon}
+            label="Activities"
+            value={totalActivities}
+            helper={`${classifiedCount} classified`}
+            tone="brand"
           />
-          <InfoLine
-            icon={Clock3}
-            label="Duration"
-            value={campaign.duracion || "-"}
+          <StatTile
+            icon={BarChart3}
+            label="Coverage"
+            value={`${coverageRate}%`}
+            helper={`${unclassifiedCount} open`}
+            tone={coverageRate === 100 ? "success" : "warning"}
           />
-          <InfoLine
-            icon={CalendarClock}
-            label="Created"
-            value={formatCampaignDate(campaign.createdAt)}
+          <StatTile
+            icon={outcome?.PositiveIcon ?? BarChart3}
+            label={outcome?.rateLabel ?? "Tracked"}
+            value={outcome ? `${outcomeRate}%` : totalActivities}
+            helper={outcome ? `${outcome.positiveValue} positive` : "General"}
+            tone={outcomeRate > 0 ? "success" : "neutral"}
           />
         </div>
 
-        <div className="my-3 border-t border-slate-100 dark:border-slate-800" />
-
-        <div>
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              <p className="flex items-center gap-0.5 text-[8px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                <ActivitiesIcon className="h-3 w-3" />
-                Activities
+        {outcome ? (
+          <div className="mt-3 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Classification
               </p>
-              <p className="mt-0.5 text-2xl font-bold leading-none text-emerald-700 dark:text-emerald-300">
-                {totalActivities}
+              <p className="text-[11px] font-semibold text-slate-500">
+                {classifiedCount}/{totalActivities} covered
               </p>
             </div>
 
-            {outcome ? (
-              <div className="text-right">
-                <p className="text-[8px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {outcome.rateLabel}
-                </p>
-                <p className="mt-0.5 text-xl font-bold leading-none text-slate-900 dark:text-slate-50">
-                  {outcomeRate}%
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-right text-[11px] font-semibold text-slate-500">
-                <BarChart3 className="h-3.5 w-3.5" />
-                General
-              </div>
-            )}
+            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                className="h-full shrink-0 bg-[#008f68]"
+                style={{ width: `${positiveWidth}%` }}
+              />
+              <div
+                className="h-full shrink-0 bg-red-500"
+                style={{ width: `${negativeWidth}%` }}
+              />
+              <div
+                className="h-full shrink-0 bg-amber-400"
+                style={{ width: `${unclassifiedWidth}%` }}
+              />
+            </div>
+
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              <MiniLegend
+                color="bg-[#008f68]"
+                label={outcome.positiveLabel}
+                value={outcome.positiveValue}
+              />
+              <MiniLegend
+                color="bg-red-500"
+                label={outcome.negativeLabel}
+                value={outcome.negativeValue}
+              />
+              <MiniLegend
+                color="bg-amber-400"
+                label="Unclassified"
+                value={unclassifiedCount}
+              />
+            </div>
           </div>
-
-          {outcome ? (
-            <>
-              <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className="h-full shrink-0 bg-emerald-600 transition-[width] duration-300"
-                  style={{ width: `${classifiedWidth}%` }}
-                />
-                <div
-                  className="h-full shrink-0 bg-orange-500 transition-[width] duration-300"
-                  style={{ width: `${unclassifiedWidth}%` }}
-                />
-              </div>
-
-              <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[10px] font-medium">
-                <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  {classifiedCount} classified
-                </span>
-                <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                  {unclassifiedCount} unclassified
-                </span>
-                <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-                  {coverageRate}% cov.
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <MetricChip
-                  icon={outcome.PositiveIcon}
-                  label={outcome.positiveLabel}
-                  value={outcome.positiveValue}
-                  tone="success"
-                />
-                <MetricChip
-                  icon={outcome.NegativeIcon}
-                  label={outcome.negativeLabel}
-                  value={outcome.negativeValue}
-                  tone="danger"
-                />
-                <MetricChip
-                  icon={BarChart3}
-                  label="Unclassified"
-                  value={unclassifiedCount}
-                  tone={unclassifiedCount > 0 ? "warning" : "neutral"}
-                />
-              </div>
-            </>
-          ) : (
-            <p className="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-              General campaign activity is grouped by yard and line for operational
-              reporting.
-            </p>
-          )}
-        </div>
+        ) : (
+          <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-[11px] font-medium leading-4 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            General campaign activity is grouped by yard and line for operational
+            reporting.
+          </div>
+        )}
       </div>
 
       <div
-        className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/70"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <Button
             asChild
             variant="outline"
             size="sm"
-            className="h-7 px-2.5 text-[11px]"
+            className="h-8 rounded-lg px-2.5 text-[11px] font-semibold"
           >
             <Link href={`/calls?campaignId=${campaign.id}`}>
-              <ActivitiesIcon className="h-3 w-3" />
+              <ActivitiesIcon className="h-3.5 w-3.5" />
               Activities
             </Link>
           </Button>
@@ -366,10 +374,10 @@ export function CampaignCard({
               asChild
               variant="secondary"
               size="sm"
-              className="h-7 px-2.5 text-[11px]"
+              className="h-8 rounded-lg px-2.5 text-[11px] font-semibold"
             >
               <Link href={`/reports/campaigns?campaignId=${campaign.id}`}>
-                <FileText className="h-3 w-3" />
+                <FileText className="h-3.5 w-3.5" />
                 Report
               </Link>
             </Button>
@@ -386,7 +394,7 @@ export function CampaignCard({
                 title="Edit campaign"
                 aria-label="Edit campaign"
                 onClick={() => onEdit(campaign)}
-                className="h-7 w-7 text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-950 dark:hover:text-slate-100"
               >
                 <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
@@ -399,7 +407,7 @@ export function CampaignCard({
                 title="Delete campaign"
                 aria-label="Delete campaign"
                 onClick={() => onDelete(campaign)}
-                className="h-7 w-7 text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-red-600 dark:hover:bg-slate-950"
               >
                 <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
@@ -408,5 +416,29 @@ export function CampaignCard({
         ) : null}
       </div>
     </article>
+  );
+}
+
+function MiniLegend({
+  color,
+  label,
+  value,
+}: {
+  color: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex min-w-0 items-center gap-1">
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", color)} />
+        <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">
+          {label}
+        </p>
+      </div>
+      <p className="mt-0.5 text-sm font-bold leading-none text-slate-900 tabular-nums dark:text-slate-50">
+        {value}
+      </p>
+    </div>
   );
 }

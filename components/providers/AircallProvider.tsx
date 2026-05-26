@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { fetchFromBackend } from "@/lib/api-client";
+import { GlobalIncomingCallPanel } from "@/components/calls/global-incoming-call-panel";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -418,6 +419,9 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
         lastIncomingCall={lastIncomingCall}
         sheetOpen={sheetOpen}
       />
+      {/* Global customer panel — appears next to the Aircall dock whenever
+          a call is being placed or received, anywhere in the app. */}
+      <GlobalIncomingCallPanel />
     </AircallContext.Provider>
   );
 }
