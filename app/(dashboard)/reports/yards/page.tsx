@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { useDialogCleanup } from "@/hooks/use-dialog-cleanup";
 import { useReportSession } from "@/hooks/use-report-session";
 import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
+import { useAircall } from "@/components/providers/AircallProvider";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { ReportHeader } from "./components/ReportHeader";
 import { YardDashboard } from "./components/YardDashboard";
@@ -130,6 +131,7 @@ export default function YardReportsPage() {
   useDialogCleanup();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setSheetOpen } = useAircall();
   const yardIdParam = searchParams.get("yardId");
   const openFiltersParam = searchParams.get("openFilters");
   const startDateParam = searchParams.get("startDate");
@@ -139,6 +141,7 @@ export default function YardReportsPage() {
   const [selectedYardId, setSelectedYardId] = useState<string>("");
   const [yardOpen, setYardOpen] = useState(false);
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+  const hasAutoOpenedFiltersRef = useRef(false);
   const [loadingYards, setLoadingYards] = useState(false);
   const [yardsStats, setYardsStats] = useState<YardStats[]>([]);
   const [selectedYardStats, setSelectedYardStats] = useState<YardStats | null>(
@@ -521,6 +524,20 @@ export default function YardReportsPage() {
       setFiltersModalOpen(true);
     }
   }, [openFiltersParam]);
+
+  // Auto-open filters sheet when arriving with no dates configured
+  useEffect(() => {
+    if (!hasAutoOpenedFiltersRef.current && !startDateParam && !endDateParam) {
+      hasAutoOpenedFiltersRef.current = true;
+      setFiltersModalOpen(true);
+    }
+  }, [startDateParam, endDateParam]);
+
+  // Move Aircall phone out of the way when the filters sheet is open
+  useEffect(() => {
+    setSheetOpen(filtersModalOpen);
+    return () => setSheetOpen(false);
+  }, [filtersModalOpen, setSheetOpen]);
 
   // ── Remember "where I left off" between sidebar navigations ────────────
   // Persists yardId / dates (already in the URL) plus the chart-driven

@@ -46,6 +46,7 @@ type Campaign = {
   yarda?: { name?: string | null } | null;
   isActive?: boolean;
   tipo?: string;
+  createdAt?: string;
 };
 
 type CampaignFiltersSheetProps = {
@@ -248,6 +249,13 @@ export function CampaignFiltersSheet({
                           onSelect={() => {
                             onCampaignSelect(campaign.id.toString());
                             onCampaignOpenChange(false);
+                            if (campaign.createdAt) {
+                              const createdDate = new Date(campaign.createdAt);
+                              if (!isNaN(createdDate.getTime())) {
+                                onStartDateChange(format(createdDate, "yyyy-MM-dd"));
+                                onEndDateChange(format(new Date(), "yyyy-MM-dd"));
+                              }
+                            }
                           }}
                           className="my-0.5 cursor-pointer rounded-lg text-xs"
                         >

@@ -17,9 +17,11 @@ import {
   FileText,
   List,
   Phone,
+  Radio,
   RefreshCw,
   Search,
   Table2,
+  Users,
   X,
 } from "lucide-react";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
@@ -150,6 +152,18 @@ function readLatency(created: string, readAt?: string | null) {
   if (m < 1) return "<1m";
   if (m < 60) return `${m}m`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+function readLatencyMinutes(created: string, readAt?: string | null) {
+  if (!readAt) return null;
+  const diff = new Date(readAt).getTime() - new Date(created).getTime();
+  if (!Number.isFinite(diff) || diff < 0) return null;
+  return Math.max(0, Math.round(diff / 60000));
+}
+function fmtCompactDuration(minutes: number | null) {
+  if (minutes === null) return "—";
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 function initials(name?: string) {
   if (!name) return "?";
@@ -347,29 +361,71 @@ function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: 
   );
 }
 
-function StatCard({ label, value, sub, color, bg, border, icon }: {
-  label: string; value: number | string; sub?: string;
-  color: string; bg: string; border: string; icon: React.ReactNode;
+function StatCard({
+  label,
+  value,
+  sub,
+  icon,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number | string;
+  sub?: string;
+  icon: React.ReactNode;
+  tone?: "neutral" | "danger" | "warning" | "success" | "brand" | "info";
 }) {
+  const toneClass =
+    tone === "brand"
+      ? "border-emerald-100 bg-[#f0faf5] text-[#008f68]"
+      : tone === "danger"
+        ? "border-red-100 bg-red-50/70 text-red-700"
+        : tone === "warning"
+          ? "border-amber-100 bg-amber-50/70 text-amber-700"
+          : tone === "success"
+            ? "border-emerald-100 bg-emerald-50/70 text-emerald-700"
+            : tone === "info"
+              ? "border-sky-100 bg-sky-50/70 text-sky-700"
+              : "border-slate-100 bg-white text-slate-900";
+
   return (
     <div
-      className="flex min-w-0 items-start justify-between rounded-xl border bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-slate-950"
-      style={{ background: bg, borderColor: border }}
+      className={cn(
+        "flex min-w-0 items-start justify-between rounded-xl border px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-950",
+        toneClass,
+      )}
     >
-      <div>
-        <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="min-w-0">
+        <div className="mb-1 truncate text-[9px] font-semibold uppercase tracking-wide text-slate-500">
           {label}
         </div>
-        <div
-          className="text-xl font-bold leading-none tabular-nums"
-          style={{ color }}
-        >
+        <div className="text-xl font-bold leading-none tabular-nums">
           {value}
         </div>
-        {sub && <div className="mt-1 text-[10px] text-slate-400">{sub}</div>}
+        {sub && <div className="mt-1 truncate text-[10px] font-medium text-slate-500">{sub}</div>}
       </div>
-      <div className="mt-0.5 text-slate-400">{icon}</div>
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/70 bg-white/70 text-current shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {icon}
+      </div>
     </div>
+  );
+}
+
+function FilterField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={cn("min-w-0 space-y-1", className)}>
+      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
@@ -552,7 +608,18 @@ export default function NotificationsAuditPage() {
     const overdue = allData.filter(n => n.type.includes("OVERDUE")).length;
     const read = allData.filter(n => n.read).length;
     const broadcast = allData.filter(n => !n.agentId).length;
-    return { total, unread, overdue, read, broadcast };
+    const calls = allData.filter(n => n.callId).length;
+    const tickets = allData.filter(n => n.ticketId).length;
+    const todayKey = new Date().toDateString();
+    const today = allData.filter(n => new Date(n.createdAt).toDateString() === todayKey).length;
+    const latencyValues = allData
+      .map(n => readLatencyMinutes(n.createdAt, n.readAt))
+      .filter((value): value is number => value !== null);
+    const avgReadMinutes =
+      latencyValues.length > 0
+        ? Math.round(latencyValues.reduce((sum, value) => sum + value, 0) / latencyValues.length)
+        : null;
+    return { total, unread, overdue, read, broadcast, calls, tickets, today, avgReadMinutes };
   }, [allData]);
 
   // ── Filter + sort ─────────────────────────────────────────────────────────────
@@ -711,8 +778,9 @@ export default function NotificationsAuditPage() {
     >
       <style>{`
         .notif-audit * { box-sizing: border-box; }
-        .fi { height: 36px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
+        .fi { height: 36px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; font-weight: 500; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
         .fi:focus { border-color: #008f68; box-shadow: 0 0 0 2px rgba(0,143,104,0.14); }
+        .fi:hover { border-color: #cbd5e1; }
         .tab { padding: 6px 10px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: color .15s, background .15s, box-shadow .15s; background: transparent; color: #64748b; }
         .tab:hover { color: #1e293b; }
         .tab.active { background: white; color: #008f68; box-shadow: 0 1px 2px rgba(15,23,42,0.08); font-weight: 600; }
@@ -728,29 +796,31 @@ export default function NotificationsAuditPage() {
         .clear-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
         .clear-btn:hover { background: #fee2e2; }
         .section-card { background: white; border: 1px solid rgb(226 232 240 / .8); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .audit-th { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; user-select: none; }
+        .audit-td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .row:hover td { background: #f8fafc !important; }
         td { transition: background .12s; }
       `}</style>
 
       {/* ── Page header ── */}
-      <div className={cn(appPanelClass, "mb-2.5 flex flex-wrap items-center justify-between gap-3 px-3.5 py-3")}>
-        <div className="flex items-center gap-3">
+      <div className={cn(appPanelClass, "mb-2.5 flex flex-col gap-3 px-3.5 py-3 lg:flex-row lg:items-center lg:justify-between")}>
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#008f68] text-white shadow-[0_1px_2px_rgba(0,143,104,0.18)]">
             <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-[15px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notifications Audit</h1>
             <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-              Backend delivery log - {allData.length} total records
+              Backend delivery log - {allData.length} total records - {filtered.length} visible
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto_auto] lg:w-auto lg:min-w-[640px]">
+          <div className="relative min-w-0">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input ref={searchRef} className="fi w-[220px] pl-8"
-              placeholder="Search..."
+            <input ref={searchRef} className="fi pl-8"
+              placeholder="Search message, ID, agent, call, ticket..."
               onChange={e => handleSearch(e.target.value)} />
           </div>
           <div className="flex gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
@@ -779,33 +849,43 @@ export default function NotificationsAuditPage() {
       )}
 
       {/* ── Stats grid (4 cards) ── */}
-      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Total" value={stats.total}
           sub={`${stats.broadcast} broadcast`}
-          color="#111827" bg="white" border="#E5E7EB"
+          tone="neutral"
           icon={<Bell className="h-4 w-4" aria-hidden="true" />}
         />
         <StatCard label="Unread" value={stats.unread}
         sub={`${stats.total ? Math.round(stats.unread / stats.total * 100) : 0}% of total`}
-          color="#991B1B" bg="#FEF2F2" border="#FECACA"
+          tone="danger"
           icon={<AlertCircle className="h-4 w-4 text-red-500" aria-hidden="true" />}
         />
         <StatCard label="Overdue" value={stats.overdue}
           sub="callbacks + tickets"
-          color="#92400E" bg="#FFFBEB" border="#FDE68A"
+          tone="warning"
           icon={<Clock3 className="h-4 w-4 text-amber-500" aria-hidden="true" />}
         />
         <StatCard label="Read" value={stats.read}
         sub={`${stats.total ? Math.round(stats.read / stats.total * 100) : 0}% read rate`}
-          color="#065F46" bg="#ECFDF5" border="#A7F3D0"
+          tone="success"
           icon={<Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
+        />
+        <StatCard label="Resources" value={stats.calls + stats.tickets}
+          sub={`${stats.calls} calls / ${stats.tickets} tickets`}
+          tone="info"
+          icon={<FileText className="h-4 w-4" aria-hidden="true" />}
+        />
+        <StatCard label="Avg read" value={fmtCompactDuration(stats.avgReadMinutes)}
+          sub={`${stats.today} today`}
+          tone="brand"
+          icon={<Radio className="h-4 w-4" aria-hidden="true" />}
         />
       </div>
 
       {/* ── Tabs + Filters ── */}
-      <div className="section-card" style={{ marginBottom: 12 }}>
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 3, background: "#F9FAFB", padding: 3, borderRadius: 8 }}>
+      <div className="section-card mb-3">
+        <div className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 gap-0.5 overflow-x-auto rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
             {([
               ["all", "All", stats.total],
               ["unread", "Unread", stats.unread],
@@ -814,17 +894,12 @@ export default function NotificationsAuditPage() {
               <button key={key} className={`tab ${activeTab === key ? "active" : ""}`}
                 onClick={() => { setActiveTab(key); setPage(1); }}>
                 {label}
-                <span style={{
-                  marginLeft: 4, fontSize: 9, fontWeight: 700,
-                  background: activeTab === key ? "#F3F4F6" : "#E5E7EB",
-                  color: "#6B7280",
-                  padding: "1px 5px", borderRadius: 999,
-                }}>{count}</span>
+                <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-px text-[9px] font-bold text-slate-500">{count}</span>
               </button>
             ))}
           </div>
           {hasFilters && (
-            <button className="clear-btn" onClick={clearFilters}>
+            <button className="clear-btn w-full justify-center sm:w-auto" onClick={clearFilters}>
               <X className="h-3 w-3" aria-hidden="true" />
               Clear
             </button>
@@ -832,60 +907,56 @@ export default function NotificationsAuditPage() {
         </div>
 
         {/* Filter bar - más compacta */}
-        <div style={{
-          padding: "8px 12px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          alignItems: "flex-end",
-          borderBottom: "1px solid #F3F4F6",
-        }}>
-          <div style={{ minWidth: 130, flex: "1 1 auto" }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: "#9CA3AF", display: "block", marginBottom: 3, letterSpacing: "0.05em", textTransform: "uppercase" }}>Type</label>
-            <select className="fi" value={filters.type} onChange={e => setFilter("type", e.target.value)} style={{ height: 30, fontSize: 11 }}>
+        <div className="grid gap-2 border-b border-slate-100 px-3 py-2 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_0.8fr_1fr_1fr]">
+          <FilterField label="Type">
+            <select className="fi h-8 text-[11px]" value={filters.type} onChange={e => setFilter("type", e.target.value)}>
               <option value="">All types</option>
               <option value="CALLBACK_OVERDUE">Callback overdue</option>
               <option value="CALLBACK_REMINDER">Callback reminder</option>
               <option value="TICKET_ASSIGNED">Ticket assigned</option>
               <option value="TICKET_FOLLOWUP_OVERDUE">Ticket follow-up overdue</option>
             </select>
-          </div>
-          <div style={{ minWidth: 80, flex: "1 1 auto" }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: "#9CA3AF", display: "block", marginBottom: 3, letterSpacing: "0.05em", textTransform: "uppercase" }}>Agent ID</label>
-            <input className="fi" placeholder="e.g. 3" value={filters.agentId} onChange={e => setFilter("agentId", e.target.value)} style={{ height: 30, fontSize: 11 }} />
-          </div>
-          <div style={{ minWidth: 90, flex: "1 1 auto" }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: "#9CA3AF", display: "block", marginBottom: 3, letterSpacing: "0.05em", textTransform: "uppercase" }}>Status</label>
-            <select className="fi" value={filters.read} onChange={e => setFilter("read", e.target.value)} style={{ height: 30, fontSize: 11 }}>
+          </FilterField>
+          <FilterField label="Agent ID">
+            <input className="fi h-8 text-[11px]" placeholder="e.g. 3" value={filters.agentId} onChange={e => setFilter("agentId", e.target.value)} />
+          </FilterField>
+          <FilterField label="Status">
+            <select className="fi h-8 text-[11px]" value={filters.read} onChange={e => setFilter("read", e.target.value)}>
               <option value="">Any</option>
               <option value="false">Unread</option>
               <option value="true">Read</option>
             </select>
-          </div>
-          <div style={{ minWidth: 110, flex: "1 1 auto" }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: "#9CA3AF", display: "block", marginBottom: 3, letterSpacing: "0.05em", textTransform: "uppercase" }}>From</label>
-            <input className="fi" type="date" value={filters.from} onChange={e => setFilter("from", e.target.value)} style={{ height: 30, fontSize: 11 }} />
-          </div>
-          <div style={{ minWidth: 110, flex: "1 1 auto" }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: "#9CA3AF", display: "block", marginBottom: 3, letterSpacing: "0.05em", textTransform: "uppercase" }}>To</label>
-            <input className="fi" type="date" value={filters.to} onChange={e => setFilter("to", e.target.value)} style={{ height: 30, fontSize: 11 }} />
-          </div>
+          </FilterField>
+          <FilterField label="From">
+            <input className="fi h-8 text-[11px]" type="date" value={filters.from} onChange={e => setFilter("from", e.target.value)} />
+          </FilterField>
+          <FilterField label="To">
+            <input className="fi h-8 text-[11px]" type="date" value={filters.to} onChange={e => setFilter("to", e.target.value)} />
+          </FilterField>
         </div>
       </div>
 
       {/* ── Table / Timeline ── */}
       <div className="section-card">
-        <div style={{
-          padding: "8px 14px", borderBottom: "1px solid #F3F4F6",
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#111827" }}>
-            {viewMode === "table" ? "Notification log" : "Timeline view"}
-          </span>
-          <span style={{
-            fontSize: 10, color: "#6B7280", fontFamily: "'DM Mono', monospace",
-            background: "#F3F4F6", padding: "1px 6px", borderRadius: 999,
-          }}>{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
+        <div className="flex flex-col gap-1 border-b border-slate-100 px-3.5 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-semibold text-slate-900">
+              {viewMode === "table" ? "Notification log" : "Timeline view"}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-500">
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-400">
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-red-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              {stats.unread} unread
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+              <Users className="h-3 w-3" aria-hidden="true" />
+              {stats.broadcast} broadcast
+            </span>
+          </div>
         </div>
 
         {viewMode === "timeline" ? (
@@ -906,8 +977,8 @@ export default function NotificationsAuditPage() {
             )}
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 750 }}>
+          <div className="scrollbar-app overflow-x-auto">
+            <table className="w-full border-collapse" style={{ minWidth: 820 }}>
               <thead>
                 <tr>
                   <th style={{ ...thStyle("id"), width: 50 }} onClick={() => toggleSort("id")}>
@@ -1012,14 +1083,11 @@ export default function NotificationsAuditPage() {
 
         {/* Paginación más compacta */}
         {totalPages > 1 && (
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "8px 12px", borderTop: "1px solid #F3F4F6",
-          }}>
+          <div className="flex flex-col gap-2 border-t border-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
             <span style={{ fontSize: 11, color: "#9CA3AF" }}>
               <strong style={{ color: "#374151" }}>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong> of <strong style={{ color: "#374151" }}>{filtered.length}</strong>
             </span>
-            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+            <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
               <button className="page-btn" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
                 <ChevronsLeft className="h-3.5 w-3.5" aria-hidden="true" />
               </button>

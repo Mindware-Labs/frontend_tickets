@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -108,6 +108,7 @@ type Campaign = {
   yarda?: { name?: string | null } | null;
   isActive?: boolean;
   tipo?: string;
+  createdAt?: string;
 };
 
 type KvPair = {
@@ -2630,6 +2631,7 @@ export default function CampaignReportsPage() {
   useDialogCleanup();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setSheetOpen } = useAircall();
 
   const campaignIdParam = searchParams.get("campaignId");
   const startDateParam = searchParams.get("startDate");
@@ -2644,6 +2646,7 @@ export default function CampaignReportsPage() {
   const [startDate, setStartDate] = useState(startDateParam || "");
   const [endDate, setEndDate] = useState(endDateParam || "");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const hasAutoOpenedFiltersRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CampaignFullReport | null>(null);
   const [crossFilters, setCrossFilters] =
@@ -2662,6 +2665,48 @@ export default function CampaignReportsPage() {
       ) || null,
     [campaigns, selectedCampaignId],
   );
+
+  // Auto-open filters sheet when arriving with a campaignId but no dates set
+  useEffect(() => {
+    if (
+      !hasAutoOpenedFiltersRef.current &&
+      campaignIdParam &&
+      !startDateParam &&
+      !endDateParam
+    ) {
+      hasAutoOpenedFiltersRef.current = true;
+      setFiltersOpen(true);
+    }
+  }, [campaignIdParam, startDateParam, endDateParam]);
+
+  // Auto-fill date range from campaign createdAt → today when arriving with
+  // a campaignId but no dates (e.g. navigating here from /campaigns)
+  const hasAutoFilledDatesRef = useRef(false);
+  useEffect(() => {
+    if (
+      hasAutoFilledDatesRef.current ||
+      !campaignIdParam ||
+      startDateParam ||
+      endDateParam ||
+      campaigns.length === 0
+    ) {
+      return;
+    }
+    const campaign = campaigns.find((c) => c.id.toString() === campaignIdParam);
+    if (!campaign?.createdAt) return;
+    const createdDate = new Date(campaign.createdAt);
+    if (isNaN(createdDate.getTime())) return;
+    hasAutoFilledDatesRef.current = true;
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    setStartDate(fmt(createdDate));
+    setEndDate(fmt(new Date()));
+  }, [campaignIdParam, startDateParam, endDateParam, campaigns]);
+
+  // Move Aircall phone out of the way when the filters sheet is open
+  useEffect(() => {
+    setSheetOpen(filtersOpen);
+    return () => setSheetOpen(false);
+  }, [filtersOpen, setSheetOpen]);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -3168,7 +3213,7 @@ export default function CampaignReportsPage() {
           onApplyFilters={applyFilters}
         />
 
-        {!hasParams ? (
+        {!hasParams && !campaignIdParam ? (
           <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
             <Empty className="min-h-0 w-full max-w-[420px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
               <EmptyHeader className="max-w-[340px] gap-2">
@@ -3187,6 +3232,39 @@ export default function CampaignReportsPage() {
                 <EmptyDescription className="max-w-[320px] text-xs leading-5 text-slate-500 dark:text-slate-400">
                   Select a campaign and date range to load campaign analytics,
                   cross-filters, and export actions.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent className="max-w-none gap-0">
+                <Button
+                  size="sm"
+                  className="h-9 rounded-lg bg-[#008f68] px-3.5 text-xs font-semibold shadow-sm hover:bg-[#007a5a]"
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  <SlidersHorizontal data-icon="inline-start" />
+                  Configure Report
+                </Button>
+              </EmptyContent>
+            </Empty>
+          </div>
+        ) : !hasParams && campaignIdParam ? (
+          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
+            <Empty className="min-h-0 w-full max-w-[400px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+              <EmptyHeader className="max-w-[320px] gap-2">
+                <EmptyMedia
+                  variant="icon"
+                  className="mb-0 size-10 rounded-xl bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                >
+                  <CalendarDays className="size-4" aria-hidden />
+                </EmptyMedia>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                  Campaign report setup
+                </span>
+                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  Select a date range
+                </EmptyTitle>
+                <EmptyDescription className="max-w-[300px] text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  Choose a start date and end date in Configure Report to load
+                  the campaign dashboard.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent className="max-w-none gap-0">

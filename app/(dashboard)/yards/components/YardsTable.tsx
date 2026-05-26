@@ -89,7 +89,7 @@ export function YardsTable({
                 <TableHead className="w-[120px] max-w-[240px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Address
                 </TableHead>
-                <TableHead className="w-[130px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className="w-[180px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
                   Contact
                 </TableHead>
                 <TableHead className="w-[88px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
@@ -173,10 +173,13 @@ export function YardsTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="font-mono text-[13px] text-slate-600 font-medium">
+                    <TableCell className="max-w-0 overflow-hidden py-3">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span
+                          className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-slate-600"
+                          title={yard.contactInfo}
+                        >
                           {yard.contactInfo}
                         </span>
                       </div>
