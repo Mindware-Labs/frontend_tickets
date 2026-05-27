@@ -528,14 +528,6 @@ export default function YardReportsPage() {
     }
   }, [openFiltersParam]);
 
-  // Auto-open filters sheet when arriving with no dates configured
-  useEffect(() => {
-    if (!hasAutoOpenedFiltersRef.current && !startDateParam && !endDateParam) {
-      hasAutoOpenedFiltersRef.current = true;
-      setFiltersModalOpen(true);
-    }
-  }, [startDateParam, endDateParam]);
-
   // Move Aircall phone out of the way when the filters sheet is open
   useEffect(() => {
     setSheetOpen(filtersModalOpen);
@@ -587,16 +579,21 @@ export default function YardReportsPage() {
     router.push(`/reports/yards?${params.toString()}`);
   };
 
-  const handleDateChange = () => {
+  const handleDateChange = (start?: string, end?: string) => {
     const params = new URLSearchParams();
     if (selectedYardId) params.set("yardId", selectedYardId);
-    if (startDate) params.set("startDate", startDate);
-    if (endDate) params.set("endDate", endDate);
+    const finalStart = start !== undefined ? start : startDate;
+    const finalEnd = end !== undefined ? end : endDate;
+    if (finalStart) params.set("startDate", finalStart);
+    if (finalEnd) params.set("endDate", finalEnd);
     router.push(`/reports/yards?${params.toString()}`);
   };
 
-  const applyFilters = () => {
-    if (!startDate || !endDate) {
+  const applyFilters = (start?: string, end?: string) => {
+    const finalStart = start !== undefined ? start : startDate;
+    const finalEnd = end !== undefined ? end : endDate;
+
+    if (!finalStart || !finalEnd) {
       toast({
         title: "Date range required",
         description: "Select start and end date before applying filters.",
@@ -606,17 +603,9 @@ export default function YardReportsPage() {
       return;
     }
 
-    if (!isDateRangeValid) {
-      toast({
-        title: "Invalid date range",
-        description: "Start date cannot be later than end date.",
-        variant: "destructive",
-      });
-      setFiltersModalOpen(true);
-      return;
-    }
-
-    handleDateChange();
+    setStartDate(finalStart);
+    setEndDate(finalEnd);
+    handleDateChange(finalStart, finalEnd);
     setFiltersModalOpen(false);
   };
 

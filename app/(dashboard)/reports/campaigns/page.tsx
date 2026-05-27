@@ -2826,7 +2826,7 @@ export default function CampaignReportsPage() {
     };
   }, [campaignIdParam, startDateParam, endDateParam]);
 
-  const applyFilters = () => {
+  const applyFilters = (start?: string, end?: string) => {
     if (!selectedCampaignId) {
       toast({
         title: "Select a campaign",
@@ -2836,7 +2836,9 @@ export default function CampaignReportsPage() {
       setFiltersOpen(true);
       return;
     }
-    if (!startDate || !endDate) {
+    const finalStart = start !== undefined ? start : startDate;
+    const finalEnd = end !== undefined ? end : endDate;
+    if (!finalStart || !finalEnd) {
       toast({
         title: "Date range required",
         description: "Select start and end date before applying filters.",
@@ -2845,20 +2847,14 @@ export default function CampaignReportsPage() {
       setFiltersOpen(true);
       return;
     }
-    if (!isDateRangeValid) {
-      toast({
-        title: "Invalid date range",
-        description: "Start date cannot be later than end date.",
-        variant: "destructive",
-      });
-      setFiltersOpen(true);
-      return;
-    }
+
+    setStartDate(finalStart);
+    setEndDate(finalEnd);
 
     const params = new URLSearchParams();
     params.set("campaignId", selectedCampaignId);
-    params.set("startDate", startDate);
-    params.set("endDate", endDate);
+    params.set("startDate", finalStart);
+    params.set("endDate", finalEnd);
     router.push(`/reports/campaigns?${params.toString()}`);
     setFiltersOpen(false);
   };

@@ -66,7 +66,7 @@ type CampaignFiltersSheetProps = {
   onEndDateChange: (value: string) => void;
   onExportPDF: () => void;
   onExportExcel: () => void;
-  onApplyFilters: () => void;
+  onApplyFilters: (start?: string, end?: string) => void;
   isExportingPdf?: boolean;
   isExportingExcel?: boolean;
 };
@@ -117,9 +117,9 @@ export function CampaignFiltersSheet({
     setEndPopoverOpen(false);
   }, [open, onCampaignOpenChange]);
 
-  const hasDateRange = Boolean(startDate && endDate);
-  const isDateRangeValid = hasDateRange
-    ? new Date(startDate) <= new Date(endDate)
+  const hasDateRange = Boolean(localStartDate && localEndDate);
+  const isDateRangeValid = hasDateRange && localStartDate && localEndDate
+    ? localStartDate <= localEndDate
     : true;
   const showMissingDateAlert = Boolean(selectedCampaignId) && !hasDateRange;
   const isCampaignPopoverOpen = open && campaignOpen;
@@ -143,21 +143,11 @@ export function CampaignFiltersSheet({
 
   const handleStartSelect = (date: Date | undefined) => {
     setLocalStartDate(date);
-    if (!date) {
-      onStartDateChange("");
-      return;
-    }
-    onStartDateChange(format(date, "yyyy-MM-dd"));
     setStartPopoverOpen(false);
   };
 
   const handleEndSelect = (date: Date | undefined) => {
     setLocalEndDate(date);
-    if (!date) {
-      onEndDateChange("");
-      return;
-    }
-    onEndDateChange(format(date, "yyyy-MM-dd"));
     setEndPopoverOpen(false);
   };
 
@@ -307,14 +297,14 @@ export function CampaignFiltersSheet({
                 className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
                 onClick={() => {
                   const today = new Date();
-                  let start = new Date(2024, 0, 1);
+                  let start = new Date(2026, 0, 1);
                   const selectedCampaign = campaigns.find((c) => c.id.toString() === selectedCampaignId);
                   if (selectedCampaign?.createdAt) {
                     const parsed = new Date(selectedCampaign.createdAt);
                     if (!isNaN(parsed.getTime())) start = parsed;
                   }
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(today);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">All time</span>
@@ -328,8 +318,8 @@ export function CampaignFiltersSheet({
                   const today = new Date();
                   const start = new Date();
                   start.setDate(today.getDate() - 7);
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(today);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 7 days</span>
@@ -343,8 +333,8 @@ export function CampaignFiltersSheet({
                   const today = new Date();
                   const start = new Date();
                   start.setDate(today.getDate() - 30);
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(today);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 30 days</span>
@@ -357,8 +347,8 @@ export function CampaignFiltersSheet({
                 onClick={() => {
                   const today = new Date();
                   const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(today);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">This month</span>
@@ -372,8 +362,8 @@ export function CampaignFiltersSheet({
                   const today = new Date();
                   const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                   const end = new Date(today.getFullYear(), today.getMonth(), 0);
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(end, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(end);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last month</span>
@@ -386,8 +376,8 @@ export function CampaignFiltersSheet({
                 onClick={() => {
                   const today = new Date();
                   const start = new Date(today.getFullYear(), 0, 1);
-                  onStartDateChange(format(start, "yyyy-MM-dd"));
-                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                  setLocalStartDate(start);
+                  setLocalEndDate(today);
                 }}
               >
                 <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">YTD</span>
@@ -608,7 +598,12 @@ export function CampaignFiltersSheet({
             Cancel
           </Button>
           <Button
-            onClick={onApplyFilters}
+            onClick={() => {
+              onApplyFilters(
+                localStartDate ? format(localStartDate, "yyyy-MM-dd") : "",
+                localEndDate ? format(localEndDate, "yyyy-MM-dd") : ""
+              );
+            }}
             className="h-9 w-full rounded-lg bg-[#008f68] text-xs font-semibold shadow-sm hover:bg-[#007a5a] sm:w-auto sm:flex-1"
             disabled={!selectedCampaignId || !hasDateRange || !isDateRangeValid}
           >
