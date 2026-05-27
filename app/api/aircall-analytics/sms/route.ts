@@ -24,16 +24,68 @@ function normalizeMediaUrls(value: unknown): string[] | null {
 function normalizeRef(raw: any, fallbackId?: unknown) {
   if (!raw && fallbackId === undefined) return null;
   const source = raw && typeof raw === "object" ? raw : {};
-  const id = normalizeNullableNumber(source.id ?? fallbackId);
+  const id = normalizeNullableNumber(
+    source.id ?? source.agentId ?? source.agent_id ?? fallbackId,
+  );
   if (id === null) return null;
+  const firstName = source.firstName ?? source.first_name ?? null;
+  const lastName = source.lastName ?? source.last_name ?? null;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const name = [
+    source.name,
+    source.nombre,
+    source.fullName,
+    source.full_name,
+    fullName,
+  ].find((value) => typeof value === "string" && value.trim());
   return {
     id,
-    name: source.name ?? source.nombre ?? source.fullName ?? null,
+    name: name || null,
     email: source.email ?? null,
     phone: source.phone ?? source.phoneNumber ?? null,
     number: source.number ?? source.phoneNumber ?? null,
     nombre: source.nombre ?? source.name ?? null,
   };
+}
+
+function normalizeAgent(raw: any) {
+  return normalizeRef(
+    raw?.agent ??
+      raw?.assignedAgent ??
+      raw?.assigned_agent ??
+      raw?.assignedTo ??
+      raw?.assigned_to ??
+      raw?.user ??
+      raw?.senderUser ??
+      raw?.sender_user ??
+      raw?.sentBy ??
+      raw?.sent_by ??
+      raw?.createdBy ??
+      raw?.created_by ??
+      raw?.owner,
+    raw?.agentId ??
+      raw?.agent_id ??
+      raw?.agentID ??
+      raw?.assignedAgentId ??
+      raw?.assigned_agent_id ??
+      raw?.assigneeId ??
+      raw?.assignee_id ??
+      raw?.assignedToId ??
+      raw?.assigned_to_id ??
+      raw?.userId ??
+      raw?.user_id ??
+      raw?.userID ??
+      raw?.senderUserId ??
+      raw?.sender_user_id ??
+      raw?.sentById ??
+      raw?.sent_by_id ??
+      raw?.sent_by_agent_id ??
+      raw?.createdById ??
+      raw?.created_by_id ??
+      raw?.created_by_agent_id ??
+      raw?.ownerId ??
+      raw?.owner_id,
+  );
 }
 
 function normalizeSmsMessage(raw: any) {
@@ -61,7 +113,7 @@ function normalizeSmsMessage(raw: any) {
     externalNumber: raw?.externalNumber ?? raw?.external_number ?? raw?.customerPhone ?? null,
     mediaUrls: normalizeMediaUrls(raw?.mediaUrls ?? raw?.media_urls ?? raw?.attachments),
     customer: normalizeRef(raw?.customer, raw?.customerId),
-    agent: normalizeRef(raw?.agent ?? raw?.user, raw?.agentId ?? raw?.userId),
+    agent: normalizeAgent(raw),
     phoneLine: normalizeRef(raw?.phoneLine ?? raw?.line, raw?.phoneLineId),
     campaign: normalizeRef(raw?.campaign, raw?.campaignId),
     sentAt: raw?.sentAt ?? raw?.sent_at ?? null,

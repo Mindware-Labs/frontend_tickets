@@ -1,4 +1,5 @@
 import {
+  type SmsAgentRef,
   type SmsConversation,
   type SmsDirection,
   type SmsDirectionFilter,
@@ -339,4 +340,51 @@ export function avatarHueFromString(value: string): number {
 
 export function directionLabel(direction: SmsDirection): string {
   return direction === "SENT" ? "Outbound" : "Inbound";
+}
+
+export function agentDisplayName(agent?: SmsAgentRef | null): string {
+  return (
+    agent?.name?.trim() ||
+    agent?.email?.trim() ||
+    (agent?.id != null ? `Agent #${agent.id}` : "Sin agente")
+  );
+}
+
+export function conversationAgentLabel(conversation: SmsConversation): string {
+  const primaryAgent =
+    [...conversation.messages]
+      .reverse()
+      .find((message) => message.direction === "SENT" && message.agent)?.agent ??
+    conversation.lastMessage.agent ??
+    conversation.agents[0];
+
+  if (!primaryAgent) return "Sin agente";
+  if (conversation.agents.length <= 1) return agentDisplayName(primaryAgent);
+  return `${agentDisplayName(primaryAgent)} +${conversation.agents.length - 1}`;
+}
+
+export function conversationAgentNames(conversation: SmsConversation): string[] {
+  if (conversation.agents.length === 0) return ["Sin agente"];
+
+  const seen = new Set<number | string>();
+  return conversation.messages
+    .filter((message) => message.direction === "SENT" && message.agent)
+    .map((message) => message.agent!)
+    .concat(conversation.agents)
+    .filter((agent) => {
+      const key = agent.id ?? agent.email ?? agent.name;
+      if (key == null || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(agentDisplayName);
+}
+
+export function conversationHasAgent(
+  conversation: SmsConversation,
+  agentFilter: string,
+): boolean {
+  if (agentFilter === "all") return true;
+  if (agentFilter === "unassigned") return conversation.agents.length === 0;
+  return conversation.agents.some((agent) => String(agent.id) === agentFilter);
 }

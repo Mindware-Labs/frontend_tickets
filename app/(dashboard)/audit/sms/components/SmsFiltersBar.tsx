@@ -23,6 +23,11 @@ import {
   type SmsStatusFilter,
 } from "./sms-types";
 
+export interface SmsAgentFilterOption {
+  value: string;
+  label: string;
+}
+
 interface SmsFiltersBarProps {
   period: SmsPeriodKey;
   onPeriodChange: (value: SmsPeriodKey) => void;
@@ -30,6 +35,9 @@ interface SmsFiltersBarProps {
   onDirectionChange: (value: SmsDirectionFilter) => void;
   status: SmsStatusFilter;
   onStatusChange: (value: SmsStatusFilter) => void;
+  agentFilter: string;
+  onAgentFilterChange: (value: string) => void;
+  agentOptions: SmsAgentFilterOption[];
   search: string;
   onSearchChange: (value: string) => void;
   onClearAll: () => void;
@@ -69,6 +77,9 @@ export function SmsFiltersBar({
   onDirectionChange,
   status,
   onStatusChange,
+  agentFilter,
+  onAgentFilterChange,
+  agentOptions,
   search,
   onSearchChange,
   onClearAll,
@@ -97,6 +108,13 @@ export function SmsFiltersBar({
         onValueChange={(v) => onStatusChange(v as SmsStatusFilter)}
         options={STATUS_OPTIONS}
         active={status !== "all"}
+      />
+      <FilterPill
+        ariaLabel="Agent"
+        value={agentFilter}
+        onValueChange={onAgentFilterChange}
+        options={agentOptions}
+        active={agentFilter !== "all"}
       />
 
       <div className="relative ml-auto flex min-w-[200px] flex-1 items-center sm:max-w-[300px]">

@@ -28,9 +28,11 @@ import { SmsChatPane } from "./components/SmsChatPane";
 import { SmsConversationList } from "./components/SmsConversationList";
 import { SmsFiltersBar } from "./components/SmsFiltersBar";
 import {
+  agentDisplayName,
   applySmsFilters,
   buildSmsConversations,
   classifySmsStatus,
+  conversationHasAgent,
   formatPhone,
 } from "./components/sms-helpers";
 import {
@@ -55,6 +57,18 @@ interface ApiEnvelope<T> {
   message?: string;
 }
 
+interface AgentDirectoryItem {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  first_name?: string | null;
+  lastName?: string | null;
+  last_name?: string | null;
+  fullName?: string | null;
+  full_name?: string | null;
+}
+
 function periodToParams(period: SmsPeriodKey): URLSearchParams {
   const params = new URLSearchParams();
   if (period === "1d") {
@@ -73,10 +87,14 @@ export default function SmsAuditPage() {
   const [period, setPeriod] = useState<SmsPeriodKey>(DEFAULT_PERIOD);
   const [direction, setDirection] = useState<SmsDirectionFilter>("all");
   const [status, setStatus] = useState<SmsStatusFilter>("all");
+  const [agentFilter, setAgentFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [serverSearch, setServerSearch] = useState("");
 
   const [messages, setMessages] = useState<SmsMessageRecord[]>([]);
+  const [agentDirectory, setAgentDirectory] = useState<
+    Record<number, { name?: string | null; email?: string | null }>
+  >({});
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -100,6 +118,50 @@ export default function SmsAuditPage() {
     update();
     const timer = window.setInterval(update, 60_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAgents() {
+      try {
+        const response = await fetch("/api/agents", {
+          credentials: "include",
+        });
+        const json: ApiEnvelope<AgentDirectoryItem[]> & {
+          data?: AgentDirectoryItem[];
+        } = await response.json();
+        if (cancelled || !response.ok || !json.success) return;
+
+        const directory: Record<
+          number,
+          { name?: string | null; email?: string | null }
+        > = {};
+        const agents = Array.isArray(json.data) ? json.data : [];
+        for (const agent of agents) {
+          const id = Number(agent.id);
+          if (!Number.isFinite(id)) continue;
+          const name =
+            agent.name?.trim() ||
+            agent.fullName?.trim() ||
+            agent.full_name?.trim() ||
+            [agent.firstName ?? agent.first_name, agent.lastName ?? agent.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim() ||
+            null;
+          directory[id] = { name, email: agent.email ?? null };
+        }
+        setAgentDirectory(directory);
+      } catch {
+        if (!cancelled) setAgentDirectory({});
+      }
+    }
+
+    void loadAgents();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ──────────────────────────────────────────────────────────────────
@@ -171,9 +233,28 @@ export default function SmsAuditPage() {
   // ──────────────────────────────────────────────────────────────────
   // Derived state
   // ──────────────────────────────────────────────────────────────────
+  const messagesWithAgentNames = useMemo(
+    () =>
+      messages.map((message) => {
+        if (!message.agent?.id) return message;
+        const directoryAgent = agentDirectory[message.agent.id];
+        if (!directoryAgent) return message;
+        return {
+          ...message,
+          agent: {
+            ...message.agent,
+            name: message.agent.name ?? directoryAgent.name ?? null,
+            email: message.agent.email ?? directoryAgent.email ?? null,
+          },
+        };
+      }),
+    [agentDirectory, messages],
+  );
+
   const filteredMessages = useMemo(
-    () => applySmsFilters(messages, { direction, status, search }),
-    [messages, direction, status, search],
+    () =>
+      applySmsFilters(messagesWithAgentNames, { direction, status, search }),
+    [messagesWithAgentNames, direction, status, search],
   );
 
   const conversations: SmsConversation[] = useMemo(
@@ -181,16 +262,55 @@ export default function SmsAuditPage() {
     [filteredMessages],
   );
 
+  const agentOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    let hasUnassigned = false;
+
+    for (const conversation of conversations) {
+      if (conversation.agents.length === 0) {
+        hasUnassigned = true;
+        continue;
+      }
+      for (const agent of conversation.agents) {
+        byId.set(String(agent.id), agentDisplayName(agent));
+      }
+    }
+
+    return [
+      { value: "all", label: "All agents" },
+      ...(hasUnassigned ? [{ value: "unassigned", label: "Sin agente" }] : []),
+      ...Array.from(byId.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }, [conversations]);
+
+  const agentFilteredConversations = useMemo(
+    () =>
+      conversations.filter((conversation) =>
+        conversationHasAgent(conversation, agentFilter),
+      ),
+    [agentFilter, conversations],
+  );
+
+  const agentFilteredMessages = useMemo(
+    () =>
+      agentFilteredConversations.flatMap(
+        (conversation) => conversation.messages,
+      ),
+    [agentFilteredConversations],
+  );
+
   // Counts that drive the sidebar tab badges.
   const tabCounts = useMemo(() => {
     let pending = 0;
     let failed = 0;
-    for (const c of conversations) {
+    for (const c of agentFilteredConversations) {
       if (c.lastMessage.direction === "RECEIVED") pending += 1;
       if (c.failedCount > 0) failed += 1;
     }
-    return { all: conversations.length, pending, failed };
-  }, [conversations]);
+    return { all: agentFilteredConversations.length, pending, failed };
+  }, [agentFilteredConversations]);
 
   const auditMetrics = useMemo(() => {
     let inbound = 0;
@@ -198,7 +318,7 @@ export default function SmsAuditPage() {
     let failed = 0;
     let delivered = 0;
 
-    for (const message of filteredMessages) {
+    for (const message of agentFilteredMessages) {
       if (message.direction === "RECEIVED") inbound += 1;
       else outbound += 1;
 
@@ -207,14 +327,14 @@ export default function SmsAuditPage() {
       if (bucket === "delivered") delivered += 1;
     }
 
-    const pending = conversations.filter(
+    const pending = agentFilteredConversations.filter(
       (c) => c.lastMessage.direction === "RECEIVED",
     ).length;
     const deliveryRate =
       outbound > 0 ? Math.round((delivered / outbound) * 100) : null;
 
     return {
-      conversations: conversations.length,
+      conversations: agentFilteredConversations.length,
       inbound,
       outbound,
       pending,
@@ -222,11 +342,11 @@ export default function SmsAuditPage() {
       delivered,
       deliveryRate,
     };
-  }, [filteredMessages, conversations]);
+  }, [agentFilteredMessages, agentFilteredConversations]);
 
   // Apply sidebar-local filters: tab + free-text search.
   const visibleConversations = useMemo(() => {
-    let list = conversations;
+    let list = agentFilteredConversations;
 
     if (threadTab === "pending") {
       list = list.filter((c) => c.lastMessage.direction === "RECEIVED");
@@ -235,7 +355,7 @@ export default function SmsAuditPage() {
     }
 
     return list;
-  }, [conversations, threadTab]);
+  }, [agentFilteredConversations, threadTab]);
 
   const displayedConversations = useMemo(
     () => visibleConversations.slice(0, INITIAL_CONVERSATION_LIMIT),
@@ -247,11 +367,11 @@ export default function SmsAuditPage() {
     0,
   );
 
-  const exportMessages = filteredMessages;
+  const exportMessages = agentFilteredMessages;
 
   const selectedConversation = useMemo(
-    () => conversations.find((c) => c.key === selectedKey) ?? null,
-    [conversations, selectedKey],
+    () => agentFilteredConversations.find((c) => c.key === selectedKey) ?? null,
+    [agentFilteredConversations, selectedKey],
   );
 
   // Auto-select the first visible conversation when nothing is selected (or
@@ -267,7 +387,10 @@ export default function SmsAuditPage() {
   }, [displayedConversations, selectedKey]);
 
   const hasActiveFilters =
-    direction !== "all" || status !== "all" || search.trim() !== "";
+    direction !== "all" ||
+    status !== "all" ||
+    agentFilter !== "all" ||
+    search.trim() !== "";
 
   const canLoadMore = page < totalPages;
 
@@ -284,6 +407,7 @@ export default function SmsAuditPage() {
   const handleClearAll = useCallback(() => {
     setDirection("all");
     setStatus("all");
+    setAgentFilter("all");
     setSearch("");
     setServerSearch("");
   }, []);
@@ -347,7 +471,7 @@ export default function SmsAuditPage() {
           message.direction,
           message.status,
           message.customer?.name || message.customer?.phone,
-          message.agent?.name || message.agent?.email,
+          message.agent?.name || message.agent?.email || "Sin agente",
           message.phoneLine?.name || message.phoneLine?.number,
           message.campaign?.nombre,
           message.fromNumber ? formatPhone(message.fromNumber) : "",
@@ -372,6 +496,68 @@ export default function SmsAuditPage() {
       link.remove();
       URL.revokeObjectURL(url);
   }, [exportMessages, period]);
+
+  const handleExportThread = useCallback((conversation: SmsConversation) => {
+    if (conversation.messages.length === 0) return;
+
+    const headers = [
+      "id",
+      "aircallMessageId",
+      "conversationId",
+      "direction",
+      "status",
+      "customer",
+      "agent",
+      "phoneLine",
+      "campaign",
+      "from",
+      "to",
+      "externalNumber",
+      "timestamp",
+      "body",
+      "mediaCount",
+    ];
+    const rows = conversation.messages.map((message) => {
+      const timestamp =
+        (message.direction === "RECEIVED"
+          ? message.receivedAt
+          : message.sentAt) ||
+        message.sentAt ||
+        message.receivedAt ||
+        message.createdAt;
+      return [
+        message.id,
+        message.aircallMessageId,
+        message.aircallConversationId,
+        message.direction,
+        message.status,
+        message.customer?.name || message.customer?.phone,
+        message.agent?.name || message.agent?.email || "Sin agente",
+        message.phoneLine?.name || message.phoneLine?.number,
+        message.campaign?.nombre,
+        message.fromNumber ? formatPhone(message.fromNumber) : "",
+        message.toNumber ? formatPhone(message.toNumber) : "",
+        message.externalNumber ? formatPhone(message.externalNumber) : "",
+        timestamp,
+        message.body,
+        message.mediaUrls?.length ?? 0,
+      ];
+    });
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(csvCell).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const safeKey = conversation.key.replace(/[^a-z0-9_-]+/gi, "-");
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sms-thread-${safeKey}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const handleLoadMore = useCallback(() => {
     if (canLoadMore && !loadingMore && !loadingList) {
@@ -423,6 +609,9 @@ export default function SmsAuditPage() {
             onDirectionChange={setDirection}
             status={status}
             onStatusChange={setStatus}
+            agentFilter={agentFilter}
+            onAgentFilterChange={setAgentFilter}
+            agentOptions={agentOptions}
             search={search}
             onSearchChange={setSearch}
             onClearAll={handleClearAll}
@@ -485,7 +674,11 @@ export default function SmsAuditPage() {
 
           {/* Right pane (desktop) */}
           <section className="hidden h-full min-h-0 flex-col lg:flex">
-            <SmsChatPane conversation={selectedConversation} now={now ?? 0} />
+            <SmsChatPane
+              conversation={selectedConversation}
+              now={now ?? 0}
+              onExportThread={handleExportThread}
+            />
           </section>
         </div>
       </div>
@@ -502,7 +695,11 @@ export default function SmsAuditPage() {
           className="flex h-dvh w-full max-w-full flex-col gap-0 p-0 sm:max-w-md"
         >
           <SheetTitle className="sr-only">SMS conversation</SheetTitle>
-          <SmsChatPane conversation={selectedConversation} now={now ?? 0} />
+          <SmsChatPane
+            conversation={selectedConversation}
+            now={now ?? 0}
+            onExportThread={handleExportThread}
+          />
         </SheetContent>
       </Sheet>
     </div>

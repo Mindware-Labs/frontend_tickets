@@ -7,6 +7,7 @@ import {
   CheckCheck,
   Clock,
   Copy,
+  Download,
   Hash,
   Image as ImageIcon,
   Megaphone,
@@ -15,12 +16,14 @@ import {
   Phone,
   Send,
   Smile,
+  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   avatarHueFromString,
   classifySmsStatus,
+  conversationAgentNames,
   dayKey,
   dayLabel,
   formatPhone,
@@ -38,6 +41,7 @@ import {
 interface SmsChatPaneProps {
   conversation: SmsConversation | null;
   now?: number;
+  onExportThread?: (conversation: SmsConversation) => void;
 }
 
 interface ChatGroup {
@@ -48,7 +52,11 @@ interface ChatGroup {
 
 const RECENT_MS = 60 * 60 * 1000; // 1h "online" heuristic for audit context
 
-export function SmsChatPane({ conversation, now = Date.now() }: SmsChatPaneProps) {
+export function SmsChatPane({
+  conversation,
+  now = Date.now(),
+  onExportThread,
+}: SmsChatPaneProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const groups: ChatGroup[] = useMemo(() => {
@@ -113,7 +121,11 @@ export function SmsChatPane({ conversation, now = Date.now() }: SmsChatPaneProps
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ChatHeader conversation={conversation} now={now} />
+      <ChatHeader
+        conversation={conversation}
+        now={now}
+        onExportThread={onExportThread}
+      />
 
       <div
         ref={scrollRef}
@@ -146,9 +158,11 @@ export function SmsChatPane({ conversation, now = Date.now() }: SmsChatPaneProps
 function ChatHeader({
   conversation,
   now,
+  onExportThread,
 }: {
   conversation: SmsConversation;
   now: number;
+  onExportThread?: (conversation: SmsConversation) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const subtitle =
@@ -161,11 +175,13 @@ function ChatHeader({
     ? "Active in the last hour"
     : "No recent activity";
   const lastBucket = classifySmsStatus(conversation.lastMessage);
+  const agentNames = conversationAgentNames(conversation);
 
   const handleCopySummary = async () => {
     const lines = [
       `SMS thread: ${conversation.displayName}`,
       phonePretty ? `Phone: ${phonePretty}` : null,
+      `Agents: ${agentNames.join(", ")}`,
       `Messages: ${conversation.totalCount} (${conversation.inboundCount} inbound / ${conversation.outboundCount} outbound)`,
       `Failed: ${conversation.failedCount}`,
       `Last status: ${statusBucketLabel(lastBucket)}`,
@@ -224,18 +240,39 @@ function ChatHeader({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleCopySummary}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
-        >
-          <Copy className="size-3" aria-hidden />
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleCopySummary}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+          >
+            <Copy className="size-3" aria-hidden />
+            {copied ? "Copied" : "Copy"}
+          </button>
+          {onExportThread && (
+            <button
+              type="button"
+              onClick={() => onExportThread(conversation)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+            >
+              <Download className="size-3" aria-hidden />
+              Export
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[52px]">
         <ContextChip icon={MessagesSquare} label={`${conversation.totalCount} messages`} tone="slate" />
+        {agentNames.map((agentName) => (
+          <ContextChip
+            key={agentName}
+            icon={UsersRound}
+            label={conversation.agents.length ? agentName : "Sin agente"}
+            tone={conversation.agents.length ? "emerald" : "slate"}
+            title={`Agente: ${agentName}`}
+          />
+        ))}
         <ContextChip icon={Clock} label={recencyLabel} tone={isRecent ? "emerald" : "slate"} />
         {conversation.failedCount > 0 && (
           <ContextChip icon={AlertCircle} label={`${conversation.failedCount} failed`} tone="rose" />
@@ -274,13 +311,16 @@ function ContextChip({
   icon: Icon,
   label,
   tone,
+  title,
 }: {
   icon: LucideIcon;
   label: string;
   tone: keyof typeof CONTEXT_CHIP_TONES;
+  title?: string;
 }) {
   return (
     <span
+      title={title ?? label}
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold",
         CONTEXT_CHIP_TONES[tone],

@@ -4,6 +4,7 @@ import { AlertTriangle, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   avatarHueFromString,
+  conversationAgentLabel,
   formatRelativeShort,
   getInitials,
   getMessageDate,
@@ -205,6 +206,20 @@ function ConversationRow({
                 {convo.failedCount > 99 ? "99+" : convo.failedCount}
               </span>
             ) : null}
+          </div>
+
+          <div className="mt-1 flex min-w-0 items-center gap-1.5">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#008f68]/70" />
+            <span
+              className={cn(
+                "truncate text-[10.5px] font-semibold",
+                convo.agents.length === 0
+                  ? "text-slate-400 dark:text-slate-500"
+                  : "text-slate-500 dark:text-slate-400",
+              )}
+            >
+              Agente: {conversationAgentLabel(convo)}
+            </span>
           </div>
         </div>
       </button>
