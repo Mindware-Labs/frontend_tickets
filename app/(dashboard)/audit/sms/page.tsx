@@ -8,13 +8,13 @@ import {
   useState,
 } from "react";
 import {
+  AlertCircle,
+  CheckCheck,
   ChevronDown,
+  Download,
   Loader2,
   MessagesSquare,
   PenSquare,
-  RefreshCw,
-  Search,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,8 @@ import { SmsFiltersBar } from "./components/SmsFiltersBar";
 import {
   applySmsFilters,
   buildSmsConversations,
+  classifySmsStatus,
+  formatPhone,
 } from "./components/sms-helpers";
 import {
   type SmsConversation,
@@ -42,8 +44,10 @@ import {
 
 const PAGE_LIMIT = 100;
 const DEFAULT_PERIOD: SmsPeriodKey = "7d";
+const INITIAL_CONVERSATION_LIMIT = 10;
 
 type ThreadTab = "all" | "pending" | "failed";
+type MetricIntent = "all" | "pending" | "failed" | "delivered";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -82,14 +86,21 @@ export default function SmsAuditPage() {
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
 
-  // Sidebar-local UX state — search query and tab filter sit alongside the
-  // global page filters and refine which conversations the rail shows.
-  const [sidebarSearch, setSidebarSearch] = useState("");
+  // Sidebar-local tab filter narrows the recent conversation rail. Full text
+  // search stays in the main filter bar so it can hit the API instead of
+  // forcing this rail to render every thread.
   const [threadTab, setThreadTab] = useState<ThreadTab>("all");
-  const sidebarSearchRef = useRef<HTMLInputElement | null>(null);
 
   const fetchTokenRef = useRef(0);
+
+  useEffect(() => {
+    const update = () => setNow(Date.now());
+    update();
+    const timer = window.setInterval(update, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // ──────────────────────────────────────────────────────────────────
   // Data fetching
@@ -181,6 +192,38 @@ export default function SmsAuditPage() {
     return { all: conversations.length, pending, failed };
   }, [conversations]);
 
+  const auditMetrics = useMemo(() => {
+    let inbound = 0;
+    let outbound = 0;
+    let failed = 0;
+    let delivered = 0;
+
+    for (const message of filteredMessages) {
+      if (message.direction === "RECEIVED") inbound += 1;
+      else outbound += 1;
+
+      const bucket = classifySmsStatus(message);
+      if (bucket === "failed") failed += 1;
+      if (bucket === "delivered") delivered += 1;
+    }
+
+    const pending = conversations.filter(
+      (c) => c.lastMessage.direction === "RECEIVED",
+    ).length;
+    const deliveryRate =
+      outbound > 0 ? Math.round((delivered / outbound) * 100) : null;
+
+    return {
+      conversations: conversations.length,
+      inbound,
+      outbound,
+      pending,
+      failed,
+      delivered,
+      deliveryRate,
+    };
+  }, [filteredMessages, conversations]);
+
   // Apply sidebar-local filters: tab + free-text search.
   const visibleConversations = useMemo(() => {
     let list = conversations;
@@ -191,25 +234,20 @@ export default function SmsAuditPage() {
       list = list.filter((c) => c.failedCount > 0);
     }
 
-    const q = sidebarSearch.trim().toLowerCase();
-    if (q) {
-      list = list.filter((c) => {
-        const haystack = [
-          c.displayName,
-          c.customer?.name,
-          c.customer?.phone,
-          c.externalNumber,
-          c.lastMessage.body,
-        ]
-          .filter(Boolean)
-          .map((s) => String(s).toLowerCase())
-          .join(" \u0001 ");
-        return haystack.includes(q);
-      });
-    }
-
     return list;
-  }, [conversations, threadTab, sidebarSearch]);
+  }, [conversations, threadTab]);
+
+  const displayedConversations = useMemo(
+    () => visibleConversations.slice(0, INITIAL_CONVERSATION_LIMIT),
+    [visibleConversations],
+  );
+
+  const hiddenConversationCount = Math.max(
+    visibleConversations.length - displayedConversations.length,
+    0,
+  );
+
+  const exportMessages = filteredMessages;
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.key === selectedKey) ?? null,
@@ -219,49 +257,19 @@ export default function SmsAuditPage() {
   // Auto-select the first visible conversation when nothing is selected (or
   // when the prior selection no longer matches the active filters).
   useEffect(() => {
-    if (visibleConversations.length === 0) {
+    if (displayedConversations.length === 0) {
       if (selectedKey !== null) setSelectedKey(null);
       return;
     }
-    if (!visibleConversations.some((c) => c.key === selectedKey)) {
-      setSelectedKey(visibleConversations[0]!.key);
+    if (!displayedConversations.some((c) => c.key === selectedKey)) {
+      setSelectedKey(displayedConversations[0]!.key);
     }
-  }, [visibleConversations, selectedKey]);
+  }, [displayedConversations, selectedKey]);
 
   const hasActiveFilters =
     direction !== "all" || status !== "all" || search.trim() !== "";
 
   const canLoadMore = page < totalPages;
-
-  // ──────────────────────────────────────────────────────────────────
-  // Keyboard shortcut: "/" focuses the sidebar search.
-  // ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented) return;
-      const target = event.target as HTMLElement | null;
-      const isEditable =
-        !!target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable);
-
-      if (event.key === "/" && !isEditable) {
-        event.preventDefault();
-        sidebarSearchRef.current?.focus();
-        sidebarSearchRef.current?.select();
-        return;
-      }
-      if (
-        event.key === "Escape" &&
-        document.activeElement === sidebarSearchRef.current
-      ) {
-        sidebarSearchRef.current?.blur();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   // ──────────────────────────────────────────────────────────────────
   // Handlers
@@ -280,9 +288,90 @@ export default function SmsAuditPage() {
     setServerSearch("");
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    void fetchList(1, period, false);
-  }, [fetchList, period]);
+  const handleMetricClick = useCallback((intent: MetricIntent) => {
+    if (intent === "all") {
+      setThreadTab("all");
+      setStatus("all");
+      setDirection("all");
+      return;
+    }
+    if (intent === "pending") {
+      setThreadTab("pending");
+      setDirection("all");
+      setStatus("all");
+      return;
+    }
+    if (intent === "failed") {
+      setThreadTab("failed");
+      setDirection("all");
+      setStatus("failed");
+      return;
+    }
+    setThreadTab("all");
+    setDirection("SENT");
+    setStatus("delivered");
+  }, []);
+
+  const handleExportCsv = useCallback(() => {
+    if (exportMessages.length === 0) return;
+
+      const headers = [
+        "id",
+        "aircallMessageId",
+        "conversationId",
+        "direction",
+        "status",
+        "customer",
+        "agent",
+        "phoneLine",
+        "campaign",
+        "from",
+        "to",
+        "externalNumber",
+        "timestamp",
+        "body",
+        "mediaCount",
+      ];
+      const rows = exportMessages.map((message) => {
+        const timestamp =
+          (message.direction === "RECEIVED"
+            ? message.receivedAt
+            : message.sentAt) ||
+          message.sentAt ||
+          message.receivedAt ||
+          message.createdAt;
+        return [
+          message.id,
+          message.aircallMessageId,
+          message.aircallConversationId,
+          message.direction,
+          message.status,
+          message.customer?.name || message.customer?.phone,
+          message.agent?.name || message.agent?.email,
+          message.phoneLine?.name || message.phoneLine?.number,
+          message.campaign?.nombre,
+          message.fromNumber ? formatPhone(message.fromNumber) : "",
+          message.toNumber ? formatPhone(message.toNumber) : "",
+          message.externalNumber ? formatPhone(message.externalNumber) : "",
+          timestamp,
+          message.body,
+          message.mediaUrls?.length ?? 0,
+        ];
+      });
+
+      const csv = [headers, ...rows]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sms-audit-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+  }, [exportMessages, period]);
 
   const handleLoadMore = useCallback(() => {
     if (canLoadMore && !loadingMore && !loadingList) {
@@ -294,11 +383,18 @@ export default function SmsAuditPage() {
   // Render
   // ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <PageHeader
         total={total}
-        loading={loadingList}
-        onRefresh={handleRefresh}
+        onExport={handleExportCsv}
+        exportDisabled={exportMessages.length === 0}
+        exportCountLabel={String(exportMessages.length)}
+      />
+
+      <AuditMetricStrip
+        metrics={auditMetrics}
+        activeIntent={metricIntentFromFilters(threadTab, direction, status)}
+        onMetricClick={handleMetricClick}
       />
 
       {error && (
@@ -311,11 +407,11 @@ export default function SmsAuditPage() {
       <div
         className={cn(
           dashboardPanelClass,
-          "flex h-[calc(100dvh-9rem)] min-h-[560px] flex-col",
+          "flex h-[calc(100dvh-14rem)] min-h-[420px] flex-col",
         )}
       >
         {/* Filter strip — lives inside the same modal as the chat */}
-        <div className="relative shrink-0 border-b border-slate-200/80 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-4">
+        <div className="relative shrink-0 border-b border-slate-200/80 bg-white px-3 py-1.5 dark:border-slate-800 dark:bg-slate-950 sm:px-4">
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
@@ -338,12 +434,7 @@ export default function SmsAuditPage() {
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr]">
           {/* Left rail — messenger-style sidebar */}
           <aside className="flex h-full min-h-0 flex-col border-slate-200/80 dark:border-slate-800 lg:border-r">
-            <SidebarHeader visibleCount={visibleConversations.length} />
-            <SidebarSearch
-              inputRef={sidebarSearchRef}
-              value={sidebarSearch}
-              onChange={setSidebarSearch}
-            />
+            <SidebarHeader visibleCount={displayedConversations.length} />
             <SidebarTabs
               tab={threadTab}
               onChange={setThreadTab}
@@ -352,15 +443,23 @@ export default function SmsAuditPage() {
 
             <div className="flex-1 overflow-y-auto">
               <SmsConversationList
-                conversations={visibleConversations}
+                conversations={displayedConversations}
                 selectedKey={selectedKey}
                 onSelect={handleSelect}
                 loading={loadingList}
+                now={now ?? 0}
                 emptyHint={emptyHintForTab(
                   threadTab,
-                  sidebarSearch.trim() !== "",
+                  search.trim() !== "",
                 )}
               />
+
+              {hiddenConversationCount > 0 && (
+                <div className="border-t border-slate-100 bg-slate-50/60 px-3 py-2 text-center text-[11px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+                  Showing the 10 most recent. Use search above to find older
+                  threads.
+                </div>
+              )}
 
               {canLoadMore && (
                 <div className="flex justify-center border-t border-slate-100 bg-slate-50/40 p-2 dark:border-slate-800 dark:bg-slate-950/40">
@@ -386,7 +485,7 @@ export default function SmsAuditPage() {
 
           {/* Right pane (desktop) */}
           <section className="hidden h-full min-h-0 flex-col lg:flex">
-            <SmsChatPane conversation={selectedConversation} />
+            <SmsChatPane conversation={selectedConversation} now={now ?? 0} />
           </section>
         </div>
       </div>
@@ -403,7 +502,7 @@ export default function SmsAuditPage() {
           className="flex h-dvh w-full max-w-full flex-col gap-0 p-0 sm:max-w-md"
         >
           <SheetTitle className="sr-only">SMS conversation</SheetTitle>
-          <SmsChatPane conversation={selectedConversation} />
+          <SmsChatPane conversation={selectedConversation} now={now ?? 0} />
         </SheetContent>
       </Sheet>
     </div>
@@ -450,54 +549,6 @@ function SidebarHeader({ visibleCount }: { visibleCount: number }) {
       >
         <PenSquare className="size-3.5" aria-hidden />
       </button>
-    </div>
-  );
-}
-
-function SidebarSearch({
-  inputRef,
-  value,
-  onChange,
-}: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="shrink-0 border-b border-slate-200/80 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950">
-      <div className="group/search relative flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 transition-colors focus-within:border-[#008f68] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#008f68]/15 dark:border-slate-800 dark:bg-slate-900 dark:focus-within:bg-slate-950">
-        <Search
-          className="size-3.5 shrink-0 text-slate-400"
-          aria-hidden
-          strokeWidth={2.25}
-        />
-        <input
-          ref={inputRef}
-          type="search"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Search conversations…"
-          className="flex-1 bg-transparent text-[12.5px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-200 dark:placeholder:text-slate-500"
-          aria-label="Search SMS conversations"
-        />
-        {value ? (
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800"
-            aria-label="Clear search"
-          >
-            <X className="size-3" aria-hidden />
-          </button>
-        ) : (
-          <kbd
-            aria-hidden
-            className="hidden h-[18px] shrink-0 items-center rounded-md border border-slate-200 bg-white px-1.5 font-mono text-[10px] font-semibold leading-none text-slate-400 shadow-sm sm:inline-flex dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500"
-          >
-            /
-          </kbd>
-        )}
-      </div>
     </div>
   );
 }
@@ -574,18 +625,20 @@ function emptyHintForTab(tab: ThreadTab, hasSearch: boolean): string {
 // ──────────────────────────────────────────────────────────────────
 function PageHeader({
   total,
-  loading,
-  onRefresh,
+  onExport,
+  exportDisabled,
+  exportCountLabel,
 }: {
   total: number;
-  loading: boolean;
-  onRefresh: () => void;
+  onExport: () => void;
+  exportDisabled: boolean;
+  exportCountLabel: string;
 }) {
   return (
     <div
       className={cn(
         dashboardPanelClass,
-        "relative flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4",
+        "relative flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 sm:px-4",
       )}
     >
       <span
@@ -594,9 +647,9 @@ function PageHeader({
       />
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]" />
-        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
+        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
           <MessagesSquare
-            className="size-4"
+            className="size-3.5"
             aria-hidden
             strokeWidth={2.25}
           />
@@ -605,7 +658,7 @@ function PageHeader({
           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Audit · SMS
           </p>
-          <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+          <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-slate-100">
             Message audit trail
             <span className="ml-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 tabular-nums">
               {total > 0 ? `${total.toLocaleString()} loaded` : ""}
@@ -614,21 +667,149 @@ function PageHeader({
         </div>
       </div>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onRefresh}
-        disabled={loading}
-        className="h-8 gap-1.5 rounded-full px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 dark:hover:bg-slate-800"
-      >
-        <RefreshCw
-          className={cn("size-3", loading && "animate-spin")}
-          aria-hidden
-        />
-        Refresh
-      </Button>
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onExport}
+          disabled={exportDisabled}
+          className="h-7 gap-1.5 rounded-lg px-2.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 hover:bg-[#f0faf5] hover:text-[#006b4f] disabled:opacity-50 dark:hover:bg-emerald-500/10"
+        >
+          <Download className="size-3" aria-hidden />
+          Export CSV
+         
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function AuditMetricStrip({
+  metrics,
+  activeIntent,
+  onMetricClick,
+}: {
+  metrics: {
+    conversations: number;
+    inbound: number;
+    outbound: number;
+    pending: number;
+    failed: number;
+    delivered: number;
+    deliveryRate: number | null;
+  };
+  activeIntent: MetricIntent;
+  onMetricClick: (intent: MetricIntent) => void;
+}) {
+  const cards = [
+    {
+      intent: "all" as const,
+      label: "Threads",
+      value: metrics.conversations,
+      detail: `${metrics.inbound} in / ${metrics.outbound} out`,
+      icon: MessagesSquare,
+      tone: "emerald" as const,
+    },
+    {
+      intent: "pending" as const,
+      label: "Needs reply",
+      value: metrics.pending,
+      detail: "Last message inbound",
+      icon: PenSquare,
+      tone: "amber" as const,
+    },
+    {
+      intent: "failed" as const,
+      label: "Failed",
+      value: metrics.failed,
+      detail: "Delivery issues",
+      icon: AlertCircle,
+      tone: "rose" as const,
+    },
+    {
+      intent: "delivered" as const,
+      label: "Delivery",
+      value: metrics.deliveryRate == null ? "--" : `${metrics.deliveryRate}%`,
+      detail: `${metrics.delivered} delivered`,
+      icon: CheckCheck,
+      tone: "sky" as const,
+    },
+  ];
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <MetricButton
+          key={card.intent}
+          {...card}
+          active={activeIntent === card.intent}
+          onClick={() => onMetricClick(card.intent)}
+        />
+      ))}
+    </div>
+  );
+}
+
+const METRIC_TONES = {
+  emerald:
+    "text-[#006b4f] bg-[#f0faf5] ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30",
+  amber:
+    "text-amber-700 bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30",
+  rose:
+    "text-rose-700 bg-rose-50 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30",
+  sky:
+    "text-sky-700 bg-sky-50 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/30",
+} as const;
+
+function MetricButton({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number | string;
+  detail: string;
+  icon: typeof MessagesSquare;
+  tone: keyof typeof METRIC_TONES;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        dashboardPanelClass,
+        "group flex min-h-[58px] items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:border-[#008f68]/30 hover:bg-[#fbfefd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-emerald-500/5",
+        active && "border-[#008f68]/40 bg-[#f0faf5] dark:bg-emerald-500/10",
+      )}
+      aria-pressed={active}
+    >
+      <span
+        className={cn(
+          "inline-flex size-7 shrink-0 items-center justify-center rounded-lg ring-1",
+          METRIC_TONES[tone],
+        )}
+      >
+        <Icon className="size-3.5" aria-hidden strokeWidth={2.25} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          {label}
+        </span>
+        <span className="block text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tabular-nums">
+          {typeof value === "number" ? value.toLocaleString() : value}
+        </span>
+        <span className="block truncate text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
+          {detail}
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -642,4 +823,21 @@ function mergeMessages(
   const seen = new Set(prev.map((m) => m.id));
   const additions = next.filter((m) => !seen.has(m.id));
   return prev.concat(additions);
+}
+
+function metricIntentFromFilters(
+  threadTab: ThreadTab,
+  direction: SmsDirectionFilter,
+  status: SmsStatusFilter,
+): MetricIntent {
+  if (threadTab === "pending") return "pending";
+  if (threadTab === "failed" || status === "failed") return "failed";
+  if (direction === "SENT" && status === "delivered") return "delivered";
+  return "all";
+}
+
+function csvCell(value: unknown): string {
+  if (value == null) return "";
+  const text = String(value).replace(/\r?\n/g, " ");
+  return `"${text.replace(/"/g, '""')}"`;
 }

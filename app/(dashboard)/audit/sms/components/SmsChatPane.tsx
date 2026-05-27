@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Check,
   CheckCheck,
   Clock,
+  Copy,
   Hash,
   Image as ImageIcon,
   Megaphone,
@@ -26,6 +27,7 @@ import {
   formatTimeShort,
   getInitials,
   getMessageDate,
+  statusBucketLabel,
 } from "./sms-helpers";
 import {
   type SmsConversation,
@@ -35,6 +37,7 @@ import {
 
 interface SmsChatPaneProps {
   conversation: SmsConversation | null;
+  now?: number;
 }
 
 interface ChatGroup {
@@ -45,7 +48,7 @@ interface ChatGroup {
 
 const RECENT_MS = 60 * 60 * 1000; // 1h "online" heuristic for audit context
 
-export function SmsChatPane({ conversation }: SmsChatPaneProps) {
+export function SmsChatPane({ conversation, now = Date.now() }: SmsChatPaneProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const groups: ChatGroup[] = useMemo(() => {
@@ -110,7 +113,7 @@ export function SmsChatPane({ conversation }: SmsChatPaneProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ChatHeader conversation={conversation} />
+      <ChatHeader conversation={conversation} now={now} />
 
       <div
         ref={scrollRef}
@@ -140,64 +143,105 @@ export function SmsChatPane({ conversation }: SmsChatPaneProps) {
 // ────────────────────────────────────────────────────────────────────────
 // Header
 // ────────────────────────────────────────────────────────────────────────
-function ChatHeader({ conversation }: { conversation: SmsConversation }) {
+function ChatHeader({
+  conversation,
+  now,
+}: {
+  conversation: SmsConversation;
+  now: number;
+}) {
+  const [copied, setCopied] = useState(false);
   const subtitle =
     conversation.customer?.phone || conversation.externalNumber || "";
   const phonePretty = subtitle ? formatPhone(subtitle) : "";
   const hue = avatarHueFromString(conversation.displayName);
   const initials = getInitials(conversation.displayName);
-  const isRecent = Date.now() - conversation.lastTimestamp < RECENT_MS;
+  const isRecent = now - conversation.lastTimestamp < RECENT_MS;
   const recencyLabel = isRecent
     ? "Active in the last hour"
     : "No recent activity";
+  const lastBucket = classifySmsStatus(conversation.lastMessage);
+
+  const handleCopySummary = async () => {
+    const lines = [
+      `SMS thread: ${conversation.displayName}`,
+      phonePretty ? `Phone: ${phonePretty}` : null,
+      `Messages: ${conversation.totalCount} (${conversation.inboundCount} inbound / ${conversation.outboundCount} outbound)`,
+      `Failed: ${conversation.failedCount}`,
+      `Last status: ${statusBucketLabel(lastBucket)}`,
+      conversation.lastMessage.aircallConversationId
+        ? `Aircall conversation: ${conversation.lastMessage.aircallConversationId}`
+        : null,
+    ].filter(Boolean);
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
-    <div className="relative flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+    <div className="relative shrink-0 border-b border-slate-200/80 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
       />
 
-      <span className="relative shrink-0">
-        <span
-          aria-hidden
-          className="inline-flex size-10 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5 dark:ring-white/10"
-          style={{
-            background: `linear-gradient(135deg, hsl(${hue} 55% 44%), hsl(${(hue + 28) % 360} 60% 32%))`,
-          }}
-        >
-          {initials}
-        </span>
-        {isRecent && (
+      <div className="flex items-center gap-3">
+        <span className="relative shrink-0">
           <span
-            aria-label={recencyLabel}
-            title={recencyLabel}
-            className="absolute bottom-0 right-0 inline-flex size-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_2px_white,0_0_0_4px_rgba(16,185,129,0.22)] dark:shadow-[0_0_0_2px_rgb(2_6_23),0_0_0_4px_rgba(16,185,129,0.3)]"
-          />
-        )}
-      </span>
+            aria-hidden
+            className="inline-flex size-10 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5 dark:ring-white/10"
+            style={{
+              background: `linear-gradient(135deg, hsl(${hue} 55% 44%), hsl(${(hue + 28) % 360} 60% 32%))`,
+            }}
+          >
+            {initials}
+          </span>
+          {isRecent && (
+            <span
+              aria-label={recencyLabel}
+              title={recencyLabel}
+              className="absolute bottom-0 right-0 inline-flex size-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_2px_white,0_0_0_4px_rgba(16,185,129,0.22)] dark:shadow-[0_0_0_2px_rgb(2_6_23),0_0_0_4px_rgba(16,185,129,0.3)]"
+            />
+          )}
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          SMS thread
-        </p>
-        <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
-          {conversation.displayName}
-        </p>
-        {phonePretty && (
-          <p className="truncate text-[11.5px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
-            {phonePretty}
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            SMS thread
           </p>
-        )}
+          <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+            {conversation.displayName}
+          </p>
+          {phonePretty && (
+            <p className="truncate text-[11.5px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
+              {phonePretty}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCopySummary}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+        >
+          <Copy className="size-3" aria-hidden />
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
 
-      <div className="hidden flex-wrap items-center justify-end gap-1.5 sm:flex">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[52px]">
+        <ContextChip icon={MessagesSquare} label={`${conversation.totalCount} messages`} tone="slate" />
+        <ContextChip icon={Clock} label={recencyLabel} tone={isRecent ? "emerald" : "slate"} />
+        {conversation.failedCount > 0 && (
+          <ContextChip icon={AlertCircle} label={`${conversation.failedCount} failed`} tone="rose" />
+        )}
         {conversation.phoneLine?.name && (
-          <ContextChip
-            icon={Phone}
-            label={conversation.phoneLine.name}
-            tone="emerald"
-          />
+          <ContextChip icon={Phone} label={conversation.phoneLine.name} tone="emerald" />
         )}
         {conversation.campaigns.slice(0, 1).map((campaign) => (
           <ContextChip
@@ -208,11 +252,7 @@ function ChatHeader({ conversation }: { conversation: SmsConversation }) {
           />
         ))}
         {conversation.campaigns.length > 1 && (
-          <ContextChip
-            icon={Hash}
-            label={`+${conversation.campaigns.length - 1}`}
-            tone="slate"
-          />
+          <ContextChip icon={Hash} label={`+${conversation.campaigns.length - 1}`} tone="slate" />
         )}
       </div>
     </div>
@@ -224,6 +264,8 @@ const CONTEXT_CHIP_TONES = {
     "border-[#008f68]/20 bg-[#f0faf5] text-[#006b4f] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
   violet:
     "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300",
+  rose:
+    "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300",
   slate:
     "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
 } as const;

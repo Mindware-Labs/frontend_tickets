@@ -128,6 +128,8 @@ const AGENT_COLORS: [string, string][] = [
   ["#F5F3FF","#5B21B6"], ["#FFF1F2","#9F1239"],
 ];
 
+const AUDIT_FETCH_LIMIT = 250;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtDateFull(d: string) {
   return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -367,12 +369,16 @@ function StatCard({
   sub,
   icon,
   tone = "neutral",
+  active = false,
+  onClick,
 }: {
   label: string;
   value: number | string;
   sub?: string;
   icon: React.ReactNode;
   tone?: "neutral" | "danger" | "warning" | "success" | "brand" | "info";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneClass =
     tone === "brand"
@@ -387,13 +393,16 @@ function StatCard({
               ? "border-sky-100 bg-sky-50/70 text-sky-700"
               : "border-slate-100 bg-white text-slate-900";
 
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 items-start justify-between rounded-xl border px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-950",
-        toneClass,
-      )}
-    >
+  const className = cn(
+    "flex min-w-0 items-start justify-between rounded-xl border px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors dark:border-slate-800 dark:bg-slate-950",
+    toneClass,
+    onClick &&
+      "cursor-pointer hover:border-[#008f68]/35 hover:bg-[#fbfefd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
+    active && "border-[#008f68]/45 bg-[#f0faf5] ring-1 ring-[#008f68]/15",
+  );
+
+  const content = (
+    <>
       <div className="min-w-0">
         <div className="mb-1 truncate text-[9px] font-semibold uppercase tracking-wide text-slate-500">
           {label}
@@ -406,8 +415,18 @@ function StatCard({
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/70 bg-white/70 text-current shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {icon}
       </div>
-    </div>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" className={className} onClick={onClick} aria-pressed={active}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
 
 function FilterField({
@@ -575,7 +594,7 @@ export default function NotificationsAuditPage() {
 
     try {
       const response = await fetch(
-        "/api/notifications?audit=true&includeTotal=true&limit=1000",
+        `/api/notifications?audit=true&includeTotal=true&limit=${AUDIT_FETCH_LIMIT}`,
         { cache: "no-store" },
       );
       const payload = await response.json().catch(() => null);
@@ -778,7 +797,7 @@ export default function NotificationsAuditPage() {
     >
       <style>{`
         .notif-audit * { box-sizing: border-box; }
-        .fi { height: 36px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; font-weight: 500; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
+        .fi { height: 32px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; font-weight: 500; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
         .fi:focus { border-color: #008f68; box-shadow: 0 0 0 2px rgba(0,143,104,0.14); }
         .fi:hover { border-color: #cbd5e1; }
         .tab { padding: 6px 10px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: color .15s, background .15s, box-shadow .15s; background: transparent; color: #64748b; }
@@ -791,7 +810,7 @@ export default function NotificationsAuditPage() {
         .page-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
         .page-btn:disabled { opacity: 0.35; cursor: default; }
         .page-btn.active { background: #f0faf5; color: #008f68; border-color: rgba(0,143,104,.25); font-weight: 700; }
-        .export-btn { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid rgb(226 232 240 / .8); background: white; font-size: 12px; font-family: inherit; font-weight: 600; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; }
+        .export-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgb(226 232 240 / .8); background: white; font-size: 11px; font-family: inherit; font-weight: 700; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
         .export-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
         .clear-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
         .clear-btn:hover { background: #fee2e2; }
@@ -803,26 +822,22 @@ export default function NotificationsAuditPage() {
       `}</style>
 
       {/* ── Page header ── */}
-      <div className={cn(appPanelClass, "mb-2.5 flex flex-col gap-3 px-3.5 py-3 lg:flex-row lg:items-center lg:justify-between")}>
+      <div className={cn(appPanelClass, "mb-2 flex flex-col gap-2 px-3.5 py-2 lg:flex-row lg:items-center lg:justify-between")}>
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#008f68] text-white shadow-[0_1px_2px_rgba(0,143,104,0.18)]">
+          <span className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15">
             <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[15px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notifications Audit</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Audit · Notifications</p>
+            <h1 className="text-[14px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notification delivery log</h1>
             <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-              Backend delivery log - {allData.length} total records - {filtered.length} visible
+              Latest {allData.length.toLocaleString()} loaded · {filtered.length.toLocaleString()} visible
             </p>
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto_auto] lg:w-auto lg:min-w-[640px]">
-          <div className="relative min-w-0">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input ref={searchRef} className="fi pl-8"
-              placeholder="Search message, ID, agent, call, ticket..."
-              onChange={e => handleSearch(e.target.value)} />
-          </div>
+        <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
             <button className={`view-btn ${viewMode === "table" ? "active" : ""}`} onClick={() => setViewMode("table")} title="Table view">
               <Table2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -831,13 +846,9 @@ export default function NotificationsAuditPage() {
               <List className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
-          <button className="export-btn" onClick={() => loadNotifications(true)} disabled={isRefreshing || isLoading}>
-            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} aria-hidden="true" />
-            Refresh
-          </button>
           <button className="export-btn" onClick={exportCsv} disabled={filtered.length === 0}>
             <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
-            Export Csv
+            Export CSV
           </button>
         </div>
       </div>
@@ -854,21 +865,29 @@ export default function NotificationsAuditPage() {
           sub={`${stats.broadcast} broadcast`}
           tone="neutral"
           icon={<Bell className="h-4 w-4" aria-hidden="true" />}
+          active={activeTab === "all" && !filters.read}
+          onClick={() => { setActiveTab("all"); setFilter("read", ""); }}
         />
         <StatCard label="Unread" value={stats.unread}
         sub={`${stats.total ? Math.round(stats.unread / stats.total * 100) : 0}% of total`}
           tone="danger"
           icon={<AlertCircle className="h-4 w-4 text-red-500" aria-hidden="true" />}
+          active={activeTab === "unread"}
+          onClick={() => { setActiveTab("unread"); setFilter("read", ""); }}
         />
         <StatCard label="Overdue" value={stats.overdue}
           sub="callbacks + tickets"
           tone="warning"
           icon={<Clock3 className="h-4 w-4 text-amber-500" aria-hidden="true" />}
+          active={activeTab === "overdue"}
+          onClick={() => { setActiveTab("overdue"); setFilter("read", ""); }}
         />
         <StatCard label="Read" value={stats.read}
         sub={`${stats.total ? Math.round(stats.read / stats.total * 100) : 0}% read rate`}
           tone="success"
           icon={<Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
+          active={filters.read === "true"}
+          onClick={() => { setActiveTab("all"); setFilter("read", "true"); }}
         />
         <StatCard label="Resources" value={stats.calls + stats.tickets}
           sub={`${stats.calls} calls / ${stats.tickets} tickets`}
@@ -906,8 +925,14 @@ export default function NotificationsAuditPage() {
           )}
         </div>
 
-        {/* Filter bar - más compacta */}
-        <div className="grid gap-2 border-b border-slate-100 px-3 py-2 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_0.8fr_1fr_1fr]">
+        <div className="grid gap-2 border-b border-slate-100 px-3 py-2 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.15fr_0.7fr_0.75fr_0.9fr_0.9fr]">
+          <FilterField label="Search">
+            <div className="relative flex min-w-0 items-center">
+              <input ref={searchRef} className="fi h-8 pl-8 pr-2 text-[11px]"
+                placeholder="Message, ID, agent..."
+                onChange={e => handleSearch(e.target.value)} />
+            </div>
+          </FilterField>
           <FilterField label="Type">
             <select className="fi h-8 text-[11px]" value={filters.type} onChange={e => setFilter("type", e.target.value)}>
               <option value="">All types</option>
