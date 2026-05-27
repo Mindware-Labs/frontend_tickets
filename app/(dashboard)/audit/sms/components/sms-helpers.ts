@@ -346,7 +346,7 @@ export function agentDisplayName(agent?: SmsAgentRef | null): string {
   return (
     agent?.name?.trim() ||
     agent?.email?.trim() ||
-    (agent?.id != null ? `Agent #${agent.id}` : "Sin agente")
+    (agent?.id != null ? `Agent #${agent.id}` : "Without agent")
   );
 }
 
@@ -358,13 +358,13 @@ export function conversationAgentLabel(conversation: SmsConversation): string {
     conversation.lastMessage.agent ??
     conversation.agents[0];
 
-  if (!primaryAgent) return "Sin agente";
+  if (!primaryAgent) return "Without agent";
   if (conversation.agents.length <= 1) return agentDisplayName(primaryAgent);
   return `${agentDisplayName(primaryAgent)} +${conversation.agents.length - 1}`;
 }
 
 export function conversationAgentNames(conversation: SmsConversation): string[] {
-  if (conversation.agents.length === 0) return ["Sin agente"];
+  if (conversation.agents.length === 0) return ["Without agent"];
 
   const seen = new Set<number | string>();
   return conversation.messages

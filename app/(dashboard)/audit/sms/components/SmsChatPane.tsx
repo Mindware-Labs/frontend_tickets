@@ -268,9 +268,9 @@ function ChatHeader({
           <ContextChip
             key={agentName}
             icon={UsersRound}
-            label={conversation.agents.length ? agentName : "Sin agente"}
+            label={conversation.agents.length ? agentName : "Without agent"}
             tone={conversation.agents.length ? "emerald" : "slate"}
-            title={`Agente: ${agentName}`}
+            title={`Agent: ${agentName}`}
           />
         ))}
         <ContextChip icon={Clock} label={recencyLabel} tone={isRecent ? "emerald" : "slate"} />

@@ -278,7 +278,7 @@ export default function SmsAuditPage() {
 
     return [
       { value: "all", label: "All agents" },
-      ...(hasUnassigned ? [{ value: "unassigned", label: "Sin agente" }] : []),
+      ...(hasUnassigned ? [{ value: "unassigned", label: "Without agent" }] : []),
       ...Array.from(byId.entries())
         .sort((a, b) => a[1].localeCompare(b[1]))
         .map(([value, label]) => ({ value, label })),
@@ -471,7 +471,7 @@ export default function SmsAuditPage() {
           message.direction,
           message.status,
           message.customer?.name || message.customer?.phone,
-          message.agent?.name || message.agent?.email || "Sin agente",
+          message.agent?.name || message.agent?.email || "Without agent",
           message.phoneLine?.name || message.phoneLine?.number,
           message.campaign?.nombre,
           message.fromNumber ? formatPhone(message.fromNumber) : "",
@@ -532,7 +532,7 @@ export default function SmsAuditPage() {
         message.direction,
         message.status,
         message.customer?.name || message.customer?.phone,
-        message.agent?.name || message.agent?.email || "Sin agente",
+        message.agent?.name || message.agent?.email || "Without agent",
         message.phoneLine?.name || message.phoneLine?.number,
         message.campaign?.nombre,
         message.fromNumber ? formatPhone(message.fromNumber) : "",
