@@ -30,7 +30,13 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAircall } from "@/components/providers/AircallProvider";
+import {
+  SheetAnchoredToasts,
+  useSheetAnchoredToasts,
+} from "../shared/SheetAnchoredToasts";
 import { FollowUpDateTimePicker } from "./FollowUpDateTimePicker";
+import { AsyncCustomerCombobox } from "../shared/AsyncCustomerCombobox";
 import type {
   AgentOption,
   CustomerOption,
@@ -75,9 +81,7 @@ export function ScheduleCallSheet({
     scheduledAt: "",
     notes: "",
   });
-  const [customerOpen, setCustomerOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
-  const [localCustomerSearch, setLocalCustomerSearch] = useState("");
   const [localAgentSearch, setLocalAgentSearch] = useState("");
 
   const [scheduledCalls, setScheduledCalls] = useState<ScheduleCall[]>([]);
@@ -85,6 +89,24 @@ export function ScheduleCallSheet({
   const [showCompleted, setShowCompleted] = useState(false);
 
   const [view, setView] = useState<"list" | "create">("list");
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { setSheetOpen } = useAircall();
+
+  useEffect(() => {
+    setSheetOpen(open);
+    return () => setSheetOpen(false);
+  }, [open, setSheetOpen]);
+
+  const sheetToasts = useSheetAnchoredToasts({
+    open,
+    showSuccessToast,
+    showErrorToast,
+    onSuccessToastDismiss: () => setShowSuccessToast(false),
+    onErrorToastDismiss: () => setShowErrorToast(false),
+  });
 
   const fetchScheduledCalls = useCallback(async () => {
     try {
@@ -109,24 +131,11 @@ export function ScheduleCallSheet({
   useEffect(() => {
     if (!open) {
       setForm({ customerId: "", agentId: "", scheduledAt: "", notes: "" });
-      setLocalCustomerSearch("");
       setLocalAgentSearch("");
       setShowCompleted(false);
       setView("list");
     }
   }, [open]);
-
-  const filteredCustomers = useMemo(() => {
-    if (!localCustomerSearch.trim()) return customers;
-    const searchLower = localCustomerSearch.toLowerCase();
-    const searchDigits = localCustomerSearch.replace(/\D/g, "");
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(searchLower) ||
-        c.id.toString().includes(searchLower) ||
-        (c.phone || "").replace(/\D/g, "").includes(searchDigits),
-    );
-  }, [customers, localCustomerSearch]);
 
   const filteredAgents = useMemo(() => {
     if (!localAgentSearch.trim()) return agents;
@@ -151,10 +160,16 @@ export function ScheduleCallSheet({
   const handleSubmit = async () => {
     if (!form.customerId) return;
     if (!form.scheduledAt) return;
-    await onSubmit(form);
-    setView("list");
-    fetchScheduledCalls();
-    setForm({ customerId: "", agentId: "", scheduledAt: "", notes: "" });
+    try {
+      await onSubmit(form);
+      setShowSuccessToast(true);
+      setView("list");
+      fetchScheduledCalls();
+      setForm({ customerId: "", agentId: "", scheduledAt: "", notes: "" });
+    } catch {
+      setErrorMessage("Failed to schedule call");
+      setShowErrorToast(true);
+    }
   };
 
   const canSubmit = form.customerId && form.scheduledAt && !isSubmitting;
@@ -166,7 +181,21 @@ export function ScheduleCallSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+    <>
+      <SheetAnchoredToasts
+        open={open}
+        toastActive={sheetToasts.toastActive}
+        toastVisible={sheetToasts.toastVisible}
+        errorToastActive={sheetToasts.errorToastActive}
+        errorToastVisible={sheetToasts.errorToastVisible}
+        onDismissSuccess={sheetToasts.dismissSuccessToast}
+        onDismissError={sheetToasts.dismissErrorToast}
+        successTitle="Scheduled"
+        successDescription="Call scheduled successfully"
+        errorTitle="Error"
+        errorDescription={errorMessage}
+      />
+      <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
       <SheetContent
         side="right"
         hideClose
@@ -342,91 +371,14 @@ export function ScheduleCallSheet({
                 <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Customer <span className="text-red-500">*</span>
                 </Label>
-                <Popover
-                  open={customerOpen}
-                  onOpenChange={(o) => {
-                    setCustomerOpen(o);
-                    if (!o) setLocalCustomerSearch("");
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerOpen}
-                      className={cn(
-                        "w-full justify-between h-9 rounded-lg border border-slate-200/80 bg-white px-2.5 text-xs hover:border-slate-300",
-                        !form.customerId && "text-slate-400",
-                      )}
-                    >
-                      {form.customerId
-                        ? customers.find(
-                            (c) => c.id.toString() === form.customerId,
-                          )?.name || form.customerId
-                        : "Select customer..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <div className="flex flex-col">
-                      <div className="px-3 py-2 border-b">
-                        <Input
-                          placeholder="Search customer..."
-                          value={localCustomerSearch}
-                          onChange={(e) =>
-                            setLocalCustomerSearch(e.target.value)
-                          }
-                          className="h-9 text-xs"
-                        />
-                      </div>
-                      <ScrollArea className="h-60">
-                        <div className="p-1">
-                          {filteredCustomers.length === 0 ? (
-                            <div className="py-6 text-center text-sm text-muted-foreground">
-                              No customer found.
-                            </div>
-                          ) : (
-                            filteredCustomers.map((c) => (
-                              <div
-                                key={c.id}
-                                className={cn(
-                                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-xs outline-none hover:bg-accent hover:text-accent-foreground",
-                                  form.customerId === c.id.toString() &&
-                                    "bg-accent",
-                                )}
-                                onClick={() => {
-                                  setForm({
-                                    ...form,
-                                    customerId: c.id.toString(),
-                                  });
-                                  setLocalCustomerSearch("");
-                                  setCustomerOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    form.customerId === c.id.toString()
-                                      ? "opacity-100"
-                                      : "opacity-0",
-                                  )}
-                                />
-                                <div className="flex flex-col flex-1">
-                                  <span>{c.name}</span>
-                                  {c.phone && (
-                                    <span className="text-[11px] text-slate-400">
-                                      {c.phone}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <AsyncCustomerCombobox
+                  value={form.customerId}
+                  onChange={(value) =>
+                    setForm({ ...form, customerId: value })
+                  }
+                  placeholder="Select customer..."
+                  searchPlaceholder="Search customer..."
+                />
               </div>
 
               {/* Date & Time */}
@@ -438,7 +390,6 @@ export function ScheduleCallSheet({
                   value={form.scheduledAt}
                   onChange={(iso) => setForm({ ...form, scheduledAt: iso })}
                   placeholder="Pick date & time"
-                  disablePast={false}
                 />
               </div>
 
@@ -581,5 +532,6 @@ export function ScheduleCallSheet({
         )}
       </SheetContent>
     </Sheet>
+    </>
   );
 }

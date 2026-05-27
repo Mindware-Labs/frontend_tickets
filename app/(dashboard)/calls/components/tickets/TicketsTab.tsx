@@ -71,7 +71,6 @@ import {
 import { EditTicketModal } from "./EditTicketModal";
 import { TicketFiltersBar } from "./TicketFiltersBar";
 import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
-import { ScheduleCallSheet } from "../calls/ScheduleCallSheet";
 import { CreateTicketForm } from "./CreateTicketForm";
 import type { CustomerSearchOption } from "../shared/AsyncCustomerCombobox";
 import { DataTablePagination } from "../shared/DataTablePagination";
@@ -83,7 +82,6 @@ import {
   SupportTicketType,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
-  type CreateScheduleCallFormData,
 } from "../../types";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -270,8 +268,6 @@ export function TicketsTab({
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
-  const [showSchedule, setShowSchedule] = useState(false);
-  const [isScheduleSubmitting, setIsScheduleSubmitting] = useState(false);
   const [drawerGroup, setDrawerGroup] = useState<CustomerTicketGroup | null>(
     null,
   );
@@ -567,43 +563,6 @@ export function TicketsTab({
     }
   };
 
-  const handleScheduleCall = async (data: CreateScheduleCallFormData) => {
-    try {
-      setIsScheduleSubmitting(true);
-      const payload: any = {
-        customerId: Number(data.customerId),
-        scheduledAt: new Date(data.scheduledAt).toISOString(),
-      };
-      if (data.agentId) payload.agentId = Number(data.agentId);
-      if (data.notes) payload.notes = data.notes;
-
-      const res = await fetch("/api/schedule-calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (result.success) {
-        toast({ title: "Call scheduled" });
-        setShowSchedule(false);
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to schedule call",
-        variant: "destructive",
-      });
-    } finally {
-      setIsScheduleSubmitting(false);
-    }
-  };
-
   const uploadPendingAttachments = async (ticketId: number) => {
     if (pendingFiles.length === 0) return 0;
     let uploadErrors = 0;
@@ -816,17 +775,6 @@ export function TicketsTab({
         >
           <Plus className="w-3.5 h-3.5" />
           New Ticket
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowSchedule(true)}
-          className="mb-1 ml-2 shrink-0 flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
-          style={{ background: "#065f4a" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#008f68")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#065f4a")}
-        >
-          <CalendarIcon className="w-3.5 h-3.5" />
-          Schedule Call
         </button>
       </div>
 
@@ -1468,16 +1416,6 @@ export function TicketsTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* ── Schedule Call Modal ──────────────────────────────────────── */}
-      <ScheduleCallSheet
-        open={showSchedule}
-        onOpenChange={setShowSchedule}
-        customers={refData.customers}
-        agents={refData.agents}
-        onSubmit={handleScheduleCall}
-        isSubmitting={isScheduleSubmitting}
-      />
 
       {/* ── Edit Modal ───────────────────────────────────────────────── */}
       <EditTicketModal

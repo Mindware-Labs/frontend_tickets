@@ -1119,8 +1119,8 @@ export default function TicketsPage() {
   };
 
   const handleScheduleCallSubmit = async (data: CreateScheduleCallFormData) => {
+    setIsScheduleSubmitting(true);
     try {
-      setIsScheduleSubmitting(true);
       const payload: any = {
         customerId: Number(data.customerId),
         scheduledAt: new Date(data.scheduledAt).toISOString(),
@@ -1134,22 +1134,7 @@ export default function TicketsPage() {
         body: JSON.stringify(payload),
       });
       const result = await res.json();
-      if (result.success) {
-        toast({ title: "Call scheduled" });
-        setShowScheduleModal(false);
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to schedule call",
-        variant: "destructive",
-      });
+      if (!result.success) throw new Error(result.message || "Failed to schedule call");
     } finally {
       setIsScheduleSubmitting(false);
     }
