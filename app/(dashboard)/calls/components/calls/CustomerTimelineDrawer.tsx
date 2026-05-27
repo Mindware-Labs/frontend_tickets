@@ -2085,12 +2085,20 @@ export function CustomerTimelineDrawer({
                                 <button
                                   key={key}
                                   type="button"
-                                  onClick={() =>
+                                  onClick={() => {
+                                    const newStatus = key as CallStatus;
+                                    const isFollowup = newStatus === CallStatus.PENDING_FOLLOWUP;
+                                    const notCallback =
+                                      editFormData.disposition !== CallDisposition.CALLBACK_REQUIRED &&
+                                      editFormData.disposition !== CallDisposition.CALLBACK_SCHEDULED;
                                     setEditFormData({
                                       ...editFormData,
-                                      status: key as CallStatus,
-                                    })
-                                  }
+                                      status: newStatus,
+                                      ...(isFollowup && notCallback
+                                        ? { disposition: CallDisposition.CALLBACK_REQUIRED }
+                                        : {}),
+                                    });
+                                  }}
                                   className={`h-8 text-[10px] font-semibold rounded-lg border transition-all leading-tight px-1 ${
                                     isActive
                                       ? "shadow-sm"

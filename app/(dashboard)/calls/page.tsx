@@ -15,11 +15,6 @@ import {
   CallDirection,
   type CreateScheduleCallFormData,
 } from "./types";
-const CreateCallModal = dynamic(
-  () =>
-    import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
-  { ssr: false },
-);
 const ViewCallModal = dynamic(
   () => import("./components/calls/ViewCallModal").then((m) => m.ViewCallModal),
   { ssr: false },
@@ -1373,36 +1368,6 @@ export default function TicketsPage() {
               )
             }
             onClearFocus={ticketFilters.clearFocusMode}
-          />
-
-          <CreateCallModal
-            open={showCreateModal}
-            onOpenChange={(open) => {
-              setShowCreateModal(open);
-              if (!open) resetCreateForm();
-            }}
-            customers={refData.customers}
-            yards={refData.yards}
-            agents={refData.agents}
-            campaigns={refData.campaigns}
-            createFormData={createFormData}
-            setCreateFormData={setCreateFormData}
-            createValidationErrors={createValidationErrors}
-            setCreateValidationErrors={setCreateValidationErrors}
-            customerSearchCreate={customerSearchCreate}
-            setCustomerSearchCreate={setCustomerSearchCreate}
-            yardSearchCreate={yardSearchCreate}
-            setYardSearchCreate={setYardSearchCreate}
-            agentSearchCreate={agentSearchCreate}
-            setAgentSearchCreate={setAgentSearchCreate}
-            campaignSearchCreate={campaignSearchCreate}
-            setCampaignSearchCreate={setCampaignSearchCreate}
-            newAttachment={newAttachment}
-            setNewAttachment={setNewAttachment}
-            attachmentFiles={createAttachmentFiles}
-            setAttachmentFiles={setCreateAttachmentFiles}
-            isCreating={isCreating}
-            onSubmit={handleCreateTicket}
           />
 
           <ScheduleCallSheet
