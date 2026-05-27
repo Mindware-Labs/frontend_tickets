@@ -27,13 +27,15 @@ import {
 import { appPanelClass } from "@/components/layout/sidebar-theme";
 import { getPaginationPageItems } from "@/lib/pagination-pages";
 import { cn } from "@/lib/utils";
+import { NotificationsFilters } from "./components/NotificationsFilters";
+import { NotificationsStatsGrid } from "./components/NotificationsStatsGrid";
+import type { NotificationTab } from "./components/notification-types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type NotificationType =
   | "CALLBACK_OVERDUE"
-  | "CALLBACK_REMINDER"
-  | "TICKET_ASSIGNED"
-  | "TICKET_FOLLOWUP_OVERDUE";
+  | "TICKET_FOLLOWUP_OVERDUE"
+  | "SCHEDULED_CALL_DUE";
 
 type SortField = "id" | "type" | "agentId" | "read" | "createdAt";
 type SortDir = "asc" | "desc";
@@ -44,9 +46,10 @@ interface AuditEntry {
   type: NotificationType;
   message: string;
   agentId: number | null;
-  agent: { id: number; name?: string; role?: string } | null;
+  agent: { id: number; name?: string; role?: string; email?: string } | null;
   callId: number | null;
   ticketId: number | null;
+  scheduleCallId?: number | null;
   read: boolean;
   createdAt: string;
   readAt?: string | null;
@@ -54,7 +57,7 @@ interface AuditEntry {
 }
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_DATA: AuditEntry[] = [
+const MOCK_DATA: any[] = [
   { id: 1,  type: "CALLBACK_OVERDUE",         message: "Callback overdue for María López — was due May 24, 9:00 AM",       agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: 102, ticketId: null, read: false, createdAt: "2026-05-24T09:15:00Z", readAt: null,                  deliveredVia: "websocket" },
   { id: 2,  type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for +1561-269-4191 — was due May 24, 2:00 PM", agentId: 5, agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: null, ticketId: 47, read: false, createdAt: "2026-05-24T08:55:00Z", readAt: null,                  deliveredVia: "websocket" },
   { id: 3,  type: "CALLBACK_REMINDER",        message: "Callback reminder for Juan García — due in 30 minutes",             agentId: null, agent: null,                               callId: 99,  ticketId: null, read: true,  createdAt: "2026-05-23T18:30:00Z", readAt: "2026-05-23T18:35:00Z", deliveredVia: "poll"      },
@@ -100,15 +103,8 @@ const TYPE_CFG: Record<
     bg: "#FEF2F2",
     dot: "#EF4444",
   },
-  CALLBACK_REMINDER: {
-    label: "Callback reminder",
-    badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
-    dotClass: "bg-amber-500",
-    bg: "#FFFBEB",
-    dot: "#F59E0B",
-  },
-  TICKET_ASSIGNED: {
-    label: "Ticket assigned",
+  SCHEDULED_CALL_DUE: {
+    label: "Scheduled call due",
     badgeClass: "border-sky-200 bg-sky-50 text-sky-700",
     dotClass: "bg-sky-500",
     bg: "#EFF6FF",
@@ -185,16 +181,15 @@ function groupByDay(entries: AuditEntry[]): Record<string, AuditEntry[]> {
 
 const NOTIFICATION_TYPES = new Set<NotificationType>([
   "CALLBACK_OVERDUE",
-  "CALLBACK_REMINDER",
-  "TICKET_ASSIGNED",
   "TICKET_FOLLOWUP_OVERDUE",
+  "SCHEDULED_CALL_DUE",
 ]);
 
 function normalizeNotificationType(type: unknown): NotificationType {
   const normalized = String(type || "").toUpperCase();
   return NOTIFICATION_TYPES.has(normalized as NotificationType)
     ? (normalized as NotificationType)
-    : "CALLBACK_REMINDER";
+    : "SCHEDULED_CALL_DUE";
 }
 
 function normalizeAgent(raw: any, agentId: number | null): AuditEntry["agent"] {
@@ -224,6 +219,8 @@ function normalizeAuditEntry(raw: any): AuditEntry | null {
       : Number(agentIdValue);
   const callIdValue = raw?.callId ?? raw?.call?.id ?? null;
   const ticketIdValue = raw?.ticketId ?? raw?.ticket?.id ?? null;
+  const scheduleCallIdValue =
+    raw?.scheduleCallId ?? raw?.scheduleCall?.id ?? null;
 
   return {
     id,
@@ -239,6 +236,10 @@ function normalizeAuditEntry(raw: any): AuditEntry | null {
       ticketIdValue === null || ticketIdValue === undefined
         ? null
         : Number(ticketIdValue),
+    scheduleCallId:
+      scheduleCallIdValue === null || scheduleCallIdValue === undefined
+        ? null
+        : Number(scheduleCallIdValue),
     read: Boolean(raw?.read ?? raw?.isRead),
     createdAt: raw?.createdAt || raw?.created_at || new Date().toISOString(),
     readAt: raw?.readAt || raw?.read_at || null,
@@ -629,6 +630,7 @@ export default function NotificationsAuditPage() {
     const broadcast = allData.filter(n => !n.agentId).length;
     const calls = allData.filter(n => n.callId).length;
     const tickets = allData.filter(n => n.ticketId).length;
+    const schedules = allData.filter(n => n.scheduleCallId).length;
     const todayKey = new Date().toDateString();
     const today = allData.filter(n => new Date(n.createdAt).toDateString() === todayKey).length;
     const latencyValues = allData
@@ -638,7 +640,29 @@ export default function NotificationsAuditPage() {
       latencyValues.length > 0
         ? Math.round(latencyValues.reduce((sum, value) => sum + value, 0) / latencyValues.length)
         : null;
-    return { total, unread, overdue, read, broadcast, calls, tickets, today, avgReadMinutes };
+    return { total, unread, overdue, read, broadcast, calls, tickets, schedules, today, avgReadMinutes };
+  }, [allData]);
+
+  const agentOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    let hasBroadcast = false;
+    for (const notification of allData) {
+      if (!notification.agentId) {
+        hasBroadcast = true;
+        continue;
+      }
+      byId.set(
+        String(notification.agentId),
+        notification.agent?.name || notification.agent?.email || `Agent #${notification.agentId}`,
+      );
+    }
+    return [
+      { value: "", label: "All agents" },
+      ...(hasBroadcast ? [{ value: "broadcast", label: "Broadcast" }] : []),
+      ...Array.from(byId.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([value, label]) => ({ value, label })),
+    ];
   }, [allData]);
 
   // ── Filter + sort ─────────────────────────────────────────────────────────────
@@ -647,7 +671,8 @@ export default function NotificationsAuditPage() {
     if (activeTab === "unread") arr = arr.filter(n => !n.read);
     if (activeTab === "overdue") arr = arr.filter(n => n.type.includes("OVERDUE"));
     if (filters.type) arr = arr.filter(n => n.type === filters.type);
-    if (filters.agentId) arr = arr.filter(n => String(n.agentId) === filters.agentId);
+    if (filters.agentId === "broadcast") arr = arr.filter(n => !n.agentId);
+    else if (filters.agentId) arr = arr.filter(n => String(n.agentId) === filters.agentId);
     if (filters.read !== "") arr = arr.filter(n => String(n.read) === filters.read);
     if (filters.from) arr = arr.filter(n => new Date(n.createdAt) >= new Date(filters.from));
     if (filters.to) arr = arr.filter(n => new Date(n.createdAt) <= new Date(filters.to + "T23:59:59Z"));
@@ -657,8 +682,10 @@ export default function NotificationsAuditPage() {
         n.message.toLowerCase().includes(q) ||
         String(n.id).includes(q) ||
         (n.agent?.name?.toLowerCase().includes(q)) ||
+        (n.agent?.email?.toLowerCase().includes(q)) ||
         (n.callId && String(n.callId).includes(q)) ||
-        (n.ticketId && String(n.ticketId).includes(q))
+        (n.ticketId && String(n.ticketId).includes(q)) ||
+        (n.scheduleCallId && String(n.scheduleCallId).includes(q))
       );
     }
     arr.sort((a, b) => {
@@ -729,6 +756,7 @@ export default function NotificationsAuditPage() {
       "agentName",
       "callId",
       "ticketId",
+      "scheduleCallId",
       "read",
       "createdAt",
       "readAt",
@@ -741,6 +769,7 @@ export default function NotificationsAuditPage() {
       n.agent?.name ?? "Broadcast",
       n.callId ?? "",
       n.ticketId ?? "",
+      n.scheduleCallId ?? "",
       n.read,
       n.createdAt,
       n.readAt ?? "",
@@ -789,7 +818,7 @@ export default function NotificationsAuditPage() {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-dvh max-w-full overflow-x-hidden bg-[#f4f5f7] px-3 pb-8 pt-2 transition-[opacity,transform] duration-300 sm:px-4 lg:px-5 dark:bg-slate-950"
+      className="min-h-dvh max-w-full overflow-x-hidden bg-[#f4f5f7] px-3 pb-8 pt-2 font-sans transition-[opacity,transform] duration-300 sm:px-4 lg:px-5 dark:bg-slate-950"
       style={{
         opacity: animIn ? 1 : 0,
         transform: animIn ? "none" : "translateY(4px)",
@@ -797,10 +826,10 @@ export default function NotificationsAuditPage() {
     >
       <style>{`
         .notif-audit * { box-sizing: border-box; }
-        .fi { height: 32px; border: 1px solid rgb(226 232 240 / .8); border-radius: 8px; padding: 0 10px; font-size: 12px; font-weight: 500; background: white; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
-        .fi:focus { border-color: #008f68; box-shadow: 0 0 0 2px rgba(0,143,104,0.14); }
+        .fi { height: 36px; border: 1px solid transparent; border-radius: 8px; padding: 0 10px; font-size: 12px; font-weight: 500; background: #f8fafc; color: #0f172a; outline: none; width: 100%; transition: border-color .15s, box-shadow .15s, background .15s; }
+        .fi:focus { border-color: #008f68; background: white; box-shadow: 0 0 0 2px rgba(0,143,104,0.20); }
         .fi:hover { border-color: #cbd5e1; }
-        .tab { padding: 6px 10px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: color .15s, background .15s, box-shadow .15s; background: transparent; color: #64748b; }
+        .tab { padding: 6px 12px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; transition: color .15s, background .15s, box-shadow .15s; background: transparent; color: #64748b; }
         .tab:hover { color: #1e293b; }
         .tab.active { background: white; color: #008f68; box-shadow: 0 1px 2px rgba(15,23,42,0.08); font-weight: 600; }
         .view-btn { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; transition: color .15s, background .15s, box-shadow .15s; }
@@ -810,15 +839,18 @@ export default function NotificationsAuditPage() {
         .page-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
         .page-btn:disabled { opacity: 0.35; cursor: default; }
         .page-btn.active { background: #f0faf5; color: #008f68; border-color: rgba(0,143,104,.25); font-weight: 700; }
-        .export-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgb(226 232 240 / .8); background: white; font-size: 11px; font-family: inherit; font-weight: 700; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+        .export-btn { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid rgb(226 232 240 / .8); background: white; font-size: 11px; font-family: inherit; font-weight: 700; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
         .export-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
-        .clear-btn { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
+        .clear-btn { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
         .clear-btn:hover { background: #fee2e2; }
         .section-card { background: white; border: 1px solid rgb(226 232 240 / .8); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .audit-th { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; user-select: none; }
         .audit-td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .row:hover td { background: #f8fafc !important; }
         td { transition: background .12s; }
+        .dark .fi { background: rgb(15 23 42 / .8); color: #e2e8f0; }
+        .dark .fi:focus { background: #020617; }
+        .dark .section-card { background: #020617; border-color: #1e293b; }
       `}</style>
 
       {/* ── Page header ── */}
@@ -859,107 +891,33 @@ export default function NotificationsAuditPage() {
         </div>
       )}
 
-      {/* ── Stats grid (4 cards) ── */}
-      <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Total" value={stats.total}
-          sub={`${stats.broadcast} broadcast`}
-          tone="neutral"
-          icon={<Bell className="h-4 w-4" aria-hidden="true" />}
-          active={activeTab === "all" && !filters.read}
-          onClick={() => { setActiveTab("all"); setFilter("read", ""); }}
-        />
-        <StatCard label="Unread" value={stats.unread}
-        sub={`${stats.total ? Math.round(stats.unread / stats.total * 100) : 0}% of total`}
-          tone="danger"
-          icon={<AlertCircle className="h-4 w-4 text-red-500" aria-hidden="true" />}
-          active={activeTab === "unread"}
-          onClick={() => { setActiveTab("unread"); setFilter("read", ""); }}
-        />
-        <StatCard label="Overdue" value={stats.overdue}
-          sub="callbacks + tickets"
-          tone="warning"
-          icon={<Clock3 className="h-4 w-4 text-amber-500" aria-hidden="true" />}
-          active={activeTab === "overdue"}
-          onClick={() => { setActiveTab("overdue"); setFilter("read", ""); }}
-        />
-        <StatCard label="Read" value={stats.read}
-        sub={`${stats.total ? Math.round(stats.read / stats.total * 100) : 0}% read rate`}
-          tone="success"
-          icon={<Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
-          active={filters.read === "true"}
-          onClick={() => { setActiveTab("all"); setFilter("read", "true"); }}
-        />
-        <StatCard label="Resources" value={stats.calls + stats.tickets}
-          sub={`${stats.calls} calls / ${stats.tickets} tickets`}
-          tone="info"
-          icon={<FileText className="h-4 w-4" aria-hidden="true" />}
-        />
-        <StatCard label="Avg read" value={fmtCompactDuration(stats.avgReadMinutes)}
-          sub={`${stats.today} today`}
-          tone="brand"
-          icon={<Radio className="h-4 w-4" aria-hidden="true" />}
-        />
-      </div>
+      <NotificationsStatsGrid
+        stats={stats}
+        activeTab={activeTab}
+        filters={filters}
+        formatDuration={fmtCompactDuration}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setPage(1);
+        }}
+        onFilterChange={setFilter}
+      />
 
-      {/* ── Tabs + Filters ── */}
-      <div className="section-card mb-3">
-        <div className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 gap-0.5 overflow-x-auto rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
-            {([
-              ["all", "All", stats.total],
-              ["unread", "Unread", stats.unread],
-              ["overdue", "Overdue", stats.overdue],
-            ] as const).map(([key, label, count]) => (
-              <button key={key} className={`tab ${activeTab === key ? "active" : ""}`}
-                onClick={() => { setActiveTab(key); setPage(1); }}>
-                {label}
-                <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-px text-[9px] font-bold text-slate-500">{count}</span>
-              </button>
-            ))}
-          </div>
-          {hasFilters && (
-            <button className="clear-btn w-full justify-center sm:w-auto" onClick={clearFilters}>
-              <X className="h-3 w-3" aria-hidden="true" />
-              Clear
-            </button>
-          )}
-        </div>
-
-        <div className="grid gap-2 border-b border-slate-100 px-3 py-2 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.15fr_0.7fr_0.75fr_0.9fr_0.9fr]">
-          <FilterField label="Search">
-            <div className="relative flex min-w-0 items-center">
-              <input ref={searchRef} className="fi h-8 pl-8 pr-2 text-[11px]"
-                placeholder="Message, ID, agent..."
-                onChange={e => handleSearch(e.target.value)} />
-            </div>
-          </FilterField>
-          <FilterField label="Type">
-            <select className="fi h-8 text-[11px]" value={filters.type} onChange={e => setFilter("type", e.target.value)}>
-              <option value="">All types</option>
-              <option value="CALLBACK_OVERDUE">Callback overdue</option>
-              <option value="CALLBACK_REMINDER">Callback reminder</option>
-              <option value="TICKET_ASSIGNED">Ticket assigned</option>
-              <option value="TICKET_FOLLOWUP_OVERDUE">Ticket follow-up overdue</option>
-            </select>
-          </FilterField>
-          <FilterField label="Agent ID">
-            <input className="fi h-8 text-[11px]" placeholder="e.g. 3" value={filters.agentId} onChange={e => setFilter("agentId", e.target.value)} />
-          </FilterField>
-          <FilterField label="Status">
-            <select className="fi h-8 text-[11px]" value={filters.read} onChange={e => setFilter("read", e.target.value)}>
-              <option value="">Any</option>
-              <option value="false">Unread</option>
-              <option value="true">Read</option>
-            </select>
-          </FilterField>
-          <FilterField label="From">
-            <input className="fi h-8 text-[11px]" type="date" value={filters.from} onChange={e => setFilter("from", e.target.value)} />
-          </FilterField>
-          <FilterField label="To">
-            <input className="fi h-8 text-[11px]" type="date" value={filters.to} onChange={e => setFilter("to", e.target.value)} />
-          </FilterField>
-        </div>
-      </div>
+      <NotificationsFilters
+        activeTab={activeTab}
+        filters={filters}
+        stats={stats}
+        hasFilters={hasFilters}
+        agentOptions={agentOptions}
+        searchRef={searchRef}
+        onTabChange={(tab: NotificationTab) => {
+          setActiveTab(tab);
+          setPage(1);
+        }}
+        onFilterChange={setFilter}
+        onSearchChange={handleSearch}
+        onClearFilters={clearFilters}
+      />
 
       {/* ── Table / Timeline ── */}
       <div className="section-card">

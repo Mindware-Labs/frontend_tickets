@@ -218,7 +218,7 @@ function ConversationRow({
                   : "text-slate-500 dark:text-slate-400",
               )}
             >
-              Agente: {conversationAgentLabel(convo)}
+              Agent: {conversationAgentLabel(convo)}
             </span>
           </div>
         </div>
