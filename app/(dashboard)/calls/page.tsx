@@ -871,40 +871,37 @@ export default function TicketsPage() {
   };
 
   /** Open the customer timeline drawer (grouped view) */
-  const handleOpenTimeline = async (group: CustomerCallGroup) => {
-    let call = group.latestCall as Call;
-    // List endpoint doesn't include customer.notes relation, so fetch the
-    // full call so the right-hand edit form shows customer notes on first open.
-    try {
-      const response = await fetch(`/api/calls/${call.id}`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          call = { ...call, ...result.data };
-        }
-      }
-    } catch {
-      // use call as-is
-    }
+  const handleOpenTimeline = (group: CustomerCallGroup) => {
+    const call = group.latestCall as Call;
+    // Open drawer immediately with available data
     populateEditFormFromCall(call);
     setTimelineGroup(group);
     setShowTimelineDrawer(true);
+    // List endpoint doesn't include customer.notes relation, so fetch the
+    // full call in the background and update the form when it arrives.
+    fetch(`/api/calls/${call.id}`)
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success && result.data) {
+          populateEditFormFromCall({ ...call, ...result.data });
+        }
+      })
+      .catch(() => {});
   };
 
   /** Called when user clicks a call in the timeline sidebar */
-  const handleSelectCallInTimeline = async (call: Call) => {
-    try {
-      const response = await fetch(`/api/calls/${call.id}`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          call = { ...call, ...result.data };
-        }
-      }
-    } catch {
-      // use call as-is
-    }
+  const handleSelectCallInTimeline = (call: Call) => {
+    // Update form immediately with available data
     populateEditFormFromCall(call);
+    // Fetch full data in background to get customer notes
+    fetch(`/api/calls/${call.id}`)
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success && result.data) {
+          populateEditFormFromCall({ ...call, ...result.data });
+        }
+      })
+      .catch(() => {});
   };
 
   const handleUpdateTicketFromModal = async (
