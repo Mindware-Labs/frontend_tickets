@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Calendar,
-  ExternalLink,
   Megaphone,
   Phone,
   Ticket as TicketIcon,
@@ -45,6 +44,7 @@ import {
   useInsightSheetChrome,
 } from "./yard-insight-ui";
 import type { Ticket } from "./types";
+import { TicketDetailsModal } from "./TicketDetailsModal";
 
 type HighPriorityPendingModalProps = {
   open: boolean;
@@ -104,7 +104,7 @@ function CriticalTicketCard({
   reportEndDate,
   detailsOpen,
   onDetailsOpenChange,
-  onClose,
+  onOpenTicket,
 }: {
   ticket: Ticket;
   section: "pending" | "closed";
@@ -114,42 +114,8 @@ function CriticalTicketCard({
   reportEndDate?: string;
   detailsOpen: boolean;
   onDetailsOpenChange: (open: boolean) => void;
-  onClose: () => void;
+  onOpenTicket: (ticket: Ticket) => void;
 }) {
-  const resolvedYardId =
-    yardId ?? ticket.yardId ?? ticket.yard?.id ?? undefined;
-
-  // Build a safe path back to the yard report so the ticket drawer can
-  // surface a `TimelineReturnBar` (mirrors the customer-timeline pattern)
-  // instead of a corner toast.
-  const returnTo = (() => {
-    const params = new URLSearchParams();
-    if (resolvedYardId !== null && resolvedYardId !== undefined) {
-      params.set("yardId", String(resolvedYardId));
-    }
-    if (reportStartDate) params.set("startDate", reportStartDate);
-    if (reportEndDate) params.set("endDate", reportEndDate);
-    const qs = params.toString();
-    return qs ? `/reports/yards?${qs}` : "/reports/yards";
-  })();
-
-  const ticketsUrl = buildContactCenterUrl({
-    tab: "tickets",
-    id: ticket.id,
-    fromReport: "highPriorityPending",
-    view: section === "pending" ? "high_priority" : "all",
-    reportSection: section,
-    reportTicketId: String(ticket.id),
-    reportYardName: yardName,
-    yardId:
-      resolvedYardId !== null && resolvedYardId !== undefined
-        ? String(resolvedYardId)
-        : undefined,
-    status: ticket.status || undefined,
-    reportStartDate,
-    reportEndDate,
-    returnTo,
-  });
   const isEmergency =
     (ticket.priority || "").toUpperCase() === "EMERGENCY";
   const phone =
@@ -281,7 +247,8 @@ function CriticalTicketCard({
 
       <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-slate-800">
         <Button
-          asChild
+          type="button"
+          onClick={() => onOpenTicket(ticket)}
           className={cn(
             "h-8 w-full rounded-lg text-[11px]",
             isEmergency
@@ -289,10 +256,7 @@ function CriticalTicketCard({
               : "bg-[#008f68] hover:bg-[#007a5a]",
           )}
         >
-          <Link href={ticketsUrl} onClick={onClose}>
-            Open in Contact Center
-            <ExternalLink className="ml-1.5 size-3.5 opacity-80" />
-          </Link>
+          View details
         </Button>
       </div>
     </article>
@@ -355,6 +319,15 @@ export function HighPriorityPendingModal({
   useInsightSheetChrome(open);
   const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
 
+  // States for nested ticket details modal
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+
+  const handleOpenTicket = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setShowTicketModal(true);
+  };
+
   const renderSection = (
     title: string,
     subtitle: string,
@@ -401,7 +374,7 @@ export function HighPriorityPendingModal({
               onDetailsOpenChange={(open) =>
                 setExpandedTicketId(open ? ticket.id : null)
               }
-              onClose={() => onOpenChange(false)}
+              onOpenTicket={handleOpenTicket}
             />
           ))}
         </div>
@@ -414,93 +387,105 @@ export function HighPriorityPendingModal({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side={side}
-        className={cn(
-          "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
-          sheetWidthClass,
-        )}
-      >
-        <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
-          <InsightSheetAccent />
-          <SheetHeader className={insightSheetHeaderClass}>
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 flex-1 pr-1">
-                <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 ring-1 ring-rose-200/70 dark:bg-rose-500/10 dark:text-rose-400">
-                    <AlertTriangle className="size-3.5" aria-hidden />
-                  </span>
-                  High & Emergency
-                </SheetTitle>
-                <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Full ticket context for HIGH and EMERGENCY work in{" "}
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">
-                    {yardName}
-                  </span>
-                </SheetDescription>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side={side}
+          className={cn(
+            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+            sheetWidthClass,
+          )}
+        >
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <InsightSheetAccent />
+            <SheetHeader className={insightSheetHeaderClass}>
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1 pr-1">
+                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 ring-1 ring-rose-200/70 dark:bg-rose-500/10 dark:text-rose-400">
+                      <AlertTriangle className="size-3.5" aria-hidden />
+                    </span>
+                    High & Emergency
+                  </SheetTitle>
+                  <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Full ticket context for HIGH and EMERGENCY work in{" "}
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                      {yardName}
+                    </span>
+                  </SheetDescription>
+                </div>
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-start gap-1.5 lg:max-w-[min(100%,22rem)] lg:justify-end">
+                  <YardContextChip label="Range" value={periodLabel} />
+                  <InsightSummaryBadge
+                    icon={AlertTriangle}
+                    label={`${pendingCriticalTickets.length} pending`}
+                    tone="danger"
+                  />
+                  <InsightSummaryBadge
+                    icon={TicketIcon}
+                    label={`${pendingEmergencyCount} emergency · ${pendingHighCount} high`}
+                    tone="warning"
+                  />
+                </div>
               </div>
-              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-start gap-1.5 lg:max-w-[min(100%,22rem)] lg:justify-end">
-                <YardContextChip label="Range" value={periodLabel} />
-                <InsightSummaryBadge
+            </SheetHeader>
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1 scrollbar-app">
+            <div className="space-y-4 p-3 sm:p-4">
+              {hasNoCriticalTickets ? (
+                <InsightEmptyState
                   icon={AlertTriangle}
-                  label={`${pendingCriticalTickets.length} pending`}
-                  tone="danger"
+                  title="No high-priority tickets"
+                  description="No HIGH or EMERGENCY tickets were found in this range."
                 />
-                <InsightSummaryBadge
-                  icon={TicketIcon}
-                  label={`${pendingEmergencyCount} emergency · ${pendingHighCount} high`}
-                  tone="warning"
-                />
-              </div>
+              ) : (
+                <>
+                  {renderSection(
+                    "Pending",
+                    "Still open — sorted emergency first, oldest first",
+                    pendingCriticalTickets,
+                    "pending",
+                    "danger",
+                  )}
+                  {renderSection(
+                    "Closed / resolved",
+                    "Already closed in this period",
+                    closedCriticalTickets,
+                    "closed",
+                    "neutral",
+                  )}
+                </>
+              )}
             </div>
-          </SheetHeader>
-        </div>
+          </ScrollArea>
 
-        <ScrollArea className="min-h-0 flex-1 scrollbar-app">
-          <div className="space-y-4 p-3 sm:p-4">
-            {hasNoCriticalTickets ? (
-              <InsightEmptyState
-                icon={AlertTriangle}
-                title="No high-priority tickets"
-                description="No HIGH or EMERGENCY tickets were found in this range."
-              />
-            ) : (
-              <>
-                {renderSection(
-                  "Pending",
-                  "Still open — sorted emergency first, oldest first",
-                  pendingCriticalTickets,
-                  "pending",
-                  "danger",
-                )}
-                {renderSection(
-                  "Closed / resolved",
-                  "Already closed in this period",
-                  closedCriticalTickets,
-                  "closed",
-                  "neutral",
-                )}
-              </>
-            )}
-          </div>
-        </ScrollArea>
+          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[11px] text-slate-500">
+                Expand a ticket to see full context · open in Contact Center below
+              </p>
+              <Button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a] sm:min-w-[96px]"
+              >
+                Done
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
-        <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] text-slate-500">
-              Expand a ticket to see full context · open in Contact Center below
-            </p>
-            <Button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a] sm:min-w-[96px]"
-            >
-              Done
-            </Button>
-          </div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      <TicketDetailsModal
+        open={showTicketModal}
+        onOpenChange={setShowTicketModal}
+        ticket={selectedTicket}
+        yardId={yardId}
+        yardName={yardName}
+        reportStartDate={reportStartDate}
+        reportEndDate={reportEndDate}
+      />
+    </>
   );
 }

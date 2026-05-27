@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ClipboardList,
-  ExternalLink,
   Megaphone,
   Phone,
   Ticket as TicketIcon,
@@ -42,6 +41,7 @@ import {
   useInsightSheetChrome,
 } from "./yard-insight-ui";
 import type { Ticket } from "./types";
+import { TicketDetailsModal } from "./TicketDetailsModal";
 
 type OpenTicketsModalProps = {
   open: boolean;
@@ -122,27 +122,20 @@ export function OpenTicketsModal({
 
   useInsightSheetChrome(open);
 
+  // States for nested ticket details modal
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+
+  const handleOpenTicket = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setShowTicketModal(true);
+  };
+
   const renderTicket = (ticket: Ticket) => {
     const phone =
       ticket.customerPhone?.trim() ||
       ticket.customer?.phone?.trim() ||
       ticket.phone?.trim();
-    const resolvedYardId =
-      yardId ?? ticket.yardId ?? ticket.yard?.id ?? undefined;
-
-    // Build the report path so the ticket drawer can surface a
-    // `TimelineReturnBar` (mirrors the customer-timeline / High Priority
-    // pattern) instead of letting the user free-fall after clicking through.
-    const returnTo = (() => {
-      const params = new URLSearchParams();
-      if (resolvedYardId !== null && resolvedYardId !== undefined) {
-        params.set("yardId", String(resolvedYardId));
-      }
-      if (reportStartDate) params.set("startDate", reportStartDate);
-      if (reportEndDate) params.set("endDate", reportEndDate);
-      const qs = params.toString();
-      return qs ? `/reports/yards?${qs}` : "/reports/yards";
-    })();
 
     return (
       <article key={ticket.id} className={insightCardClass}>
@@ -225,29 +218,11 @@ export function OpenTicketsModal({
         </div>
         <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-slate-800">
           <Button
-            asChild
+            type="button"
+            onClick={() => handleOpenTicket(ticket)}
             className="h-8 w-full rounded-lg bg-[#008f68] text-[11px] hover:bg-[#007a5a]"
           >
-            <Link
-              href={buildContactCenterUrl({
-                tab: "tickets",
-                id: ticket.id,
-                fromReport: "openWorkload",
-                yardId:
-                  resolvedYardId != null
-                    ? String(resolvedYardId)
-                    : undefined,
-                reportYardName: yardName,
-                reportTicketId: String(ticket.id),
-                reportStartDate,
-                reportEndDate,
-                returnTo,
-              })}
-              onClick={() => onOpenChange(false)}
-            >
-              Open ticket
-              <ExternalLink className="ml-1.5 size-3.5 opacity-80" />
-            </Link>
+            View details
           </Button>
         </div>
       </article>
@@ -255,108 +230,120 @@ export function OpenTicketsModal({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side={side}
-        className={cn(
-          "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
-          sheetWidthClass,
-        )}
-      >
-        <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
-          <InsightSheetAccent />
-          <SheetHeader className={insightSheetHeaderClass}>
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 flex-1 pr-1">
-                <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-200/70 dark:bg-sky-500/10 dark:text-sky-400">
-                    <ClipboardList className="size-3.5" />
-                  </span>
-                  Open workload
-                </SheetTitle>
-                <SheetDescription className="mt-1 text-xs text-slate-500">
-                  Active tickets still needing work in{" "}
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">
-                    {yardName}
-                  </span>
-                </SheetDescription>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side={side}
+          className={cn(
+            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+            sheetWidthClass,
+          )}
+        >
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <InsightSheetAccent />
+            <SheetHeader className={insightSheetHeaderClass}>
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1 pr-1">
+                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-200/70 dark:bg-sky-500/10 dark:text-sky-400">
+                      <ClipboardList className="size-3.5" />
+                    </span>
+                    Open workload
+                  </SheetTitle>
+                  <SheetDescription className="mt-1 text-xs text-slate-500">
+                    Active tickets still needing work in{" "}
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                      {yardName}
+                    </span>
+                  </SheetDescription>
+                </div>
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-start gap-1.5 lg:max-w-[min(100%,22rem)] lg:justify-end">
+                  <YardContextChip label="Range" value={periodLabel} />
+                  <InsightSummaryBadge
+                    icon={TicketIcon}
+                    label={`${allActive.length} active`}
+                    tone="brand"
+                  />
+                  <InsightSummaryBadge
+                    icon={ClipboardList}
+                    label={`${openTickets.length} open · ${inProgressTickets.length} in progress`}
+                  />
+                </div>
               </div>
-              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-start gap-1.5 lg:max-w-[min(100%,22rem)] lg:justify-end">
-                <YardContextChip label="Range" value={periodLabel} />
-                <InsightSummaryBadge
-                  icon={TicketIcon}
-                  label={`${allActive.length} active`}
-                  tone="brand"
-                />
-                <InsightSummaryBadge
+            </SheetHeader>
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1 scrollbar-app">
+            <div className="space-y-4 p-3 sm:p-4">
+              {allActive.length === 0 ? (
+                <InsightEmptyState
                   icon={ClipboardList}
-                  label={`${openTickets.length} open · ${inProgressTickets.length} in progress`}
+                  title="No open tickets"
+                  description="All tickets in this range are closed or resolved."
                 />
-              </div>
+              ) : (
+                <>
+                  {openTickets.length > 0 ? (
+                    <section className="space-y-2">
+                      <h3 className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
+                        Open ({openTickets.length})
+                      </h3>
+                      <div
+                        className={cn(
+                          "grid gap-3",
+                          getInsightCardsGridClass(openTickets.length),
+                        )}
+                      >
+                        {openTickets.map(renderTicket)}
+                      </div>
+                    </section>
+                  ) : null}
+                  {inProgressTickets.length > 0 ? (
+                    <section className="space-y-2">
+                      <h3 className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
+                        In progress ({inProgressTickets.length})
+                      </h3>
+                      <div
+                        className={cn(
+                          "grid gap-3",
+                          getInsightCardsGridClass(inProgressTickets.length),
+                        )}
+                      >
+                        {inProgressTickets.map(renderTicket)}
+                      </div>
+                    </section>
+                  ) : null}
+                </>
+              )}
             </div>
-          </SheetHeader>
-        </div>
+          </ScrollArea>
 
-        <ScrollArea className="min-h-0 flex-1 scrollbar-app">
-          <div className="space-y-4 p-3 sm:p-4">
-            {allActive.length === 0 ? (
-              <InsightEmptyState
-                icon={ClipboardList}
-                title="No open tickets"
-                description="All tickets in this range are closed or resolved."
-              />
-            ) : (
-              <>
-                {openTickets.length > 0 ? (
-                  <section className="space-y-2">
-                    <h3 className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                      Open ({openTickets.length})
-                    </h3>
-                    <div
-                      className={cn(
-                        "grid gap-3",
-                        getInsightCardsGridClass(openTickets.length),
-                      )}
-                    >
-                      {openTickets.map(renderTicket)}
-                    </div>
-                  </section>
-                ) : null}
-                {inProgressTickets.length > 0 ? (
-                  <section className="space-y-2">
-                    <h3 className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                      In progress ({inProgressTickets.length})
-                    </h3>
-                    <div
-                      className={cn(
-                        "grid gap-3",
-                        getInsightCardsGridClass(inProgressTickets.length),
-                      )}
-                    >
-                      {inProgressTickets.map(renderTicket)}
-                    </div>
-                  </section>
-                ) : null}
-              </>
-            )}
-          </div>
-        </ScrollArea>
+          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[11px] text-slate-500">
+                Sorted by priority, then oldest open first
+              </p>
+              <Button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a] sm:min-w-[96px]"
+              >
+                Done
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
-        <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] text-slate-500">
-              Sorted by priority, then oldest open first
-            </p>
-            <Button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="h-8 rounded-lg bg-[#008f68] text-xs hover:bg-[#007a5a] sm:min-w-[96px]"
-            >
-              Done
-            </Button>
-          </div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      <TicketDetailsModal
+        open={showTicketModal}
+        onOpenChange={setShowTicketModal}
+        ticket={selectedTicket}
+        yardId={yardId}
+        yardName={yardName}
+        reportStartDate={reportStartDate}
+        reportEndDate={reportEndDate}
+      />
+    </>
   );
 }
