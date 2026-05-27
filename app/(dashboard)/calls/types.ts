@@ -380,8 +380,6 @@ export interface ScheduleCall {
   id: number;
   customerId: number;
   customer?: { id?: number; name: string; phone?: string } | null;
-  agentId?: number | null;
-  agent?: AgentOption | null;
   scheduledAt: string;
   notes?: string | null;
   status: ScheduleCallStatus;
@@ -392,7 +390,6 @@ export interface ScheduleCall {
 
 export interface CreateScheduleCallFormData {
   customerId: string;
-  agentId: string;
   scheduledAt: string;
   notes: string;
 }

@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const backendParams = new URLSearchParams();
     const passthroughKeys = [
-      "status", "agentId", "customerId", "page", "limit",
+      "status", "customerId", "page", "limit",
     ];
     for (const key of passthroughKeys) {
       const value = searchParams.get(key);

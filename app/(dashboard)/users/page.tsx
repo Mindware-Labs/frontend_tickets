@@ -445,11 +445,6 @@ export default function UsersPage() {
           totalCount={totalFiltered}
           currentPage={currentPage}
           totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={(value) => {
-            setItemsPerPage(value);
-            setCurrentPage(1);
-          }}
           onPageChange={setCurrentPage}
         />
       </div>

@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PageNumberButtons } from "@/components/common/page-number-buttons";
+import { PaginationFooter } from "@/components/common/pagination-footer";
 import { Button } from "@/components/ui/button";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { Clock, Pencil, Phone, Pin, Trash2 } from "lucide-react";
@@ -43,13 +43,6 @@ function formatRelativeDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return formatDistanceToNow(date, { addSuffix: true });
-}
-
-function getResultRange(page: number, itemsPerPage: number, total: number) {
-  if (total === 0) return "0 of 0";
-  const start = (page - 1) * itemsPerPage + 1;
-  const end = Math.min(page * itemsPerPage, total);
-  return `${start}-${end} of ${total}`;
 }
 
 export function CustomersTable({
@@ -269,41 +262,15 @@ export function CustomersTable({
       </div>
 
       {totalFiltered > 0 && onPageChange ? (
-        <div className="flex items-center justify-between gap-2 px-1 pb-2 pt-3">
-          <Button
-            variant="outline"
-            className="h-8 shrink-0 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
-            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-            disabled={currentPage === 1 || loading}
-          >
-            Previous
-          </Button>
-
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
-            <div className="w-full overflow-x-auto px-2">
-              <PageNumberButtons
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={onPageChange}
-                className="min-w-max"
-                buttonClassName="h-8 w-8 rounded-lg text-[12px]"
-                ellipsisClassName="h-8 w-8 text-[12px]"
-              />
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground">
-              {getResultRange(currentPage, itemsPerPage, totalFiltered)}
-            </span>
-          </div>
-
-          <Button
-            variant="outline"
-            className="h-8 shrink-0 rounded-lg border-border px-3 text-[12px] font-medium text-muted-foreground shadow-sm hover:text-foreground"
-            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-            disabled={currentPage >= totalPages || loading}
-          >
-            Next
-          </Button>
-        </div>
+        <PaginationFooter
+          totalCount={totalFiltered}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={onPageChange}
+          itemLabel="customers"
+          loading={loading}
+        />
       ) : null}
     </div>
   );

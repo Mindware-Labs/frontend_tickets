@@ -35,7 +35,7 @@ export function PageNumberButtons({
           <span
             key={`ellipsis-${index}`}
             className={cn(
-              "flex h-9 w-9 select-none items-center justify-center text-[13px] font-medium text-muted-foreground",
+              "flex h-9 w-9 select-none items-center justify-center text-[13px] font-medium text-slate-400 dark:text-slate-600",
               ellipsisClassName,
             )}
           >
@@ -50,10 +50,10 @@ export function PageNumberButtons({
               onPageChange(item);
             }}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] border text-[13px] transition-colors",
+              "flex h-9 w-9 items-center justify-center rounded-lg border text-[13px] transition-all duration-200 shadow-sm",
               item === currentPage
-                ? "border-[#a6f0c3] bg-[#e2fae9] font-semibold text-[#008f68]"
-                : "border-transparent font-medium text-muted-foreground hover:bg-muted/50",
+                ? "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] font-semibold dark:border-emerald-500/20 dark:bg-emerald-950/20 dark:text-emerald-400"
+                : "border-slate-200/60 bg-white font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100",
               buttonClassName,
               item === currentPage ? activeClassName : inactiveClassName,
             )}

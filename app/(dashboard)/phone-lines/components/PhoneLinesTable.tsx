@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PageNumberButtons } from "@/components/common/page-number-buttons";
+import { PaginationFooter } from "@/components/common/pagination-footer";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
@@ -188,67 +188,16 @@ export function PhoneLinesTable({
         </div>
       </div>
 
-      {totalFiltered > 0 && onPageChange && (
-        <div className="flex items-center justify-between pt-2 pb-2 px-1">
-          <Button
-            variant="outline"
-            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageChange(Math.max(currentPage - 1, 1));
-            }}
-            disabled={currentPage === 1}
-          >
-            <svg
-              className="mr-2 h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Previous
-          </Button>
-
-          <div className="min-w-0 overflow-x-auto px-2">
-            <PageNumberButtons
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={onPageChange}
-              stopPropagation
-              className="min-w-max"
-              buttonClassName="h-[36px] w-[36px]"
-              ellipsisClassName="h-[36px] w-[36px]"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            className="h-[36px] px-3.5 rounded-[10px] text-[13px] font-medium text-muted-foreground shadow-sm hover:text-foreground border-border"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageChange(Math.min(currentPage + 1, totalPages));
-            }}
-            disabled={currentPage >= totalPages}
-          >
-            Next
-            <svg
-              className="ml-2 h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Button>
-        </div>
-      )}
+      {totalFiltered > 0 && onPageChange ? (
+        <PaginationFooter
+          totalCount={totalFiltered}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={onPageChange}
+          loading={loading}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1125,7 +1125,6 @@ export default function TicketsPage() {
         customerId: Number(data.customerId),
         scheduledAt: new Date(data.scheduledAt).toISOString(),
       };
-      if (data.agentId) payload.agentId = Number(data.agentId);
       if (data.notes) payload.notes = data.notes;
 
       const res = await fetch("/api/schedule-calls", {
@@ -1410,7 +1409,6 @@ export default function TicketsPage() {
             open={showScheduleModal}
             onOpenChange={setShowScheduleModal}
             customers={refData.customers}
-            agents={refData.agents}
             onSubmit={handleScheduleCallSubmit}
             isSubmitting={isScheduleSubmitting}
           />
