@@ -285,16 +285,111 @@ export function FiltersSheet({
           </div>
 
           <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
-            <div className="flex items-start justify-between gap-3">
-              <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            <div className="flex items-center justify-between gap-3">
+              <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
                 Date range
               </label>
               {hasDateRange ? (
-                <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <span className="rounded-full border border-emerald-250 bg-emerald-50/50 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
                   Selected
                 </span>
               ) : null}
+            </div>
+
+            {/* Date Shortcuts Grid */}
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  let start = new Date(2024, 0, 1);
+                  const selectedYard = yards.find((y) => y.id.toString() === selectedYardId);
+                  if (selectedYard?.createdAt) {
+                    const parsed = new Date(selectedYard.createdAt);
+                    if (!isNaN(parsed.getTime())) start = parsed;
+                  }
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">All time</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YARD HISTORY</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  const start = new Date();
+                  start.setDate(today.getDate() - 7);
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 7 days</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">RECENT ACTIVITY</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  const start = new Date();
+                  start.setDate(today.getDate() - 30);
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 30 days</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">ROLLING MONTH</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">This month</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">MONTH TO DATE</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                  const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(end, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last month</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">PREVIOUS MONTH</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
+                onClick={() => {
+                  const today = new Date();
+                  const start = new Date(today.getFullYear(), 0, 1);
+                  onStartDateChange(format(start, "yyyy-MM-dd"));
+                  onEndDateChange(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">YTD</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YEAR TO DATE</span>
+              </button>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -422,8 +517,8 @@ export function FiltersSheet({
             </div>
 
             {hasDateRange && isDateRangeValid ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 px-3.5 py-2.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                <span className="font-bold text-slate-900 dark:text-slate-100">
                   Range:
                 </span>{" "}
                 {formattedStartDate} to {formattedEndDate}

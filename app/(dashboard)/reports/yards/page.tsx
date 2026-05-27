@@ -24,6 +24,7 @@ import { YardReportSetupEmptyState } from "./components/yard-report-setup-empty-
 import { YardRecordsModal } from "./components/YardRecordsModal";
 import { YardsOverview } from "./components/YardsOverview";
 import { Button } from "@/components/ui/button";
+import { EntityGridLoading } from "@/components/shared/entity-loading-state";
 import { dashboardCanvasClass } from "@/app/(dashboard)/dashboard/dashboard-theme";
 import {
   buildYardFilterQuery,
@@ -941,12 +942,7 @@ export default function YardReportsPage() {
             </Button>
           </div>
         ) : loadingStats || !selectedYardStats ? (
-          <div className="flex flex-1 items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">
-              Loading dashboard...
-            </span>
-          </div>
+          <EntityGridLoading kind="dashboard" className="my-12" />
         ) : (
           <div
             className={`relative min-h-0 flex-1 overflow-hidden ${dashboardCanvasClass}`}

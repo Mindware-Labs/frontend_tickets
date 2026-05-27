@@ -37,15 +37,15 @@ export function YardsOverview({
           <Building className="h-10 w-10 text-primary" />
         </div>
         <h3 className="text-xl font-bold">
-          Seleccione una yarda para ver Dashboard
+          Select a yard to view dashboard
         </h3>
         <p className="mb-6 mt-3 text-sm text-muted-foreground max-w-md">
-          Use el boton "Configure Report" en la parte superior para elegir una
-          yarda y visualizar analisis detallados con graficas y estadisticas.
+          Use the "Configure Report" button at the top to select a yard and
+          visualize detailed analysis with charts and statistics.
         </p>
         <Button onClick={onOpenFilters} className="gap-2" size="lg">
           <SlidersHorizontal className="h-4 w-4" />
-          Configurar Reporte
+          Configure Report
         </Button>
       </div>
     );

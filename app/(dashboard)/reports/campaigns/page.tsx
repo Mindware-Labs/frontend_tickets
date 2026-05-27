@@ -45,6 +45,7 @@ import {
 } from "recharts";
 
 import { MetricCard } from "@/app/(dashboard)/dashboard/components/metric-card";
+import { EntityGridLoading } from "@/components/shared/entity-loading-state";
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart";
 import { DashboardEmptyState } from "@/app/(dashboard)/dashboard/components/dashboard-empty-state";
@@ -3361,12 +3362,7 @@ export default function CampaignReportsPage() {
             </Button>
           </div>
         ) : loading ? (
-          <div className="flex flex-1 items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">
-              Loading dashboard...
-            </span>
-          </div>
+          <EntityGridLoading kind="dashboard" className="my-12" />
         ) : report ? (
           <div
             className={`relative min-h-0 flex-1 overflow-hidden ${dashboardCanvasClass}`}
