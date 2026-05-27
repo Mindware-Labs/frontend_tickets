@@ -3,7 +3,7 @@ import type React from "react";
 
 export const metadata: Metadata = {
   title: "Phone Lines",
-  description: "Phone line management.",
+  description: "Phone line inventory and configuration.",
 };
 
 export default function PhoneLinesLayout({

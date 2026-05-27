@@ -166,12 +166,12 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    console.log(`[NextAPI] Ticket created successfully`);
+    console.log(`[NextAPI] Call created successfully`);
 
     return NextResponse.json({
       success: true,
       data,
-      message: "Ticket created successfully",
+      message: "Call created successfully",
     });
   } catch (error: any) {
     console.error(`[NextAPI] ERROR in POST /api/calls:`, error);

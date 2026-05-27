@@ -12,10 +12,8 @@ import { cn } from "@/lib/utils";
  * area while the dashboard sidebar and topbar stay visible. On unmount we
  * restore the floating dock so the phone is still reachable from anywhere.
  *
- * Visual shell follows DESIGN_SYSTEM.md §5.2 (panel) and §6 (app shell):
- * the iframe lives inside a rounded white card that aligns with every other
- * dashboard page, instead of bleeding edge-to-edge with negative margins.
  */
+
 export default function AircallPage() {
   const { setMountMode, setFullscreenContainer } = useAircall();
   const containerRef = useRef<HTMLDivElement | null>(null);

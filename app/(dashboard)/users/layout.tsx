@@ -3,7 +3,7 @@ import type React from "react";
 
 export const metadata: Metadata = {
   title: "Users",
-  description: "System user administration.",
+  description: "User account administration and permissions.",
 };
 
 export default function UsersLayout({

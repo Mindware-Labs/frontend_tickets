@@ -3,7 +3,7 @@ import type React from "react";
 
 export const metadata: Metadata = {
   title: "Yards",
-  description: "Yard and location management.",
+  description: "Yard and location directory and management.",
 };
 
 export default function YardsLayout({

@@ -435,7 +435,7 @@ export default function TicketsPage() {
     relatedCallId: "",
   });
 
-  // ---- Ticket notification ----
+  // ---- Call notification ----
   const previousTicketCountRef = useRef(0);
   const previousTicketQueryKeyRef = useRef<string | null>(null);
 
@@ -453,8 +453,8 @@ export default function TicketsPage() {
       ) {
         const newCount = totalMatchingCalls - previousTicketCountRef.current;
         toast({
-          title: "New Ticket" + (newCount > 1 ? "s" : ""),
-          description: `${newCount} new ticket${newCount > 1 ? "s" : ""} created`,
+          title: "New Call" + (newCount > 1 ? "s" : ""),
+          description: `${newCount} new call${newCount > 1 ? "s" : ""} created`,
           duration: 3000,
         });
       }

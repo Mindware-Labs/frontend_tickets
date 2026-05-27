@@ -1358,7 +1358,7 @@ export function CustomerTimelineDrawer({
               </div>
             ) : null}
             {/* Row 1: avatar · name+phone · note-trigger · call-count · actions */}
-            <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div className="flex items-center gap-3 px-4 py-2">
               {/* 1. Avatar */}
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
@@ -1393,16 +1393,6 @@ export function CustomerTimelineDrawer({
                   )}
                 </span>
               </div>
-
-              {selectedCall ? (
-                <div className="order-last min-w-full empty:hidden sm:order-none sm:min-w-[260px] sm:flex-1 lg:max-w-xl">
-                  <CustomerNotesAlert
-                    customer={selectedCall.customer}
-                    compact
-                    inline
-                  />
-                </div>
-              ) : null}
 
               {/* Action buttons */}
               <div className="ml-auto flex items-center gap-1.5 shrink-0">
@@ -1519,7 +1509,7 @@ export function CustomerTimelineDrawer({
                 ];
 
                 return (
-                  <div className="flex items-center gap-1.5 px-4 pb-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
                     {/* — Badges group — */}
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
                       <Hash className="w-3 h-3 text-slate-400" />

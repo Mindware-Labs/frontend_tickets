@@ -16,26 +16,38 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Rig Hut Call Center",
+    default: "Rig Hut Support Center",
     template: "%s | Rig Hut",
   },
-  description: "Call Center Call Management System",
-  icons: {
-    icon: "/images/LOGO CQ-01.png",
-    apple: "/images/LOGO CQ-01.png",
-  },
+  description:
+    "Support ticket management system for tracking, managing, and resolving customer inquiries across campaigns, yards, and phone lines.",
   openGraph: {
     title: "Rig Hut Support Center",
-    description: "Call Center Call Management System",
+    description:
+      "Support ticket management system for tracking, managing, and resolving customer inquiries across campaigns, yards, and phone lines.",
+    url: "/",
+    siteName: "Rig Hut Support Center",
     images: [
       {
-        url: "/images/LOGO CQ-01.png",
-        width: 512,
-        height: 512,
-        alt: "Rig Hut Logo",
+        url: "/apple-icon.png",
+        width: 180,
+        height: 180,
+        alt: "Rig Hut",
       },
     ],
+    locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rig Hut Support Center",
+    description:
+      "Support ticket management system for tracking, managing, and resolving customer inquiries across campaigns, yards, and phone lines.",
+    images: ["/apple-icon.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

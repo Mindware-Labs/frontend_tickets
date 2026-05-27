@@ -151,7 +151,7 @@ export function CallSocketProvider({
 
     socket.on(
       "ticketAssigned",
-      (data: { title: string; message: string; ticketId: number }) => {
+      (data: { title: string; message: string; ticketId: number; type?: "call" | "ticket" }) => {
         try {
           const audio = new Audio("/sounds/notification.mp3");
           audio.play().catch(() => {});
