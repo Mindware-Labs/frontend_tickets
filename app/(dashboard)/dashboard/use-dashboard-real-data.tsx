@@ -226,13 +226,15 @@ type DashboardDataContextValue = {
   isFilterActive: (key: DashboardFilterKey, value: string) => boolean;
   isHeatmapSlotActive: (day: string, hourKey: string) => boolean;
   refresh: () => Promise<void>;
+  period: string;
+  setPeriod: (period: string) => void;
 };
 
 const DashboardDataContext = createContext<DashboardDataContextValue | null>(
   null,
 );
 
-const PERIOD = "30d";
+const DEFAULT_PERIOD = "30d";
 const REALTIME_REFRESH_DEBOUNCE_MS = 700;
 const LIVE_ACTIVITY_REFRESH_MS = 5000;
 const SOCKET_FALLBACK_REFRESH_MS = 10000;
@@ -1354,6 +1356,7 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
 
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
   const realtime = useDashboardRealtime();
+  const [period, setPeriodState] = useState<string>(DEFAULT_PERIOD);
   const [baseSources, setBaseSources] = useState<DashboardSources>({});
   const [filteredPerformance, setFilteredPerformance] =
     useState<PerformanceReport | null>(null);
@@ -1388,6 +1391,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        let periodQuery = `period=${period}`;
+        if (period === "all") {
+          const todayStr = new Date().toISOString().split("T")[0];
+          periodQuery = `start=2020-01-01&end=${todayStr}`;
+        }
+
         const [
           statsResult,
           performanceResult,
@@ -1397,16 +1406,16 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         ] = await Promise.allSettled([
           fetchDashboardEndpoint<DashboardStats>("/api/dashboard/stats"),
           fetchDashboardEndpoint<PerformanceReport>(
-            `/api/reports/performance?period=${PERIOD}`,
+            `/api/reports/performance?${periodQuery}`,
           ),
           fetchDashboardEndpoint<WallboardReport>(
-            `/api/aircall-analytics/wallboard?period=${PERIOD}`,
+            `/api/aircall-analytics/wallboard?${periodQuery}`,
           ),
           fetchDashboardEndpoint<SmsSummary>(
-            `/api/aircall-analytics/sms/summary?period=${PERIOD}`,
+            `/api/aircall-analytics/sms/summary?${periodQuery}`,
           ),
           fetchDashboardEndpoint<YardsReport>(
-            `/api/reports/yards?period=${PERIOD}`,
+            `/api/reports/yards?${periodQuery}`,
           ),
         ]);
 
@@ -1439,7 +1448,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         if (realtimeSync) setIsRealtimeSyncing(false);
       }
     },
-    [],
+    [period],
   );
 
   const refresh = useCallback(
@@ -1514,7 +1523,22 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     setIsFilterLoading(true);
 
-    const query = buildPerformanceFilterQuery(filters, PERIOD);
+    let query = "";
+    if (period === "all") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const params = new URLSearchParams({ start: "2020-01-01", end: todayStr });
+      if (filters.campaign) params.set("campaignName", filters.campaign);
+      if (filters.yard) params.set("yardName", filters.yard);
+      if (filters.agent) params.set("agentName", filters.agent);
+      if (filters.line) params.set("lineName", filters.line);
+      if (filters.disposition) params.set("disposition", filters.disposition);
+      if (filters.day) params.set("dayLabel", filters.day);
+      if (filters.hour) params.set("hour", filters.hour);
+      query = params.toString();
+    } else {
+      query = buildPerformanceFilterQuery(filters, period);
+    }
+
     fetchDashboardEndpoint<PerformanceReport>(`/api/reports/performance?${query}`)
       .then((performance) => {
         if (!cancelled) setFilteredPerformance(performance);
@@ -1529,7 +1553,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [filters, baseSources.performance]);
+  }, [filters, baseSources.performance, period]);
 
   const mergedSources = useMemo(() => {
     const sources: DashboardSources = {
@@ -1594,6 +1618,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       isFilterActive,
       isHeatmapSlotActive,
       refresh,
+      period,
+      setPeriod: setPeriodState,
     }),
     [
       clearFilters,
@@ -1612,6 +1638,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       setFilter,
       toggleFilter,
       toggleHeatmapSlot,
+      period,
+      setPeriodState,
     ],
   );
 

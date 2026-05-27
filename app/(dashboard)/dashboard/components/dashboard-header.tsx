@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +13,7 @@ import {
   DashboardInlineActiveFilters,
   FilterHelpPopover,
 } from "./dashboard-filter-bar";
+import { DashboardPeriodModal } from "./dashboard-period-modal";
 
 export type DashboardViewKey = "operations" | "executive" | "marketing";
 
@@ -37,7 +40,8 @@ export function DashboardHeader({
   isRealtimeConnected,
   isRealtimeSyncing,
 }: DashboardHeaderProps) {
-  const { data } = useSupportDashboardData();
+  const { data, period } = useSupportDashboardData();
+  const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
   const hasLive = data.liveSnapshot.hasLive;
 
   const statusLabel = hasLive
@@ -48,6 +52,14 @@ export function DashboardHeader({
         ? "Connected"
         : "Offline";
   const statusActive = hasLive || isRealtimeConnected;
+
+  const periodLabels: Record<string, string> = {
+    "7d": "7 Days",
+    "30d": "Monthly",
+    "90d": "90 Days",
+    "all": "All Time",
+  };
+  const activePeriodLabel = periodLabels[period] || "Filter";
 
   return (
     <header className="shrink-0">
@@ -102,7 +114,14 @@ export function DashboardHeader({
 
         {/* Right: filters, status, time */}
         <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 md:border-t-0 md:pt-0 md:justify-end">
-          
+          <button
+            type="button"
+            onClick={() => setIsPeriodModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 cursor-pointer"
+          >
+            <Calendar className="size-3.5 text-slate-400" />
+            <span>Period: <span className="font-semibold text-[#008f68] dark:text-emerald-400">{activePeriodLabel}</span></span>
+          </button>
 
           <div className="flex items-center gap-2 text-slate-400">
             {lastUpdated ? (
@@ -113,6 +132,11 @@ export function DashboardHeader({
           </div>
         </div>
       </div>
+
+      <DashboardPeriodModal
+        isOpen={isPeriodModalOpen}
+        onOpenChange={setIsPeriodModalOpen}
+      />
     </header>
   );
 }

@@ -366,3 +366,33 @@ export interface CreateManualRecordFormData {
 }
 
 export type UpdateManualRecordFormData = Partial<CreateManualRecordFormData>;
+
+// ── Scheduled Calls ─────────────────────────────────────────────────────────
+
+export enum ScheduleCallStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  MISSED = "MISSED",
+}
+
+export interface ScheduleCall {
+  id: number;
+  customerId: number;
+  customer?: { id?: number; name: string; phone?: string } | null;
+  agentId?: number | null;
+  agent?: AgentOption | null;
+  scheduledAt: string;
+  notes?: string | null;
+  status: ScheduleCallStatus;
+  notified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduleCallFormData {
+  customerId: string;
+  agentId: string;
+  scheduledAt: string;
+  notes: string;
+}

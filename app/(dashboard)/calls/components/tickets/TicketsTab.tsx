@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { useReturnToTimeline } from "../../hooks/useReturnToTimeline";
 import { DeepLinkFocusBanner } from "../shared/DeepLinkFocusBanner";
 import useSWR from "swr";
@@ -65,6 +71,7 @@ import {
 import { EditTicketModal } from "./EditTicketModal";
 import { TicketFiltersBar } from "./TicketFiltersBar";
 import { CustomerTicketDrawer } from "../calls/CustomerTicketDrawer";
+import { ScheduleCallSheet } from "../calls/ScheduleCallSheet";
 import { CreateTicketForm } from "./CreateTicketForm";
 import type { CustomerSearchOption } from "../shared/AsyncCustomerCombobox";
 import { DataTablePagination } from "../shared/DataTablePagination";
@@ -76,6 +83,7 @@ import {
   SupportTicketType,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
+  type CreateScheduleCallFormData,
 } from "../../types";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -262,6 +270,8 @@ export function TicketsTab({
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [isScheduleSubmitting, setIsScheduleSubmitting] = useState(false);
   const [drawerGroup, setDrawerGroup] = useState<CustomerTicketGroup | null>(
     null,
   );
@@ -304,8 +314,7 @@ export function TicketsTab({
       if (formSeed.customerId) {
         setCreateFormCustomer({
           id: Number(formSeed.customerId),
-          name:
-            customerName?.trim() || `Customer #${formSeed.customerId}`,
+          name: customerName?.trim() || `Customer #${formSeed.customerId}`,
           phone: customerPhone?.trim() || null,
         });
       } else {
@@ -321,35 +330,39 @@ export function TicketsTab({
     setShowCreate(true);
   };
 
-  const openView = useCallback((t: SupportTicketRecord) => {
-    // Find the group this ticket belongs to
-    const group =
-      ticketGroups.find((g) => g.tickets.some((tk) => tk.id === t.id)) ?? null;
-    setSelected(t);
-    setDrawerGroup(group);
-    // Populate form for editing inline in drawer
-    setForm({
-      customerId: t.customerId?.toString() || "",
-      yardId: t.yardId?.toString() || "",
-      campaignId: t.campaignId?.toString() || "",
-      campaignOption: t.campaignOption || "",
-      agentId: t.agentId?.toString() || "",
-      phoneLineId: t.phoneLineId?.toString() || "",
-      callId: t.callId?.toString() || "",
-      status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
-      priority: t.priority,
-      ticketType: t.ticketType || "",
-      disposition: t.disposition || "",
-      issueDetail: t.issueDetail || "",
-      originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
-      followUpDueDate: t.followUpDueDate
-        ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
-        : "",
-      followUpAssignedToId: t.followUpAssignedToId?.toString() || "",
-    });
-    setPendingFiles([]);
-    setShowDrawer(true);
-  }, [ticketGroups]);
+  const openView = useCallback(
+    (t: SupportTicketRecord) => {
+      // Find the group this ticket belongs to
+      const group =
+        ticketGroups.find((g) => g.tickets.some((tk) => tk.id === t.id)) ??
+        null;
+      setSelected(t);
+      setDrawerGroup(group);
+      // Populate form for editing inline in drawer
+      setForm({
+        customerId: t.customerId?.toString() || "",
+        yardId: t.yardId?.toString() || "",
+        campaignId: t.campaignId?.toString() || "",
+        campaignOption: t.campaignOption || "",
+        agentId: t.agentId?.toString() || "",
+        phoneLineId: t.phoneLineId?.toString() || "",
+        callId: t.callId?.toString() || "",
+        status: normalizeSupportStatusKey(t.status) as SupportTicketStatus,
+        priority: t.priority,
+        ticketType: t.ticketType || "",
+        disposition: t.disposition || "",
+        issueDetail: t.issueDetail || "",
+        originalIssueDetail: t.originalIssueDetail ?? t.issueDetail ?? "",
+        followUpDueDate: t.followUpDueDate
+          ? new Date(t.followUpDueDate).toISOString().slice(0, 16)
+          : "",
+        followUpAssignedToId: t.followUpAssignedToId?.toString() || "",
+      });
+      setPendingFiles([]);
+      setShowDrawer(true);
+    },
+    [ticketGroups],
+  );
 
   const processedFocusTicketIdRef = useRef<string | null>(null);
 
@@ -551,6 +564,43 @@ export function TicketsTab({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleScheduleCall = async (data: CreateScheduleCallFormData) => {
+    try {
+      setIsScheduleSubmitting(true);
+      const payload: any = {
+        customerId: Number(data.customerId),
+        scheduledAt: new Date(data.scheduledAt).toISOString(),
+      };
+      if (data.agentId) payload.agentId = Number(data.agentId);
+      if (data.notes) payload.notes = data.notes;
+
+      const res = await fetch("/api/schedule-calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "Call scheduled" });
+        setShowSchedule(false);
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to schedule call",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScheduleSubmitting(false);
     }
   };
 
@@ -767,6 +817,17 @@ export function TicketsTab({
           <Plus className="w-3.5 h-3.5" />
           New Ticket
         </button>
+        <button
+          type="button"
+          onClick={() => setShowSchedule(true)}
+          className="mb-1 ml-2 shrink-0 flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+          style={{ background: "#065f4a" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#008f68")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#065f4a")}
+        >
+          <CalendarIcon className="w-3.5 h-3.5" />
+          Schedule Call
+        </button>
       </div>
 
       {isFocusMode && focusTicketId ? (
@@ -796,8 +857,6 @@ export function TicketsTab({
                 /
               </div>
             </div>
-
-         
           </div>
 
           <div
@@ -1409,6 +1468,16 @@ export function TicketsTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Schedule Call Modal ──────────────────────────────────────── */}
+      <ScheduleCallSheet
+        open={showSchedule}
+        onOpenChange={setShowSchedule}
+        customers={refData.customers}
+        agents={refData.agents}
+        onSubmit={handleScheduleCall}
+        isSubmitting={isScheduleSubmitting}
+      />
 
       {/* ── Edit Modal ───────────────────────────────────────────────── */}
       <EditTicketModal

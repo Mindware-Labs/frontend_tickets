@@ -290,6 +290,42 @@ export function CallSocketProvider({
       },
     );
 
+    socket.on(
+      "scheduledCallDue",
+      (data: {
+        id: number;
+        type: string;
+        message: string;
+        scheduleCallId: number;
+        agentId: number | null;
+        createdAt: string;
+      }) => {
+        try {
+          const audio = new Audio("/sounds/notification.mp3");
+          audio.play().catch(() => {});
+        } catch (e) {}
+
+        toast({
+          title: "📞 Scheduled Call Due",
+          description: data.message,
+          duration: 10000,
+          variant: "destructive",
+          action: (
+            <ToastAction
+              altText="View"
+              onClick={() => router.push(`/calls`)}
+            >
+              View Calls
+            </ToastAction>
+          ),
+        });
+
+        revalidateNotifications();
+        markDashboardRealtime("callback-due", data.createdAt);
+        revalidateCallCaches();
+      },
+    );
+
     return () => {
       if (revalidateDebounceRef.current)
         clearTimeout(revalidateDebounceRef.current);

@@ -12,10 +12,12 @@ export interface NotificationItem {
     | "CALLBACK_OVERDUE"
     | "CALLBACK_REMINDER"
     | "TICKET_ASSIGNED"
-    | "TICKET_FOLLOWUP_OVERDUE";
+    | "TICKET_FOLLOWUP_OVERDUE"
+    | "SCHEDULED_CALL_DUE";
   message: string;
   callId: number | null;
   ticketId: number | null;
+  scheduleCallId?: number | null;
   agentId: number | null;
   read: boolean;
   createdAt: string;

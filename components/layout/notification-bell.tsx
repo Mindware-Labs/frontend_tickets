@@ -67,6 +67,13 @@ const typeConfig: Record<NotificationItem["type"], NotificationToneClasses> = {
     accent: "bg-[#008f68] dark:bg-emerald-400",
     label: "Assigned",
   },
+  SCHEDULED_CALL_DUE: {
+    icon: Clock,
+    surface: "bg-indigo-50 dark:bg-indigo-500/10",
+    text: "text-indigo-700 dark:text-indigo-400",
+    accent: "bg-indigo-500",
+    label: "Call Now",
+  },
 };
 
 const FALLBACK_TONE = typeConfig.CALLBACK_REMINDER;
@@ -84,6 +91,8 @@ export function NotificationBell() {
       router.push(`/calls?id=${notif.ticketId}`);
     } else if (notif.callId) {
       router.push(`/calls?id=${notif.callId}`);
+    } else if (notif.scheduleCallId) {
+      router.push(`/calls`);
     }
   };
 

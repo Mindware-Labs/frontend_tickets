@@ -6,10 +6,15 @@ import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Plus, CalendarIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
-import { CreateCallFormData, CallStatus, CallDirection } from "./types";
+import {
+  CreateCallFormData,
+  CallStatus,
+  CallDirection,
+  type CreateScheduleCallFormData,
+} from "./types";
 const CreateCallModal = dynamic(
   () =>
     import("./components/calls/CreateCallModal").then((m) => m.CreateCallModal),
@@ -17,6 +22,13 @@ const CreateCallModal = dynamic(
 );
 const ViewCallModal = dynamic(
   () => import("./components/calls/ViewCallModal").then((m) => m.ViewCallModal),
+  { ssr: false },
+);
+const ScheduleCallSheet = dynamic(
+  () =>
+    import("./components/calls/ScheduleCallSheet").then(
+      (m) => m.ScheduleCallSheet,
+    ),
   { ssr: false },
 );
 import { GroupedCallsTable } from "./components/calls/GroupedCallsTable";
@@ -159,7 +171,10 @@ export default function TicketsPage() {
         return (serverViewCounts as any)[viewType];
       }
 
-      if (viewType === "all" && typeof ticketsPageData?.totalCalls === "number") {
+      if (
+        viewType === "all" &&
+        typeof ticketsPageData?.totalCalls === "number"
+      ) {
         return ticketsPageData.totalCalls;
       }
 
@@ -331,6 +346,8 @@ export default function TicketsPage() {
 
   // ---- Modal state ----
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [isScheduleSubmitting, setIsScheduleSubmitting] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
   const [drawerSuccessToast, setDrawerSuccessToast] = useState(false);
@@ -641,10 +658,7 @@ export default function TicketsPage() {
   };
 
   useEffect(() => {
-    if (
-      tabParam &&
-      ["calls", "tickets", "manual-records"].includes(tabParam)
-    ) {
+    if (tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)) {
       setActiveTab(tabParam);
       return;
     }
@@ -933,8 +947,7 @@ export default function TicketsPage() {
             ? new Date(data.followUpDueDate).toISOString()
             : null,
         followUpAssignedToId:
-          isCallbackDisposition(data.disposition) &&
-          data.followUpAssignedToId
+          isCallbackDisposition(data.disposition) && data.followUpAssignedToId
             ? Number(data.followUpAssignedToId)
             : null,
         notes: data.notes || null,
@@ -1108,6 +1121,43 @@ export default function TicketsPage() {
     }
   };
 
+  const handleScheduleCallSubmit = async (data: CreateScheduleCallFormData) => {
+    try {
+      setIsScheduleSubmitting(true);
+      const payload: any = {
+        customerId: Number(data.customerId),
+        scheduledAt: new Date(data.scheduledAt).toISOString(),
+      };
+      if (data.agentId) payload.agentId = Number(data.agentId);
+      if (data.notes) payload.notes = data.notes;
+
+      const res = await fetch("/api/schedule-calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "Call scheduled" });
+        setShowScheduleModal(false);
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to schedule call",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScheduleSubmitting(false);
+    }
+  };
+
   // ---- Create ticket from call (escalate) ----
   const handleCreateTicketFromCall = async () => {
     if (!selectedTicket) return;
@@ -1119,7 +1169,9 @@ export default function TicketsPage() {
     );
 
     const currentDisposition =
-      editFormData.disposition?.trim() || selectedTicket.disposition?.trim() || "";
+      editFormData.disposition?.trim() ||
+      selectedTicket.disposition?.trim() ||
+      "";
 
     if (!currentDisposition) {
       const updated = await ensureCallEscalatedDisposition(
@@ -1156,7 +1208,8 @@ export default function TicketsPage() {
     if (editFormData.agentId) data.agentId = String(editFormData.agentId);
     if (editFormData.phoneLineId)
       data.phoneLineId = String(editFormData.phoneLineId);
-    if (editFormData.notes?.trim()) data.issueDetail = editFormData.notes.trim();
+    if (editFormData.notes?.trim())
+      data.issueDetail = editFormData.notes.trim();
 
     setShowTimelineDrawer(false);
     setTicketCreateData(data);
@@ -1227,72 +1280,87 @@ export default function TicketsPage() {
           />
 
           {!callIdParam ? (
-          <div className="flex items-end border-b border-border">
-            <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex px-0.5">
-            {[
-              {
-                id: "all",
-                label: "All Calls",
-                count: getFilteredCountForView("all") || 0,
-              },
-              {
-                id: "active",
-                label: "Active",
-                count: getFilteredCountForView("active") || 0,
-              },
-              {
-                id: "pending_followup",
-                label: "Pending Follow-up",
-                count: getFilteredCountForView("pending_followup") || 0,
-              },
-              {
-                id: "overdue",
-                label: "Overdue",
-                count: getFilteredCountForView("overdue") || 0,
-                isOverdue: true,
-              },
-              {
-                id: "missed",
-                label: "Missed",
-                count: getFilteredCountForView("missed") || 0,
-              },
-              {
-                id: "complete",
-                label: "Complete",
-                count: getFilteredCountForView("complete") || 0,
-              },
-            ].map((tab) => {
-              const isActive = ticketFilters.activeView === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => ticketFilters.handleViewChange(tab.id)}
-                  className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
-                    isActive
-                      ? "border-[#008f68] text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                  <span
-                    className={`py-px px-1.5 rounded-full text-[11px] border ${
-                      isActive
-                        ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
-                        : "bg-muted/40 text-muted-foreground font-medium border-border"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                  {tab.isOverdue && tab.count > 0 && (
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
-                  )}
-                </button>
-              );
-            })}
+            <div className="flex items-end border-b border-border">
+              <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex px-0.5">
+                  {[
+                    {
+                      id: "all",
+                      label: "All Calls",
+                      count: getFilteredCountForView("all") || 0,
+                    },
+                    {
+                      id: "active",
+                      label: "Active",
+                      count: getFilteredCountForView("active") || 0,
+                    },
+                    {
+                      id: "pending_followup",
+                      label: "Pending Follow-up",
+                      count: getFilteredCountForView("pending_followup") || 0,
+                    },
+                    {
+                      id: "overdue",
+                      label: "Overdue",
+                      count: getFilteredCountForView("overdue") || 0,
+                      isOverdue: true,
+                    },
+                    {
+                      id: "missed",
+                      label: "Missed",
+                      count: getFilteredCountForView("missed") || 0,
+                    },
+                    {
+                      id: "complete",
+                      label: "Complete",
+                      count: getFilteredCountForView("complete") || 0,
+                    },
+                  ].map((tab) => {
+                    const isActive = ticketFilters.activeView === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => ticketFilters.handleViewChange(tab.id)}
+                        className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
+                          isActive
+                            ? "border-[#008f68] text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {tab.label}
+                        <span
+                          className={`py-px px-1.5 rounded-full text-[11px] border ${
+                            isActive
+                              ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                              : "bg-muted/40 text-muted-foreground font-medium border-border"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                        {tab.isOverdue && tab.count > 0 && (
+                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(true)}
+                className="mb-1 ml-2 shrink-0 flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+                style={{ background: "#065f4a" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#008f68")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#065f4a")
+                }
+              >
+                <CalendarIcon className="w-3.5 h-3.5" />
+                Schedule Call
+              </button>
             </div>
-            </div>
-          </div>
           ) : null}
 
           <GroupedCallsTable
@@ -1356,6 +1424,15 @@ export default function TicketsPage() {
             onSubmit={handleCreateTicket}
           />
 
+          <ScheduleCallSheet
+            open={showScheduleModal}
+            onOpenChange={setShowScheduleModal}
+            customers={refData.customers}
+            agents={refData.agents}
+            onSubmit={handleScheduleCallSubmit}
+            isSubmitting={isScheduleSubmitting}
+          />
+
           <ViewCallModal
             open={showViewModal}
             onOpenChange={setShowViewModal}
@@ -1392,9 +1469,7 @@ export default function TicketsPage() {
             open={showTimelineDrawer}
             onClose={handleCloseCallDrawer}
             returnToLabel={returnBackLabel ?? undefined}
-            onBackToReturn={
-              safeReturnPath ? handleBackToReturn : undefined
-            }
+            onBackToReturn={safeReturnPath ? handleBackToReturn : undefined}
             group={timelineGroup}
             activeFilters={ticketFilters.filters}
             selectedCall={selectedTicket}
