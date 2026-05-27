@@ -31,6 +31,7 @@ import type {
   LiveSnapshot,
 } from "./dashboard-types";
 import {
+  buildDashboardPeriodQueryParams,
   buildPerformanceFilterQuery,
   emptyDashboardFilters,
   hasActiveDashboardFilters,
@@ -1470,6 +1471,9 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     null,
   );
   const lastRealtimeVersionRef = useRef(0);
+  const loadRequestSeqRef = useRef(0);
+  const loadingRequestSeqRef = useRef(0);
+  const realtimeSyncRequestSeqRef = useRef(0);
 
   const loadDashboardSources = useCallback(
     async ({
@@ -1481,8 +1485,17 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       showLoading?: boolean;
       realtimeSync?: boolean;
     } = {}) => {
-      if (showLoading) setIsLoading(true);
-      if (realtimeSync) setIsRealtimeSyncing(true);
+      const requestSeq = ++loadRequestSeqRef.current;
+      const requestedPeriod = period;
+
+      if (showLoading) {
+        loadingRequestSeqRef.current = requestSeq;
+        setIsLoading(true);
+      }
+      if (realtimeSync) {
+        realtimeSyncRequestSeqRef.current = requestSeq;
+        setIsRealtimeSyncing(true);
+      }
       setError(null);
 
       if (resetFilters) {
@@ -1491,11 +1504,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        let periodQuery = `period=${period}`;
-        if (period === "all") {
-          const todayStr = new Date().toISOString().split("T")[0];
-          periodQuery = `start=2026-01-01&end=${todayStr}`;
-        }
+        const periodQuery =
+          buildDashboardPeriodQueryParams(requestedPeriod).toString();
 
         const [
           statsResult,
@@ -1536,6 +1546,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
           .map(settledError)
           .filter((message): message is string => !!message);
 
+        if (requestSeq !== loadRequestSeqRef.current) return;
+
         setBaseSources(sources);
         setGeneratedAt(
           sources.wallboard?.generatedAt ||
@@ -1544,8 +1556,15 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         );
         setError(errors.length ? errors[0] : null);
       } finally {
-        if (showLoading) setIsLoading(false);
-        if (realtimeSync) setIsRealtimeSyncing(false);
+        if (showLoading && loadingRequestSeqRef.current === requestSeq) {
+          setIsLoading(false);
+        }
+        if (
+          realtimeSync &&
+          realtimeSyncRequestSeqRef.current === requestSeq
+        ) {
+          setIsRealtimeSyncing(false);
+        }
       }
     },
     [period],
@@ -1554,6 +1573,20 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(
     () => loadDashboardSources({ resetFilters: true, showLoading: true }),
     [loadDashboardSources],
+  );
+
+  const setPeriod = useCallback(
+    (nextPeriod: string) => {
+      if (nextPeriod === period) return;
+
+      setIsLoading(true);
+      setIsFilterLoading(false);
+      setIsRealtimeSyncing(false);
+      setFilteredPerformance(null);
+      setFilters(emptyDashboardFilters());
+      setPeriodState(nextPeriod);
+    },
+    [period],
   );
 
   useEffect(() => {
@@ -1623,21 +1656,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     setIsFilterLoading(true);
 
-    let query = "";
-    if (period === "all") {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const params = new URLSearchParams({ start: "2026-01-01", end: todayStr });
-      if (filters.campaign) params.set("campaignName", filters.campaign);
-      if (filters.yard) params.set("yardName", filters.yard);
-      if (filters.agent) params.set("agentName", filters.agent);
-      if (filters.line) params.set("lineName", filters.line);
-      if (filters.disposition) params.set("disposition", filters.disposition);
-      if (filters.day) params.set("dayLabel", filters.day);
-      if (filters.hour) params.set("hour", filters.hour);
-      query = params.toString();
-    } else {
-      query = buildPerformanceFilterQuery(filters, period);
-    }
+    const query = buildPerformanceFilterQuery(filters, period);
 
     fetchDashboardEndpoint<PerformanceReport>(`/api/reports/performance?${query}`)
       .then((performance) => {
@@ -1719,7 +1738,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       isHeatmapSlotActive,
       refresh,
       period,
-      setPeriod: setPeriodState,
+      setPeriod,
     }),
     [
       clearFilters,
@@ -1735,11 +1754,11 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       refresh,
       realtime.connected,
       realtime.lastEvent?.timestamp,
+      setPeriod,
       setFilter,
-      toggleFilter,
       toggleHeatmapSlot,
       period,
-      setPeriodState,
+      toggleFilter,
     ],
   );
 

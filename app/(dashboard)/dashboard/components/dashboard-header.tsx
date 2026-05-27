@@ -7,6 +7,7 @@ import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { useSupportDashboardData } from "../use-dashboard-real-data";
+import { parseCustomDashboardPeriod } from "../dashboard-filters";
 
 import {
   DashboardFilterTrigger,
@@ -59,7 +60,10 @@ export function DashboardHeader({
     "90d": "90 Days",
     "all": "All Time",
   };
-  const activePeriodLabel = periodLabels[period] || "Filter";
+  const customPeriod = parseCustomDashboardPeriod(period);
+  const activePeriodLabel = customPeriod
+    ? "Custom"
+    : periodLabels[period] || "Filter";
 
   return (
     <header className="shrink-0">

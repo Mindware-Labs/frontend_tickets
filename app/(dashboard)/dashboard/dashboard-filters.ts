@@ -32,7 +32,7 @@ export function buildPerformanceFilterQuery(
   filters: DashboardFilters,
   period = "30d",
 ): string {
-  const params = new URLSearchParams({ period });
+  const params = buildDashboardPeriodQueryParams(period);
   if (filters.campaign) params.set("campaignName", filters.campaign);
   if (filters.yard) params.set("yardName", filters.yard);
   if (filters.agent) params.set("agentName", filters.agent);
@@ -41,6 +41,32 @@ export function buildPerformanceFilterQuery(
   if (filters.day) params.set("dayLabel", filters.day);
   if (filters.hour) params.set("hour", filters.hour);
   return params.toString();
+}
+
+export function createCustomDashboardPeriod(start: string, end: string): string {
+  return `custom:${start}:${end}`;
+}
+
+export function parseCustomDashboardPeriod(period: string):
+  | { start: string; end: string }
+  | null {
+  const [, start, end] = period.split(":");
+  if (!period.startsWith("custom:") || !start || !end) return null;
+  return { start, end };
+}
+
+export function buildDashboardPeriodQueryParams(period: string): URLSearchParams {
+  const customPeriod = parseCustomDashboardPeriod(period);
+  if (customPeriod) {
+    return new URLSearchParams(customPeriod);
+  }
+
+  if (period === "all") {
+    const todayStr = new Date().toISOString().split("T")[0];
+    return new URLSearchParams({ start: "2026-01-01", end: todayStr });
+  }
+
+  return new URLSearchParams({ period });
 }
 
 export function formatHeatmapHourLabel(hourKey: string): string {
