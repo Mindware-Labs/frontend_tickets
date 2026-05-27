@@ -203,9 +203,7 @@ export function MarketingDashboard() {
                       cy="50%"
                       innerRadius={data.dispositionBreakdown.length === 1 ? 52 : 44}
                       outerRadius={data.dispositionBreakdown.length === 1 ? 72 : 64}
-                      paddingAngle={
-                        data.dispositionBreakdown.length > 1 ? 3 : 0
-                      }
+                      paddingAngle={0}
                       cursor="pointer"
                       onClick={(slice) => {
                         const row = slice as { name?: string };

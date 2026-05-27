@@ -285,6 +285,40 @@ function percent(numerator: number, denominator: number) {
   return Math.min(100, Math.round((numerator / denominator) * 100));
 }
 
+type AggBucket = "day" | "week" | "month";
+
+function getAggBucket(count: number): AggBucket {
+  if (count <= 31) return "day";
+  if (count <= 120) return "week";
+  return "month";
+}
+
+function getGroupKey(rawDate: string, bucket: AggBucket): string {
+  const d = new Date(rawDate);
+  if (Number.isNaN(d.getTime())) return rawDate;
+  if (bucket === "week") {
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.getFullYear(), d.getMonth(), diff);
+    return monday.toISOString().split("T")[0];
+  }
+  if (bucket === "month") {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+  return rawDate.split("T")[0];
+}
+
+function getGroupLabel(key: string, bucket: AggBucket): string {
+  if (bucket === "week") return labelFromDate(key);
+  if (bucket === "month") {
+    const [year, month] = key.split("-");
+    const d = new Date(parseInt(year), parseInt(month) - 1);
+    if (Number.isNaN(d.getTime())) return key;
+    return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return labelFromDate(key) || key;
+}
+
 const SCORECARD_CALL_RESPONSE_TARGET_SEC = 90;
 const SCORECARD_AHT_TARGET_SEC = 360;
 const SCORECARD_TICKET_BACKLOG_TARGET = 20;
@@ -641,27 +675,63 @@ function buildOperationsTrend({
   stats,
   performance,
 }: DashboardSources): DashboardDataSet["operationsTrend"] {
-  const ticketByDay = new Map(
-    (performance?.ticketsByDay || stats?.charts?.callsByDay || []).map((item) => [
-      item.day,
-      "count" in item ? item.count : item.calls,
-    ]),
-  );
-  const trend = (performance?.callsByDay || []).map((item) => {
-    const day = item.day || labelFromDate(item.date) || "Day";
-    const missed = numberValue(item.missed);
-    const answered = numberValue(item.answered);
-    const total = numberValue(item.total, answered + missed);
-    return {
-      day,
-      inbound: answered,
-      outbound: Math.max(total - answered - missed, 0),
-      missed,
-      tickets: ticketByDay.get(day) || numberValue(item.closed),
-    };
-  });
+  const callsByDay = performance?.callsByDay || [];
+  const ticketsByDay = performance?.ticketsByDay || stats?.charts?.callsByDay || [];
+  const bucket = getAggBucket(callsByDay.length);
 
-  return trend;
+  if (bucket === "day") {
+    const ticketMap = new Map(
+      ticketsByDay.map((item) => [
+        item.day,
+        "count" in item ? item.count : item.calls,
+      ]),
+    );
+    return callsByDay.map((item) => {
+      const day = item.day || labelFromDate(item.date) || "Day";
+      const missed = numberValue(item.missed);
+      const answered = numberValue(item.answered);
+      const total = numberValue(item.total, answered + missed);
+      return {
+        day,
+        inbound: answered,
+        outbound: Math.max(total - answered - missed, 0),
+        missed,
+        tickets: ticketMap.get(day) || numberValue(item.closed),
+      };
+    });
+  }
+
+  const ticketByDate = new Map<string, number>();
+  for (const t of ticketsByDay) {
+    ticketByDate.set(t.day, "count" in t ? t.count : t.calls);
+  }
+
+  const callsByDate = new Map<string, (typeof callsByDay)[number]>();
+  for (const c of callsByDay) {
+    const dateKey = c.date || c.day;
+    if (dateKey) callsByDate.set(dateKey, c);
+  }
+
+  const grouped = new Map<string, { inbound: number; outbound: number; missed: number; tickets: number }>();
+
+  for (const [rawDate, item] of callsByDate) {
+    const key = getGroupKey(rawDate, bucket);
+    const existing = grouped.get(key) || { inbound: 0, outbound: 0, missed: 0, tickets: 0 };
+    const answered = numberValue(item.answered);
+    const missed = numberValue(item.missed);
+    const total = numberValue(item.total, answered + missed);
+    existing.inbound += answered;
+    existing.outbound += Math.max(total - answered - missed, 0);
+    existing.missed += missed;
+    existing.tickets += ticketByDate.get(rawDate) || numberValue(item.closed);
+    grouped.set(key, existing);
+  }
+
+  const sortedKeys = [...grouped.keys()].sort();
+  return sortedKeys.map((key) => ({
+    day: getGroupLabel(key, bucket),
+    ...grouped.get(key)!,
+  }));
 }
 
 function buildAgentActivity(
@@ -932,22 +1002,52 @@ function buildExecutiveTrend({
   performance,
   stats,
 }: DashboardSources): DashboardDataSet["ticketVsCallTrend"] {
-  const ticketByDay = new Map(
-    (stats?.charts?.callsByDay || []).map((item) => [item.day, item.calls]),
-  );
-  const rows = (performance?.callsByDay || []).map((item) => {
-    const week = item.day || labelFromDate(item.date) || "Day";
-    const calls = numberValue(item.total);
-    const tickets = ticketByDay.get(week) || numberValue(item.closed);
+  const callsByDay = performance?.callsByDay || [];
+  const ticketsByDay = stats?.charts?.callsByDay || [];
+  const bucket = getAggBucket(callsByDay.length);
+  const summaryClosed = numberValue(performance?.summary?.closedTickets);
+
+  if (bucket === "day") {
+    const ticketMap = new Map(ticketsByDay.map((item) => [item.day, item.calls]));
+    return callsByDay.map((item) => {
+      const week = item.day || labelFromDate(item.date) || "Day";
+      const calls = numberValue(item.total);
+      const tickets = ticketMap.get(week) || numberValue(item.closed);
+      return { week, calls, tickets, resolved: Math.min(tickets, summaryClosed) };
+    });
+  }
+
+  const ticketByDate = new Map<string, number>();
+  for (const t of ticketsByDay) {
+    ticketByDate.set(t.day, t.calls);
+  }
+
+  const callsByDate = new Map<string, (typeof callsByDay)[number]>();
+  for (const c of callsByDay) {
+    const dateKey = c.date || c.day;
+    if (dateKey) callsByDate.set(dateKey, c);
+  }
+
+  const grouped = new Map<string, { calls: number; tickets: number }>();
+
+  for (const [rawDate, item] of callsByDate) {
+    const key = getGroupKey(rawDate, bucket);
+    const existing = grouped.get(key) || { calls: 0, tickets: 0 };
+    existing.calls += numberValue(item.total);
+    existing.tickets += ticketByDate.get(rawDate) || numberValue(item.closed);
+    grouped.set(key, existing);
+  }
+
+  const sortedKeys = [...grouped.keys()].sort();
+  return sortedKeys.map((key) => {
+    const g = grouped.get(key)!;
     return {
-      week,
-      calls,
-      tickets,
-      resolved: Math.min(tickets, numberValue(performance?.summary?.closedTickets)),
+      week: getGroupLabel(key, bucket),
+      calls: g.calls,
+      tickets: g.tickets,
+      resolved: Math.min(g.tickets, summaryClosed),
     };
   });
-
-  return rows;
 }
 
 function buildTicketRisk({
@@ -1394,7 +1494,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         let periodQuery = `period=${period}`;
         if (period === "all") {
           const todayStr = new Date().toISOString().split("T")[0];
-          periodQuery = `start=2020-01-01&end=${todayStr}`;
+          periodQuery = `start=2026-01-01&end=${todayStr}`;
         }
 
         const [
@@ -1526,7 +1626,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     let query = "";
     if (period === "all") {
       const todayStr = new Date().toISOString().split("T")[0];
-      const params = new URLSearchParams({ start: "2020-01-01", end: todayStr });
+      const params = new URLSearchParams({ start: "2026-01-01", end: todayStr });
       if (filters.campaign) params.set("campaignName", filters.campaign);
       if (filters.yard) params.set("yardName", filters.yard);
       if (filters.agent) params.set("agentName", filters.agent);
