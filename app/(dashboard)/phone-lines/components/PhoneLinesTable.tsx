@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { PaginationFooter } from "@/components/common/pagination-footer";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { cn } from "@/lib/utils";
 import { PhoneLine } from "../types";
@@ -24,6 +24,7 @@ interface PhoneLinesTableProps {
   onRowClick?: (line: PhoneLine) => void;
   onEdit?: (line: PhoneLine) => void;
   onDelete?: (line: PhoneLine) => void;
+  onRestore?: (line: PhoneLine) => void;
   canManage?: boolean;
   currentPage?: number;
   onPageChange?: (page: number) => void;
@@ -52,6 +53,7 @@ export function PhoneLinesTable({
   onRowClick,
   onEdit,
   onDelete,
+  onRestore,
   canManage = true,
   currentPage = 1,
   onPageChange,
@@ -171,11 +173,23 @@ export function PhoneLinesTable({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                            title="Delete line"
-                            aria-label="Delete line"
+                            title="Archive line"
+                            aria-label="Archive line"
                             onClick={() => onDelete(line)}
                           >
                             <Trash2 className="h-4 w-4 pointer-events-none" />
+                          </Button>
+                        )}
+                        {canManage && onRestore && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:bg-[#f0faf5] hover:text-[#008f68]"
+                            title="Restore line"
+                            aria-label="Restore line"
+                            onClick={() => onRestore(line)}
+                          >
+                            <RotateCcw className="h-4 w-4 pointer-events-none" />
                           </Button>
                         )}
                       </div>

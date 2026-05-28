@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { mutate as globalMutate } from "swr";
 import {
   Bell,
   CheckCheck,
@@ -94,6 +95,36 @@ export function NotificationBell() {
     } else if (notif.scheduleCallId) {
       router.push(`/calls`);
     }
+  };
+
+  const handleMarkRead = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+    notif: NotificationItem,
+  ) => {
+    event.stopPropagation();
+    await markRead(notif.id);
+  };
+
+  const handleMarkDone = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+    notif: NotificationItem,
+  ) => {
+    event.stopPropagation();
+    if (!notif.scheduleCallId) {
+      await markRead(notif.id);
+      return;
+    }
+
+    const response = await fetch(`/api/schedule-calls/${notif.scheduleCallId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" }),
+    });
+    const result = await response.json();
+    if (!result.success) return;
+
+    await markRead(notif.id);
+    globalMutate("/api/schedule-calls?status=PENDING&limit=100");
   };
 
   const badgeLabel = unreadCount > 9 ? "9+" : String(unreadCount);
@@ -203,10 +234,17 @@ export function NotificationBell() {
                 const cfg = typeConfig[notif.type] ?? FALLBACK_TONE;
                 const Icon = cfg.icon;
                 return (
-                  <button
+                  <div
                     key={notif.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleClick(notif)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleClick(notif);
+                      }
+                    }}
                     className={cn(
                       "group relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:bg-slate-50 dark:hover:bg-slate-900/50 dark:focus-visible:bg-slate-900/50",
                       !notif.read && "bg-slate-50/60 dark:bg-slate-900/30",
@@ -268,13 +306,36 @@ export function NotificationBell() {
                           addSuffix: true,
                         })}
                       </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {notif.scheduleCallId ? (
+                          <button
+                            type="button"
+                            onClick={(event) => handleMarkDone(event, notif)}
+                            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#008f68]/20 bg-[#f0faf5] px-2.5 text-[10.5px] font-semibold text-[#008f68] transition-colors hover:border-[#008f68]/30 hover:bg-[#008f68] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-600 dark:hover:text-white"
+                          >
+                            <CheckCheck className="size-3.5" aria-hidden />
+                            Done
+                          </button>
+                        ) : null}
+
+                        {!notif.read ? (
+                          <button
+                            type="button"
+                            onClick={(event) => handleMarkRead(event, notif)}
+                            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10.5px] font-semibold text-slate-500 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                          >
+                            Mark read
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
 
                     <ArrowRight
                       className="mt-2.5 size-3.5 shrink-0 translate-x-0 text-slate-300 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 dark:text-slate-600"
                       aria-hidden
                     />
-                  </button>
+                  </div>
                 );
               })}
             </div>

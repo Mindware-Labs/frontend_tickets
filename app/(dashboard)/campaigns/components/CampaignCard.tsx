@@ -12,6 +12,7 @@ import {
   MapPin,
   Megaphone,
   Pencil,
+  RotateCcw,
   Tag,
   Trash2,
   XCircle,
@@ -167,6 +168,7 @@ interface CampaignCardProps {
   onOpen: (campaign: Campaign) => void;
   onEdit?: (campaign: Campaign) => void;
   onDelete?: (campaign: Campaign) => void;
+  onRestore?: (campaign: Campaign) => void;
 }
 
 export function CampaignCard({
@@ -175,8 +177,9 @@ export function CampaignCard({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
 }: CampaignCardProps) {
-  const showActions = Boolean(onEdit || onDelete);
+  const showActions = Boolean(onEdit || onDelete || onRestore);
   const showReportLink = Boolean(onEdit || onDelete);
   const yardLabel = getYardLabel(campaign, yards);
   const totalActivities = campaign.ticketCount ?? 0;
@@ -404,12 +407,25 @@ export function CampaignCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                title="Delete campaign"
-                aria-label="Delete campaign"
+                title="Archive campaign"
+                aria-label="Archive campaign"
                 onClick={() => onDelete(campaign)}
                 className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-red-600 dark:hover:bg-slate-950"
               >
                 <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+              </Button>
+            ) : null}
+            {onRestore ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                title="Restore campaign"
+                aria-label="Restore campaign"
+                onClick={() => onRestore(campaign)}
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-[#008f68] dark:hover:bg-slate-950"
+              >
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
             ) : null}
           </div>

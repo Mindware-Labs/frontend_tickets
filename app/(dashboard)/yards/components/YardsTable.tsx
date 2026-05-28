@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { PaginationFooter } from "@/components/common/pagination-footer";
 import { Button } from "@/components/ui/button";
-import { MapPin, Pencil, Phone, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Phone, RotateCcw, Trash2 } from "lucide-react";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { cn } from "@/lib/utils";
 import { Yard } from "../types";
@@ -23,6 +23,7 @@ interface YardsTableProps {
   onRowClick?: (yard: Yard) => void;
   onEdit?: (yard: Yard) => void;
   onDelete?: (yard: Yard) => void;
+  onRestore?: (yard: Yard) => void;
   canManage?: boolean;
   currentPage?: number;
   onPageChange?: (page: number) => void;
@@ -67,6 +68,7 @@ export function YardsTable({
   onRowClick,
   onEdit,
   onDelete,
+  onRestore,
   canManage = true,
   currentPage = 1,
   onPageChange,
@@ -218,11 +220,23 @@ export function YardsTable({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                            title="Delete yard"
-                            aria-label="Delete yard"
+                            title="Archive yard"
+                            aria-label="Archive yard"
                             onClick={() => onDelete(yard)}
                           >
                             <Trash2 className="h-4 w-4 pointer-events-none" />
+                          </Button>
+                        )}
+                        {canManage && onRestore && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:bg-[#f0faf5] hover:text-[#008f68]"
+                            title="Restore yard"
+                            aria-label="Restore yard"
+                            onClick={() => onRestore(yard)}
+                          >
+                            <RotateCcw className="h-4 w-4 pointer-events-none" />
                           </Button>
                         )}
                       </div>

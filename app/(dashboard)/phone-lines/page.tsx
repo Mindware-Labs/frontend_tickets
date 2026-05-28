@@ -44,6 +44,7 @@ const VIEW_TABS = [
   { key: "all", label: "All Lines" },
   { key: "active", label: "Active" },
   { key: "inactive", label: "Inactive" },
+  { key: "archived", label: "Archived" },
 ] as const;
 
 type LineView = (typeof VIEW_TABS)[number]["key"];
@@ -196,6 +197,25 @@ export default function PhoneLinesPage() {
     setShowEditModal(true);
   };
 
+  const handleRestore = async (line: PhoneLine) => {
+    try {
+      await fetchFromBackend(`/phone-lines/${line.id}/restore`, { method: "PATCH" });
+      toast({
+        title: "Restored",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Phone line restored successfully</span>
+          </div>
+        ),
+      });
+      await refreshLines();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast({ title: "Error", description: err.message || "Failed to restore phone line.", variant: "destructive" });
+    }
+  };
+
   const handleDelete = (line: PhoneLine) => {
     setSelectedLine(line);
     setShowDeleteModal(true);
@@ -312,7 +332,7 @@ export default function PhoneLinesPage() {
         description: (
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Phone line deleted successfully</span>
+            <span>Phone line archived successfully</span>
           </div>
         ),
       });
@@ -414,8 +434,9 @@ export default function PhoneLinesPage() {
           lines={lines}
           totalFiltered={totalFiltered}
           onRowClick={handleRowClick}
-          onEdit={canManage ? handleEdit : undefined}
-          onDelete={canManage ? handleDelete : undefined}
+          onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
+          onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
+          onRestore={canManage && activeView === "archived" ? handleRestore : undefined}
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}

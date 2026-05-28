@@ -111,18 +111,43 @@ function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () =>
 export default function ForgotPasswordPage() {
   const router = useRouter();
 
-  const [step,            setStep           ] = useState<Step>("request");
-  const [isLoading,       setIsLoading      ] = useState(false);
-  const [isResending,     setIsResending    ] = useState(false);
-  const [showPassword,    setShowPassword   ] = useState(false);
-  const [showConfirm,     setShowConfirm    ] = useState(false);
-  const [error,           setError          ] = useState("");
-  const [errorKey,        setErrorKey       ] = useState(0);
-  const [email,           setEmail          ] = useState("");
-  const [code,            setCode           ] = useState("");
-  const [password,        setPassword       ] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [resendTimer,     setResendTimer    ] = useState(0);
+  const [step,             setStep            ] = useState<Step>("request");
+  const [isLoading,        setIsLoading       ] = useState(false);
+  const [isResending,      setIsResending     ] = useState(false);
+  const [showPassword,     setShowPassword    ] = useState(false);
+  const [showConfirm,      setShowConfirm     ] = useState(false);
+  const [error,            setError           ] = useState("");
+  const [errorKey,         setErrorKey        ] = useState(0);
+  const [email,            setEmail           ] = useState("");
+  const [code,             setCode            ] = useState("");
+  const [password,         setPassword        ] = useState("");
+  const [confirmPassword,  setConfirmPassword ] = useState("");
+  const [resendTimer,      setResendTimer     ] = useState(0);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
+
+  // Restore rate-limit countdown from sessionStorage on mount so navigating
+  // back from /login (or between steps) doesn't reset the remaining wait time.
+  useEffect(() => {
+    const stored = sessionStorage.getItem("auth_rate_limit_expires");
+    if (stored) {
+      const remaining = Math.ceil((Number(stored) - Date.now()) / 1000);
+      if (remaining > 0) {
+        setRateLimitCountdown(remaining);
+        setError("too_many_requests");
+      } else {
+        sessionStorage.removeItem("auth_rate_limit_expires");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rateLimitCountdown <= 0) {
+      sessionStorage.removeItem("auth_rate_limit_expires");
+      return;
+    }
+    const timer = setTimeout(() => setRateLimitCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [rateLimitCountdown]);
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -132,6 +157,18 @@ export default function ForgotPasswordPage() {
 
   const showError = (msg: string) => { setErrorKey((k) => k + 1); setError(msg); };
 
+  const isRateLimit = (msg: string) =>
+    msg.toLowerCase().includes("too many requests") ||
+    msg.toLowerCase().includes("throttler");
+
+  const applyRateLimit = () => {
+    const expiresAt = Date.now() + 60_000;
+    sessionStorage.setItem("auth_rate_limit_expires", String(expiresAt));
+    setRateLimitCountdown(60);
+    setErrorKey((k) => k + 1);
+    setError("too_many_requests");
+  };
+
   const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true); setError("");
@@ -140,8 +177,12 @@ export default function ForgotPasswordPage() {
       setStep("code"); setResendTimer(120);
     } catch (err: any) {
       const m = err?.message || "Failed to request reset code.";
-      showError(m.toLowerCase().includes("email not found")
-        ? "Email not registered. Please check and try again." : m);
+      if (isRateLimit(m)) {
+        applyRateLimit();
+      } else {
+        showError(m.toLowerCase().includes("email not found")
+          ? "Email not registered. Please check and try again." : m);
+      }
     } finally { setIsLoading(false); }
   };
 
@@ -151,7 +192,9 @@ export default function ForgotPasswordPage() {
       await auth.requestPasswordReset(email.trim().toLowerCase());
       setResendTimer(120); setCode("");
     } catch (err: any) {
-      showError(err?.message || "Failed to resend code.");
+      const m = err?.message || "Failed to resend code.";
+      if (isRateLimit(m)) applyRateLimit();
+      else showError(m);
     } finally { setIsResending(false); }
   };
 
@@ -243,9 +286,33 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
-            {error && <ErrorBanner key={errorKey} message={error} onDismiss={() => setError("")} />}
+            {error === "too_many_requests" ? (
+              <div key={errorKey} className="fp-error" style={{
+                display: "flex", alignItems: "flex-start", gap: 10,
+                padding: "11px 13px", borderRadius: 10, fontSize: 13,
+                border: "1px solid rgba(184,122,16,.28)",
+                background: "rgba(200,100,30,.06)",
+                color: "#0E1B19",
+              }}>
+                <svg style={{ flexShrink: 0, marginTop: 1, color: "#B87A10" }}
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>Too many attempts</p>
+                  {rateLimitCountdown > 0 && (
+                    <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(15,30,28,.55)" }}>
+                      Try again in{" "}
+                      <strong style={{ color: "#0E1B19", fontVariantNumeric: "tabular-nums" }}>{rateLimitCountdown}s</strong>
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : error ? (
+              <ErrorBanner key={errorKey} message={error} onDismiss={() => setError("")} />
+            ) : null}
 
-            <button type="submit" disabled={isLoading || !email.trim()} className="fp-btn" style={btnStyle(isLoading || !email.trim())}>
+            <button type="submit" disabled={isLoading || !email.trim() || rateLimitCountdown > 0} className="fp-btn" style={btnStyle(isLoading || !email.trim() || rateLimitCountdown > 0)}>
               {isLoading
                 ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /><span>Sending…</span></>
                 : <><span>Send Code</span><ArrowRight size={14} /></>}

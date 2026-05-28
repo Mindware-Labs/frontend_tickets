@@ -63,6 +63,7 @@ const VIEW_TABS = [
   { key: "inactive", label: "Inactive" },
   { key: "saas", label: "SaaS" },
   { key: "full_service", label: "Full Service" },
+  { key: "archived", label: "Archived" },
 ] as const;
 
 type YardView = (typeof VIEW_TABS)[number]["key"];
@@ -249,6 +250,25 @@ export default function YardsPage() {
     setShowDeleteModal(true);
   };
 
+  const handleRestore = async (yard: Yard) => {
+    try {
+      await fetchFromBackend(`/yards/${yard.id}/restore`, { method: "PATCH" });
+      toast({
+        title: "Restored",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Yard restored successfully</span>
+          </div>
+        ),
+      });
+      await refreshYards();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast({ title: "Error", description: err.message || "Failed to restore yard.", variant: "destructive" });
+    }
+  };
+
   const handleRowClick = (yard: Yard) => {
     setSelectedYard(yard);
     setShowYardSheet(true);
@@ -369,7 +389,7 @@ export default function YardsPage() {
         description: (
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Yard deleted successfully</span>
+            <span>Yard archived successfully</span>
           </div>
         ),
       });
@@ -378,10 +398,7 @@ export default function YardsPage() {
       await refreshYards();
     } catch (error: unknown) {
       const err = error as { message?: string };
-      let errorMsg = err.message || "Failed to delete yard.";
-      if (errorMsg.includes("No se puede eliminar la yard porque tiene tickets asociados")) {
-        errorMsg = "Cannot delete yard because it has associated tickets.";
-      }
+      const errorMsg = err.message || "Failed to archive yard.";
       toast({ title: "Error", description: errorMsg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
@@ -490,8 +507,9 @@ export default function YardsPage() {
           yards={yards}
           totalFiltered={totalFiltered}
           onRowClick={handleRowClick}
-          onEdit={canManage ? handleEdit : undefined}
-          onDelete={canManage ? handleDelete : undefined}
+          onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
+          onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
+          onRestore={canManage && activeView === "archived" ? handleRestore : undefined}
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
@@ -551,7 +569,6 @@ export default function YardsPage() {
           if (!open) clearValidationErrors();
         }}
         yardName={selectedYard?.name}
-        ticketCount={selectedYard?.ticketCount}
         isSubmitting={isSubmitting}
         onConfirm={handleSubmitDelete}
       />
@@ -560,8 +577,8 @@ export default function YardsPage() {
         open={showYardSheet}
         onOpenChange={handleYardSheetOpenChange}
         yard={selectedYard}
-        onEdit={canManage ? handleEdit : undefined}
-        onDelete={canManage ? handleDelete : undefined}
+        onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
+        onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
         returnLandlord={returnLandlord}
       />
 

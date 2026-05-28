@@ -14,6 +14,7 @@ import {
   CallStatus,
   CallDirection,
   type CreateScheduleCallFormData,
+  type ScheduleCall,
 } from "./types";
 const ViewCallModal = dynamic(
   () => import("./components/calls/ViewCallModal").then((m) => m.ViewCallModal),
@@ -84,6 +85,15 @@ const ticketsFetcher = async (url: string) => {
   return result.data;
 };
 
+const scheduleCallsFetcher = async (url: string) => {
+  const response = await fetch(url);
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.message || "Failed to load scheduled calls");
+  }
+  return result.data ?? [];
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -135,6 +145,30 @@ export default function TicketsPage() {
     revalidateOnReconnect: true,
     shouldRetryOnError: false,
   });
+
+  const {
+    data: scheduleCalls = [],
+    mutate: mutateScheduleCalls,
+  } = useSWR<ScheduleCall[]>(
+    "/api/schedule-calls?status=PENDING&limit=100",
+    scheduleCallsFetcher,
+    {
+      refreshInterval: 60_000,
+      revalidateOnFocus: true,
+      dedupingInterval: 15_000,
+      shouldRetryOnError: false,
+    },
+  );
+
+  const overdueScheduleCount = useMemo(
+    () =>
+      scheduleCalls.filter(
+        (sc) =>
+          sc.status === "PENDING" &&
+          new Date(sc.scheduledAt).getTime() <= Date.now(),
+      ).length,
+    [scheduleCalls],
+  );
 
   const tickets: Call[] = Array.isArray(ticketsPageData)
     ? ticketsPageData
@@ -1324,7 +1358,11 @@ export default function TicketsPage() {
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(true)}
-                className="mb-1 ml-2 shrink-0 flex h-[30px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95"
+                className={`relative mb-1 ml-2 flex h-[30px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all active:scale-95 ${
+                  overdueScheduleCount > 0
+                    ? "animate-pulse ring-2 ring-rose-300/80 ring-offset-2 ring-offset-white"
+                    : ""
+                }`}
                 style={{ background: "#065f4a" }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.background = "#008f68")
@@ -1335,6 +1373,11 @@ export default function TicketsPage() {
               >
                 <CalendarIcon className="w-3.5 h-3.5" />
                 Schedule Call
+                {overdueScheduleCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-5 text-white shadow-sm ring-2 ring-white">
+                    {overdueScheduleCount > 9 ? "9+" : overdueScheduleCount}
+                  </span>
+                )}
               </button>
             </div>
           ) : null}
@@ -1376,6 +1419,7 @@ export default function TicketsPage() {
             customers={refData.customers}
             onSubmit={handleScheduleCallSubmit}
             isSubmitting={isScheduleSubmitting}
+            onSchedulesChanged={() => mutateScheduleCalls()}
           />
 
           <ViewCallModal

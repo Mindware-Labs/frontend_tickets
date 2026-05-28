@@ -332,27 +332,38 @@ export default function Topbar() {
       </header>
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent className="rounded-2xl border-slate-200/80 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-              Sign out
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-slate-400">
-              Are you sure you want to sign out of your account?
+        <AlertDialogContent className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
+          <span className={topbarAccentLineClass} aria-hidden />
+
+          <AlertDialogHeader className="border-b border-slate-100 px-4 py-3.5 text-left dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
+                <LogOut className="size-4" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className={topbarSectionLabelClass}>Account session</p>
+                <AlertDialogTitle className="mt-0.5 text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                  Sign out
+                </AlertDialogTitle>
+              </div>
+            </div>
+
+            <AlertDialogDescription className="pl-14 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+              Your current browser session will end and you will return to the login screen.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="gap-2 border-t border-slate-100 pt-4 sm:gap-2 dark:border-slate-800">
+          <AlertDialogFooter className="gap-2 bg-slate-50/70 px-4 py-3 sm:gap-2 dark:bg-slate-900/40">
             <AlertDialogCancel
               disabled={isLoggingOut}
-              className="rounded-lg border-slate-200 dark:border-slate-700"
+              className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="rounded-lg bg-rose-600 hover:bg-rose-700"
+              className="h-9 rounded-lg bg-rose-600 px-4 text-xs font-semibold text-white shadow-[0_1px_2px_rgba(225,29,72,0.22)] hover:bg-rose-700 focus-visible:ring-rose-500/25 disabled:opacity-70"
             >
               {isLoggingOut ? "Signing out..." : "Sign out"}
             </AlertDialogAction>

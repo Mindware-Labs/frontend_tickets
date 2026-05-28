@@ -51,6 +51,7 @@ const VIEW_TABS = [
   { key: "inactive", label: "Inactive" },
   { key: "onboarding", label: "Onboarding" },
   { key: "ar", label: "AR" },
+  { key: "archived", label: "Archived" },
 ] as const;
 
 const DEFAULT_FILTERS: CampaignsFilterState = {
@@ -291,6 +292,25 @@ export default function CampaignsPage() {
     setShowEdit(true);
   };
 
+  const handleRestore = async (campaign: Campaign) => {
+    try {
+      await fetchFromBackend(`/campaign/${campaign.id}/restore`, { method: "PATCH" });
+      toast({
+        title: "Restored",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>Campaign restored successfully</span>
+          </div>
+        ),
+      });
+      await refreshCampaigns();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast({ title: "Error", description: err.message || "Failed to restore campaign.", variant: "destructive" });
+    }
+  };
+
   const handleDelete = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setShowDelete(true);
@@ -390,11 +410,11 @@ export default function CampaignsPage() {
         method: "DELETE",
       });
       toast({
-        title: "Deleted",
+        title: "Archived",
         description: (
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>Campaign deleted successfully</span>
+            <span>Campaign archived successfully</span>
           </div>
         ),
       });
@@ -528,8 +548,9 @@ export default function CampaignsPage() {
           canManage={canManage}
           onCreate={handleCreate}
           onOpen={handleOpen}
-          onEdit={canManage ? handleEdit : undefined}
-          onDelete={canManage ? handleDelete : undefined}
+          onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
+          onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
+          onRestore={canManage && activeView === "archived" ? handleRestore : undefined}
         />
 
         <CampaignsPagination
@@ -595,7 +616,6 @@ export default function CampaignsPage() {
             open={showDelete}
             onOpenChange={setShowDelete}
             campaignName={selectedCampaign?.nombre}
-            ticketCount={selectedCampaign?.ticketCount}
             isSubmitting={isSubmitting}
             onConfirm={handleSubmitDelete}
           />
@@ -610,8 +630,8 @@ export default function CampaignsPage() {
         yardPanelId={yardPanelId}
         onOpenYardPanel={handleOpenYardPanel}
         onCloseYardPanel={handleCloseYardPanel}
-        onEdit={canManage ? handleEdit : undefined}
-        onDelete={canManage ? handleDelete : undefined}
+        onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
+        onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
       />
     </div>
   );

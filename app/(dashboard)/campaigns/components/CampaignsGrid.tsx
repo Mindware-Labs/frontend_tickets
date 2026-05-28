@@ -17,6 +17,7 @@ interface CampaignsGridProps {
   onOpen: (campaign: Campaign) => void;
   onEdit?: (campaign: Campaign) => void;
   onDelete?: (campaign: Campaign) => void;
+  onRestore?: (campaign: Campaign) => void;
 }
 
 export function CampaignsGrid({
@@ -30,6 +31,7 @@ export function CampaignsGrid({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
 }: CampaignsGridProps) {
   if (loading) {
     return <EntityGridLoading kind="campaigns" />;
@@ -73,6 +75,7 @@ export function CampaignsGrid({
           onOpen={onOpen}
           onEdit={onEdit}
           onDelete={onDelete}
+          onRestore={onRestore}
         />
       ))}
     </div>

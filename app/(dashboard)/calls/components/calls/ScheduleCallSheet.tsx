@@ -12,9 +12,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertTriangle,
   Calendar,
   CalendarCheck,
+  CheckCheck,
   Clock,
+  Info,
   Loader2,
   Phone,
   X,
@@ -26,6 +29,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { FollowUpDateTimePicker } from "./FollowUpDateTimePicker";
 import { AsyncCustomerCombobox } from "../shared/AsyncCustomerCombobox";
+import { ScheduleCallStatus } from "../../types";
 import type {
   CustomerOption,
   CreateScheduleCallFormData,
@@ -38,6 +42,7 @@ interface ScheduleCallSheetProps {
   customers: CustomerOption[];
   onSubmit: (data: CreateScheduleCallFormData) => Promise<void>;
   isSubmitting?: boolean;
+  onSchedulesChanged?: () => void;
 }
 
 const statusLabel: Record<string, string> = {
@@ -61,6 +66,38 @@ const statusDotColors: Record<string, string> = {
   MISSED: "bg-rose-500 dark:bg-rose-400",
 };
 
+function ScheduleStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "teal" | "rose" | "slate";
+}) {
+  const toneClass = {
+    teal: "bg-[#f0faf5] text-[#008f68] ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20",
+    rose: "bg-rose-50 text-rose-600 ring-rose-500/15 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20",
+    slate: "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700",
+  }[tone];
+
+  return (
+    <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-slate-800 dark:bg-slate-950">
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 inline-flex min-w-8 items-center justify-center rounded-lg px-2 py-1 text-[13px] font-bold tabular-nums ring-1",
+          toneClass,
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 // Module-level cache to make the modal load instantly (0ms) on opening
 let cachedCalls: ScheduleCall[] | null = null;
 
@@ -70,6 +107,7 @@ export function ScheduleCallSheet({
   customers,
   onSubmit,
   isSubmitting = false,
+  onSchedulesChanged,
 }: ScheduleCallSheetProps) {
   const [form, setForm] = useState<CreateScheduleCallFormData>({
     customerId: "",
@@ -80,6 +118,7 @@ export function ScheduleCallSheet({
   const [scheduledCalls, setScheduledCalls] = useState<ScheduleCall[]>(() => cachedCalls ?? []);
   const [loadingList, setLoadingList] = useState(() => !cachedCalls);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [updatingCallId, setUpdatingCallId] = useState<number | null>(null);
 
   const [view, setView] = useState<"list" | "create">("list");
 
@@ -131,11 +170,23 @@ export function ScheduleCallSheet({
     return sorted.filter((c) => c.status === "PENDING");
   }, [scheduledCalls, showCompleted]);
 
+  const now = Date.now();
+  const pendingCalls = scheduledCalls.filter((c) => c.status === "PENDING");
+  const overdueCount = pendingCalls.filter(
+    (c) => new Date(c.scheduledAt).getTime() <= now,
+  ).length;
+  const upcomingCount = pendingCalls.length - overdueCount;
+  const completedCount = scheduledCalls.filter(
+    (c) => c.status === "COMPLETED",
+  ).length;
+
   const handleSubmit = async () => {
     if (!form.customerId) return;
     if (!form.scheduledAt) return;
     try {
       await onSubmit(form);
+      await fetchScheduledCalls();
+      onSchedulesChanged?.();
       toast({
         title: "Scheduled",
         description: "Call scheduled successfully",
@@ -153,9 +204,47 @@ export function ScheduleCallSheet({
 
   const canSubmit = form.customerId && form.scheduledAt && !isSubmitting;
 
+  const markScheduleDone = async (scheduleId: number) => {
+    try {
+      setUpdatingCallId(scheduleId);
+      const response = await fetch(`/api/schedule-calls/${scheduleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED" }),
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to mark schedule done");
+      }
+
+      setScheduledCalls((current) => {
+        const next = current.map((call) =>
+          call.id === scheduleId
+            ? { ...call, status: ScheduleCallStatus.COMPLETED }
+            : call,
+        );
+        cachedCalls = next;
+        return next;
+      });
+      onSchedulesChanged?.();
+      toast({
+        title: "Marked done",
+        description: "Scheduled call completed.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to update scheduled call",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingCallId(null);
+    }
+  };
+
   const customerLabel = (sc: ScheduleCall) => {
     if (sc.customer?.name) return sc.customer.name;
-    if (sc.customer?.phone) return `📞 ${sc.customer.phone}`;
+    if (sc.customer?.phone) return sc.customer.phone;
     return `Customer #${sc.customerId}`;
   };
 
@@ -218,8 +307,8 @@ export function ScheduleCallSheet({
                 </SheetTitle>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                   {view === "create"
-                    ? "Set a date and time to call a customer"
-                    : `${visibleCalls.length} upcoming · Manage call schedules`}
+                    ? "Set a reminder date and time for a customer call"
+                    : `${upcomingCount} upcoming · ${overdueCount} overdue`}
                 </p>
               </div>
             </div>
@@ -230,12 +319,34 @@ export function ScheduleCallSheet({
         <div className="flex-1 min-h-0 overflow-y-auto bg-[#f4f5f7] dark:bg-slate-900/10 scrollbar-app">
           {view === "list" ? (
             /* ═══ LIST VIEW ═══ */
-            <div className="p-4 space-y-4">
+            <div className="flex flex-col gap-4 p-4">
+              <div className="rounded-xl border border-[#008f68]/15 bg-[#f0faf5] p-3 text-[#065f4a] shadow-[0_1px_2px_rgba(0,143,104,0.05)] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <div className="flex items-start gap-2.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-[#008f68] ring-1 ring-[#008f68]/10 dark:bg-slate-950/50 dark:text-emerald-400 dark:ring-emerald-500/20">
+                    <Info className="size-4" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider">
+                      Call reminder scheduling
+                    </p>
+                    <p className="mt-1 text-[11.5px] leading-5 text-slate-600 dark:text-slate-300">
+                      Use scheduled calls to create reminders for customer callbacks. Due reminders appear as alerts and can be marked done after the call is handled.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <ScheduleStat label="Upcoming" value={upcomingCount} tone="teal" />
+                <ScheduleStat label="Overdue" value={overdueCount} tone="rose" />
+                <ScheduleStat label="Done" value={completedCount} tone="slate" />
+              </div>
+
               {/* Action bar */}
               <button
                 type="button"
                 onClick={() => setView("create")}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#008f68]/40 bg-[#f0faf5] px-4 py-3.5 text-xs font-semibold text-[#008f68] transition-all hover:bg-[#008f68] hover:text-white hover:border-[#008f68] dark:border-emerald-500/25 dark:bg-emerald-950/15 dark:text-emerald-400 dark:hover:bg-emerald-600 dark:hover:text-white dark:hover:border-emerald-600 shadow-sm"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#008f68]/40 bg-white px-4 py-3.5 text-xs font-semibold text-[#008f68] shadow-sm transition-all hover:border-[#008f68] hover:bg-[#f0faf5] dark:border-emerald-500/25 dark:bg-slate-950 dark:text-emerald-400 dark:hover:border-emerald-600 dark:hover:bg-emerald-500/10"
               >
                 <Calendar className="size-3.5 transition-transform group-hover:scale-110" />
                 Schedule a Call
@@ -243,7 +354,7 @@ export function ScheduleCallSheet({
 
               {/* Filter toggle */}
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-slate-450 dark:text-slate-500">
+                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                   {showCompleted ? "All entries" : "Upcoming schedules"}
                 </h3>
                 <button
@@ -257,7 +368,7 @@ export function ScheduleCallSheet({
 
               {/* List */}
               {loadingList ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-450 dark:text-slate-500">
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
                   <Loader2 className="h-5 w-5 animate-spin mb-2 text-[#008f68] dark:text-emerald-400" />
                   <span className="text-[11px] font-medium">Loading scheduled calls...</span>
                 </div>
@@ -284,7 +395,7 @@ export function ScheduleCallSheet({
                           "relative overflow-hidden rounded-xl border p-3.5 pl-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-md",
                           isOverdue
                             ? "border-rose-200/80 bg-[#fff8f8] dark:border-rose-950/40 dark:bg-[#200c0f]"
-                            : "border-slate-200/80 bg-white hover:border-slate-350 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700",
+                            : "border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700",
                         )}
                       >
                         {/* Left Accent Stripe */}
@@ -309,12 +420,12 @@ export function ScheduleCallSheet({
                           {/* Card Details */}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate text-xs font-semibold text-slate-850 dark:text-slate-200">
+                              <span className="truncate text-xs font-semibold text-slate-900 dark:text-slate-200">
                                 {customerLabel(sc)}
                               </span>
                               <div className="flex shrink-0 items-center gap-1.5">
                                 {isOverdue && (
-                                  <span className="shrink-0 rounded bg-rose-100 dark:bg-rose-950/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-455">
+                                  <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:bg-rose-950/80 dark:text-rose-400">
                                     Overdue
                                   </span>
                                 )}
@@ -332,7 +443,7 @@ export function ScheduleCallSheet({
                             </div>
 
                             <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-550" />
+                              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                               <span>
                                 {format(
                                   new Date(sc.scheduledAt),
@@ -346,6 +457,34 @@ export function ScheduleCallSheet({
                                 {sc.notes}
                               </p>
                             )}
+
+                            {sc.status === "PENDING" && (
+                              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                                <div className="flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                                  {isOverdue ? (
+                                    <AlertTriangle className="size-3.5 shrink-0 text-rose-500" aria-hidden />
+                                  ) : (
+                                    <Clock className="size-3.5 shrink-0" aria-hidden />
+                                  )}
+                                  <span className="truncate">
+                                    {isOverdue ? "Due reminder needs attention" : "Waiting for scheduled time"}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => markScheduleDone(sc.id)}
+                                  disabled={updatingCallId === sc.id}
+                                  className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10.5px] font-semibold text-slate-600 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                                >
+                                  {updatingCallId === sc.id ? (
+                                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                                  ) : (
+                                    <CheckCheck className="size-3.5" aria-hidden />
+                                  )}
+                                  Done
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -357,7 +496,7 @@ export function ScheduleCallSheet({
           ) : (
             /* ═══ CREATE VIEW ═══ */
             <div className="p-3">
-              <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-850 dark:bg-slate-950 space-y-4">
+              <div className="flex flex-col gap-4 overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
                 {/* Customer selection */}
                 <div className="space-y-1.5">
                   <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -397,7 +536,7 @@ export function ScheduleCallSheet({
                     onChange={(e) =>
                       setForm({ ...form, notes: e.target.value })
                     }
-                    className="min-h-[100px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-900 shadow-none transition-colors hover:border-slate-350 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    className="min-h-[100px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-900 shadow-none transition-colors hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                 </div>
               </div>

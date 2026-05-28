@@ -54,8 +54,26 @@ function LoginForm() {
   const [emailInvalid,       setEmailInvalid      ] = useState(false);
   const [capsLock,           setCapsLock          ] = useState(false);
 
+  // Restore rate-limit countdown from sessionStorage on mount so navigating
+  // to /forgot-password and back doesn't reset the remaining wait time.
   useEffect(() => {
-    if (rateLimitCountdown <= 0) return;
+    const stored = sessionStorage.getItem("auth_rate_limit_expires");
+    if (stored) {
+      const remaining = Math.ceil((Number(stored) - Date.now()) / 1000);
+      if (remaining > 0) {
+        setRateLimitCountdown(remaining);
+        setError("too_many_requests");
+      } else {
+        sessionStorage.removeItem("auth_rate_limit_expires");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rateLimitCountdown <= 0) {
+      sessionStorage.removeItem("auth_rate_limit_expires");
+      return;
+    }
     const timer = setTimeout(() => setRateLimitCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [rateLimitCountdown]);
@@ -82,6 +100,8 @@ function LoginForm() {
       const msg: string = err.message || "Login failed. Please check your credentials.";
       setErrorKey((k) => k + 1);
       if (msg.toLowerCase().includes("too many requests") || msg.toLowerCase().includes("throttler")) {
+        const expiresAt = Date.now() + 60_000;
+        sessionStorage.setItem("auth_rate_limit_expires", String(expiresAt));
         setRateLimitCountdown(60);
         setError("too_many_requests");
       } else if (msg.includes("Cannot connect to the server")) {
