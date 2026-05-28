@@ -3,6 +3,9 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+/** Milliseconds before any auth request is aborted. */
+const REQUEST_TIMEOUT_MS = 10_000;
+
 interface LoginResponse {
   message: string;
   accessToken: string;
@@ -40,263 +43,220 @@ interface VerifyResetCodeResponse {
   message: string;
 }
 
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Wraps `fetch` with an AbortController that fires after `timeoutMs`.
+ * The timeout timer is always cleared when the request settles.
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Normalises low-level fetch/abort errors into user-readable messages and
+ * re-throws them so each method's caller gets a consistent Error.
+ */
+function rethrowNetworkError(error: unknown): never {
+  if ((error as DOMException)?.name === "AbortError") {
+    throw new Error(
+      "Request timed out. Please check your connection and try again.",
+    );
+  }
+  if (error instanceof TypeError && (error as TypeError).message.includes("fetch")) {
+    throw new Error(
+      `Cannot connect to the server. Please make sure the backend is running on ${API_URL}`,
+    );
+  }
+  throw error;
+}
+
+/**
+ * Reads a response body as text and parses JSON, or throws a normalised Error
+ * when the status is not OK.
+ */
+async function parseResponse<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    if (!response.ok) throw new Error(text || "Invalid response from server");
+    data = { message: text };
+  }
+
+  if (!response.ok) {
+    const msg: string =
+      (Array.isArray(data.message) ? data.message.join(", ") : data.message) ||
+      data.error ||
+      `Request failed (${response.status})`;
+    const err  = new Error(msg);
+    (err as any).status = response.status;
+    throw err;
+  }
+
+  return data as T;
+}
+
+// ---------------------------------------------------------------------------
+// Public auth object
+// ---------------------------------------------------------------------------
+
 export const auth = {
-  /**
-   * Login user with email and password
-   */
+  /** Login user with email and password. */
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      // Normalize email: trim and lowercase
       const normalizedEmail = email?.trim().toLowerCase();
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
-      // Read response as text first to avoid parsing issues
-      const responseText = await response.text();
-      let data: any;
+      const data = await parseResponse<LoginResponse>(response);
 
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        throw new Error(responseText || "Invalid response from server");
-      }
-
-      if (!response.ok) {
-        // Handle NestJS error format
-        const errorMessage =
-          data.message ||
-          (Array.isArray(data.message) ? data.message.join(", ") : null) ||
-          data.error ||
-          "Login failed";
-        throw new Error(errorMessage);
-      }
-
-      // Validate response structure
       if (!data.accessToken || !data.user) {
         throw new Error("Invalid response format from server");
       }
 
-      // Store token and user data
       if (typeof window !== "undefined") {
         localStorage.setItem("user_data", JSON.stringify(data.user));
-
-        // Use Secure flag only on HTTPS (production). On HTTP (local dev) omit it
-        // so the browser doesn't silently discard the cookie.
         const secure = window.location.protocol === "https:" ? "; Secure" : "";
         document.cookie = `auth-token=${data.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${secure}`;
         window.dispatchEvent(new Event("user-role-updated"));
       }
 
-      return data as LoginResponse;
-    } catch (error: any) {
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error(
-          "Cannot connect to the server. Please make sure the backend is running on " +
-            API_URL,
-        );
-      }
-      // Re-throw other errors with their messages
-      throw error;
+      return data;
+    } catch (error) {
+      rethrowNetworkError(error);
     }
   },
 
-  /**
-   * Register new user
-   */
+  /** Register a new user. */
   async register(data: RegisterData): Promise<RegisterResponse> {
-    try {
-      // Ensure data is properly formatted
-      const registerPayload = {
-        name: data.name.trim(),
-        lastName: data.lastName.trim(),
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
-      };
+    const payload = {
+      name:      data.name.trim(),
+      lastName:  data.lastName.trim(),
+      email:     data.email.trim().toLowerCase(),
+      password:  data.password,
+    };
 
-      const response = await fetch(`${API_URL}/auth/register`, {
+    try {
+      const response = await fetchWithTimeout(`${API_URL}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(registerPayload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      // Read response as text first to avoid parsing issues
-      const responseText = await response.text();
-      let result: any;
+      const result = await parseResponse<RegisterResponse>(response);
 
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        // If JSON parsing fails, use the text as error message
-        if (!response.ok) {
-          throw new Error(
-            responseText ||
-              "Registration failed. Invalid response from server.",
-          );
-        }
-        result = { message: responseText || "Registration successful" };
-      }
-
-      if (!response.ok) {
-        const errorMessage = Array.isArray(result.message)
-          ? result.message.join(", ")
-          : result.message || result.error || "Registration failed";
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
-      }
-
-      // Return success response
       return {
-        message:
-          result.message || "User registered successfully. You can now log in.",
-        email: registerPayload.email,
+        message: result.message || "User registered successfully. You can now log in.",
+        email:   payload.email,
       };
-    } catch (error: any) {
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error(
-          "Cannot connect to the server. Please make sure the backend is running on " +
-            API_URL,
-        );
-      }
-
-      // Re-throw error with its message
-      if (error.message) {
-        throw error;
-      }
-
-      // Fallback error
-      throw new Error("Registration failed. Please try again.");
+    } catch (error) {
+      rethrowNetworkError(error);
     }
   },
 
-  /**
-   * Request a password reset code
-   */
+  /** Request a password reset code via email. */
   async requestPasswordReset(email: string): Promise<ForgotPasswordResponse> {
-    const response = await fetch(`${API_URL}/auth/forgot-password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const responseText = await response.text();
-    let data: any;
-
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      throw new Error(responseText || "Invalid response from server");
+      const response = await fetchWithTimeout(`${API_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      return await parseResponse<ForgotPasswordResponse>(response);
+    } catch (error) {
+      rethrowNetworkError(error);
     }
-
-    if (!response.ok) {
-      const errorMessage = data.message || data.error || "Request failed";
-      throw new Error(errorMessage);
-    }
-
-    return data as ForgotPasswordResponse;
   },
 
-  /**
-   * Reset password with a 6-digit code
-   */
+  /** Verify the 6-digit reset code before allowing the password change. */
+  async verifyResetCode(
+    email: string,
+    code: string,
+  ): Promise<VerifyResetCodeResponse> {
+    try {
+      const response = await fetchWithTimeout(`${API_URL}/auth/verify-reset-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      return await parseResponse<VerifyResetCodeResponse>(response);
+    } catch (error) {
+      rethrowNetworkError(error);
+    }
+  },
+
+  /** Reset the password using the verified code. */
   async resetPasswordWithCode(
     email: string,
     code: string,
     newPassword: string,
   ): Promise<ResetPasswordResponse> {
-    const response = await fetch(`${API_URL}/auth/reset-password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, code, newPassword }),
-    });
-
-    const responseText = await response.text();
-    let data: any;
-
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      throw new Error(responseText || "Invalid response from server");
+      const response = await fetchWithTimeout(`${API_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      return await parseResponse<ResetPasswordResponse>(response);
+    } catch (error) {
+      rethrowNetworkError(error);
     }
-
-    if (!response.ok) {
-      const errorMessage = data.message || data.error || "Reset failed";
-      throw new Error(errorMessage);
-    }
-
-    return data as ResetPasswordResponse;
   },
 
-  /**
-   * Verify password reset code before allowing reset
-   */
-  async verifyResetCode(
-    email: string,
-    code: string,
-  ): Promise<VerifyResetCodeResponse> {
-    const response = await fetch(`${API_URL}/auth/verify-reset-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, code }),
-    });
-
-    const responseText = await response.text();
-    let data: any;
+  /** Validate the stored JWT against the backend and return the user profile. */
+  async getProfile(): Promise<LoginResponse["user"]> {
+    const token = this.getToken();
+    if (!token) throw new Error("Not authenticated");
 
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      throw new Error(responseText || "Invalid response from server");
-    }
+      const response = await fetchWithTimeout(
+        `${API_URL}/auth/profile`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-    if (!response.ok) {
-      const errorMessage =
-        data.message || data.error || "Code verification failed";
-      throw new Error(errorMessage);
-    }
+      if (!response.ok) {
+        this.logout();
+        throw new Error("Session expired");
+      }
 
-    return data as VerifyResetCodeResponse;
+      return response.json();
+    } catch (error) {
+      rethrowNetworkError(error);
+    }
   },
 
-  /**
-   * Logout user
-   */
+  /** Clear session and redirect to login. */
   logout(): void {
     if (typeof window !== "undefined") {
       localStorage.removeItem("user_data");
-
-      // Clear cookie - match the Secure flag based on current protocol
       const secure = window.location.protocol === "https:" ? "; Secure" : "";
       document.cookie = `auth-token=; path=/; max-age=0; SameSite=Lax${secure}`;
       document.cookie = `auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
       document.cookie = `auth_token=; path=/; max-age=0; SameSite=Lax${secure}`;
       document.cookie = `auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
-
       window.dispatchEvent(new Event("user-role-updated"));
-
-      // Redirect to login after clearing session
       window.location.href = "/login";
     }
   },
 
-  /**
-   * Get stored JWT token (from cookie only)
-   */
+  /** Get the stored JWT token from the cookie. */
   getToken(): string | null {
     if (typeof window !== "undefined") {
       const match = document.cookie.match(/(?:^|;\s*)auth-token=([^;]*)/);
@@ -305,9 +265,7 @@ export const auth = {
     return null;
   },
 
-  /**
-   * Get stored user data
-   */
+  /** Get cached user data from localStorage. */
   getUser(): LoginResponse["user"] | null {
     if (typeof window !== "undefined") {
       const userData = localStorage.getItem("user_data");
@@ -316,34 +274,8 @@ export const auth = {
     return null;
   },
 
-  /**
-   * Check if user is authenticated
-   */
+  /** Returns true when a valid JWT cookie is present. */
   isAuthenticated(): boolean {
     return !!this.getToken();
-  },
-
-  /**
-   * Get user profile from backend (validates token)
-   */
-  async getProfile(): Promise<LoginResponse["user"]> {
-    const token = this.getToken();
-    if (!token) {
-      throw new Error("Not authenticated");
-    }
-
-    const response = await fetch(`${API_URL}/auth/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      // Token is invalid, clear it
-      this.logout();
-      throw new Error("Session expired");
-    }
-
-    return response.json();
   },
 };

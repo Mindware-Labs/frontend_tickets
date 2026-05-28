@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, CircleUser, LogOut } from "lucide-react";
+import { ChevronDown, CircleUser, LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -32,7 +32,9 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -123,6 +125,7 @@ export default function Topbar() {
   const [currentUser, setCurrentUser] = useState({
     name: "User",
     email: "",
+    role: "",
   });
 
   const refreshUser = () => {
@@ -136,6 +139,7 @@ export default function Topbar() {
       setCurrentUser({
         name: fullName || storedUser.email || "User",
         email: storedUser.email || "",
+        role: storedUser.role || "",
       });
     }
   };
@@ -179,6 +183,11 @@ export default function Topbar() {
 
   const userInitials = getUserInitials(currentUser.name);
   const avatarHue = (currentUser.name?.charCodeAt(0) ?? 200) % 360;
+  const roleLabel = currentUser.role
+    ? currentUser.role
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Member";
 
   return (
     <>
@@ -186,16 +195,16 @@ export default function Topbar() {
         <div className={topbarShellClass}>
           <span className={topbarAccentLineClass} aria-hidden />
 
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className="flex h-9 min-w-0 flex-1 items-center gap-2.5">
             {isMobile ? (
               <SidebarTrigger className={topbarIconBtnClass} />
             ) : null}
 
             <span className={cn(topbarAccentBarClass, isMobile ? "hidden sm:block" : "block")} aria-hidden />
 
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-col justify-center gap-0.5">
               {pageMeta.section ? (
-                <p className={cn(topbarSectionLabelClass, "leading-none")}>
+                <p className={topbarSectionLabelClass}>
                   {pageMeta.section}
                 </p>
               ) : null}
@@ -204,6 +213,11 @@ export default function Topbar() {
           </div>
 
           <div className={topbarActionsGroupClass}>
+            <div className="hidden h-8 items-center gap-1.5 rounded-md border border-[#008f68]/10 bg-[#f0faf5] px-2 text-[11px] font-semibold text-[#008f68] md:flex dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <ShieldCheck className="size-3.5 text-[#008f68] dark:text-emerald-400" aria-hidden />
+              <span className="max-w-[82px] truncate">{roleLabel}</span>
+            </div>
+
             <NotificationBell />
 
             <DropdownMenu>
@@ -243,51 +257,73 @@ export default function Topbar() {
                     className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:radial-gradient(circle_at_20%_20%,white_1px,transparent_1px)] [background-size:20px_20px]"
                     aria-hidden
                   />
-                  <div className="relative flex items-center gap-2.5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-[12px] font-bold text-white ring-1 ring-white/30 backdrop-blur-sm">
+                  <div className="relative flex items-center gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-[12px] font-bold text-white ring-1 ring-white/30 backdrop-blur-sm">
                       {userInitials}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[9px] font-semibold uppercase tracking-widest text-white/70">
-                        Signed in as
-                      </p>
-                      <p className="truncate text-[13px] font-bold leading-tight text-white">
-                        {currentUser.name}
-                      </p>
-                      <p className="truncate text-[11px] text-white/75">
-                        {currentUser.email || "—"}
-                      </p>
+                    <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-[9px] font-semibold uppercase leading-none tracking-widest text-white/70">
+                          Signed in as
+                        </p>
+                        <p className="mt-1 truncate text-[13px] font-bold leading-tight text-white">
+                          {currentUser.name}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] leading-tight text-white/75">
+                          {currentUser.email || "No email saved"}
+                        </p>
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/15 px-2 py-1 text-[9px] font-semibold uppercase leading-none tracking-wider text-white ring-1 ring-white/20">
+                        <ShieldCheck className="size-3" aria-hidden />
+                        {roleLabel}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-1.5">
-                  <DropdownMenuItem
-                    asChild
-                    className="group/menuitem cursor-pointer rounded-lg px-2.5 py-2 text-[13px] focus:bg-[#f0faf5] focus:text-[#008f68] dark:focus:bg-emerald-500/10 dark:focus:text-emerald-400"
-                  >
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-2.5"
+                <div className="p-2">
+                  <DropdownMenuLabel className="px-2 pb-1 pt-0 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    Account
+                  </DropdownMenuLabel>
+
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      asChild
+                      className="group/menuitem cursor-pointer rounded-lg px-2.5 py-2.5 text-[13px] focus:bg-[#f0faf5] focus:text-[#008f68] dark:focus:bg-emerald-500/10 dark:focus:text-emerald-400"
                     >
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-colors group-focus/menuitem:bg-white group-focus/menuitem:text-[#008f68] dark:bg-slate-800 dark:text-slate-300">
-                        <CircleUser className="size-3.5" />
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-2.5"
+                      >
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-colors group-focus/menuitem:bg-white group-focus/menuitem:text-[#008f68] dark:bg-slate-800 dark:text-slate-300">
+                          <CircleUser className="size-3.5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block font-semibold leading-tight">Profile</span>
+                          <span className="block truncate text-[11px] font-medium leading-tight text-slate-400 group-focus/menuitem:text-[#008f68]/70 dark:text-slate-500">
+                            Personal details and settings
+                          </span>
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
+
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg px-2.5 py-2.5 text-[13px] text-rose-600 focus:bg-rose-50 focus:text-rose-700 dark:focus:bg-rose-950/40 dark:focus:text-rose-400"
+                      onClick={() => setShowLogoutDialog(true)}
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-rose-50 text-rose-500 dark:bg-rose-950/30 dark:text-rose-400">
+                        <LogOut className="size-3.5" />
                       </span>
-                      <span className="font-medium">Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
-
-                  <DropdownMenuItem
-                    className="cursor-pointer rounded-lg px-2.5 py-2 text-[13px] text-rose-600 focus:bg-rose-50 focus:text-rose-700 dark:focus:bg-rose-950/40 dark:focus:text-rose-400"
-                    onClick={() => setShowLogoutDialog(true)}
-                  >
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-rose-50 text-rose-500 dark:bg-rose-950/30 dark:text-rose-400">
-                      <LogOut className="size-3.5" />
-                    </span>
-                    <span className="font-medium">Sign out</span>
-                  </DropdownMenuItem>
+                      <span className="min-w-0">
+                        <span className="block font-semibold leading-tight">Sign out</span>
+                        <span className="block truncate text-[11px] font-medium leading-tight text-rose-400 dark:text-rose-500">
+                          End this browser session
+                        </span>
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>

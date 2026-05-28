@@ -45,7 +45,8 @@ export const topbarShellClass = cn(
 export const topbarAccentLineClass =
   "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent";
 
-export const topbarSectionLabelClass = sidebarSectionLabelClass;
+export const topbarSectionLabelClass =
+  "text-[10px] font-semibold uppercase leading-none tracking-widest text-slate-400 dark:text-slate-500";
 
 export const topbarTitleClass =
   "truncate text-[15px] font-bold leading-tight tracking-[-0.02em] text-slate-900 dark:text-slate-100";
@@ -53,7 +54,7 @@ export const topbarTitleClass =
 export const topbarAccentBarClass = "h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]";
 
 export const topbarActionsGroupClass =
-  "flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200/60 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80";
+  "flex h-9 shrink-0 items-center gap-0.5 rounded-lg border border-slate-200/60 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80";
 
 export const topbarIconBtnClass = cn(
   "flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors",
@@ -63,7 +64,7 @@ export const topbarIconBtnClass = cn(
 );
 
 export const topbarUserBtnClass = cn(
-  "flex max-w-[220px] items-center gap-2 rounded-lg border border-slate-200/80 bg-white py-1 pl-1 pr-2",
+  "flex h-8 max-w-[220px] items-center gap-2 rounded-lg border border-slate-200/80 bg-white py-1 pl-1 pr-2",
   "shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-colors hover:border-slate-300 hover:bg-slate-50",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
   "dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800",
