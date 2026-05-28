@@ -267,7 +267,7 @@ export function EntityFormDialogFooter({
           disabled={isSubmitting}
           className={cn(
             "h-11 rounded-lg px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
-            submitVariant === "create"
+            submitVariant === "create" || submitVariant === "edit"
               ? "bg-[#008f68] hover:bg-[#007a5a]"
               : "bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white",
           )}
