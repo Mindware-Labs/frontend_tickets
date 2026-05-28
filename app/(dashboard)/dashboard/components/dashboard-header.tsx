@@ -55,6 +55,7 @@ export function DashboardHeader({
   const statusActive = hasLive || isRealtimeConnected;
 
   const periodLabels: Record<string, string> = {
+    "today": "Today",
     "7d": "7 Days",
     "30d": "Monthly",
     "90d": "90 Days",
@@ -111,6 +112,14 @@ export function DashboardHeader({
                 </button>
               );
             })}
+          </div>
+
+          {/* Filters help */}
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="hidden text-[10px] font-semibold tracking-wider text-slate-400 uppercase sm:inline">
+              Filters
+            </span>
+            <FilterHelpPopover />
           </div>
 
           <DashboardInlineActiveFilters />

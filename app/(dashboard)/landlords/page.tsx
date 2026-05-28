@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { BarChart3, CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 
 import { fetchFromBackend } from "@/lib/api-client";
 import {
@@ -361,18 +360,6 @@ export default function LandlordsPage() {
           </p>
         </div>
 
-        {!isAgent && (
-          <Button
-            asChild
-            variant="outline"
-            className="h-9 px-4 rounded-xl border-border text-[13px] font-medium shadow-sm hover:bg-[#f0faf5] hover:text-[#008f68] hover:border-[#008f68]/40"
-          >
-            <Link href="/reports/landlords">
-              <BarChart3 className="mr-1.5 h-4 w-4" />
-              Landlord Reports
-            </Link>
-          </Button>
-        )}
       </div>
 
       <div className="flex border-b border-border mt-1 items-end">

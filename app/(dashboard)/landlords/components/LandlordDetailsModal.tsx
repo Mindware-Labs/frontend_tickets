@@ -16,7 +16,6 @@ import {
   Mail,
   Phone,
   User,
-  FileText,
   Copy,
   Check,
   Info,
@@ -157,26 +156,6 @@ export function LandlordDetailsModal({
                 </div>
               </div>
 
-              {!isAgent && landlord.id && (
-                <div className="rounded-lg border bg-primary/5 p-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-background rounded-md border shadow-sm">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold">Reports</h4>
-                      <p className="text-xs text-muted-foreground">
-                        View detailed performance
-                      </p>
-                    </div>
-                  </div>
-                  <Button asChild className="w-full" variant="secondary">
-                    <Link href={`/reports/landlords?landlordId=${landlord.id}`}>
-                      Open Report
-                    </Link>
-                  </Button>
-                </div>
-              )}
             </div>
 
             {/* Right Column: Properties/Yards (8 columns) */}

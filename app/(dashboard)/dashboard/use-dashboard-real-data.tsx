@@ -20,11 +20,7 @@ import {
   scorecardTemplates,
 } from "./dashboard-config";
 import { createEmptyDashboardData } from "./dashboard-empty";
-import {
-  formatDuration,
-  formatLiveQueueTrend,
-  sanitizeLiveQueueWaitSeconds,
-} from "./dashboard-format";
+import { formatDuration } from "./dashboard-format";
 import type {
   DashboardDataSet,
   ExecutiveCallIntentMix,
@@ -106,6 +102,8 @@ type PerformanceReport = {
     date?: string;
     day?: string;
     total?: number;
+    inbound?: number;
+    outbound?: number;
     answered?: number;
     missed?: number;
     closed?: number;
@@ -143,34 +141,6 @@ type PerformanceReport = {
   ticketRisk?: DashboardDataSet["ticketRisk"];
 };
 
-type WallboardReport = {
-  generatedAt?: string;
-  period?: { label?: string };
-  live?: {
-    activeCalls?: number;
-    queuedCalls?: number;
-    ringingCalls?: number;
-    missedCalls?: number;
-    voicemailCalls?: number;
-    avgWaitSeconds?: number;
-    longestCurrentWaitSeconds?: number;
-  };
-  agents?: {
-    totalTracked?: number;
-    available?: number;
-    unavailable?: number;
-    offline?: number;
-  };
-  linePerformance?: {
-    line?: string;
-    total?: number;
-    active?: number;
-    missed?: number;
-    avgWaitSeconds?: number;
-  }[];
-  peakHourHeatmap?: { day: string; hours: Record<string, number> }[];
-};
-
 type SmsSummary = {
   totals?: {
     sent?: number;
@@ -205,7 +175,6 @@ type YardsReport = {
 type DashboardSources = {
   stats?: DashboardStats | null;
   performance?: PerformanceReport | null;
-  wallboard?: WallboardReport | null;
   sms?: SmsSummary | null;
   yards?: YardsReport | null;
 };
@@ -237,7 +206,6 @@ const DashboardDataContext = createContext<DashboardDataContextValue | null>(
 
 const DEFAULT_PERIOD = "30d";
 const REALTIME_REFRESH_DEBOUNCE_MS = 700;
-const LIVE_ACTIVITY_REFRESH_MS = 5000;
 const SOCKET_FALLBACK_REFRESH_MS = 10000;
 const IDLE_REFRESH_MS = 30000;
 const chartPalette = [
@@ -528,7 +496,6 @@ function buildScorecard(
 function buildOperationsMetrics({
   stats,
   performance,
-  wallboard,
 }: DashboardSources) {
   const summary = performance?.summary;
   const totalCalls = numberValue(
@@ -536,11 +503,6 @@ function buildOperationsMetrics({
   );
   const inbound = numberValue(summary?.totalInboundCalls);
   const outbound = numberValue(summary?.totalOutboundCalls);
-  const avgWait = numberValue(wallboard?.live?.avgWaitSeconds);
-  const queuedCount = numberValue(wallboard?.live?.queuedCalls);
-  const longestQueue = sanitizeLiveQueueWaitSeconds(
-    wallboard?.live?.longestCurrentWaitSeconds,
-  );
   const avgDuration = numberValue(
     summary?.avgCallDurationSec ?? performance?.kpis?.avgDurationSeconds,
   );
@@ -558,10 +520,10 @@ function buildOperationsMetrics({
       tone: "emerald",
     }),
     buildMetric(operationsMetricTemplates[1], {
-      value: formatDuration(avgWait),
+      value: "—",
       detail: "Average time to answer",
-      trend: formatLiveQueueTrend(queuedCount, longestQueue),
-      tone: avgWait <= 90 ? "sky" : "amber",
+      trend: "Queue data unavailable",
+      tone: "sky",
     }),
     buildMetric(operationsMetricTemplates[2], {
       value: formatDuration(avgDuration),
@@ -689,13 +651,21 @@ function buildOperationsTrend({
     );
     return callsByDay.map((item) => {
       const day = item.day || labelFromDate(item.date) || "Day";
+      const hasDirectionalCounts =
+        item.inbound !== undefined || item.outbound !== undefined;
       const missed = numberValue(item.missed);
       const answered = numberValue(item.answered);
       const total = numberValue(item.total, answered + missed);
+      const outbound = hasDirectionalCounts
+        ? numberValue(item.outbound)
+        : Math.max(total - answered - missed, 0);
+      const inbound = hasDirectionalCounts
+        ? numberValue(item.inbound)
+        : answered;
       return {
         day,
-        inbound: answered,
-        outbound: Math.max(total - answered - missed, 0),
+        inbound,
+        outbound,
         missed,
         tickets: ticketMap.get(day) || numberValue(item.closed),
       };
@@ -713,16 +683,30 @@ function buildOperationsTrend({
     if (dateKey) callsByDate.set(dateKey, c);
   }
 
-  const grouped = new Map<string, { inbound: number; outbound: number; missed: number; tickets: number }>();
+  const grouped = new Map<
+    string,
+    { inbound: number; outbound: number; missed: number; tickets: number }
+  >();
 
   for (const [rawDate, item] of callsByDate) {
     const key = getGroupKey(rawDate, bucket);
-    const existing = grouped.get(key) || { inbound: 0, outbound: 0, missed: 0, tickets: 0 };
+    const existing = grouped.get(key) || {
+      inbound: 0,
+      outbound: 0,
+      missed: 0,
+      tickets: 0,
+    };
+    const hasDirectionalCounts =
+      item.inbound !== undefined || item.outbound !== undefined;
     const answered = numberValue(item.answered);
     const missed = numberValue(item.missed);
     const total = numberValue(item.total, answered + missed);
-    existing.inbound += answered;
-    existing.outbound += Math.max(total - answered - missed, 0);
+    existing.inbound += hasDirectionalCounts
+      ? numberValue(item.inbound)
+      : answered;
+    existing.outbound += hasDirectionalCounts
+      ? numberValue(item.outbound)
+      : Math.max(total - answered - missed, 0);
     existing.missed += missed;
     existing.tickets += ticketByDate.get(rawDate) || numberValue(item.closed);
     grouped.set(key, existing);
@@ -844,7 +828,6 @@ function isMissingLineLabel(line: string): boolean {
 
 function buildLinePerformance({
   performance,
-  wallboard,
 }: DashboardSources): DashboardDataSet["linePerformance"] {
   const avgDuration = numberValue(
     performance?.summary?.avgCallDurationSec ?? performance?.kpis?.avgDurationSeconds,
@@ -870,26 +853,7 @@ function buildLinePerformance({
       });
   }
 
-  const rows = (wallboard?.linePerformance || [])
-    .filter((line) => {
-      const label = (line.line || "").trim();
-      return label && !isOpaqueAircallLineKey(label) && !isMissingLineLabel(label);
-    })
-    .slice(0, 8)
-    .map((line) => {
-      const total = numberValue(line.total);
-      const missed = numberValue(line.missed);
-      return {
-        line: line.line || "Unassigned",
-        calls: formatNumber(total),
-        response: formatDuration(line.avgWaitSeconds),
-        contact: `${percent(total - missed, total)}%`,
-        aht: avgDuration ? formatDuration(avgDuration) : "n/a",
-        missed: `${percent(missed, total)}%`,
-      };
-    });
-
-  return rows;
+  return [];
 }
 
 function buildFollowUpQueue(
@@ -910,13 +874,11 @@ function buildFollowUpQueue(
 function buildScorecards({
   stats,
   performance,
-  wallboard,
 }: DashboardSources): ScorecardItem[] {
   const summary = performance?.summary;
-  const avgWait = numberValue(wallboard?.live?.avgWaitSeconds);
+  const avgWait = 0;
   const avgDuration = numberValue(summary?.avgCallDurationSec);
-  const available = numberValue(wallboard?.agents?.available);
-  const tracked = numberValue(wallboard?.agents?.totalTracked);
+  const totalAnswered = numberValue(summary?.totalAnsweredCalls);
   const activeInPeriod = numberValue(summary?.activeAgents);
   const resolutionRate = numberValue(
     summary?.overallResolutionRate ?? stats?.kpis?.resolutionRate,
@@ -926,7 +888,6 @@ function buildScorecards({
     numberValue(summary?.pendingTickets) +
     numberValue(summary?.overdueTickets);
   const totalTickets = numberValue(summary?.totalTickets);
-  const totalAnswered = numberValue(summary?.totalAnsweredCalls);
 
   const callResponseScored =
     totalAnswered > 0 || avgWait > 0
@@ -938,17 +899,8 @@ function buildScorecards({
       ? scoreLowerIsBetter(avgDuration, SCORECARD_AHT_TARGET_SEC)
       : { score: 0, progress: 0 };
 
-  const utilizationPct = tracked
-    ? percent(activeInPeriod, tracked)
-    : activeInPeriod > 0
-      ? 100
-      : 0;
-  const utilizationScored = tracked
-    ? scoreInRange(
-        utilizationPct,
-        SCORECARD_UTILIZATION_MIN_PCT,
-        SCORECARD_UTILIZATION_MAX_PCT,
-      )
+  const utilizationScored = activeInPeriod
+    ? scoreInRange(activeInPeriod, SCORECARD_UTILIZATION_MIN_PCT, SCORECARD_UTILIZATION_MAX_PCT)
     : { score: 0, progress: 0 };
 
   const callbackScored = buildCallbackKeptRate(performance);
@@ -959,25 +911,17 @@ function buildScorecards({
 
   return [
     buildScorecard(scorecardTemplates[0], {
-      actual:
-        totalAnswered > 0 || avgWait > 0
-          ? formatDuration(avgWait)
-          : "—",
+      actual: avgWait > 0 ? formatDuration(avgWait) : "—",
       score: callResponseScored.score,
       progress: callResponseScored.progress,
     }),
     buildScorecard(scorecardTemplates[1], {
-      actual:
-        totalAnswered > 0 || avgDuration > 0
-          ? formatDuration(avgDuration)
-          : "—",
+      actual: avgDuration > 0 ? formatDuration(avgDuration) : "—",
       score: ahtScored.score,
       progress: ahtScored.progress,
     }),
     buildScorecard(scorecardTemplates[2], {
-      actual: tracked
-        ? `${utilizationPct}% (${formatNumber(activeInPeriod)}/${formatNumber(tracked)} active)`
-        : "—",
+      actual: activeInPeriod ? `${formatNumber(activeInPeriod)} active` : "—",
       score: utilizationScored.score,
       progress: utilizationScored.progress,
     }),
@@ -1080,15 +1024,11 @@ function buildTicketRisk({
 
 function buildHeatmap({
   performance,
-  wallboard,
 }: DashboardSources): Pick<
   DashboardDataSet,
   "heatmapHours" | "heatmapHourKeys" | "peakHourHeatmap"
 > {
-  const source =
-    performance?.peakHourHeatmap?.length
-      ? performance.peakHourHeatmap
-      : wallboard?.peakHourHeatmap || [];
+  const source = performance?.peakHourHeatmap || [];
   const hourSet = new Set<string>();
   source.forEach((row) => {
     Object.keys(row.hours || {}).forEach((hour) => hourSet.add(hour));
@@ -1306,23 +1246,15 @@ function buildExecutiveCallIntentMix(
   };
 }
 
-function buildLiveSnapshot(wallboard?: WallboardReport | null): LiveSnapshot {
-  const live = wallboard?.live;
-  const agents = wallboard?.agents;
-  const active = numberValue(live?.activeCalls);
-  const queued = numberValue(live?.queuedCalls);
-  const ringing = numberValue(live?.ringingCalls);
-  const longestWaitSec = sanitizeLiveQueueWaitSeconds(
-    live?.longestCurrentWaitSeconds,
-  );
+function buildLiveSnapshot(): LiveSnapshot {
   return {
-    hasLive: active + queued + ringing > 0,
-    active,
-    queued,
-    ringing,
-    longestWaitLabel: queued ? formatDuration(longestWaitSec) : "—",
-    available: numberValue(agents?.available),
-    totalAgents: numberValue(agents?.totalTracked),
+    hasLive: false,
+    active: 0,
+    queued: 0,
+    ringing: 0,
+    longestWaitLabel: "—",
+    available: 0,
+    totalAgents: 0,
   };
 }
 
@@ -1443,7 +1375,7 @@ function buildDashboardData(sources: DashboardSources): DashboardDataSet {
     heatmapHours: heatmap.heatmapHours,
     peakHourHeatmap: heatmap.peakHourHeatmap,
     executiveCallIntentMix: buildExecutiveCallIntentMix(sources.performance),
-    liveSnapshot: buildLiveSnapshot(sources.wallboard),
+    liveSnapshot: buildLiveSnapshot(),
     campaignRates: buildCampaignRates(sources),
     leadFunnel: funnels.leadFunnel,
     arFunnel: funnels.arFunnel,
@@ -1510,16 +1442,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         const [
           statsResult,
           performanceResult,
-          wallboardResult,
           smsResult,
           yardsResult,
         ] = await Promise.allSettled([
           fetchDashboardEndpoint<DashboardStats>("/api/dashboard/stats"),
           fetchDashboardEndpoint<PerformanceReport>(
             `/api/reports/performance?${periodQuery}`,
-          ),
-          fetchDashboardEndpoint<WallboardReport>(
-            `/api/aircall-analytics/wallboard?${periodQuery}`,
           ),
           fetchDashboardEndpoint<SmsSummary>(
             `/api/aircall-analytics/sms/summary?${periodQuery}`,
@@ -1532,14 +1460,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         const sources: DashboardSources = {
           stats: settledValue(statsResult),
           performance: settledValue(performanceResult),
-          wallboard: settledValue(wallboardResult),
           sms: settledValue(smsResult),
           yards: settledValue(yardsResult),
         };
         const errors = [
           statsResult,
           performanceResult,
-          wallboardResult,
           smsResult,
           yardsResult,
         ]
@@ -1550,8 +1476,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
 
         setBaseSources(sources);
         setGeneratedAt(
-          sources.wallboard?.generatedAt ||
-            sources.stats?.generatedAt ||
+          sources.stats?.generatedAt ||
             new Date().toISOString(),
         );
         setError(errors.length ? errors[0] : null);
@@ -1614,27 +1539,11 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     };
   }, [loadDashboardSources, realtime.version]);
 
-  const hasLiveActivity = useMemo(() => {
-    const live = baseSources.wallboard?.live;
-    return (
-      numberValue(live?.activeCalls) +
-        numberValue(live?.queuedCalls) +
-        numberValue(live?.ringingCalls) >
-      0
-    );
-  }, [
-    baseSources.wallboard?.live?.activeCalls,
-    baseSources.wallboard?.live?.queuedCalls,
-    baseSources.wallboard?.live?.ringingCalls,
-  ]);
-
   useEffect(() => {
     if (isLoading) return;
 
     const intervalMs = realtime.connected
-      ? hasLiveActivity
-        ? LIVE_ACTIVITY_REFRESH_MS
-        : IDLE_REFRESH_MS
+      ? IDLE_REFRESH_MS
       : SOCKET_FALLBACK_REFRESH_MS;
 
     const intervalId = setInterval(() => {
@@ -1642,7 +1551,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     }, intervalMs);
 
     return () => clearInterval(intervalId);
-  }, [hasLiveActivity, isLoading, loadDashboardSources, realtime.connected]);
+  }, [isLoading, loadDashboardSources, realtime.connected]);
 
   useEffect(() => {
     if (!baseSources.performance) return;

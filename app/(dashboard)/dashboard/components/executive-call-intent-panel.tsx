@@ -17,6 +17,11 @@ import {
   toneClasses,
   tooltipStyle,
 } from "../dashboard-theme";
+import {
+  crossFilterBarOpacity,
+  crossFilterRowClass,
+  useCrossFilter,
+} from "./chart-cross-filter";
 import { DashboardChart } from "./dashboard-chart";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 
@@ -55,6 +60,8 @@ export function ExecutiveCallIntentPanel({
 }: {
   mix: ExecutiveCallIntentMix;
 }) {
+  const { filters, toggleFilter, isFilterActive } = useCrossFilter();
+  const reasonFilterActive = !!filters.callReason;
   const chartData = mix.rows.map((row) => ({
     ...row,
     label: row.reason,
@@ -117,11 +124,25 @@ export function ExecutiveCallIntentPanel({
                   ];
                 }}
               />
-              <Bar dataKey="calls" name="Calls" radius={[0, 6, 6, 0]} maxBarSize={22}>
+              <Bar
+                dataKey="calls"
+                name="Calls"
+                radius={[0, 6, 6, 0]}
+                maxBarSize={22}
+                cursor="pointer"
+                onClick={(bar) => {
+                  const row = bar as { reason?: string };
+                  if (row.reason) toggleFilter("callReason", row.reason);
+                }}
+              >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={entry.reason}
                     fill={INTENT_BAR_COLORS[index % INTENT_BAR_COLORS.length]}
+                    fillOpacity={crossFilterBarOpacity(
+                      isFilterActive("callReason", entry.reason),
+                      reasonFilterActive,
+                    )}
                   />
                 ))}
               </Bar>
@@ -132,7 +153,18 @@ export function ExecutiveCallIntentPanel({
             {mix.rows.slice(0, 4).map((row, index) => (
               <li
                 key={row.reason}
-                className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-900/50"
+                className={`${crossFilterRowClass(
+                  isFilterActive("callReason", row.reason),
+                )} flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-900/50`}
+                onClick={() => toggleFilter("callReason", row.reason)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleFilter("callReason", row.reason);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
               >
                 <span
                   className="size-2 shrink-0 rounded-sm"

@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Copy,
   ExternalLink,
-  FileText,
   Mail,
   MapPin,
   Pencil,
@@ -708,14 +707,10 @@ export function LandlordSheet({
 
             <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
               <div
-                className={cn(
-                  "grid gap-2",
-                  !isAgent && onEdit
-                    ? "grid-cols-3"
-                    : !isAgent || onEdit
-                      ? "grid-cols-2"
-                      : "grid-cols-1",
-                )}
+                  className={cn(
+                    "grid gap-2",
+                    onEdit ? "grid-cols-2" : "grid-cols-1",
+                  )}
               >
                 <DialButton
                   phone={data.phone}
@@ -723,14 +718,6 @@ export function LandlordSheet({
                   dial={dial}
                   canDial={canDial}
                 />
-                {!isAgent ? (
-                  <SheetAction
-                    icon={FileText}
-                    label="Report"
-                    href={`/reports/landlords?landlordId=${data.id}`}
-                    onClick={() => onOpenChange(false)}
-                  />
-                ) : null}
                 {onEdit ? (
                   <SheetAction
                     icon={Pencil}

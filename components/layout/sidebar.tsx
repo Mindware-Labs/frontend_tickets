@@ -97,15 +97,7 @@ const sections: NavSection[] = [
           { title: "Reports", url: "/reports/yards", icon: BarChart3 },
         ],
       },
-      {
-        title: "Landlords",
-        url: "/landlords",
-        icon: User,
-        children: [
-          { title: "Landlords", url: "/landlords", icon: User },
-          { title: "Reports", url: "/reports/landlords", icon: BarChart3 },
-        ],
-      },
+      { title: "Landlords", url: "/landlords", icon: User },
     ],
   },
   {

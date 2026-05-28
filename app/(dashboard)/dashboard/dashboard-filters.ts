@@ -4,6 +4,7 @@ export type DashboardFilterKey =
   | "agent"
   | "line"
   | "disposition"
+  | "callReason"
   | "day"
   | "hour";
 
@@ -15,6 +16,7 @@ export const emptyDashboardFilters = (): DashboardFilters => ({
   agent: null,
   line: null,
   disposition: null,
+  callReason: null,
   day: null,
   hour: null,
 });
@@ -38,6 +40,7 @@ export function buildPerformanceFilterQuery(
   if (filters.agent) params.set("agentName", filters.agent);
   if (filters.line) params.set("lineName", filters.line);
   if (filters.disposition) params.set("disposition", filters.disposition);
+  if (filters.callReason) params.set("callReason", filters.callReason);
   if (filters.day) params.set("dayLabel", filters.day);
   if (filters.hour) params.set("hour", filters.hour);
   return params.toString();
@@ -66,6 +69,11 @@ export function buildDashboardPeriodQueryParams(period: string): URLSearchParams
     return new URLSearchParams({ start: "2026-01-01", end: todayStr });
   }
 
+  if (period === "today") {
+    const todayStr = new Date().toISOString().split("T")[0];
+    return new URLSearchParams({ start: todayStr, end: todayStr });
+  }
+
   return new URLSearchParams({ period });
 }
 
@@ -90,6 +98,8 @@ export function filterLabel(key: DashboardFilterKey): string {
       return "Line";
     case "disposition":
       return "Disposition";
+    case "callReason":
+      return "Call reason";
     case "day":
       return "Day";
     case "hour":

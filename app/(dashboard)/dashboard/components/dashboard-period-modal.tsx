@@ -36,6 +36,12 @@ type PresetOption = {
 
 const PRESETS: PresetOption[] = [
   {
+    key: "today",
+    label: "Today",
+    description: "View real-time data and activity for the current day only.",
+    icon: Clock,
+  },
+  {
     key: "7d",
     label: "Last 7 Days",
     description: "Ideal for monitoring recent weekly operational performance.",

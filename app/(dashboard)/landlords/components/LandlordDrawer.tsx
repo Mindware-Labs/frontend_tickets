@@ -134,19 +134,7 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
               </div>
             </div>
 
-            {!isAgent && landlord.id && (
-              <>
-                <Separator />
-                <div>
-                  <Button asChild variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-[#f0faf5] hover:text-[#008f68] hover:border-[#008f68]">
-                    <Link href={`/reports/landlords?landlordId=${landlord.id}`}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Report
-                    </Link>
-                  </Button>
-                </div>
-              </>
-            )}
+
 
             <Separator />
 
