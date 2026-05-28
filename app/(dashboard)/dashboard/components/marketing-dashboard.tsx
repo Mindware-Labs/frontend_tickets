@@ -232,9 +232,9 @@ export function MarketingDashboard() {
                 </p>
                 <ul
                   className={cn(
-                    "space-y-1.5",
+                    "grid grid-cols-1 gap-1.5",
                     data.dispositionBreakdown.length > 2 &&
-                      "sm:grid sm:grid-cols-2 sm:gap-x-2",
+                      "sm:grid-cols-2 sm:gap-2",
                   )}
                 >
                   {data.dispositionBreakdown.map((item) => (

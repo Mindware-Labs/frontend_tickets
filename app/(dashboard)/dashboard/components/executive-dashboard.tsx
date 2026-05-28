@@ -139,67 +139,16 @@ export function ExecutiveDashboard() {
 
       <div className={`${dashboardRowClass} xl:grid-cols-2 xl:items-start`}>
         <PanelCard
-          title="Peak call hour heatmap"
-          subtitle="Click a cell to filter by day and hour across all charts."
-          bodyClassName="p-0"
+          title="Customer call reasons"
+          subtitle="Share of calls by campaign option on the call — billing, registration, move-out, and similar drivers."
+          subtitleAction={
+            <ExecutiveCallIntentTopDriver
+              topReason={data.executiveCallIntentMix.topReason}
+            />
+          }
+          bodyClassName="py-2"
         >
-          {data.peakHourHeatmap.length === 0 ? (
-            <DashboardEmptyState message="No peak-hour heatmap data yet." compact />
-          ) : (
-            <div className="overflow-x-auto px-3 py-2.5">
-              <div className="min-w-[560px]">
-                <div
-                  className="grid gap-0.5 text-[10px] text-muted-foreground"
-                  style={{ gridTemplateColumns: heatmapGridColumns }}
-                >
-                  <span />
-                  {data.heatmapHours.map((hour) => (
-                    <span key={hour} className="text-center">
-                      {hour}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-1 space-y-0.5">
-                  {data.peakHourHeatmap.map((row) => (
-                    <div
-                      key={row.day}
-                      className="grid items-center gap-0.5"
-                      style={{ gridTemplateColumns: heatmapGridColumns }}
-                    >
-                      <span className="text-[10px] font-medium text-muted-foreground">
-                        {row.day}
-                      </span>
-                      {row.values.map((value, index) => {
-                        const hourKey =
-                          data.heatmapHourKeys[index] ?? String(index);
-                        return (
-                          <button
-                            key={`${row.day}-${hourKey}`}
-                            type="button"
-                            className={cn(
-                              "flex h-7 items-center justify-center rounded-md text-[10px] font-semibold text-slate-900 transition ring-offset-1 hover:ring-2 hover:ring-[#008f68]/30 dark:text-slate-100",
-                              isHeatmapSlotActive(row.day, hourKey) &&
-                                "ring-2 ring-[#008f68]/50",
-                            )}
-                            style={{
-                              backgroundColor: `rgba(0, 143, 104, ${Math.max(
-                                0.1,
-                                value / heatmapPeak,
-                              )})`,
-                            }}
-                            onClick={() => toggleHeatmapSlot(row.day, hourKey)}
-                            title={`Filter by ${row.day} ${data.heatmapHours[index]}`}
-                          >
-                            {value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <ExecutiveCallIntentPanel mix={data.executiveCallIntentMix} />
         </PanelCard>
 
         <PanelCard
@@ -258,16 +207,67 @@ export function ExecutiveDashboard() {
       </div>
 
       <PanelCard
-        title="Customer call reasons"
-        subtitle="Share of calls by campaign option on the call — billing, registration, move-out, and similar drivers."
-        subtitleAction={
-          <ExecutiveCallIntentTopDriver
-            topReason={data.executiveCallIntentMix.topReason}
-          />
-        }
-        bodyClassName="py-2"
+        title="Peak call hour heatmap"
+        subtitle="Click a cell to filter by day and hour across all charts."
+        bodyClassName="p-0"
       >
-        <ExecutiveCallIntentPanel mix={data.executiveCallIntentMix} />
+        {data.peakHourHeatmap.length === 0 ? (
+          <DashboardEmptyState message="No peak-hour heatmap data yet." compact />
+        ) : (
+          <div className="overflow-x-auto px-3 py-2.5">
+            <div className="min-w-[560px]">
+              <div
+                className="grid gap-0.5 text-[10px] text-muted-foreground"
+                style={{ gridTemplateColumns: heatmapGridColumns }}
+              >
+                <span />
+                {data.heatmapHours.map((hour) => (
+                  <span key={hour} className="text-center">
+                    {hour}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-1 space-y-0.5">
+                {data.peakHourHeatmap.map((row) => (
+                  <div
+                    key={row.day}
+                    className="grid items-center gap-0.5"
+                    style={{ gridTemplateColumns: heatmapGridColumns }}
+                  >
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {row.day}
+                    </span>
+                    {row.values.map((value, index) => {
+                      const hourKey =
+                        data.heatmapHourKeys[index] ?? String(index);
+                      return (
+                        <button
+                          key={`${row.day}-${hourKey}`}
+                          type="button"
+                          className={cn(
+                            "flex h-7 items-center justify-center rounded-md text-[10px] font-semibold text-slate-900 transition ring-offset-1 hover:ring-2 hover:ring-[#008f68]/30 dark:text-slate-100",
+                            isHeatmapSlotActive(row.day, hourKey) &&
+                              "ring-2 ring-[#008f68]/50",
+                          )}
+                          style={{
+                            backgroundColor: `rgba(0, 143, 104, ${Math.max(
+                              0.1,
+                              value / heatmapPeak,
+                            )})`,
+                          }}
+                          onClick={() => toggleHeatmapSlot(row.day, hourKey)}
+                          title={`Filter by ${row.day} ${data.heatmapHours[index]}`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </PanelCard>
     </div>
   );
