@@ -230,4 +230,5 @@ export const settingsApi = {
       throw error;
     }
   },
+
 };
