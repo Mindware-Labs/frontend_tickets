@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
@@ -114,6 +115,25 @@ export function OperationsDashboard() {
   const { data } = useSupportDashboardData();
   const { filters, toggleFilter, isFilterActive } = useCrossFilter();
   const agentFilterActive = !!filters.agent;
+  const dayFilterActive   = !!filters.day;
+  const selectedDay       = filters.day ?? undefined;
+
+  // Custom dot: renders only on the selected day when a day filter is active,
+  // fades other days to hint that filtering is in effect.
+  const makeDayDot = (color: string) =>
+    function DayDot(props: unknown) {
+      const { cx, cy, payload } = props as {
+        cx: number;
+        cy: number;
+        payload: { day?: string };
+      };
+      if (!dayFilterActive) return <g />;
+      return isFilterActive("day", payload.day ?? "") ? (
+        <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
+      ) : (
+        <circle cx={cx} cy={cy} r={2.5} fill={color} fillOpacity={0.22} />
+      );
+    };
 
   return (
     <div className={dashboardShellClass}>
@@ -129,7 +149,11 @@ export function OperationsDashboard() {
             <DashboardEmptyState message="No call trend data for this period." compact />
           ) : (
             <DashboardChart>
-              <AreaChart data={data.operationsTrend} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
+              <AreaChart
+                data={data.operationsTrend}
+                margin={{ left: -12, right: 4, top: 4, bottom: 0 }}
+                style={{ cursor: "pointer" }}
+              >
                 <defs>
                   <linearGradient id="inboundFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={toneClasses.emerald.chart} stopOpacity={0.28} />
@@ -145,6 +169,17 @@ export function OperationsDashboard() {
                 <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={32} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend wrapperStyle={chartLegendStyle} />
+
+                {/* Vertical marker on the selected day */}
+                {selectedDay && (
+                  <ReferenceLine
+                    x={selectedDay}
+                    stroke="rgba(0,143,104,0.45)"
+                    strokeWidth={2}
+                    strokeDasharray="4 3"
+                  />
+                )}
+
                 <Area
                   type="monotone"
                   dataKey="inbound"
@@ -152,12 +187,12 @@ export function OperationsDashboard() {
                   stroke={toneClasses.emerald.chart}
                   fill="url(#inboundFill)"
                   strokeWidth={2}
+                  dot={makeDayDot(toneClasses.emerald.chart)}
                   activeDot={{
                     r: 5,
                     cursor: "pointer",
                     onClick: (_event, dot) => {
-                      const day = (dot as { payload?: { day?: string } }).payload
-                        ?.day;
+                      const day = (dot as { payload?: { day?: string } }).payload?.day;
                       if (day) toggleFilter("day", day);
                     },
                   }}
@@ -169,6 +204,15 @@ export function OperationsDashboard() {
                   stroke={toneClasses.sky.chart}
                   fill="url(#outboundFill)"
                   strokeWidth={2}
+                  dot={makeDayDot(toneClasses.sky.chart)}
+                  activeDot={{
+                    r: 5,
+                    cursor: "pointer",
+                    onClick: (_event, dot) => {
+                      const day = (dot as { payload?: { day?: string } }).payload?.day;
+                      if (day) toggleFilter("day", day);
+                    },
+                  }}
                 />
                 <Line
                   type="monotone"
@@ -176,7 +220,15 @@ export function OperationsDashboard() {
                   name="Tickets"
                   stroke={toneClasses.indigo.chart}
                   strokeWidth={2}
-                  dot={false}
+                  dot={makeDayDot(toneClasses.indigo.chart)}
+                  activeDot={{
+                    r: 5,
+                    cursor: "pointer",
+                    onClick: (_event, dot) => {
+                      const day = (dot as { payload?: { day?: string } }).payload?.day;
+                      if (day) toggleFilter("day", day);
+                    },
+                  }}
                 />
                 <Line
                   type="monotone"
@@ -184,7 +236,15 @@ export function OperationsDashboard() {
                   name="Missed"
                   stroke={toneClasses.rose.chart}
                   strokeWidth={2}
-                  dot={false}
+                  dot={makeDayDot(toneClasses.rose.chart)}
+                  activeDot={{
+                    r: 5,
+                    cursor: "pointer",
+                    onClick: (_event, dot) => {
+                      const day = (dot as { payload?: { day?: string } }).payload?.day;
+                      if (day) toggleFilter("day", day);
+                    },
+                  }}
                 />
               </AreaChart>
             </DashboardChart>
