@@ -11,7 +11,24 @@ import {
 import { PaginationFooter } from "@/components/common/pagination-footer";
 import { Button } from "@/components/ui/button";
 import { Pencil, RotateCcw, Trash2 } from "lucide-react";
-import { TableLoadingRow } from "@/components/shared/entity-loading-state";
+import {
+  EntityLoadingSpinner,
+  TableLoadingRow,
+} from "@/components/shared/entity-loading-state";
+import {
+  EntityMobileCard,
+  EntityMobileCardBody,
+  EntityMobileCardHeader,
+  EntityMobileField,
+  EntityMobileList,
+  entityTableActionsCellClass,
+  entityTableActionsHeadClass,
+  entityTableCellClass,
+  entityTableHeadClass,
+  entityTableHeaderClass,
+  entityTableHeaderRowClass,
+  entityTableRowClass,
+} from "@/components/shared/entity-table";
 import { cn } from "@/lib/utils";
 import { PhoneLine } from "../types";
 import { formatPhoneDisplay } from "../utils";
@@ -34,16 +51,24 @@ interface PhoneLinesTableProps {
 
 function StatusPill({ active }: { active: boolean }) {
   return active ? (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11.5px] font-semibold border bg-[#dcfce7] text-[#15803d] border-[#bbf7d0] dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border bg-[#dcfce7] text-[#15803d] border-[#bbf7d0] dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
       <span className="w-[6px] h-[6px] rounded-full bg-[#22c55e] shrink-0" />
       Active
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11.5px] font-semibold border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/15 dark:text-slate-400 dark:border-slate-500/30">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/15 dark:text-slate-400 dark:border-slate-500/30">
       <span className="w-[6px] h-[6px] rounded-full bg-slate-400 shrink-0" />
       Inactive
     </span>
   );
+}
+
+function formatCreated(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function PhoneLinesTable({
@@ -60,38 +85,87 @@ export function PhoneLinesTable({
   itemsPerPage = 10,
   totalPages = 1,
 }: PhoneLinesTableProps) {
+  const showActions = canManage && Boolean(onEdit || onDelete || onRestore);
+
+  function RowActions({ line }: { line: PhoneLine }) {
+    if (!showActions) return null;
+    return (
+      <>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
+            title="Edit line"
+            aria-label="Edit line"
+            onClick={() => onEdit(line)}
+          >
+            <Pencil className="h-4 w-4 pointer-events-none" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+            title="Archive line"
+            aria-label="Archive line"
+            onClick={() => onDelete(line)}
+          >
+            <Trash2 className="h-4 w-4 pointer-events-none" />
+          </Button>
+        )}
+        {onRestore && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:bg-[#f0faf5] hover:text-[#008f68]"
+            title="Restore line"
+            aria-label="Restore line"
+            onClick={() => onRestore(line)}
+          >
+            <RotateCcw className="h-4 w-4 pointer-events-none" />
+          </Button>
+        )}
+      </>
+    );
+  }
+
+  const isEmpty = !loading && totalFiltered === 0;
+
   return (
     <div className="entity-table-root">
-      <div className="entity-table-frame">
+      {/* Desktop / tablet: table */}
+      <div className="entity-table-frame hidden lg:block">
         <div className="entity-table-scroll">
           <Table className="relative w-full table-fixed">
-            <TableHeader className="bg-slate-50 sticky top-0 z-10 border-y border-slate-200 dark:bg-muted/40">
-              <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="w-[32%] max-w-[280px] pl-4 font-bold text-[11px] tracking-wider uppercase text-slate-500">
+            <TableHeader className={entityTableHeaderClass}>
+              <TableRow className={entityTableHeaderRowClass}>
+                <TableHead className={cn(entityTableHeadClass, "w-[32%] max-w-[280px] pl-4")}>
                   Phone line
                 </TableHead>
-                <TableHead className="w-[28%] max-w-[220px] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className={cn(entityTableHeadClass, "w-[28%] max-w-[220px]")}>
                   Label
                 </TableHead>
-                <TableHead className="w-[14%] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className={cn(entityTableHeadClass, "w-[14%]")}>
                   Status
                 </TableHead>
-                <TableHead className="w-[18%] font-bold text-[11px] tracking-wider uppercase text-slate-500">
+                <TableHead className={cn(entityTableHeadClass, "w-[18%]")}>
                   Created
                 </TableHead>
-                <TableHead className="w-[120px] font-bold text-[11px] tracking-wider uppercase text-slate-500 text-right pr-4">
-                  Actions
-                </TableHead>
+                {showActions && (
+                  <TableHead className={entityTableActionsHeadClass}>Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={5} kind="phone-lines" />
-              ) : totalFiltered === 0 ? (
+                <TableLoadingRow colSpan={showActions ? 5 : 4} kind="phone-lines" />
+              ) : isEmpty ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={showActions ? 5 : 4}
                     className="h-24 text-center text-sm text-muted-foreground"
                   >
                     No phone lines found.
@@ -102,19 +176,13 @@ export function PhoneLinesTable({
                   <TableRow
                     key={line.id}
                     onClick={() => onRowClick?.(line)}
-                    className={cn(
-                      "group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 transition-all duration-150",
-                      i % 2 === 1
-                        ? "bg-slate-50/60 dark:bg-muted/20"
-                        : "bg-white dark:bg-card",
-                      onRowClick && "cursor-pointer",
-                    )}
+                    className={entityTableRowClass(i, Boolean(onRowClick))}
                   >
-                    <TableCell className="max-w-0 overflow-hidden pl-4 py-3">
+                    <TableCell className={cn(entityTableCellClass, "max-w-0 overflow-hidden pl-4")}>
                       <div className="flex min-w-0 items-center gap-2.5">
                         <PhoneLineMark className="h-8 w-8" />
                         <p
-                          className="min-w-0 flex-1 truncate font-mono font-bold text-[14px] leading-tight text-foreground"
+                          className="min-w-0 flex-1 truncate font-mono text-[13px] font-bold leading-tight text-foreground"
                           title={formatPhoneDisplay(line.phoneNumber)}
                         >
                           {formatPhoneDisplay(line.phoneNumber)}
@@ -122,84 +190,83 @@ export function PhoneLinesTable({
                       </div>
                     </TableCell>
 
-                    <TableCell className="max-w-0 overflow-hidden py-3">
+                    <TableCell className={cn(entityTableCellClass, "max-w-0 overflow-hidden")}>
                       {line.label ? (
-                        <p
-                          className="truncate text-[13.5px] font-medium text-slate-700 dark:text-slate-300"
-                          title={line.label}
-                        >
+                        <p className="truncate font-medium text-slate-700 dark:text-slate-300" title={line.label}>
                           {line.label}
                         </p>
                       ) : (
-                        <span className="text-muted-foreground italic text-sm">
-                          No label
-                        </span>
+                        <span className="italic text-slate-400">No label</span>
                       )}
                     </TableCell>
 
-                    <TableCell className="py-3">
+                    <TableCell className={entityTableCellClass}>
                       <StatusPill active={line.isActive} />
                     </TableCell>
 
-                    <TableCell className="py-3">
-                      <span className="font-mono text-[13px] text-slate-500 font-medium">
-                        {new Date(line.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
+                    <TableCell className={cn(entityTableCellClass, "font-mono text-slate-500")}>
+                      {formatCreated(line.createdAt)}
                     </TableCell>
 
-                    <TableCell
-                      className="py-3 text-right pr-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        {canManage && onEdit && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:bg-amber-50 hover:text-amber-600"
-                            title="Edit line"
-                            aria-label="Edit line"
-                            onClick={() => onEdit(line)}
-                          >
-                            <Pencil className="h-4 w-4 pointer-events-none" />
-                          </Button>
-                        )}
-                        {canManage && onDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                            title="Archive line"
-                            aria-label="Archive line"
-                            onClick={() => onDelete(line)}
-                          >
-                            <Trash2 className="h-4 w-4 pointer-events-none" />
-                          </Button>
-                        )}
-                        {canManage && onRestore && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:bg-[#f0faf5] hover:text-[#008f68]"
-                            title="Restore line"
-                            aria-label="Restore line"
-                            onClick={() => onRestore(line)}
-                          >
-                            <RotateCcw className="h-4 w-4 pointer-events-none" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                    {showActions && (
+                      <TableCell
+                        className={entityTableActionsCellClass}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-0.5">
+                          <RowActions line={line} />
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
         </div>
+      </div>
+
+      {/* Mobile: stacked cards */}
+      <div className="lg:hidden">
+        {loading ? (
+          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-slate-800 dark:bg-card">
+            <EntityLoadingSpinner kind="phone-lines" size="sm" />
+          </div>
+        ) : isEmpty ? (
+          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-slate-800 dark:bg-card">
+            No phone lines found.
+          </div>
+        ) : (
+          <EntityMobileList>
+            {lines.map((line) => (
+              <EntityMobileCard
+                key={line.id}
+                onClick={onRowClick ? () => onRowClick(line) : undefined}
+              >
+                <EntityMobileCardHeader
+                  mark={<PhoneLineMark className="h-8 w-8 shrink-0" />}
+                  title={
+                    <span className="font-mono">
+                      {formatPhoneDisplay(line.phoneNumber)}
+                    </span>
+                  }
+                  subtitle={line.label || "No label"}
+                  actions={<RowActions line={line} />}
+                />
+                <EntityMobileCardBody>
+                  <EntityMobileField label="Status">
+                    <StatusPill active={line.isActive} />
+                  </EntityMobileField>
+                  <EntityMobileField label="Created">
+                    <span className="font-mono text-slate-500">
+                      {formatCreated(line.createdAt)}
+                    </span>
+                  </EntityMobileField>
+                </EntityMobileCardBody>
+              </EntityMobileCard>
+            ))}
+          </EntityMobileList>
+        )}
       </div>
 
       {totalFiltered > 0 && onPageChange ? (
