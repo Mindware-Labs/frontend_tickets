@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import Link from "next/link";
 import {
   Sheet,
   SheetClose,
@@ -15,10 +14,10 @@ import {
 import {
   Building2,
   Check,
+  ChevronRight,
   Clock,
   Copy,
   History,
-  ChevronRight,
   Megaphone,
   Pencil,
   Phone,
@@ -66,7 +65,7 @@ function formatShortDate(value?: string | null) {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
+    <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
       {children}
     </p>
   );
@@ -109,7 +108,7 @@ function CopyButton({
 }
 
 const ROW_ICON_CLASS =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500";
 
 function DetailRow({
   icon: Icon,
@@ -127,8 +126,8 @@ function DetailRow({
   return (
     <div
       className={cn(
-        "flex gap-3 px-4",
-        multiline ? "items-start py-3.5" : "min-h-[58px] items-center py-1.5",
+        "flex gap-3 px-3.5",
+        multiline ? "items-start py-3" : "min-h-[52px] items-center py-1.5",
       )}
     >
       <div className={cn(ROW_ICON_CLASS, multiline && "mt-0.5")}>
@@ -140,10 +139,10 @@ function DetailRow({
           multiline ? "gap-1.5" : "gap-0.5",
         )}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {label}
         </p>
-        <div className="min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-slate-100">
+        <div className="min-w-0 text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-100">
           {value}
         </div>
       </div>
@@ -166,14 +165,14 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/60 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
       <div className="flex items-center gap-1.5 text-slate-400">
-        <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-        <p className="truncate text-[10px] font-bold uppercase tracking-[0.08em]">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-[#008f68]" strokeWidth={2} />
+        <p className="truncate text-[9px] font-semibold uppercase tracking-wide">
           {label}
         </p>
       </div>
-      <p className="mt-1.5 truncate text-lg font-bold leading-tight text-slate-900 dark:text-slate-50">
+      <p className="mt-1 truncate text-lg font-bold leading-tight tabular-nums text-slate-900 dark:text-slate-50">
         {value}
       </p>
       {helper ? (
@@ -188,7 +187,6 @@ function MetricTile({
 function SheetAction({
   icon: Icon,
   label,
-  href,
   onClick,
   disabled,
   primary = false,
@@ -197,7 +195,6 @@ function SheetAction({
 }: {
   icon: LucideIcon;
   label: string;
-  href?: string;
   onClick?: () => void;
   disabled?: boolean;
   primary?: boolean;
@@ -227,14 +224,6 @@ function SheetAction({
       <span className="min-w-0 truncate">{label}</span>
     </>
   );
-
-  if (href && !disabled) {
-    return (
-      <Link href={href} onClick={onClick} className={className}>
-        {content}
-      </Link>
-    );
-  }
 
   return (
     <button
@@ -403,7 +392,7 @@ export function CustomerSheet({
         hideClose
         className={cn(
           "flex h-dvh flex-row gap-0 overflow-hidden p-0",
-          "border-l border-slate-200/80 bg-slate-50 text-slate-900 antialiased",
+          "border-l border-slate-200/80 bg-[#f4f5f7] text-slate-900 antialiased",
           "shadow-2xl shadow-slate-900/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
           timelineOpen
             ? "w-[min(1280px,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]"
@@ -456,18 +445,19 @@ export function CustomerSheet({
               </SheetHeader>
 
               <div className="relative flex h-full min-h-0 flex-col">
-                <div className="relative shrink-0 border-b border-slate-200/60 bg-white dark:border-slate-800 dark:bg-slate-950">
+                <div className="relative shrink-0 overflow-hidden border-b border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+                  <div className="h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent" />
                   <SheetClose
                     aria-label="Close customer details"
-                    className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                    className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900 dark:hover:text-slate-200"
                   >
                     <X className="h-5 w-5" strokeWidth={2} />
                   </SheetClose>
 
                   <div className="px-4 pb-3.5 pt-4 sm:px-5">
                     <div className="flex items-start gap-3 pr-10">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400">
-                        <Users className="h-6 w-6" strokeWidth={1.75} />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-[#f0faf5] text-[#008f68] shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                        <Users className="h-5 w-5" strokeWidth={2} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
@@ -478,7 +468,7 @@ export function CustomerSheet({
                             <RefreshCw className="h-3 w-3 animate-spin" />
                           </span>
                         ) : null}
-                        <h2 className="mt-1 text-[20px] font-bold leading-tight text-slate-900 [overflow-wrap:anywhere] dark:text-white">
+                        <h2 className="mt-1 text-[18px] font-bold leading-tight text-slate-900 [overflow-wrap:anywhere] dark:text-white">
                           {data.name || "Unknown Customer"}
                         </h2>
                         <p className="mt-0.5 text-[12px] text-slate-500">
@@ -522,7 +512,7 @@ export function CustomerSheet({
                         setTimelineOpen(true);
                       }}
                       className={cn(
-                        "mt-2.5 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[0.98]",
+                        "mt-2.5 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
                         timelineOpen
                           ? "border-[#008f68]/30 bg-[#f0faf5] ring-2 ring-[#008f68]/15"
                           : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/35 hover:bg-[#e8faf0]",
@@ -540,11 +530,11 @@ export function CustomerSheet({
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto overscroll-contain">
                   <div className="space-y-4 px-4 py-3 pb-4 sm:px-5">
                     <div>
                       <SectionLabel>Customer details</SectionLabel>
-                      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
                         <DetailRow
                           icon={Phone}
                           label="Phone"
@@ -573,7 +563,7 @@ export function CustomerSheet({
                                 {customerYards.map((yard) => (
                                   <span
                                     key={yard.id}
-                                    className="inline-flex max-w-full rounded-md border border-slate-200/80 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                                    className="inline-flex max-w-full rounded-md border border-emerald-100 bg-[#f0faf5] px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
                                     title={yard.name}
                                   >
                                     <span className="truncate">{yard.name}</span>
@@ -593,7 +583,7 @@ export function CustomerSheet({
                                 {data.campaigns.map((camp) => (
                                   <span
                                     key={camp.id}
-                                    className="inline-flex rounded-md border border-slate-200/80 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                                    className="inline-flex max-w-full rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                                   >
                                     {camp.nombre}
                                   </span>
@@ -620,7 +610,7 @@ export function CustomerSheet({
                   </div>
                 </div>
 
-                <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
+                <div className="shrink-0 border-t border-slate-200/80 bg-white/90 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/90">
                   <div className="flex flex-wrap gap-2">
                     <SheetAction
                       icon={PhoneCall}
@@ -631,12 +621,6 @@ export function CustomerSheet({
                         if (!data.phone) return;
                         dial(data.phone.trim(), data.id);
                       }}
-                    />
-                    <SheetAction
-                      icon={ActivitiesIcon}
-                      label="Activities"
-                      href={`/calls?customerId=${data.id}`}
-                      onClick={() => onOpenChange(false)}
                     />
                     {showEdit ? (
                       <SheetAction
