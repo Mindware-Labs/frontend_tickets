@@ -7,6 +7,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetFooter,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -15,11 +16,13 @@ import {
   AlertTriangle,
   Calendar,
   CalendarCheck,
+  Check,
   CheckCheck,
   Clock,
   Info,
   Loader2,
   Phone,
+  User,
   X,
   ArrowLeft,
 } from "lucide-react";
@@ -319,7 +322,7 @@ export function ScheduleCallSheet({
         <div className="flex-1 min-h-0 overflow-y-auto bg-[#f4f5f7] dark:bg-slate-900/10 scrollbar-app">
           {view === "list" ? (
             /* ═══ LIST VIEW ═══ */
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 px-4 pb-4 pt-0">
               <div className="rounded-xl border border-[#008f68]/15 bg-[#f0faf5] p-3 text-[#065f4a] shadow-[0_1px_2px_rgba(0,143,104,0.05)] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <div className="flex items-start gap-2.5">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-[#008f68] ring-1 ring-[#008f68]/10 dark:bg-slate-950/50 dark:text-emerald-400 dark:ring-emerald-500/20">
@@ -342,28 +345,31 @@ export function ScheduleCallSheet({
                 <ScheduleStat label="Done" value={completedCount} tone="slate" />
               </div>
 
-              {/* Action bar */}
-              <button
-                type="button"
-                onClick={() => setView("create")}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#008f68]/40 bg-white px-4 py-3.5 text-xs font-semibold text-[#008f68] shadow-sm transition-all hover:border-[#008f68] hover:bg-[#f0faf5] dark:border-emerald-500/25 dark:bg-slate-950 dark:text-emerald-400 dark:hover:border-emerald-600 dark:hover:bg-emerald-500/10"
-              >
-                <Calendar className="size-3.5 transition-transform group-hover:scale-110" />
-                Schedule a Call
-              </button>
-
-              {/* Filter toggle */}
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  {showCompleted ? "All entries" : "Upcoming schedules"}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowCompleted(!showCompleted)}
-                  className="text-[10px] font-semibold uppercase tracking-wider text-[#008f68] hover:text-[#007a5a] transition-colors dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
-                  {showCompleted ? "Hide completed" : "Show all"}
-                </button>
+              {/* Filter tabs */}
+              <div className="flex rounded-lg bg-slate-100 p-1 border border-slate-200/80 shadow-sm dark:bg-slate-900/80 dark:border-slate-700/60">
+                {(
+                  [
+                    { label: "Upcoming", value: false },
+                    { label: "All entries", value: true },
+                  ] as const
+                ).map(({ label, value }) => {
+                  const active = showCompleted === value;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setShowCompleted(value)}
+                      className={cn(
+                        "flex-1 px-3 py-1.5 text-xs transition-all",
+                        active
+                          ? "rounded-md bg-white font-semibold text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
+                          : "text-slate-500 hover:text-slate-800 dark:text-slate-400",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* List */}
@@ -379,7 +385,7 @@ export function ScheduleCallSheet({
                     No scheduled calls
                   </p>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                    Click above to schedule one.
+                    Click below to schedule one.
                   </p>
                 </div>
               ) : (
@@ -392,26 +398,28 @@ export function ScheduleCallSheet({
                       <div
                         key={sc.id}
                         className={cn(
-                          "relative overflow-hidden rounded-xl border p-3.5 pl-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-md",
+                          "relative overflow-hidden rounded-xl border p-3.5 pl-4 transition-all duration-200",
                           isOverdue
-                            ? "border-rose-200/80 bg-[#fff8f8] dark:border-rose-950/40 dark:bg-[#200c0f]"
-                            : "border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700",
+                            ? "border-rose-200/80 bg-[#fff8f8] shadow-[0_2px_12px_rgba(244,63,94,0.10)] hover:shadow-[0_4px_16px_rgba(244,63,94,0.15)] dark:border-rose-900/40 dark:bg-[#200c0f] dark:shadow-[0_2px_12px_rgba(244,63,94,0.06)]"
+                            : "border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700",
                         )}
                       >
                         {/* Left Accent Stripe */}
                         <div
                           className={cn(
                             "absolute left-0 top-0 bottom-0 w-[3px]",
-                            isOverdue ? "bg-rose-500 animate-pulse" : "bg-[#008f68] dark:bg-emerald-500",
+                            isOverdue
+                              ? "bg-gradient-to-b from-rose-400 via-rose-500 to-rose-400 animate-pulse-slow"
+                              : "bg-[#008f68] dark:bg-emerald-500",
                           )}
                         />
                         <div className="flex items-start gap-3">
                           {/* Icon box */}
                           <div
                             className={cn(
-                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm border",
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-sm",
                               isOverdue
-                                ? "border-rose-100 bg-rose-50 text-rose-600 dark:border-rose-900/30 dark:bg-rose-950/40 dark:text-rose-400"
+                                ? "border-rose-200/80 bg-rose-50 text-rose-500 ring-2 ring-rose-200/40 animate-pulse-slow dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400 dark:ring-rose-800/30"
                                 : "border-emerald-100 bg-[#f0faf5] text-[#008f68] dark:border-emerald-950/30 dark:bg-emerald-950/40 dark:text-emerald-400",
                             )}
                           >
@@ -425,7 +433,8 @@ export function ScheduleCallSheet({
                               </span>
                               <div className="flex shrink-0 items-center gap-1.5">
                                 {isOverdue && (
-                                  <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:bg-rose-950/80 dark:text-rose-400">
+                                  <span className="inline-flex items-center gap-1 rounded border border-rose-200/80 bg-rose-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/60 dark:text-rose-400">
+                                    <span className="size-1.5 rounded-full bg-rose-500 animate-pulse dark:bg-rose-400" />
                                     Overdue
                                   </span>
                                 )}
@@ -436,14 +445,17 @@ export function ScheduleCallSheet({
                                       "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
                                   )}
                                 >
-                                  <span className={cn("size-1 rounded-full", statusDotColors[sc.status] || "bg-slate-400")} />
+                                  <span className={cn("size-1.5 rounded-full", statusDotColors[sc.status] || "bg-slate-400")} />
                                   {statusLabel[sc.status] || sc.status}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                            <div className={cn(
+                              "mt-1.5 flex items-center gap-1.5 text-[11px]",
+                              isOverdue ? "text-rose-400/80 dark:text-rose-500/70" : "text-slate-500 dark:text-slate-400",
+                            )}>
+                              <Clock className={cn("h-3.5 w-3.5 shrink-0", isOverdue ? "text-rose-400 dark:text-rose-500" : "text-slate-400 dark:text-slate-500")} />
                               <span>
                                 {format(
                                   new Date(sc.scheduledAt),
@@ -452,17 +464,35 @@ export function ScheduleCallSheet({
                               </span>
                             </div>
 
+                            {(sc.createdBy?.name || sc.createdByName) && (
+                              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{sc.createdBy?.name ?? sc.createdByName}</span>
+                              </div>
+                            )}
+
                             {sc.notes && (
-                              <p className="mt-2 rounded-lg bg-slate-50/60 dark:bg-slate-900/40 p-2 text-[11px] text-slate-500 dark:text-slate-400 border border-slate-100/80 dark:border-slate-800/80 line-clamp-2 leading-relaxed">
+                              <p className={cn(
+                                "mt-2 rounded-lg p-2 text-[11px] border line-clamp-2 leading-relaxed",
+                                isOverdue
+                                  ? "bg-rose-50/60 border-rose-100/80 text-rose-500/80 dark:bg-rose-950/20 dark:border-rose-900/40 dark:text-rose-400/70"
+                                  : "bg-slate-50/60 border-slate-100/80 text-slate-500 dark:bg-slate-900/40 dark:border-slate-800/80 dark:text-slate-400",
+                              )}>
                                 {sc.notes}
                               </p>
                             )}
 
                             {sc.status === "PENDING" && (
-                              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
-                                <div className="flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                              <div className={cn(
+                                "mt-3 flex items-center justify-between gap-2 border-t pt-2.5",
+                                isOverdue ? "border-rose-100/80 dark:border-rose-900/30" : "border-slate-100 dark:border-slate-800",
+                              )}>
+                                <div className={cn(
+                                  "flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium",
+                                  isOverdue ? "text-rose-500 dark:text-rose-400" : "text-slate-400 dark:text-slate-500",
+                                )}>
                                   {isOverdue ? (
-                                    <AlertTriangle className="size-3.5 shrink-0 text-rose-500" aria-hidden />
+                                    <AlertTriangle className="size-3.5 shrink-0 animate-pulse-slow" aria-hidden />
                                   ) : (
                                     <Clock className="size-3.5 shrink-0" aria-hidden />
                                   )}
@@ -474,7 +504,12 @@ export function ScheduleCallSheet({
                                   type="button"
                                   onClick={() => markScheduleDone(sc.id)}
                                   disabled={updatingCallId === sc.id}
-                                  className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10.5px] font-semibold text-slate-600 shadow-sm transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                                  className={cn(
+                                    "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10.5px] font-semibold shadow-sm transition-all duration-150 disabled:opacity-60",
+                                    isOverdue
+                                      ? "border-rose-200/80 bg-rose-50 text-rose-600 hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                                      : "border-slate-200 bg-white text-slate-600 hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400",
+                                  )}
                                 >
                                   {updatingCallId === sc.id ? (
                                     <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -492,6 +527,16 @@ export function ScheduleCallSheet({
                   })}
                 </div>
               )}
+
+              {/* Action bar */}
+              <button
+                type="button"
+                onClick={() => setView("create")}
+                className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#008f68]/40 bg-white px-4 py-3.5 text-xs font-semibold text-[#008f68] shadow-sm transition-all hover:border-[#008f68] hover:bg-[#f0faf5] dark:border-emerald-500/25 dark:bg-slate-950 dark:text-emerald-400 dark:hover:border-emerald-600 dark:hover:bg-emerald-500/10"
+              >
+                <Calendar className="size-3.5 transition-transform group-hover:scale-110" />
+                Schedule a Call
+              </button>
             </div>
           ) : (
             /* ═══ CREATE VIEW ═══ */
@@ -546,13 +591,13 @@ export function ScheduleCallSheet({
 
         {/* ── Footer ── */}
         {view === "create" && (
-          <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5 dark:border-slate-800 dark:bg-slate-900/60">
+          <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-slate-800 dark:bg-slate-950">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => setView("list")}
               disabled={isSubmitting}
-              className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
+              className="h-9 w-full rounded-lg text-xs font-medium sm:w-auto sm:flex-1"
             >
               Cancel
             </Button>
@@ -560,14 +605,16 @@ export function ScheduleCallSheet({
               type="button"
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className="h-9 rounded-lg bg-[#008f68] px-5 text-xs font-semibold text-white shadow-sm hover:bg-[#007a5a] disabled:opacity-60 disabled:pointer-events-none dark:bg-emerald-600 dark:hover:bg-emerald-700"
+              className="h-9 w-full rounded-lg bg-[#008f68] text-xs font-semibold text-white shadow-sm transition-colors duration-150 hover:bg-[#007a5a] disabled:opacity-60 disabled:pointer-events-none sm:w-auto sm:flex-1"
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              {isSubmitting ? (
+                <Loader2 data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <Check data-icon="inline-start" />
               )}
               {isSubmitting ? "Scheduling..." : "Schedule Call"}
             </Button>
-          </div>
+          </SheetFooter>
         )}
       </SheetContent>
     </Sheet>

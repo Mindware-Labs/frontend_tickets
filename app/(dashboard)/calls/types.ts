@@ -384,6 +384,9 @@ export interface ScheduleCall {
   notes?: string | null;
   status: ScheduleCallStatus;
   notified: boolean;
+  createdByAgentId?: number | null;
+  createdBy?: { id: number; name: string; email?: string } | null;
+  createdByName?: string | null;
   createdAt: string;
   updatedAt: string;
 }

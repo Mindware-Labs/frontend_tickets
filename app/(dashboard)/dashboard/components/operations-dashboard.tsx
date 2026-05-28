@@ -127,11 +127,30 @@ export function OperationsDashboard() {
         cy: number;
         payload: { day?: string };
       };
-      if (!dayFilterActive) return <g />;
+      const day = payload.day ?? "";
+      const dotKey = `${day}-${color}-${cx}-${cy}`;
+      if (!dayFilterActive) {
+        return <circle key={dotKey} cx={cx} cy={cy} r={0} fill="transparent" />;
+      }
       return isFilterActive("day", payload.day ?? "") ? (
-        <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
+        <circle
+          key={dotKey}
+          cx={cx}
+          cy={cy}
+          r={5}
+          fill={color}
+          stroke="#fff"
+          strokeWidth={1.5}
+        />
       ) : (
-        <circle cx={cx} cy={cy} r={2.5} fill={color} fillOpacity={0.22} />
+        <circle
+          key={dotKey}
+          cx={cx}
+          cy={cy}
+          r={2.5}
+          fill={color}
+          fillOpacity={0.22}
+        />
       );
     };
 
