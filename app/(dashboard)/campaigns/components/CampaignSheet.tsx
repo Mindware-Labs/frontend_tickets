@@ -16,7 +16,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
 import { ManagementType } from "../../calls/types";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useAircall } from "@/components/providers/AircallProvider";
@@ -219,22 +218,10 @@ export function CampaignSheet({
 
   const [detail, setDetail] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
-  const [ticketsLoading, setTicketsLoading] = useState(false);
-  const [tickets, setTickets] = useState<CampaignTicket[]>([]);
-  const [showTickets, setShowTickets] = useState(false);
-  const [ticketSearch, setTicketSearch] = useState("");
   useEffect(() => {
     setSheetOpen(open);
     return () => setSheetOpen(false);
   }, [open, setSheetOpen]);
-
-  useEffect(() => {
-    if (!open) {
-      setShowTickets(false);
-      setTicketSearch("");
-      setTickets([]);
-    }
-  }, [open]);
 
   useEffect(() => {
     if (!campaign?.id) {
@@ -265,57 +252,12 @@ export function CampaignSheet({
 
   const data = detail || campaign;
 
-  const filteredTickets = useMemo(() => {
-    const term = ticketSearch.toLowerCase();
-    const termDigits = normalizePhone(ticketSearch);
-    return tickets.filter((ticket) => {
-      const name = ticket.customer?.name?.toLowerCase() || "";
-      const phone = (ticket.customerPhone || "").toLowerCase();
-      const phoneDigits = normalizePhone(ticket.customerPhone || "");
-      return (
-        name.includes(term) ||
-        phone.includes(term) ||
-        (termDigits.length > 0 && phoneDigits.includes(termDigits)) ||
-        `#${ticket.id}`.includes(term)
-      );
-    });
-  }, [tickets, ticketSearch]);
-
-  const loadTickets = async (campaignId: number) => {
-    try {
-      setTicketsLoading(true);
-      const response = await fetchFromBackend(
-        `/calls?page=1&limit=500&campaignId=${campaignId}`,
-      );
-      const items: CampaignTicket[] = response?.data || response || [];
-      setTickets(
-        items.filter(
-          (t) => t.campaignId === campaignId || t.campaign?.id === campaignId,
-        ),
-      );
-    } catch {
-      setTickets([]);
-    } finally {
-      setTicketsLoading(false);
-    }
-  };
-
-  const handleToggleTickets = async () => {
-    if (!data?.id) return;
-    if (!showTickets) {
-      await loadTickets(data.id);
-      setShowTickets(true);
-      return;
-    }
-    setShowTickets(false);
-  };
-
   const yardLabel = data ? getYardLabel(data, yards) : "";
   const linkedYardId = Number(data?.yardaId ?? data?.yarda?.id ?? 0) || null;
   const showYardPanel = Boolean(
     yardPanelId && linkedYardId && yardPanelId === linkedYardId,
   );
-  const totalActivities = data?.ticketCount ?? tickets.length ?? 0;
+  const totalActivities = data?.ticketCount ?? 0;
   const outcome = data ? getOutcomeSummary(data) : null;
   const classifiedCount = outcome
     ? outcome.positiveValue + outcome.negativeValue
@@ -477,30 +419,44 @@ export function CampaignSheet({
                   <SectionLabel>Performance</SectionLabel>
                   <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
                     <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          <ActivitiesIcon className="h-3.5 w-3.5" />
-                          Activities
-                        </p>
-                        <p className="mt-1 text-3xl font-bold leading-none text-emerald-700 dark:text-emerald-300">
-                          {totalActivities}
-                        </p>
-                      </div>
-
                       {outcome ? (
-                        <div className="text-right">
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            {outcome.rateLabel}
-                          </p>
-                          <p className="mt-1 text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">
-                            {outcomeRate}%
-                          </p>
-                        </div>
+                        <>
+                          <div>
+                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              <outcome.PositiveIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              {outcome.positiveLabel} (Conversions)
+                            </p>
+                            <p className="mt-1 text-3xl font-bold leading-none text-emerald-700 dark:text-emerald-300">
+                              {outcome.positiveValue}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              {outcome.rateLabel}
+                            </p>
+                            <p className="mt-1 text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">
+                              {outcomeRate}%
+                            </p>
+                          </div>
+                        </>
                       ) : (
-                        <div className="flex items-center gap-2 text-right text-[12px] font-semibold text-slate-500">
-                          <BarChart3 className="h-4 w-4" />
-                          General tracking
-                        </div>
+                        <>
+                          <div>
+                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              <Megaphone className="h-3.5 w-3.5 text-slate-400" />
+                              Total Leads
+                            </p>
+                            <p className="mt-1 text-3xl font-bold leading-none text-slate-900 dark:text-slate-50">
+                              {totalActivities}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-right text-[12px] font-semibold text-slate-500">
+                            <BarChart3 className="h-4 w-4" />
+                            General tracking
+                          </div>
+                        </>
                       )}
                     </div>
 
@@ -674,63 +630,87 @@ export function CampaignSheet({
                 </div>
 
                 <div>
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <SectionLabel>Activities</SectionLabel>
-                    <button
-                      type="button"
-                      onClick={handleToggleTickets}
-                      className="text-[12px] font-semibold text-[#008f68] hover:underline"
-                    >
-                      {showTickets ? "Hide list" : "Show list"}
-                    </button>
-                  </div>
-
-                  {showTickets ? (
-                    <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                      <div className="border-b border-slate-100 p-3 dark:border-slate-800">
-                        <Input
-                          placeholder="Search activities..."
-                          value={ticketSearch}
-                          onChange={(e) => setTicketSearch(e.target.value)}
-                          className="h-8 rounded-lg text-[12px]"
-                        />
-                      </div>
-                      <div className="max-h-[240px] overflow-y-auto">
-                        {ticketsLoading ? (
-                          <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading activities...
+                  <SectionLabel>Conversion Funnel</SectionLabel>
+                  {outcome ? (
+                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                      {/* Step 1: Total Leads */}
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">1</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Leads</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Total campaign target size</p>
                           </div>
-                        ) : filteredTickets.length === 0 ? (
-                          <p className="py-8 text-center text-[13px] text-slate-500">
-                            No activities found.
-                          </p>
-                        ) : (
-                          filteredTickets.map((ticket) => (
-                            <Link
-                              key={ticket.id}
-                              href={`/calls?id=${ticket.id}`}
-                              onClick={() => onOpenChange(false)}
-                              className="flex items-center justify-between border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-[#f0faf5]/60 dark:border-slate-800"
-                            >
-                              <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-100">
-                                  #{ticket.id}{" "}
-                                  {ticket.customer?.name || "Unknown customer"}
-                                </p>
-                                <p className="truncate text-[12px] text-slate-500">
-                                  {ticket.customerPhone || "No phone"}
-                                </p>
-                              </div>
-                              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-500">
-                                {ticket.status || "—"}
-                              </span>
-                            </Link>
-                          ))
-                        )}
+                        </div>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{totalActivities}</span>
+                      </div>
+
+                      {/* Step 2: Contacted / Classified */}
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 text-[11px] font-bold">2</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Contacted & Classified</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Leads reached with direct outcome</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                            {coverageRate}% coverage
+                          </span>
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{classifiedCount}</span>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Successful Conversions */}
+                      <div className="relative flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/20 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 text-[11px] font-bold">3</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">{outcome.positiveLabel} (Successes)</p>
+                            <p className="text-xs font-semibold text-emerald-950 dark:text-emerald-200 truncate">Leads successfully converted</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-[#008f68] dark:bg-emerald-500/15 dark:text-emerald-300">
+                            {outcomeRate}% success
+                          </span>
+                          <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">{outcome.positiveValue}</span>
+                        </div>
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 space-y-3">
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">1</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Leads</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Total campaign target size</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{totalActivities}</span>
+                      </div>
+                      
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">2</span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Campaign Status</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Current operational status</p>
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                          data.isActive 
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                        )}>
+                          {data.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -740,18 +720,10 @@ export function CampaignSheet({
                 className={cn(
                   "grid gap-2",
                   !isAgent && onEdit
-                    ? "grid-cols-2 sm:grid-cols-4"
-                    : "grid-cols-2",
+                    ? "grid-cols-2 sm:grid-cols-3"
+                    : "grid-cols-1",
                 )}
               >
-                <Link
-                  href={`/calls?campaignId=${data.id}`}
-                  onClick={() => onOpenChange(false)}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                >
-                  <ActivitiesIcon className="h-4 w-4 shrink-0" />
-                  Activities
-                </Link>
                 {!isAgent ? (
                   <Link
                     href={`/reports/campaigns?campaignId=${data.id}`}

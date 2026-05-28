@@ -510,6 +510,19 @@ export default function YardReportsPage() {
     }
   }, [yardIdParam]);
 
+  // Auto-open filters sheet when arriving with a yardId but no dates set
+  useEffect(() => {
+    if (
+      !hasAutoOpenedFiltersRef.current &&
+      yardIdParam &&
+      !startDateParam &&
+      !endDateParam
+    ) {
+      hasAutoOpenedFiltersRef.current = true;
+      setFiltersModalOpen(true);
+    }
+  }, [yardIdParam, startDateParam, endDateParam]);
+
   // Keep local date state in sync with URL params so that a session-restore
   // `router.replace` (or any other late URL mutation) actually updates the
   // visible filters — without this, the dates seeded at first render stay
@@ -592,6 +605,16 @@ export default function YardReportsPage() {
   const applyFilters = (start?: string, end?: string) => {
     const finalStart = start !== undefined ? start : startDate;
     const finalEnd = end !== undefined ? end : endDate;
+
+    if (!selectedYardId) {
+      toast({
+        title: "Yard required",
+        description: "Please select a yard before applying filters.",
+        variant: "destructive",
+      });
+      setFiltersModalOpen(true);
+      return;
+    }
 
     if (!finalStart || !finalEnd) {
       toast({

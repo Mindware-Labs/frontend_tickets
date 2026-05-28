@@ -32,6 +32,7 @@ import {
   Phone,
   PhoneCall,
   RefreshCw,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -52,6 +53,7 @@ interface YardSheetProps {
   onOpenChange: (open: boolean) => void;
   yard: Yard | null;
   onEdit?: (yard: Yard) => void;
+  onDelete?: (yard: Yard) => void;
   /** When opened from a landlord, show back navigation to restore that context. */
   returnLandlord?: YardSheetReturnLandlord | null;
 }
@@ -577,6 +579,7 @@ export function YardSheet({
   onOpenChange,
   yard,
   onEdit,
+  onDelete,
   returnLandlord,
 }: YardSheetProps) {
   const router = useRouter();
@@ -1029,44 +1032,52 @@ export function YardSheet({
             </div>
 
             <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
-              <div className="flex justify-center overflow-x-auto">
-                <div className="flex flex-nowrap items-center gap-2">
-                  <DialButton
-                    phone={data.contactInfo}
-                    yardId={data.id}
-                    dial={dial}
-                    canDial={canDial}
-                    className="w-30 shrink-0"
-                  />
+              <div
+                className={cn(
+                  "grid gap-2",
+                  !isAgent && onEdit
+                    ? "grid-cols-2 sm:grid-cols-3"
+                    : "grid-cols-1",
+                )}
+              >
+                <DialButton
+                  phone={data.contactInfo}
+                  yardId={data.id}
+                  dial={dial}
+                  canDial={canDial}
+                />
+                {!isAgent ? (
                   <SheetAction
-                    icon={ActivitiesIcon}
-                    label="Activities"
-                    href={`/calls?yardId=${data.id}`}
+                    icon={FileText}
+                    label="Report"
+                    href={`/reports/yards?yardId=${data.id}`}
                     onClick={() => onOpenChange(false)}
-                    className="w-30 shrink-0"
                   />
-                  {!isAgent ? (
-                    <SheetAction
-                      icon={FileText}
-                      label="Report"
-                      href={`/reports/yards?yardId=${data.id}`}
-                      onClick={() => onOpenChange(false)}
-                      className="w-30 shrink-0"
-                    />
-                  ) : null}
-                  {onEdit ? (
-                    <SheetAction
-                      icon={Pencil}
-                      label="Edit"
-                      onClick={() => {
-                        onOpenChange(false);
-                        onEdit(data);
-                      }}
-                      className="w-30 shrink-0"
-                    />
-                  ) : null}
-                </div>
+                ) : null}
+                {onEdit ? (
+                  <SheetAction
+                    icon={Pencil}
+                    label="Edit"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onEdit(data);
+                    }}
+                  />
+                ) : null}
               </div>
+              {onDelete && !isAgent ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onDelete(data);
+                  }}
+                  className="mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 text-[12px] font-semibold text-red-700 hover:bg-red-100/80 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 active:scale-[0.98]"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete yard
+                </button>
+              ) : null}
             </div>
           </>
         )}

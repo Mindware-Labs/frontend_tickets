@@ -561,6 +561,7 @@ export default function YardsPage() {
         onOpenChange={handleYardSheetOpenChange}
         yard={selectedYard}
         onEdit={canManage ? handleEdit : undefined}
+        onDelete={canManage ? handleDelete : undefined}
         returnLandlord={returnLandlord}
       />
 

@@ -278,7 +278,8 @@ type FilterKey =
   | "module"
   | "funnel"
   | "touchpoints"
-  | "heatmap";
+  | "heatmap"
+  | "disposition";
 type CampaignFilters = Record<FilterKey, string[]>;
 type ChartDatum = { key: string; name: string; value: number; fill?: string };
 type DayDatum = {
@@ -316,6 +317,7 @@ const emptyFilters = (): CampaignFilters => ({
   funnel: [],
   touchpoints: [],
   heatmap: [],
+  disposition: [],
 });
 
 const FILTER_LABELS: Record<FilterKey, string> = {
@@ -327,6 +329,7 @@ const FILTER_LABELS: Record<FilterKey, string> = {
   funnel: "Stage",
   touchpoints: "Touches",
   heatmap: "When",
+  disposition: "Disposition",
 };
 
 const FUNNEL_STAGE_LABELS: Record<string, string> = {
@@ -376,6 +379,16 @@ const STATUS_COLORS: Record<string, string> = {
   "Not Registered": "#e11d48",
   Unknown: "#64748b",
   Unspecified: "#64748b",
+  // Call Dispositions
+  Answered: "#008f68",
+  Connected: "#008f68",
+  "Left Voicemail": "#d97706",
+  Voicemail: "#d97706",
+  Busy: "#4f46e5",
+  "No Answer": "#64748b",
+  "Wrong Number": "#e11d48",
+  "Invalid Number": "#e11d48",
+  Refused: "#991b1b",
 };
 
 const MODULE_COLORS: Record<string, string> = {
@@ -702,6 +715,15 @@ function matchesFilters(
   if (filters.heatmap.length) {
     const keys = getRowHeatmapKeys(row);
     if (!filters.heatmap.some((key) => keys.includes(key))) return false;
+  }
+  if (filters.disposition?.length) {
+    const rowDispositions = (row.calls.entries ?? []).length
+      ? (row.calls.entries ?? []).map((c) => normalizeLabel(c.disposition))
+      : row.calls.callCount > 0
+      ? [normalizeLabel(row.calls.lastDisposition)]
+      : [];
+    if (!filters.disposition.some((disp) => rowDispositions.includes(disp)))
+      return false;
   }
   return true;
 }
@@ -3000,11 +3022,25 @@ export default function CampaignReportsPage() {
       ...row,
       fill: MODULE_COLORS[row.key] || toneClasses.slate.chart,
     }));
+    const dispositions = countBy(
+      filteredRows.flatMap((row) => {
+        const entries = row.calls.entries?.length
+          ? row.calls.entries
+          : row.calls.callCount > 0
+          ? [{ disposition: row.calls.lastDisposition }]
+          : [];
+        return entries.map((entry) => normalizeLabel(entry.disposition));
+      })
+    ).map((row) => ({
+      ...row,
+      fill: STATUS_COLORS[row.key] || toneClasses.slate.chart,
+    }));
     return {
       statuses,
       options,
       agents,
       modules,
+      dispositions,
       days: buildDayData(filteredRows),
     };
   }, [filteredRows]);
@@ -3438,23 +3474,14 @@ export default function CampaignReportsPage() {
                     </div>
 
                     <div
-                      className={`${dashboardRowClass} lg:grid-cols-3 lg:[&>*]:min-h-[218px]`}
+                      className={`${dashboardRowClass} lg:grid-cols-2 lg:[&>*]:min-h-[218px]`}
                     >
                       <BreakdownChart
-                        title="Campaign outcome"
-                        subtitle="Final status distribution"
-                        icon={Target}
-                        data={chartData.statuses}
-                        filterKey="status"
-                        filters={crossFilters}
-                        onToggle={handleToggleFilter}
-                      />
-                      <BreakdownChart
-                        title="Campaign options"
-                        subtitle="Options from tickets and manual records"
-                        icon={CheckCircle2}
-                        data={chartData.options}
-                        filterKey="option"
+                        title="Call dispositions"
+                        subtitle="Call outcomes distribution"
+                        icon={Phone}
+                        data={chartData.dispositions}
+                        filterKey="disposition"
                         filters={crossFilters}
                         onToggle={handleToggleFilter}
                       />
@@ -3469,24 +3496,28 @@ export default function CampaignReportsPage() {
                       />
                     </div>
 
-                    {report.touchpoints || report.timeMetrics ? (
-                      <div
-                        className={`${dashboardRowClass} xl:grid-cols-2 xl:[&>*]:min-h-[230px]`}
-                      >
-                        {report.touchpoints ? (
-                          <TouchpointsHistogram
-                            touchpoints={report.touchpoints}
-                            selectedBuckets={crossFilters.touchpoints}
-                            onToggleBucket={(bucket) =>
-                              handleToggleFilter("touchpoints", bucket)
-                            }
-                          />
-                        ) : null}
-                        {report.timeMetrics ? (
-                          <TimeMetricsCard timeMetrics={report.timeMetrics} />
-                        ) : null}
-                      </div>
-                    ) : null}
+                    <div
+                      className={`${dashboardRowClass} xl:grid-cols-2 xl:[&>*]:min-h-[230px]`}
+                    >
+                      {report.touchpoints ? (
+                        <TouchpointsHistogram
+                          touchpoints={report.touchpoints}
+                          selectedBuckets={crossFilters.touchpoints}
+                          onToggleBucket={(bucket) =>
+                            handleToggleFilter("touchpoints", bucket)
+                          }
+                        />
+                      ) : null}
+                      <BreakdownChart
+                        title="Campaign options"
+                        subtitle="Options from tickets and manual records"
+                        icon={CheckCircle2}
+                        data={chartData.options}
+                        filterKey="option"
+                        filters={crossFilters}
+                        onToggle={handleToggleFilter}
+                      />
+                    </div>
 
                     {report.heatmap ? (
                       <ActivityHeatmap

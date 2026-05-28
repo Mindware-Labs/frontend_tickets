@@ -2,6 +2,14 @@
 
 import { Building, Loader2, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { YardStats } from "./types";
 
 type YardsOverviewProps = {
@@ -32,21 +40,41 @@ export function YardsOverview({
 
   if (yardsStats.length === 0) {
     return (
-      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-gradient-to-br from-muted/30 to-muted/10 p-8 text-center animate-in zoom-in-95 duration-300">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-6 ring-8 ring-primary/5">
-          <Building className="h-10 w-10 text-primary" />
-        </div>
-        <h3 className="text-xl font-bold">
-          Select a yard to view dashboard
-        </h3>
-        <p className="mb-6 mt-3 text-sm text-muted-foreground max-w-md">
-          Use the "Configure Report" button at the top to select a yard and
-          visualize detailed analysis with charts and statistics.
-        </p>
-        <Button onClick={onOpenFilters} className="gap-2" size="lg">
-          <SlidersHorizontal className="h-4 w-4" />
-          Configure Report
-        </Button>
+      <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-slate-50 p-6 dark:bg-slate-900/20 animate-in zoom-in-95 duration-300">
+        <Empty className="min-h-[350px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-6 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950 max-w-md w-full">
+          <EmptyHeader className="gap-2">
+            <EmptyMedia
+              variant="icon"
+              className="mb-1 size-11 rounded-lg border border-emerald-100 bg-[#f0faf5] text-[#008f68] dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300"
+            >
+              <Building className="size-5" aria-hidden />
+            </EmptyMedia>
+
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              No yards found
+            </span>
+
+            <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+              No yard statistics available
+            </EmptyTitle>
+
+            <EmptyDescription className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+              No statistics were found for any yard in the selected period. Try adjusting the date range or selecting another yard in the report configuration.
+            </EmptyDescription>
+          </EmptyHeader>
+
+          <EmptyContent>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onOpenFilters}
+              className="h-9 rounded-lg bg-[#008f68] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#007a5a]"
+            >
+              <SlidersHorizontal data-icon="inline-start" className="mr-1.5 size-3.5" aria-hidden />
+              Configure Report
+            </Button>
+          </EmptyContent>
+        </Empty>
       </div>
     );
   }

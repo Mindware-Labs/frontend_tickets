@@ -515,6 +515,18 @@ export function FiltersSheet({
               </div>
             ) : null}
 
+            {!selectedYardId && (
+              <Alert className="border-amber-200 bg-amber-50/70 text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-xs font-semibold">
+                  Yard selection required
+                </AlertTitle>
+                <AlertDescription className="mt-1 text-xs">
+                  Please select a yard from the Location dropdown to view the report and enable filters.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {showMissingDateAlert && (
               <Alert className="border-sky-200 bg-sky-50/70 text-sky-900 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-200">
                 <AlertCircle className="size-4 text-sky-600 dark:text-sky-400" />
@@ -599,7 +611,7 @@ export function FiltersSheet({
               );
             }}
             className="h-9 w-full rounded-lg bg-[#008f68] text-xs font-semibold shadow-sm hover:bg-[#007a5a] sm:w-auto sm:flex-1"
-            disabled={!hasDateRange || !isDateRangeValid}
+            disabled={!selectedYardId || !hasDateRange || !isDateRangeValid}
           >
             <Check data-icon="inline-start" />
             Apply filters
