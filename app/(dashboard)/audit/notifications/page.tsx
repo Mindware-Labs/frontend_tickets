@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
-  AlertCircle,
   ArrowDown,
   ArrowDownToLine,
   ArrowUp,
@@ -22,7 +21,6 @@ import {
   Search,
   Table2,
   Users,
-  X,
 } from "lucide-react";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
 import { getPaginationPageItems } from "@/lib/pagination-pages";
@@ -55,35 +53,6 @@ interface AuditEntry {
   readAt?: string | null;
   deliveredVia?: "websocket" | "poll" | "push";
 }
-
-// ─── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_DATA: any[] = [
-  { id: 1,  type: "CALLBACK_OVERDUE",         message: "Callback overdue for María López — was due May 24, 9:00 AM",       agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: 102, ticketId: null, read: false, createdAt: "2026-05-24T09:15:00Z", readAt: null,                  deliveredVia: "websocket" },
-  { id: 2,  type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for +1561-269-4191 — was due May 24, 2:00 PM", agentId: 5, agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: null, ticketId: 47, read: false, createdAt: "2026-05-24T08:55:00Z", readAt: null,                  deliveredVia: "websocket" },
-  { id: 3,  type: "CALLBACK_REMINDER",        message: "Callback reminder for Juan García — due in 30 minutes",             agentId: null, agent: null,                               callId: 99,  ticketId: null, read: true,  createdAt: "2026-05-23T18:30:00Z", readAt: "2026-05-23T18:35:00Z", deliveredVia: "poll"      },
-  { id: 4,  type: "TICKET_ASSIGNED",          message: "Ticket #51 assigned to you by supervisor",                          agentId: 5,    agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: null, ticketId: 51, read: true,  createdAt: "2026-05-23T16:00:00Z", readAt: "2026-05-23T16:12:00Z", deliveredVia: "websocket" },
-  { id: 5,  type: "CALLBACK_OVERDUE",         message: "Callback overdue for +1509-401-8327 — was due May 22, 11:00 AM",   agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: 88,  ticketId: null, read: true,  createdAt: "2026-05-22T12:05:00Z", readAt: "2026-05-22T12:30:00Z", deliveredVia: "websocket" },
-  { id: 6,  type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for Pedro Sánchez — was due May 21, 3:30 PM", agentId: 2, agent: { id: 2, name: "Laura V.",   role: "Supervisor" }, callId: null, ticketId: 38, read: false, createdAt: "2026-05-21T15:40:00Z", readAt: null,                  deliveredVia: "poll"      },
-  { id: 7,  type: "CALLBACK_OVERDUE",         message: "Callback overdue for +1813-598-3972 — was due May 20, 8:00 AM",    agentId: null, agent: null,                               callId: 75,  ticketId: null, read: false, createdAt: "2026-05-20T08:10:00Z", readAt: null,                  deliveredVia: "websocket" },
-  { id: 8,  type: "TICKET_ASSIGNED",          message: "Ticket #44 assigned to you by admin",                               agentId: 2,    agent: { id: 2, name: "Laura V.",   role: "Supervisor" }, callId: null, ticketId: 44, read: true,  createdAt: "2026-05-19T14:20:00Z", readAt: "2026-05-19T14:45:00Z", deliveredVia: "websocket" },
-  { id: 9,  type: "CALLBACK_REMINDER",        message: "Callback reminder for 19546299690 — due in 1 hour",                agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: 60,  ticketId: null, read: true,  createdAt: "2026-05-18T10:00:00Z", readAt: "2026-05-18T10:05:00Z", deliveredVia: "push"      },
-  { id: 10, type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for Empresa XYZ — was due May 17, 4:00 PM", agentId: 5,  agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: null, ticketId: 29, read: true,  createdAt: "2026-05-17T17:05:00Z", readAt: "2026-05-17T17:20:00Z", deliveredVia: "poll"      },
-  { id: 11, type: "CALLBACK_OVERDUE",         message: "Callback overdue for Roberto D. — was due May 16, 10:00 AM",       agentId: 2,    agent: { id: 2, name: "Laura V.",   role: "Supervisor" }, callId: 55,  ticketId: null, read: false, createdAt: "2026-05-16T11:00:00Z", readAt: null,                  deliveredVia: "websocket" },
-  { id: 12, type: "TICKET_ASSIGNED",          message: "Ticket #39 assigned to Carlos by admin",                           agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: null, ticketId: 39, read: true,  createdAt: "2026-05-15T09:30:00Z", readAt: "2026-05-15T09:50:00Z", deliveredVia: "websocket" },
-  { id: 13, type: "CALLBACK_REMINDER",        message: "Callback reminder for +1329-208-3124 — due in 15 minutes",        agentId: null, agent: null,                               callId: 44,  ticketId: null, read: true,  createdAt: "2026-05-14T14:45:00Z", readAt: "2026-05-14T14:46:00Z", deliveredVia: "push"      },
-  { id: 14, type: "CALLBACK_OVERDUE",         message: "Callback overdue for Empresa ABC — was due May 13, 1:00 PM",      agentId: 5,    agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: 33,  ticketId: null, read: true,  createdAt: "2026-05-13T14:00:00Z", readAt: "2026-05-13T15:00:00Z", deliveredVia: "websocket" },
-  { id: 15, type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for Sandra C. — was due May 12, 9:30 AM", agentId: 3,  agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: null, ticketId: 22, read: false, createdAt: "2026-05-12T10:00:00Z", readAt: null,                  deliveredVia: "poll"      },
-  { id: 16, type: "TICKET_ASSIGNED",          message: "Ticket #18 assigned to Laura by admin",                            agentId: 2,    agent: { id: 2, name: "Laura V.",   role: "Supervisor" }, callId: null, ticketId: 18, read: true,  createdAt: "2026-05-11T11:10:00Z", readAt: "2026-05-11T11:30:00Z", deliveredVia: "websocket" },
-  { id: 17, type: "CALLBACK_OVERDUE",         message: "Callback overdue for +1903-326-2483 — was due May 10, 3:00 PM",   agentId: null, agent: null,                               callId: 21,  ticketId: null, read: false, createdAt: "2026-05-10T15:10:00Z", readAt: null,                  deliveredVia: "websocket" },
-  { id: 18, type: "CALLBACK_REMINDER",        message: "Callback reminder for 525585539716 — due in 2 hours",             agentId: 5,    agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: 18,  ticketId: null, read: true,  createdAt: "2026-05-09T08:00:00Z", readAt: "2026-05-09T08:10:00Z", deliveredVia: "push"      },
-  { id: 19, type: "TICKET_ASSIGNED",          message: "Ticket #12 assigned to you by supervisor",                         agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: null, ticketId: 12, read: true,  createdAt: "2026-05-08T13:00:00Z", readAt: "2026-05-08T13:25:00Z", deliveredVia: "websocket" },
-  { id: 20, type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for Clinica Norte — was due May 7, 10:00 AM", agentId: 2, agent: { id: 2, name: "Laura V.", role: "Supervisor" }, callId: null, ticketId: 8,  read: true,  createdAt: "2026-05-07T10:30:00Z", readAt: "2026-05-07T11:00:00Z", deliveredVia: "poll"      },
-  { id: 21, type: "CALLBACK_OVERDUE",         message: "Callback overdue for +1 329-208-3124 — was due May 6, 2:00 PM",   agentId: 5,    agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: 9,   ticketId: null, read: true,  createdAt: "2026-05-06T14:15:00Z", readAt: "2026-05-06T14:50:00Z", deliveredVia: "websocket" },
-  { id: 22, type: "CALLBACK_REMINDER",        message: "Callback reminder for María López — due tomorrow at 9:00 AM",     agentId: 3,    agent: { id: 3, name: "Carlos R.",  role: "Agent"    }, callId: 5,   ticketId: null, read: true,  createdAt: "2026-05-05T17:00:00Z", readAt: "2026-05-05T17:02:00Z", deliveredVia: "push"      },
-  { id: 23, type: "TICKET_ASSIGNED",          message: "Ticket #5 assigned to Ana by supervisor",                          agentId: 5,    agent: { id: 5, name: "Ana M.",     role: "Agent"    }, callId: null, ticketId: 5,  read: true,  createdAt: "2026-05-04T10:00:00Z", readAt: "2026-05-04T10:15:00Z", deliveredVia: "websocket" },
-  { id: 24, type: "TICKET_FOLLOWUP_OVERDUE",  message: "Ticket follow-up overdue for +1813-598-3972 — was due May 3",    agentId: null, agent: null,                               callId: null, ticketId: 3,  read: true,  createdAt: "2026-05-03T09:00:00Z", readAt: "2026-05-03T09:30:00Z", deliveredVia: "poll"      },
-  { id: 25, type: "CALLBACK_OVERDUE",         message: "Callback overdue for Pedro Sánchez — was due May 2, 11:00 AM",    agentId: 2,    agent: { id: 2, name: "Laura V.",   role: "Supervisor" }, callId: 2,   ticketId: null, read: false, createdAt: "2026-05-02T11:30:00Z", readAt: null,                  deliveredVia: "websocket" },
-];
 
 // ─── Type config ──────────────────────────────────────────────────────────────
 const TYPE_CFG: Record<
@@ -305,57 +274,55 @@ function ReadBadge({ read }: { read: boolean }) {
 }
 
 function AgentChip({ agent }: { agent: { id: number; name?: string; role?: string } | null }) {
-  if (!agent) return (
-    <span style={{
-      fontSize: 10, color: "#9CA3AF",
-      background: "#F9FAFB", padding: "2px 7px", borderRadius: 999,
-      border: "1px solid #E5E7EB", display: "inline-block",
-    }}>
-      Broadcast
-    </span>
-  );
+  if (!agent)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+        <Radio className="size-2.5" aria-hidden="true" />
+        Broadcast
+      </span>
+    );
   const [bg, fg] = agentColors(agent.id);
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-      <span style={{
-        width: 22, height: 22, borderRadius: "50%",
-        background: bg, color: fg,
-        fontSize: 8, fontWeight: 700,
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        border: `1px solid ${fg}33`,
-      }}>
+    <span className="inline-flex min-w-0 items-center gap-2">
+      <span
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ring-1 ring-black/5"
+        style={{ background: bg, color: fg }}
+      >
         {initials(agent.name)}
       </span>
-      <span>
-        <span style={{ fontSize: 12, color: "#111827", fontWeight: 500, display: "block", lineHeight: 1.2 }}>{agent.name || `Agent #${agent.id}`}</span>
-        {agent.role && <span style={{ fontSize: 9, color: "#9CA3AF", display: "block" }}>{agent.role}</span>}
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-medium leading-tight text-slate-800 dark:text-slate-200">
+          {agent.name || `Agent #${agent.id}`}
+        </span>
+        {agent.role && (
+          <span className="block text-[9px] uppercase tracking-wide text-slate-400">
+            {agent.role}
+          </span>
+        )}
       </span>
     </span>
   );
 }
 
 function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: number | null }) {
-  if (!callId && !ticketId) return <span style={{ color: "#D1D5DB", fontSize: 12 }}>—</span>;
+  if (!callId && !ticketId)
+    return <span className="text-xs text-slate-300 dark:text-slate-600">—</span>;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }} onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-col items-start gap-1" onClick={(e) => e.stopPropagation()}>
       {callId && (
-        <a href={`/calls/${callId}`} style={{
-          fontSize: 11, color: "#1D4ED8", textDecoration: "none",
-          display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 500,
-          padding: "1px 5px", borderRadius: 5, background: "#EFF6FF", border: "1px solid #BFDBFE",
-          width: "fit-content",
-        }}>
+        <a
+          href={`/calls/${callId}`}
+          className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-sky-700 transition-colors hover:bg-sky-100 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300"
+        >
           <Phone className="h-3 w-3" aria-hidden="true" />
           Call #{callId}
         </a>
       )}
       {ticketId && (
-        <a href={`/tickets/${ticketId}`} style={{
-          fontSize: 11, color: "#065F46", textDecoration: "none",
-          display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 500,
-          padding: "1px 5px", borderRadius: 5, background: "#ECFDF5", border: "1px solid #A7F3D0",
-          width: "fit-content",
-        }}>
+        <a
+          href={`/tickets/${ticketId}`}
+          className="inline-flex w-fit items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-[#006b4f] transition-colors hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+        >
           <FileText className="h-3 w-3" aria-hidden="true" />
           Ticket #{ticketId}
         </a>
@@ -364,124 +331,106 @@ function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: 
   );
 }
 
-function StatCard({
-  label,
-  value,
-  sub,
-  icon,
-  tone = "neutral",
-  active = false,
-  onClick,
-}: {
-  label: string;
-  value: number | string;
-  sub?: string;
-  icon: React.ReactNode;
-  tone?: "neutral" | "danger" | "warning" | "success" | "brand" | "info";
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const toneClass =
-    tone === "brand"
-      ? "border-emerald-100 bg-[#f0faf5] text-[#008f68]"
-      : tone === "danger"
-        ? "border-red-100 bg-red-50/70 text-red-700"
-        : tone === "warning"
-          ? "border-amber-100 bg-amber-50/70 text-amber-700"
-          : tone === "success"
-            ? "border-emerald-100 bg-emerald-50/70 text-emerald-700"
-            : tone === "info"
-              ? "border-sky-100 bg-sky-50/70 text-sky-700"
-              : "border-slate-100 bg-white text-slate-900";
+// Delivery channel chip — surfaces how the notification reached the agent.
+const DELIVERY_CFG: Record<
+  string,
+  { label: string; icon: typeof Radio; cls: string }
+> = {
+  websocket: {
+    label: "Realtime",
+    icon: Radio,
+    cls: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+  },
+  poll: {
+    label: "Poll",
+    icon: RefreshCw,
+    cls: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
+  },
+  push: {
+    label: "Push",
+    icon: Bell,
+    cls: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300",
+  },
+};
 
-  const className = cn(
-    "flex min-w-0 items-start justify-between rounded-xl border px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors dark:border-slate-800 dark:bg-slate-950",
-    toneClass,
-    onClick &&
-      "cursor-pointer hover:border-[#008f68]/35 hover:bg-[#fbfefd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
-    active && "border-[#008f68]/45 bg-[#f0faf5] ring-1 ring-[#008f68]/15",
+function DeliveryChip({ via }: { via?: "websocket" | "poll" | "push" }) {
+  if (!via) return <span className="text-xs text-slate-300 dark:text-slate-600">—</span>;
+  const cfg = DELIVERY_CFG[via] ?? {
+    label: via,
+    icon: Radio,
+    cls: "border-slate-200 bg-slate-50 text-slate-600",
+  };
+  const Icon = cfg.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize",
+        cfg.cls,
+      )}
+    >
+      <Icon className="size-2.5" aria-hidden="true" />
+      {cfg.label}
+    </span>
   );
-
-  const content = (
-    <>
-      <div className="min-w-0">
-        <div className="mb-1 truncate text-[9px] font-semibold uppercase tracking-wide text-slate-500">
-          {label}
-        </div>
-        <div className="text-xl font-bold leading-none tabular-nums">
-          {value}
-        </div>
-        {sub && <div className="mt-1 truncate text-[10px] font-medium text-slate-500">{sub}</div>}
-      </div>
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/70 bg-white/70 text-current shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        {icon}
-      </div>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <button type="button" className={className} onClick={onClick} aria-pressed={active}>
-        {content}
-      </button>
-    );
-  }
-
-  return <div className={className}>{content}</div>;
 }
 
-function FilterField({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function DetailLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className={cn("min-w-0 space-y-1", className)}>
-      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
+    <div className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
       {children}
-    </label>
+    </div>
   );
 }
 
 function ExpandedDetail({ n }: { n: AuditEntry }) {
   const latency = readLatency(n.createdAt, n.readAt);
   return (
-    <div style={{
-      margin: "0 0 2px 0",
-      background: "linear-gradient(135deg, #F8FBF9 0%, #F0F9FF 100%)",
-      border: "1px solid #E5E7EB",
-      borderRadius: 10,
-      padding: "10px 14px",
-      display: "grid",
-      gridTemplateColumns: "repeat(5, 1fr)",
-      gap: 12,
-    }}>
-      <div style={{ gridColumn: "1 / 3" }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>Full message</div>
-        <div style={{ fontSize: 12, color: "#1F2937", lineHeight: 1.4 }}>{n.message}</div>
+    <div className="mb-1 grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-4">
+      <div className="col-span-2">
+        <DetailLabel>Full message</DetailLabel>
+        <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200">
+          {n.message}
+        </p>
       </div>
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>Created at</div>
-        <div style={{ fontSize: 11, color: "#374151" }}>{fmtDateFull(n.createdAt)}</div>
-        <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2 }}>{timeAgo(n.createdAt)}</div>
+        <DetailLabel>Created at</DetailLabel>
+        <p className="text-[11px] text-slate-600 dark:text-slate-300">
+          {fmtDateFull(n.createdAt)}
+        </p>
+        <p className="mt-0.5 text-[10px] text-slate-400">{timeAgo(n.createdAt)}</p>
       </div>
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>Read at</div>
+        <DetailLabel>Read at</DetailLabel>
         {n.readAt ? (
           <>
-            <div style={{ fontSize: 11, color: "#374151" }}>{fmtDateFull(n.readAt)}</div>
-            {latency && <div style={{ fontSize: 10, color: "#10B981", marginTop: 2 }}>⚡ {latency} to read</div>}
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              {fmtDateFull(n.readAt)}
+            </p>
+            {latency && (
+              <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] dark:text-emerald-400">
+                <Clock3 className="size-2.5" aria-hidden="true" />
+                {latency} to read
+              </p>
+            )}
           </>
         ) : (
-          <div style={{ fontSize: 11, color: "#EF4444", fontStyle: "italic" }}>Not yet read</div>
+          <p className="text-[11px] italic text-red-500">Not yet read</p>
         )}
       </div>
+      <div>
+        <DetailLabel>Delivered via</DetailLabel>
+        <DeliveryChip via={n.deliveredVia} />
+      </div>
+      <div>
+        <DetailLabel>Recipient</DetailLabel>
+        <AgentChip agent={n.agent} />
+      </div>
+      {(n.callId || n.ticketId) && (
+        <div className="col-span-2 sm:col-span-2">
+          <DetailLabel>Linked resources</DetailLabel>
+          <ResourceLinks callId={n.callId} ticketId={n.ticketId} />
+        </div>
+      )}
     </div>
   );
 }
@@ -491,62 +440,69 @@ function TimelineView({ entries }: { entries: AuditEntry[] }) {
   const grouped = groupByDay(entries);
   const days = Object.keys(grouped);
   return (
-    <div style={{ padding: "2px 0" }}>
-      {days.map(day => (
-        <div key={day} style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{
-              fontSize: 10, fontWeight: 700, color: "#6B7280",
-              letterSpacing: "0.07em", textTransform: "uppercase",
-              background: "#F9FAFB", border: "1px solid #E5E7EB",
-              padding: "2px 8px", borderRadius: 999,
-            }}>{day}</div>
-            <div style={{ flex: 1, height: 1, background: "#F3F4F6" }} />
-            <div style={{ fontSize: 10, color: "#9CA3AF" }}>{grouped[day].length} event{grouped[day].length !== 1 ? "s" : ""}</div>
+    <div className="flex flex-col gap-5">
+      {days.map((day) => (
+        <div key={day}>
+          <div className="mb-2.5 flex items-center gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+              {day}
+            </span>
+            <span
+              aria-hidden
+              className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent dark:from-slate-800"
+            />
+            <span className="text-[10px] font-medium text-slate-400">
+              {grouped[day].length} event{grouped[day].length !== 1 ? "s" : ""}
+            </span>
           </div>
-          <div style={{ position: "relative", paddingLeft: 24 }}>
-            <div style={{
-              position: "absolute", left: 6, top: 0, bottom: 0,
-              width: 1, background: "#E5E7EB", borderRadius: 1,
-            }} />
-            {grouped[day].map((n, idx) => {
+          <div className="relative flex flex-col gap-2 pl-6">
+            <span
+              aria-hidden
+              className="absolute bottom-0 left-1.5 top-0 w-px bg-slate-200 dark:bg-slate-800"
+            />
+            {grouped[day].map((n) => {
               const c = TYPE_CFG[n.type];
               return (
-                <div key={n.id} style={{
-                  position: "relative", marginBottom: idx === grouped[day].length - 1 ? 0 : 8,
-                  background: n.read ? "white" : "#FFFBEB",
-                  border: `1px solid ${n.read ? "#F3F4F6" : "#FDE68A"}`,
-                  borderRadius: 10, padding: "8px 12px",
-                  display: "flex", gap: 10, alignItems: "flex-start",
-                  transition: "border-color 0.15s, box-shadow 0.15s",
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#E5E7EB"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = n.read ? "#F3F4F6" : "#FDE68A"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}
+                <div
+                  key={n.id}
+                  className={cn(
+                    "group relative flex items-start gap-2.5 rounded-xl border px-3 py-2 transition-all hover:shadow-[0_1px_4px_rgba(15,23,42,0.06)]",
+                    n.read
+                      ? "border-slate-100 bg-white hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950"
+                      : "border-amber-200/70 bg-amber-50/50 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/10",
+                  )}
                 >
-                  <div style={{
-                    position: "absolute", left: -20, top: 11,
-                    width: 10, height: 10, borderRadius: "50%",
-                    background: c.bg, border: `2px solid ${c.dot}`,
-                    zIndex: 1,
-                  }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                      <div>
+                  <span
+                    aria-hidden
+                    className="absolute -left-[18px] top-3 size-2.5 rounded-full border-2"
+                    style={{ background: c.bg, borderColor: c.dot }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
                         <TypeBadge type={n.type} />
-                        <div style={{
-                          fontSize: 12, color: n.read ? "#6B7280" : "#111827", marginTop: 4,
-                          fontWeight: n.read ? 400 : 600,
-                          lineHeight: 1.4
-                        }}>{n.message}</div>
+                        <p
+                          className={cn(
+                            "mt-1 text-xs leading-relaxed",
+                            n.read
+                              ? "font-normal text-slate-500 dark:text-slate-400"
+                              : "font-semibold text-slate-900 dark:text-slate-100",
+                          )}
+                        >
+                          {n.message}
+                        </p>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
                         <ReadBadge read={n.read} />
-                        <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: "monospace" }}>
-                          {new Date(n.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        <span className="font-mono text-[10px] text-slate-400">
+                          {new Date(n.createdAt).toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
                       <AgentChip agent={n.agent} />
                       <ResourceLinks callId={n.callId} ticketId={n.ticketId} />
                     </div>
@@ -802,18 +758,22 @@ export default function NotificationsAuditPage() {
     </span>
   );
 
-  const thStyle = (field?: SortField): React.CSSProperties => ({
-    padding: "8px 12px",
-    fontSize: 10, fontWeight: 700,
-    color: field && sortField === field ? "#111827" : "#6B7280",
-    letterSpacing: "0.06em", textTransform: "uppercase",
-    textAlign: "left", borderBottom: "1px solid #F3F4F6",
-    background: "#FAFAFA",
-    whiteSpace: "nowrap",
-    cursor: field ? "pointer" : "default",
-    userSelect: "none",
-    transition: "color 0.15s",
-  });
+  const auditTh = (field?: SortField, align: "left" | "right" = "left") =>
+    cn(
+      "whitespace-nowrap border-b border-slate-200 bg-slate-50/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors select-none dark:border-slate-800 dark:bg-slate-900/60",
+      align === "right" ? "text-right" : "text-left",
+      field
+        ? sortField === field
+          ? "cursor-pointer text-slate-700 dark:text-slate-200"
+          : "cursor-pointer text-slate-400 hover:text-slate-600 dark:text-slate-500"
+        : "text-slate-400 dark:text-slate-500",
+    );
+
+  const auditTd = (expanded: boolean) =>
+    cn(
+      "px-3 py-2 align-middle text-xs",
+      !expanded && "border-b border-slate-100 dark:border-slate-800",
+    );
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -844,10 +804,6 @@ export default function NotificationsAuditPage() {
         .clear-btn { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; font-size: 12px; font-family: inherit; font-weight: 600; color: #991b1b; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s; white-space: nowrap; }
         .clear-btn:hover { background: #fee2e2; }
         .section-card { background: white; border: 1px solid rgb(226 232 240 / .8); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-        .audit-th { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; user-select: none; }
-        .audit-td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .row:hover td { background: #f8fafc !important; }
-        td { transition: background .12s; }
         .dark .fi { background: rgb(15 23 42 / .8); color: #e2e8f0; }
         .dark .fi:focus { background: #020617; }
         .dark .section-card { background: #020617; border-color: #1e293b; }
@@ -964,21 +920,21 @@ export default function NotificationsAuditPage() {
             <table className="w-full border-collapse" style={{ minWidth: 820 }}>
               <thead>
                 <tr>
-                  <th style={{ ...thStyle("id"), width: 50 }} onClick={() => toggleSort("id")}>
+                  <th className={auditTh("id")} style={{ width: 50 }} onClick={() => toggleSort("id")}>
                     ID <SortIcon field="id" />
                   </th>
-                  <th style={{ ...thStyle("type"), width: 140 }} onClick={() => toggleSort("type")}>
+                  <th className={auditTh("type")} style={{ width: 140 }} onClick={() => toggleSort("type")}>
                     Type <SortIcon field="type" />
                   </th>
-                  <th style={{ ...thStyle(), minWidth: 200 }}>Message</th>
-                  <th style={{ ...thStyle("agentId"), width: 140 }} onClick={() => toggleSort("agentId")}>
+                  <th className={auditTh()} style={{ minWidth: 200 }}>Message</th>
+                  <th className={auditTh("agentId")} style={{ width: 140 }} onClick={() => toggleSort("agentId")}>
                     Recipient <SortIcon field="agentId" />
                   </th>
-                  <th style={{ ...thStyle(), width: 90 }}>Resource</th>
-                  <th style={{ ...thStyle("read"), width: 75 }} onClick={() => toggleSort("read")}>
+                  <th className={auditTh()} style={{ width: 90 }}>Resource</th>
+                  <th className={auditTh("read")} style={{ width: 75 }} onClick={() => toggleSort("read")}>
                     Status <SortIcon field="read" />
                   </th>
-                  <th style={{ ...thStyle("createdAt"), width: 120, textAlign: "right" as const }} onClick={() => toggleSort("createdAt")}>
+                  <th className={auditTh("createdAt", "right")} style={{ width: 120 }} onClick={() => toggleSort("createdAt")}>
                     Date <SortIcon field="createdAt" />
                   </th>
                 </tr>
@@ -986,73 +942,72 @@ export default function NotificationsAuditPage() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF", border: "none" }}>
-                      <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-slate-300" aria-hidden="true" />
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Loading notifications</div>
+                    <td colSpan={7} className="px-5 py-12 text-center">
+                      <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-[#008f68]/70" aria-hidden="true" />
+                      <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">Loading notifications</div>
                     </td>
                   </tr>
                 ) : slice.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF", border: "none" }}>
-                      <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>No notifications match</div>
-                      <div style={{ fontSize: 11, marginTop: 2 }}>Try adjusting or clearing your filters</div>
+                    <td colSpan={7} className="px-5 py-12 text-center">
+                      <Search className="mx-auto mb-2 h-7 w-7 text-slate-300 dark:text-slate-600" aria-hidden="true" />
+                      <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">No notifications match</div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">Try adjusting or clearing your filters</div>
                     </td>
                   </tr>
-                ) : slice.map(n => {
+                ) : slice.map((n) => {
                   const isExp = expandedRows.has(n.id);
                   return [
-                    <tr key={n.id}
+                    <tr
+                      key={n.id}
                       onClick={() => handleRowClick(n)}
-                      style={{
-                        cursor: "pointer",
-                        background: n.read ? "white" : "#FFFBEB",
-                        transition: "background 0.15s",
-                      }}
-                      className="row"
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        n.read
+                          ? "bg-white hover:bg-[#f0faf5]/60 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                          : "bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20",
+                      )}
                     >
-                      <td style={{ padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6" }}>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: "#9CA3AF" }}>#{n.id}</span>
+                      <td className={auditTd(isExp)}>
+                        <span className="font-mono text-[10px] text-slate-400">#{n.id}</span>
                       </td>
-                      <td style={{ padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6" }}>
+                      <td className={auditTd(isExp)}>
                         <TypeBadge type={n.type} />
                       </td>
-                      <td style={{
-                        padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6",
-                        maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        <span style={{
-                          fontSize: 12,
-                          color: n.read ? "#6B7280" : "#111827",
-                          fontWeight: n.read ? 400 : 600,
-                        }} title={n.message}>
+                      <td className={auditTd(isExp)} style={{ maxWidth: 260 }}>
+                        <span
+                          className={cn(
+                            "block truncate",
+                            n.read
+                              ? "font-normal text-slate-500 dark:text-slate-400"
+                              : "font-semibold text-slate-900 dark:text-slate-100",
+                          )}
+                          title={n.message}
+                        >
                           {n.message}
                         </span>
                       </td>
-                      <td style={{ padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6" }}>
+                      <td className={auditTd(isExp)}>
                         <AgentChip agent={n.agent} />
                       </td>
-                      <td style={{ padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6" }}>
+                      <td className={auditTd(isExp)}>
                         <ResourceLinks callId={n.callId} ticketId={n.ticketId} />
                       </td>
-                      <td style={{ padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6" }}>
+                      <td className={auditTd(isExp)}>
                         <ReadBadge read={n.read} />
                       </td>
-                      <td style={{
-                        padding: "8px 12px", borderBottom: isExp ? "none" : "1px solid #F3F4F6",
-                        textAlign: "right",
-                      }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
-                          <span style={{ fontSize: 11, color: "#374151", fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap" }}>
+                      <td className={cn(auditTd(isExp), "text-right")}>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="whitespace-nowrap font-mono text-[11px] text-slate-600 dark:text-slate-300">
                             {fmtDateShort(n.createdAt)}
                           </span>
-                          <span style={{ fontSize: 9, color: "#9CA3AF" }}>{timeAgo(n.createdAt)}</span>
+                          <span className="text-[9px] text-slate-400">{timeAgo(n.createdAt)}</span>
                         </div>
                       </td>
                     </tr>,
                     isExp && (
-                      <tr key={`exp-${n.id}`}>
-                        <td colSpan={7} style={{ padding: "0 12px 8px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                      <tr key={`exp-${n.id}`} className={n.read ? "bg-white dark:bg-slate-950" : "bg-amber-50/50 dark:bg-amber-950/10"}>
+                        <td colSpan={7} className="border-b border-slate-100 px-3 pb-2 dark:border-slate-800">
                           <ExpandedDetail n={n} />
                         </td>
                       </tr>

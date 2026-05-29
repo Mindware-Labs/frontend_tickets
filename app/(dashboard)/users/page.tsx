@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { CheckCircle2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -24,8 +24,11 @@ const DeleteUserModal = dynamic(
   () => import("./components/DeleteUserModal").then((m) => m.DeleteUserModal),
   { ssr: false },
 );
-const UserSheet = dynamic(
-  () => import("./components/UserSheet").then((m) => m.UserSheet),
+const UserStatusConfirmModal = dynamic(
+  () =>
+    import("./components/UserStatusConfirmModal").then(
+      (m) => m.UserStatusConfirmModal,
+    ),
   { ssr: false },
 );
 
@@ -48,11 +51,7 @@ const VIEW_TABS = [
 type UserView = (typeof VIEW_TABS)[number]["key"];
 
 export default function UsersPage() {
-  const searchParams = useSearchParams();
   const pathname = usePathname();
-  const router = useRouter();
-  const userIdParam = searchParams?.get("userId");
-  const userIdFilter = userIdParam ? Number(userIdParam) : null;
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -63,7 +62,7 @@ export default function UsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [showUserSheet, setShowUserSheet] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserFormData>(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,11 +81,10 @@ export default function UsersPage() {
       limit: itemsPerPage,
       search: debouncedSearch.trim() || undefined,
       view: activeView !== "all" ? activeView : undefined,
-      userId: userIdFilter ?? undefined,
       includeViewCounts: true,
     });
     return `/users?${qs}`;
-  }, [currentPage, itemsPerPage, debouncedSearch, activeView, userIdFilter]);
+  }, [currentPage, itemsPerPage, debouncedSearch, activeView]);
 
   const {
     items: users,
@@ -112,43 +110,8 @@ export default function UsersPage() {
     setShowCreate(false);
     setShowEdit(false);
     setShowDelete(false);
-    setShowUserSheet(false);
+    setShowStatusConfirm(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!userIdFilter || loading) return;
-    const match = users.find((u) => u.id === userIdFilter);
-    if (match) {
-      setSelectedUser(match);
-      setShowUserSheet(true);
-      return;
-    }
-    let cancelled = false;
-    fetchFromBackend(`/users/${userIdFilter}`)
-      .then((user) => {
-        if (!cancelled && user) {
-          setSelectedUser(user as User);
-          setShowUserSheet(true);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [userIdFilter, loading, users]);
-
-  const handleUserSheetOpenChange = (open: boolean) => {
-    setShowUserSheet(open);
-    if (!open) {
-      setSelectedUser(null);
-      if (userIdParam) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("userId");
-        const qs = params.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      }
-    }
-  };
 
   const viewCounts = useMemo(
     () =>
@@ -181,11 +144,6 @@ export default function UsersPage() {
     resetForm();
     clearValidationErrors();
     setShowCreate(true);
-  };
-
-  const handleOpen = (user: User) => {
-    setSelectedUser(user);
-    setShowUserSheet(true);
   };
 
   const handleEdit = (user: User) => {
@@ -331,16 +289,27 @@ export default function UsersPage() {
     }
   };
 
-  const handleToggleStatus = async (user: User) => {
+  const handleToggleStatus = (user: User) => {
+    setSelectedUser(user);
+    setShowStatusConfirm(true);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!selectedUser) return;
     try {
-      await fetchFromBackend(`/users/${user.id}`, {
+      setIsSubmitting(true);
+      await fetchFromBackend(`/users/${selectedUser.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ isActive: !user.isActive }),
+        body: JSON.stringify({ isActive: !selectedUser.isActive }),
       });
       toast({
         title: "Success",
-        description: `${user.email} is now ${user.isActive ? "blocked" : "active"}.`,
+        description: `${selectedUser.email} is now ${
+          selectedUser.isActive ? "blocked" : "active"
+        }.`,
       });
+      setShowStatusConfirm(false);
+      setSelectedUser(null);
       await refreshUsers();
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -349,6 +318,8 @@ export default function UsersPage() {
         description: err.message || "Failed to update user status",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -435,7 +406,6 @@ export default function UsersPage() {
           totalFiltered={totalFiltered}
           search={search}
           onCreate={handleCreate}
-          onOpen={handleOpen}
           onEdit={handleEdit}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
@@ -497,13 +467,15 @@ export default function UsersPage() {
         onConfirm={handleSubmitDelete}
       />
 
-      <UserSheet
-        open={showUserSheet}
-        onOpenChange={handleUserSheetOpenChange}
+      <UserStatusConfirmModal
+        open={showStatusConfirm}
+        onOpenChange={(open) => {
+          setShowStatusConfirm(open);
+          if (!open) setSelectedUser(null);
+        }}
         user={selectedUser}
-        onEdit={handleEdit}
-        onToggleStatus={handleToggleStatus}
-        onDelete={handleDelete}
+        isSubmitting={isSubmitting}
+        onConfirm={handleConfirmToggleStatus}
       />
     </div>
   );

@@ -12,7 +12,6 @@ interface UsersGridProps {
   totalFiltered: number;
   search: string;
   onCreate: () => void;
-  onOpen: (user: User) => void;
   onEdit: (user: User) => void;
   onToggleStatus: (user: User) => void;
   onDelete: (user: User) => void;
@@ -24,7 +23,6 @@ export function UsersGrid({
   totalFiltered,
   search,
   onCreate,
-  onOpen,
   onEdit,
   onToggleStatus,
   onDelete,
@@ -67,7 +65,6 @@ export function UsersGrid({
         <UserCard
           key={user.id}
           user={user}
-          onOpen={onOpen}
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}
           onDelete={onDelete}

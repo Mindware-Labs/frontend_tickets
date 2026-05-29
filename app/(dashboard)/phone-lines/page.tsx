@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { CheckCircle2, Plus } from "lucide-react";
 
@@ -25,10 +25,6 @@ const PhoneLineFormModal = dynamic(
 );
 const DeletePhoneLineModal = dynamic(
   () => import("./components/DeletePhoneLineModal").then((m) => m.DeletePhoneLineModal),
-  { ssr: false },
-);
-const PhoneLineSheet = dynamic(
-  () => import("./components/PhoneLineSheet").then((m) => m.PhoneLineSheet),
   { ssr: false },
 );
 
@@ -58,7 +54,6 @@ const getLineFormData = (line: PhoneLine): PhoneLineFormData => ({
 export default function PhoneLinesPage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const router = useRouter();
   const { role } = useRole();
 
   const isAgent = role?.toString().toLowerCase() === "agent";
@@ -74,7 +69,6 @@ export default function PhoneLinesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showLineSheet, setShowLineSheet] = useState(false);
   const [selectedLine, setSelectedLine] = useState<PhoneLine | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,43 +116,7 @@ export default function PhoneLinesPage() {
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
-    setShowLineSheet(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!phoneLineIdFilter || loading) return;
-    const match = lines.find((l) => l.id === phoneLineIdFilter);
-    if (match) {
-      setSelectedLine(match);
-      setShowLineSheet(true);
-      return;
-    }
-    let cancelled = false;
-    fetchFromBackend(`/phone-lines/${phoneLineIdFilter}`)
-      .then((line) => {
-        if (!cancelled && line) {
-          setSelectedLine(line as PhoneLine);
-          setShowLineSheet(true);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [phoneLineIdFilter, loading, lines]);
-
-  const handleLineSheetOpenChange = (open: boolean) => {
-    setShowLineSheet(open);
-    if (!open) {
-      setSelectedLine(null);
-      if (phoneLineIdParam) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("phoneLineId");
-        const qs = params.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      }
-    }
-  };
 
   const viewCounts = useMemo(
     () =>
@@ -219,11 +177,6 @@ export default function PhoneLinesPage() {
   const handleDelete = (line: PhoneLine) => {
     setSelectedLine(line);
     setShowDeleteModal(true);
-  };
-
-  const handleRowClick = (line: PhoneLine) => {
-    setSelectedLine(line);
-    setShowLineSheet(true);
   };
 
   const handleSubmitCreate = async () => {
@@ -433,7 +386,6 @@ export default function PhoneLinesPage() {
           loading={loading}
           lines={lines}
           totalFiltered={totalFiltered}
-          onRowClick={handleRowClick}
           onEdit={canManage && activeView !== "archived" ? handleEdit : undefined}
           onDelete={canManage && activeView !== "archived" ? handleDelete : undefined}
           onRestore={canManage && activeView === "archived" ? handleRestore : undefined}
@@ -492,13 +444,6 @@ export default function PhoneLinesPage() {
           />
         </>
       )}
-
-      <PhoneLineSheet
-        open={showLineSheet}
-        onOpenChange={handleLineSheetOpenChange}
-        line={selectedLine}
-        onEdit={canManage ? handleEdit : undefined}
-      />
     </div>
   );
 }
