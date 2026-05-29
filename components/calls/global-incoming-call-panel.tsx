@@ -22,7 +22,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type {
   AircallEndedCallPayload,
   AircallIncomingCallPayload,
@@ -60,7 +59,6 @@ interface ActiveCall {
 
 export function GlobalIncomingCallPanel() {
   const { on, isLoggedIn } = useAircall();
-  const router = useRouter();
 
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
@@ -240,20 +238,6 @@ export function GlobalIncomingCallPanel() {
     }
   };
 
-  const handleOpenProfile = () => {
-    if (customer?.id && customer.id > 0) {
-      router.push(`/customers?id=${customer.id}`);
-    }
-  };
-
-  const handleCreateTicket = () => {
-    if (customer?.id && customer.id > 0) {
-      router.push(`/calls?customerId=${customer.id}&tab=tickets`);
-    } else {
-      router.push("/calls");
-    }
-  };
-
   return (
     <IncomingCallModal
       open={open}
@@ -265,8 +249,6 @@ export function GlobalIncomingCallPanel() {
         startedAt: activeCall.startedAt,
         answeredAt: activeCall.answeredAt,
       }}
-      onOpenProfile={handleOpenProfile}
-      onCreateTicket={handleCreateTicket}
       position="bottom-right"
     />
   );
