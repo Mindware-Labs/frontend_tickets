@@ -552,7 +552,7 @@ export default function NotificationsAuditPage() {
     try {
       const response = await fetch(
         `/api/notifications?audit=true&includeTotal=true&limit=${AUDIT_FETCH_LIMIT}`,
-        { cache: "no-store" },
+        { cache: "no-store", credentials: "include" },
       );
       const payload = await response.json().catch(() => null);
 
