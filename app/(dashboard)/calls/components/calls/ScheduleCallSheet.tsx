@@ -14,19 +14,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
+  ArrowLeft,
   Calendar,
   CalendarCheck,
   Check,
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Info,
   Loader2,
   Phone,
   User,
   X,
-  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageNumberButtons } from "@/components/common/page-number-buttons";
 import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
 import { toast } from "@/hooks/use-toast";
 import { useAircall } from "@/components/providers/AircallProvider";
@@ -104,6 +107,9 @@ function ScheduleStat({
 // Module-level cache to make the modal load instantly (0ms) on opening
 let cachedCalls: ScheduleCall[] | null = null;
 
+// How many reminders to show per page in the list view.
+const PAGE_SIZE = 6;
+
 export function ScheduleCallSheet({
   open,
   onOpenChange,
@@ -122,6 +128,7 @@ export function ScheduleCallSheet({
   const [loadingList, setLoadingList] = useState(() => !cachedCalls);
   const [showCompleted, setShowCompleted] = useState(false);
   const [updatingCallId, setUpdatingCallId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   const [view, setView] = useState<"list" | "create">("list");
 
@@ -161,6 +168,7 @@ export function ScheduleCallSheet({
       setForm({ customerId: "", scheduledAt: "", notes: "" });
       setShowCompleted(false);
       setView("list");
+      setPage(1);
     }
   }, [open]);
 
@@ -172,6 +180,22 @@ export function ScheduleCallSheet({
     if (showCompleted) return sorted;
     return sorted.filter((c) => c.status === "PENDING");
   }, [scheduledCalls, showCompleted]);
+
+  // Pagination over the filtered list.
+  const totalPages = Math.max(1, Math.ceil(visibleCalls.length / PAGE_SIZE));
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, visibleCalls.length);
+  const pagedCalls = visibleCalls.slice(pageStart, pageStart + PAGE_SIZE);
+
+  // Reset to the first page whenever the filter changes.
+  useEffect(() => {
+    setPage(1);
+  }, [showCompleted]);
+
+  // Clamp the page if the visible list shrinks (e.g. after marking done).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const now = Date.now();
   const pendingCalls = scheduledCalls.filter((c) => c.status === "PENDING");
@@ -372,6 +396,19 @@ export function ScheduleCallSheet({
                 })}
               </div>
 
+              <div className="flex flex-col gap-2">
+              {/* List section label */}
+              {!loadingList && visibleCalls.length > 0 && (
+                <div className="flex items-center justify-between px-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    {showCompleted ? "All reminders" : "Upcoming reminders"}
+                  </p>
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    {visibleCalls.length}
+                  </span>
+                </div>
+              )}
+
               {/* List */}
               {loadingList ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
@@ -390,7 +427,7 @@ export function ScheduleCallSheet({
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {visibleCalls.map((sc) => {
+                  {pagedCalls.map((sc) => {
                     const isOverdue =
                       sc.status === "PENDING" &&
                       new Date(sc.scheduledAt) <= new Date();
@@ -527,6 +564,47 @@ export function ScheduleCallSheet({
                   })}
                 </div>
               )}
+
+              {/* Pagination */}
+              {!loadingList && visibleCalls.length > 0 && totalPages > 1 && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-slate-800 dark:bg-slate-950">
+                  <span className="shrink-0 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                    <span className="font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+                      {pageStart + 1}–{pageEnd}
+                    </span>{" "}
+                    of {visibleCalls.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      aria-label="Previous page"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200/60 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900"
+                    >
+                      <ChevronLeft className="size-3.5" />
+                    </button>
+                    <PageNumberButtons
+                      currentPage={page}
+                      totalPages={totalPages}
+                      onPageChange={setPage}
+                      className="gap-1"
+                      buttonClassName="h-7 w-7 rounded-lg text-[11px] shadow-none"
+                      ellipsisClassName="h-7 w-7 text-[11px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      aria-label="Next page"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200/60 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900"
+                    >
+                      <ChevronRight className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              </div>
 
               {/* Action bar */}
               <button
