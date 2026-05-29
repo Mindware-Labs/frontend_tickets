@@ -34,6 +34,7 @@ import {
   classifySmsStatus,
   conversationHasAgent,
   formatPhone,
+  statusBucketLabel,
 } from "./components/sms-helpers";
 import {
   type SmsConversation,
@@ -50,6 +51,7 @@ const INITIAL_CONVERSATION_LIMIT = 10;
 
 type ThreadTab = "all" | "pending" | "failed";
 type MetricIntent = "all" | "pending" | "failed" | "delivered";
+type ExcelJsModule = typeof import("exceljs");
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -100,6 +102,7 @@ export default function SmsAuditPage() {
   const [total, setTotal] = useState(0);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -262,6 +265,13 @@ export default function SmsAuditPage() {
     [filteredMessages],
   );
 
+  const fullConversationsByKey = useMemo(() => {
+    const fullConversations = buildSmsConversations(messagesWithAgentNames);
+    return new Map(
+      fullConversations.map((conversation) => [conversation.key, conversation]),
+    );
+  }, [messagesWithAgentNames]);
+
   const agentOptions = useMemo(() => {
     const byId = new Map<string, string>();
     let hasUnassigned = false;
@@ -367,7 +377,26 @@ export default function SmsAuditPage() {
     0,
   );
 
-  const exportMessages = agentFilteredMessages;
+  const exportConversations = useMemo(
+    () =>
+      agentFilteredConversations.map(
+        (conversation) =>
+          fullConversationsByKey.get(conversation.key) ?? conversation,
+      ),
+    [agentFilteredConversations, fullConversationsByKey],
+  );
+
+  const exportMessages = useMemo(() => {
+    const seen = new Set<number>();
+    return exportConversations.flatMap((conversation) =>
+      conversation.messages.filter((message) => {
+        if (seen.has(message.id)) return false;
+        seen.add(message.id);
+        return true;
+      }),
+    );
+  }, [exportConversations]);
+
 
   const selectedConversation = useMemo(
     () => agentFilteredConversations.find((c) => c.key === selectedKey) ?? null,
@@ -436,128 +465,47 @@ export default function SmsAuditPage() {
     setStatus("delivered");
   }, []);
 
-  const handleExportCsv = useCallback(() => {
+  const handleExportWorkbook = useCallback(async () => {
     if (exportMessages.length === 0) return;
 
-      const headers = [
-        "id",
-        "aircallMessageId",
-        "conversationId",
-        "direction",
-        "status",
-        "customer",
-        "agent",
-        "phoneLine",
-        "campaign",
-        "from",
-        "to",
-        "externalNumber",
-        "timestamp",
-        "body",
-        "mediaCount",
-      ];
-      const rows = exportMessages.map((message) => {
-        const timestamp =
-          (message.direction === "RECEIVED"
-            ? message.receivedAt
-            : message.sentAt) ||
-          message.sentAt ||
-          message.receivedAt ||
-          message.createdAt;
-        return [
-          message.id,
-          message.aircallMessageId,
-          message.aircallConversationId,
-          message.direction,
-          message.status,
-          message.customer?.name || message.customer?.phone,
-          message.agent?.name || message.agent?.email || "Without agent",
-          message.phoneLine?.name || message.phoneLine?.number,
-          message.campaign?.nombre,
-          message.fromNumber ? formatPhone(message.fromNumber) : "",
-          message.toNumber ? formatPhone(message.toNumber) : "",
-          message.externalNumber ? formatPhone(message.externalNumber) : "",
-          timestamp,
-          message.body,
-          message.mediaUrls?.length ?? 0,
-        ];
+    setExportingExcel(true);
+    try {
+      await exportSmsWorkbook({
+        title: "SMS audit export",
+        scope: `SMS audit - ${period}`,
+        messages: exportMessages,
+        conversations: exportConversations,
+        filename: `sms-audit-${period}-${dateStamp()}.xlsx`,
       });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to export SMS workbook",
+      );
+    } finally {
+      setExportingExcel(false);
+    }
+  }, [exportConversations, exportMessages, period]);
 
-      const csv = [headers, ...rows]
-        .map((row) => row.map(csvCell).join(","))
-        .join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `sms-audit-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-  }, [exportMessages, period]);
+  const handleExportThread = useCallback(async (conversation: SmsConversation) => {
+    const fullConversation =
+      fullConversationsByKey.get(conversation.key) ?? conversation;
+    if (fullConversation.messages.length === 0) return;
 
-  const handleExportThread = useCallback((conversation: SmsConversation) => {
-    if (conversation.messages.length === 0) return;
-
-    const headers = [
-      "id",
-      "aircallMessageId",
-      "conversationId",
-      "direction",
-      "status",
-      "customer",
-      "agent",
-      "phoneLine",
-      "campaign",
-      "from",
-      "to",
-      "externalNumber",
-      "timestamp",
-      "body",
-      "mediaCount",
-    ];
-    const rows = conversation.messages.map((message) => {
-      const timestamp =
-        (message.direction === "RECEIVED"
-          ? message.receivedAt
-          : message.sentAt) ||
-        message.sentAt ||
-        message.receivedAt ||
-        message.createdAt;
-      return [
-        message.id,
-        message.aircallMessageId,
-        message.aircallConversationId,
-        message.direction,
-        message.status,
-        message.customer?.name || message.customer?.phone,
-        message.agent?.name || message.agent?.email || "Without agent",
-        message.phoneLine?.name || message.phoneLine?.number,
-        message.campaign?.nombre,
-        message.fromNumber ? formatPhone(message.fromNumber) : "",
-        message.toNumber ? formatPhone(message.toNumber) : "",
-        message.externalNumber ? formatPhone(message.externalNumber) : "",
-        timestamp,
-        message.body,
-        message.mediaUrls?.length ?? 0,
-      ];
-    });
-
-    const csv = [headers, ...rows]
-      .map((row) => row.map(csvCell).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
     const safeKey = conversation.key.replace(/[^a-z0-9_-]+/gi, "-");
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `sms-thread-${safeKey}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }, []);
+    try {
+      await exportSmsWorkbook({
+        title: `SMS thread - ${fullConversation.displayName}`,
+        scope: "Single SMS thread",
+        messages: fullConversation.messages,
+        conversations: [fullConversation],
+        filename: `sms-thread-${safeKey}-${dateStamp()}.xlsx`,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to export SMS thread",
+      );
+    }
+  }, [fullConversationsByKey]);
 
   const handleLoadMore = useCallback(() => {
     if (canLoadMore && !loadingMore && !loadingList) {
@@ -572,9 +520,10 @@ export default function SmsAuditPage() {
     <div className="flex flex-col gap-2">
       <PageHeader
         total={total}
-        onExport={handleExportCsv}
-        exportDisabled={exportMessages.length === 0}
+        onExport={handleExportWorkbook}
+        exportDisabled={exportMessages.length === 0 || exportingExcel}
         exportCountLabel={String(exportMessages.length)}
+        exporting={exportingExcel}
       />
 
       <AuditMetricStrip
@@ -678,6 +627,7 @@ export default function SmsAuditPage() {
               conversation={selectedConversation}
               now={now ?? 0}
               onExportThread={handleExportThread}
+              loading={loadingList}
             />
           </section>
         </div>
@@ -699,6 +649,7 @@ export default function SmsAuditPage() {
             conversation={selectedConversation}
             now={now ?? 0}
             onExportThread={handleExportThread}
+            loading={loadingList}
           />
         </SheetContent>
       </Sheet>
@@ -825,11 +776,13 @@ function PageHeader({
   onExport,
   exportDisabled,
   exportCountLabel,
+  exporting,
 }: {
   total: number;
-  onExport: () => void;
+  onExport: () => void | Promise<void>;
   exportDisabled: boolean;
   exportCountLabel: string;
+  exporting: boolean;
 }) {
   return (
     <div
@@ -873,9 +826,12 @@ function PageHeader({
           disabled={exportDisabled}
           className="h-7 gap-1.5 rounded-lg px-2.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 hover:bg-[#f0faf5] hover:text-[#006b4f] disabled:opacity-50 dark:hover:bg-emerald-500/10"
         >
-          <Download className="size-3" aria-hidden />
-          Export CSV
-         
+          {exporting ? (
+            <Loader2 className="size-3 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-3" aria-hidden />
+          )}
+          {exporting ? "Exporting" : `Export XLSX (${exportCountLabel})`}
         </Button>
       </div>
     </div>
@@ -1033,8 +989,261 @@ function metricIntentFromFilters(
   return "all";
 }
 
-function csvCell(value: unknown): string {
-  if (value == null) return "";
-  const text = String(value).replace(/\r?\n/g, " ");
-  return `"${text.replace(/"/g, '""')}"`;
+async function exportSmsWorkbook({
+  title,
+  scope,
+  messages,
+  conversations,
+  filename,
+}: {
+  title: string;
+  scope: string;
+  messages: SmsMessageRecord[];
+  conversations: SmsConversation[];
+  filename: string;
+}) {
+  const ExcelJS: ExcelJsModule = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Frontend Tickets";
+  workbook.created = new Date();
+
+  const summary = workbook.addWorksheet("Summary", {
+    views: [{ state: "frozen", ySplit: 8 }],
+  });
+  const metrics = buildExportMetrics(messages, conversations);
+  summary.columns = [
+    { key: "conversation", width: 30 },
+    { key: "messages", width: 11 },
+    { key: "inbound", width: 10 },
+    { key: "outbound", width: 10 },
+    { key: "failed", width: 9 },
+    { key: "lastActivity", width: 22 },
+    { key: "lastStatus", width: 14 },
+    { key: "agent", width: 26 },
+    { key: "phoneLine", width: 24 },
+    { key: "campaigns", width: 28 },
+  ];
+  summary.addRows([
+    ["Report", title],
+    ["Scope", scope],
+    ["Exported at", formatExportDateTime(new Date().toISOString())],
+    ["Messages", metrics.messages],
+    ["Threads", metrics.threads],
+    ["Inbound / Outbound", `${metrics.inbound} / ${metrics.outbound}`],
+    ["Delivered / Failed", `${metrics.delivered} / ${metrics.failed}`],
+    [],
+  ]);
+  styleSummarySheet(summary);
+
+  summary.addRow(["Conversation", "Messages", "Inbound", "Outbound", "Failed", "Last activity", "Last status", "Agent", "Phone line", "Campaigns"]);
+  conversations.forEach((conversation) => {
+    const lastStatus = statusBucketLabel(classifySmsStatus(conversation.lastMessage));
+    summary.addRow([
+      conversation.displayName,
+      conversation.totalCount,
+      conversation.inboundCount,
+      conversation.outboundCount,
+      conversation.failedCount,
+      formatExportDateTime(getMessageTimestamp(conversation.lastMessage)),
+      lastStatus,
+      exportAgentNames(conversation.messages),
+      exportPhoneLine(conversation.lastMessage),
+      conversation.campaigns.map((campaign) => campaign.nombre || `Campaign #${campaign.id}`).join(", "),
+    ]);
+  });
+  styleTable(summary, 9);
+
+  const detail = workbook.addWorksheet("Messages", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+  detail.columns = [
+    { header: "Date", key: "date", width: 14 },
+    { header: "Time", key: "time", width: 12 },
+    { header: "Direction", key: "direction", width: 13 },
+    { header: "Status", key: "status", width: 13 },
+    { header: "Customer", key: "customer", width: 26 },
+    { header: "Customer phone", key: "customerPhone", width: 20 },
+    { header: "Agent", key: "agent", width: 26 },
+    { header: "Phone line", key: "phoneLine", width: 24 },
+    { header: "Campaign", key: "campaign", width: 26 },
+    { header: "From", key: "from", width: 20 },
+    { header: "To", key: "to", width: 20 },
+    { header: "External number", key: "externalNumber", width: 20 },
+    { header: "Message", key: "body", width: 64 },
+    { header: "Media count", key: "mediaCount", width: 12 },
+    { header: "Media URLs", key: "mediaUrls", width: 48 },
+    { header: "Conversation ID", key: "conversationId", width: 24 },
+    { header: "Aircall message ID", key: "aircallMessageId", width: 24 },
+    { header: "Local ID", key: "id", width: 12 },
+  ];
+  detail.addRows(messages.map(messageToExportRow));
+  styleTable(detail, 1);
+  detail.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: Math.max(detail.rowCount, 1), column: detail.columnCount },
+  };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(
+    new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    filename,
+  );
+}
+
+function buildExportMetrics(
+  messages: SmsMessageRecord[],
+  conversations: SmsConversation[],
+) {
+  let inbound = 0;
+  let outbound = 0;
+  let delivered = 0;
+  let failed = 0;
+
+  for (const message of messages) {
+    if (message.direction === "RECEIVED") inbound += 1;
+    else outbound += 1;
+
+    const bucket = classifySmsStatus(message);
+    if (bucket === "delivered") delivered += 1;
+    if (bucket === "failed") failed += 1;
+  }
+
+  return {
+    messages: messages.length,
+    threads: conversations.length,
+    inbound,
+    outbound,
+    delivered,
+    failed,
+  };
+}
+
+function messageToExportRow(message: SmsMessageRecord) {
+  const timestamp = getMessageTimestamp(message);
+  const date = new Date(timestamp);
+  const bucket = classifySmsStatus(message);
+
+  return {
+    date: date.toLocaleDateString(),
+    time: date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    direction: message.direction === "RECEIVED" ? "Inbound" : "Outbound",
+    status: statusBucketLabel(bucket),
+    customer: message.customer?.name || "",
+    customerPhone: message.customer?.phone ? formatPhone(message.customer.phone) : "",
+    agent: message.agent?.name || message.agent?.email || "Without agent",
+    phoneLine: exportPhoneLine(message),
+    campaign: message.campaign?.nombre || "",
+    from: message.fromNumber ? formatPhone(message.fromNumber) : "",
+    to: message.toNumber ? formatPhone(message.toNumber) : "",
+    externalNumber: message.externalNumber ? formatPhone(message.externalNumber) : "",
+    body: message.body?.trim() || (message.mediaUrls?.length ? "[Media-only message]" : ""),
+    mediaCount: message.mediaUrls?.length ?? 0,
+    mediaUrls: message.mediaUrls?.join("\n") || "",
+    conversationId: message.aircallConversationId || "",
+    aircallMessageId: message.aircallMessageId || "",
+    id: message.id,
+  };
+}
+
+function styleSummarySheet(worksheet: import("exceljs").Worksheet) {
+  worksheet.getCell("A1").font = { bold: true, color: { argb: "FFFFFFFF" } };
+  worksheet.getCell("B1").font = { bold: true, color: { argb: "FFFFFFFF" } };
+  worksheet.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF008F68" },
+  };
+  for (let rowNumber = 2; rowNumber <= 7; rowNumber += 1) {
+    worksheet.getCell(rowNumber, 1).font = { bold: true };
+    worksheet.getCell(rowNumber, 1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF0FAF5" },
+    };
+  }
+}
+
+function styleTable(worksheet: import("exceljs").Worksheet, headerRow: number) {
+  const header = worksheet.getRow(headerRow);
+  header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  header.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF008F68" },
+  };
+  header.alignment = { vertical: "middle", wrapText: true };
+
+  worksheet.eachRow((row, rowNumber) => {
+    row.alignment = { vertical: "top", wrapText: true };
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFE2E8F0" } },
+        left: { style: "thin", color: { argb: "FFE2E8F0" } },
+        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+        right: { style: "thin", color: { argb: "FFE2E8F0" } },
+      };
+    });
+    if (rowNumber > headerRow && rowNumber % 2 === 0) {
+      row.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF8FAFC" },
+      };
+    }
+  });
+}
+
+function getMessageTimestamp(message: SmsMessageRecord): string {
+  return (
+    (message.direction === "RECEIVED" ? message.receivedAt : message.sentAt) ||
+    message.sentAt ||
+    message.receivedAt ||
+    message.createdAt
+  );
+}
+
+function formatExportDateTime(value: string): string {
+  return new Date(value).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function exportPhoneLine(message: SmsMessageRecord): string {
+  if (message.phoneLine?.name && message.phoneLine?.number) {
+    return `${message.phoneLine.name} (${formatPhone(message.phoneLine.number)})`;
+  }
+  return message.phoneLine?.name || (message.phoneLine?.number ? formatPhone(message.phoneLine.number) : "");
+}
+
+function exportAgentNames(messages: SmsMessageRecord[]): string {
+  const names = new Set<string>();
+  for (const message of messages) {
+    const name = message.agent?.name || message.agent?.email;
+    if (name) names.add(name);
+  }
+  return Array.from(names).join(", ") || "Without agent";
+}
+
+function dateStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

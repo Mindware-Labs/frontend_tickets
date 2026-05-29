@@ -2,6 +2,7 @@
 
 import { AlertTriangle, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AircallLoader } from "@/components/ui/AircallLoader";
 import {
   avatarHueFromString,
   conversationAgentLabel,
@@ -33,19 +34,11 @@ export function SmsConversationList({
 }: SmsConversationListProps) {
   if (loading && conversations.length === 0) {
     return (
-      <div className="flex flex-col gap-1.5 p-2">
-        {Array.from({ length: 6 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950"
-          >
-            <div className="size-10 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
-              <div className="h-2.5 w-3/4 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
-            </div>
-          </div>
-        ))}
+      <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 bg-[#f7f8fa] dark:bg-slate-950/60">
+        <AircallLoader />
+        <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
+          Loading conversations…
+        </p>
       </div>
     );
   }

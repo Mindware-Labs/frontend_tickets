@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AircallLoader } from "@/components/ui/AircallLoader";
 import {
   avatarHueFromString,
   classifySmsStatus,
@@ -42,6 +43,7 @@ interface SmsChatPaneProps {
   conversation: SmsConversation | null;
   now?: number;
   onExportThread?: (conversation: SmsConversation) => void;
+  loading?: boolean;
 }
 
 interface ChatGroup {
@@ -56,6 +58,7 @@ export function SmsChatPane({
   conversation,
   now = Date.now(),
   onExportThread,
+  loading = false,
 }: SmsChatPaneProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -94,6 +97,17 @@ export function SmsChatPane({
     });
     lastTimestampRef.current = last;
   }, [conversation]);
+
+  if (loading && !conversation) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#f7f8fa] dark:bg-slate-950/60">
+        <AircallLoader />
+        <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
+          Loading messages…
+        </p>
+      </div>
+    );
+  }
 
   if (!conversation) {
     return (

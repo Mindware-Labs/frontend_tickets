@@ -15,6 +15,7 @@ import {
   Clock3,
   FileText,
   List,
+  Loader2,
   Phone,
   Radio,
   RefreshCw,
@@ -22,6 +23,7 @@ import {
   Table2,
   Users,
 } from "lucide-react";
+import { AircallLoader } from "@/components/ui/AircallLoader";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
 import { getPaginationPageItems } from "@/lib/pagination-pages";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,7 @@ type NotificationType =
 type SortField = "id" | "type" | "agentId" | "read" | "createdAt";
 type SortDir = "asc" | "desc";
 type ViewMode = "table" | "timeline";
+type ExcelJsModule = typeof import("exceljs");
 
 interface AuditEntry {
   id: number;
@@ -232,9 +235,197 @@ function extractNotificationRows(payload: any): AuditEntry[] {
     .filter((entry): entry is AuditEntry => Boolean(entry));
 }
 
-function csvEscape(value: unknown) {
-  const text = String(value ?? "");
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+async function exportNotificationsWorkbook({
+  entries,
+  filename,
+}: {
+  entries: AuditEntry[];
+  filename: string;
+}) {
+  const ExcelJS: ExcelJsModule = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Frontend Tickets";
+  workbook.created = new Date();
+
+  const stats = buildNotificationExportStats(entries);
+  const summary = workbook.addWorksheet("Summary", {
+    views: [{ state: "frozen", ySplit: 9 }],
+  });
+  summary.columns = [
+    { key: "label", width: 28 },
+    { key: "value", width: 38 },
+    { key: "count", width: 12 },
+    { key: "unread", width: 12 },
+    { key: "read", width: 12 },
+    { key: "avgRead", width: 16 },
+  ];
+  summary.addRows([
+    ["Report", "Notifications audit export"],
+    ["Exported at", fmtDateFull(new Date().toISOString())],
+    ["Notifications", stats.total],
+    ["Unread / Read", `${stats.unread} / ${stats.read}`],
+    ["Broadcast", stats.broadcast],
+    ["Average read latency", fmtCompactDuration(stats.averageReadLatency)],
+    [],
+    ["Type", "Label", "Count", "Unread", "Read", "Avg read latency"],
+  ]);
+  stats.byType.forEach((row) => {
+    summary.addRow([
+      row.type,
+      TYPE_CFG[row.type].label,
+      row.total,
+      row.unread,
+      row.read,
+      fmtCompactDuration(row.averageReadLatency),
+    ]);
+  });
+  styleNotificationSummary(summary);
+  styleNotificationTable(summary, 8);
+
+  const detail = workbook.addWorksheet("Notifications", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+  detail.columns = [
+    { header: "ID", key: "id", width: 10 },
+    { header: "Type", key: "type", width: 26 },
+    { header: "Message", key: "message", width: 70 },
+    { header: "Recipient", key: "recipient", width: 28 },
+    { header: "Recipient ID", key: "agentId", width: 12 },
+    { header: "Status", key: "status", width: 12 },
+    { header: "Created at", key: "createdAt", width: 24 },
+    { header: "Read at", key: "readAt", width: 24 },
+    { header: "Read latency", key: "readLatency", width: 16 },
+    { header: "Delivered via", key: "deliveredVia", width: 16 },
+    { header: "Call ID", key: "callId", width: 12 },
+    { header: "Ticket ID", key: "ticketId", width: 12 },
+    { header: "Schedule call ID", key: "scheduleCallId", width: 16 },
+  ];
+  detail.addRows(entries.map(notificationToExportRow));
+  styleNotificationTable(detail, 1);
+  detail.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: Math.max(detail.rowCount, 1), column: detail.columnCount },
+  };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(
+    new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    filename,
+  );
+}
+
+function buildNotificationExportStats(entries: AuditEntry[]) {
+  const total = entries.length;
+  const unread = entries.filter((entry) => !entry.read).length;
+  const read = total - unread;
+  const broadcast = entries.filter((entry) => !entry.agentId).length;
+  const averageReadLatency = averageLatency(entries);
+  const byType = Array.from(NOTIFICATION_TYPES).map((type) => {
+    const rows = entries.filter((entry) => entry.type === type);
+    return {
+      type,
+      total: rows.length,
+      unread: rows.filter((entry) => !entry.read).length,
+      read: rows.filter((entry) => entry.read).length,
+      averageReadLatency: averageLatency(rows),
+    };
+  });
+
+  return { total, unread, read, broadcast, averageReadLatency, byType };
+}
+
+function averageLatency(entries: AuditEntry[]): number | null {
+  const values = entries
+    .map((entry) => readLatencyMinutes(entry.createdAt, entry.readAt))
+    .filter((value): value is number => value !== null);
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function notificationToExportRow(entry: AuditEntry) {
+  return {
+    id: entry.id,
+    type: TYPE_CFG[entry.type].label,
+    message: entry.message,
+    recipient: entry.agent?.name || entry.agent?.email || "Broadcast",
+    agentId: entry.agentId ?? "",
+    status: entry.read ? "Read" : "Unread",
+    createdAt: fmtDateFull(entry.createdAt),
+    readAt: entry.readAt ? fmtDateFull(entry.readAt) : "",
+    readLatency: readLatency(entry.createdAt, entry.readAt) ?? "",
+    deliveredVia: entry.deliveredVia ?? "",
+    callId: entry.callId ?? "",
+    ticketId: entry.ticketId ?? "",
+    scheduleCallId: entry.scheduleCallId ?? "",
+  };
+}
+
+function styleNotificationSummary(worksheet: import("exceljs").Worksheet) {
+  worksheet.getCell("A1").font = { bold: true, color: { argb: "FFFFFFFF" } };
+  worksheet.getCell("B1").font = { bold: true, color: { argb: "FFFFFFFF" } };
+  worksheet.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF008F68" },
+  };
+  for (let rowNumber = 2; rowNumber <= 6; rowNumber += 1) {
+    worksheet.getCell(rowNumber, 1).font = { bold: true };
+    worksheet.getCell(rowNumber, 1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF0FAF5" },
+    };
+  }
+}
+
+function styleNotificationTable(
+  worksheet: import("exceljs").Worksheet,
+  headerRow: number,
+) {
+  const header = worksheet.getRow(headerRow);
+  header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  header.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF008F68" },
+  };
+  header.alignment = { vertical: "middle", wrapText: true };
+
+  worksheet.eachRow((row, rowNumber) => {
+    row.alignment = { vertical: "top", wrapText: true };
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFE2E8F0" } },
+        left: { style: "thin", color: { argb: "FFE2E8F0" } },
+        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+        right: { style: "thin", color: { argb: "FFE2E8F0" } },
+      };
+    });
+    if (rowNumber > headerRow && rowNumber % 2 === 0) {
+      row.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF8FAFC" },
+      };
+    }
+  });
+}
+
+function dateStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -522,6 +713,7 @@ export default function NotificationsAuditPage() {
   const [allData, setAllData] = useState<AuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
@@ -703,43 +895,20 @@ export default function NotificationsAuditPage() {
     toggleExpand(n.id);
   };
 
-  const exportCsv = () => {
-    const headers = [
-      "id",
-      "type",
-      "message",
-      "agentId",
-      "agentName",
-      "callId",
-      "ticketId",
-      "scheduleCallId",
-      "read",
-      "createdAt",
-      "readAt",
-    ];
-    const rows = filtered.map((n) => [
-      n.id,
-      n.type,
-      n.message,
-      n.agentId ?? "",
-      n.agent?.name ?? "Broadcast",
-      n.callId ?? "",
-      n.ticketId ?? "",
-      n.scheduleCallId ?? "",
-      n.read,
-      n.createdAt,
-      n.readAt ?? "",
-    ]);
-    const csv = [headers, ...rows]
-      .map((row) => row.map(csvEscape).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `notifications-audit-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const exportWorkbook = async () => {
+    if (filtered.length === 0) return;
+
+    setExportingExcel(true);
+    try {
+      await exportNotificationsWorkbook({
+        entries: filtered,
+        filename: `notifications-audit-${dateStamp()}.xlsx`,
+      });
+    } catch (error: any) {
+      setLoadError(error?.message || "Failed to export notifications workbook");
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const hasFilters = Object.values(filters).some(v => v !== "");
@@ -834,9 +1003,13 @@ export default function NotificationsAuditPage() {
               <List className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
-          <button className="export-btn" onClick={exportCsv} disabled={filtered.length === 0}>
-            <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
-            Export CSV
+          <button className="export-btn" onClick={exportWorkbook} disabled={filtered.length === 0 || exportingExcel}>
+            {exportingExcel ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            {exportingExcel ? "Exporting" : `Export XLSX (${filtered.length})`}
           </button>
         </div>
       </div>
@@ -902,7 +1075,7 @@ export default function NotificationsAuditPage() {
           <div style={{ padding: "14px 18px" }}>
             {isLoading ? (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
-                <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-slate-300" aria-hidden="true" />
+                <AircallLoader size="sm" className="mx-auto mb-2" />
                 <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>Loading notifications</div>
               </div>
             ) : slice.length === 0 ? (
@@ -943,7 +1116,7 @@ export default function NotificationsAuditPage() {
                 {isLoading ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center">
-                      <RefreshCw className="mx-auto mb-2 h-7 w-7 animate-spin text-[#008f68]/70" aria-hidden="true" />
+                      <AircallLoader size="sm" className="mx-auto mb-2" />
                       <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">Loading notifications</div>
                     </td>
                   </tr>
