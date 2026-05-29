@@ -127,7 +127,7 @@ function DetailRow({
     <div
       className={cn(
         "flex gap-3 px-3.5",
-        multiline ? "items-start py-3" : "min-h-[52px] items-center py-1.5",
+        multiline ? "items-start py-2.5" : "min-h-[46px] items-center py-1.5",
       )}
     >
       <div className={cn(ROW_ICON_CLASS, multiline && "mt-0.5")}>
@@ -165,18 +165,18 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex items-center gap-1.5 text-slate-400">
-        <Icon className="h-3.5 w-3.5 shrink-0 text-[#008f68]" strokeWidth={2} />
-        <p className="truncate text-[9px] font-semibold uppercase tracking-wide">
+    <div className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-900/50">
+      <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
+        <Icon className="h-3 w-3 shrink-0 text-[#008f68]" strokeWidth={2.4} />
+        <p className="truncate text-[9px] font-bold uppercase tracking-wide">
           {label}
         </p>
       </div>
-      <p className="mt-1 truncate text-lg font-bold leading-tight tabular-nums text-slate-900 dark:text-slate-50">
+      <p className="truncate text-[17px] font-bold leading-none tabular-nums text-slate-900 dark:text-slate-50">
         {value}
       </p>
       {helper ? (
-        <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500 dark:text-slate-400">
+        <p className="truncate text-[10px] font-medium text-slate-400 dark:text-slate-500">
           {helper}
         </p>
       ) : null}
@@ -477,7 +477,7 @@ export function CustomerSheet({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="mt-3 grid grid-cols-4 divide-x divide-slate-100 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
                       <MetricTile
                         icon={Phone}
                         label="Calls"

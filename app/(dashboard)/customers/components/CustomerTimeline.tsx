@@ -110,7 +110,7 @@ function EntryTypeFilter({
       role="tablist"
       aria-label="Activity type"
     >
-      <div className="flex w-full flex-wrap justify-center gap-1 rounded-xl bg-slate-100/90 p-1 dark:bg-slate-900/70">
+      <div className="flex w-full flex-wrap justify-center gap-1 rounded-lg border border-slate-200/70 bg-slate-100/90 p-1 dark:border-slate-800 dark:bg-slate-900/70">
         {ENTRY_TYPE_OPTIONS.map((option) => {
           const active = value === option.value;
           return (
@@ -121,10 +121,10 @@ function EntryTypeFilter({
               aria-selected={active}
               onClick={() => onChange(option.value)}
               className={cn(
-                "min-h-10 min-w-[4.75rem] flex-1 rounded-lg px-3 py-2.5 text-center text-[13px] font-semibold leading-tight transition-colors sm:min-w-[5.5rem] sm:text-sm",
+                "min-h-8 min-w-[4rem] flex-1 rounded-md px-3 py-1.5 text-center text-[12px] font-semibold leading-tight transition-all sm:min-w-[5rem]",
                 active
                   ? "bg-[#008f68] text-white shadow-sm"
-                  : "text-slate-600 hover:bg-white/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
+                  : "text-slate-500 hover:bg-white/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
               )}
             >
               {option.label}
@@ -932,7 +932,7 @@ export function CustomerTimeline({
               const duration = formatDuration(entry.duration);
               const agentName = entry.agentName || entry.assignedAgentName;
               const entryShell = isPanelEmbed
-                ? "rounded-xl border border-slate-200/70 bg-white p-2.5 shadow-[0_6px_18px_rgba(15,23,42,0.06)] transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+                ? "group rounded-xl border border-slate-200/70 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300/90 hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700"
                 : expanded
                   ? "rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/40"
                   : cn("relative", isCompact ? "pl-5" : "pl-7");
