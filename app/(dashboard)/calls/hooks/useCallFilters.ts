@@ -28,9 +28,15 @@ export interface Filters {
 
 interface UseCallFiltersOptions {
   currentAgentId?: number;
+  apiPath?: string;
+  syncUrl?: boolean;
 }
 
-export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
+export function useCallFilters({
+  currentAgentId,
+  apiPath = "/api/calls",
+  syncUrl = true,
+}: UseCallFiltersOptions) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -95,11 +101,12 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
 
   // Deep link ?id= — list only that call in the table
   useEffect(() => {
+    if (!syncUrl) return;
     if (!focusCallId) return;
     setSearch(focusCallId);
     setActiveView("all");
     setCurrentPage(1);
-  }, [focusCallId]);
+  }, [focusCallId, syncUrl]);
 
   const resetCallListFilters = useCallback(() => {
     setSearch("");
@@ -179,8 +186,9 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
       params.set("endDate", dateTo.toISOString());
     }
 
-    return `/api/calls?${params.toString()}`;
+    return `${apiPath}?${params.toString()}`;
   }, [
+    apiPath,
     searchParams,
     focusCallId,
     deferredSearch,
@@ -202,6 +210,7 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
 
   // URL search param sync
   useEffect(() => {
+    if (!syncUrl) return;
     const searchParam = searchParams.get("search");
     let searchParamValue = searchParam ? decodeURIComponent(searchParam) : null;
 
@@ -217,13 +226,14 @@ export function useCallFilters({ currentAgentId }: UseCallFiltersOptions) {
       setSearch("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, syncUrl]);
 
   // View param from URL
   useEffect(() => {
+    if (!syncUrl) return;
     const viewParam = searchParams.get("view");
     if (viewParam) setActiveView(viewParam);
-  }, [searchParams]);
+  }, [searchParams, syncUrl]);
 
   // Reset page on filter change
   useEffect(() => {

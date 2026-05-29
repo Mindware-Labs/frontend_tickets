@@ -131,6 +131,11 @@ export default function TicketsPage() {
   const ticketFilters = useCallFilters({
     currentAgentId: refData.currentAgent?.id,
   });
+  const legacyCallFilters = useCallFilters({
+    currentAgentId: refData.currentAgent?.id,
+    apiPath: "/api/calls/legacy",
+    syncUrl: false,
+  });
 
   // ---- SWR ----
   const {
@@ -145,6 +150,22 @@ export default function TicketsPage() {
     revalidateOnReconnect: true,
     shouldRetryOnError: false,
   });
+
+  const {
+    data: legacyCallsPageData,
+    isLoading: isLoadingLegacyCalls,
+  } = useSWR(
+    legacyCallFilters.ticketsApiUrl,
+    ticketsFetcher,
+    {
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+      refreshWhenHidden: false,
+      dedupingInterval: 30000,
+      revalidateOnReconnect: true,
+      shouldRetryOnError: false,
+    },
+  );
 
   const {
     data: scheduleCalls = [],
@@ -186,6 +207,20 @@ export default function TicketsPage() {
         ? ticketsPageData.total
         : tickets.length;
   const serverViewCounts = ticketsPageData?.viewCounts || null;
+  const legacyCalls: Call[] = Array.isArray(legacyCallsPageData)
+    ? legacyCallsPageData
+    : legacyCallsPageData?.data || [];
+  const legacyTotalCustomerGroups =
+    typeof legacyCallsPageData?.total === "number"
+      ? legacyCallsPageData.total
+      : legacyCalls.length;
+  const legacyTotalMatchingCalls =
+    typeof legacyCallsPageData?.totalCalls === "number"
+      ? legacyCallsPageData.totalCalls
+      : typeof legacyCallsPageData?.total === "number"
+        ? legacyCallsPageData.total
+        : legacyCalls.length;
+  const legacyServerViewCounts = legacyCallsPageData?.viewCounts || null;
 
   // ---- View counts ----
   const getFilteredCountForView = useMemo(() => {
@@ -361,10 +396,31 @@ export default function TicketsPage() {
     refData.isTicketAssignedToCurrentUser,
   ]);
 
+  const getLegacyCountForView = useMemo(() => {
+    return (viewType: string): number => {
+      if (
+        legacyServerViewCounts &&
+        typeof legacyServerViewCounts === "object" &&
+        typeof (legacyServerViewCounts as any)[viewType] === "number"
+      ) {
+        return (legacyServerViewCounts as any)[viewType];
+      }
+      if (viewType === "all") return legacyTotalMatchingCalls;
+      if (viewType === legacyCallFilters.activeView)
+        return legacyTotalMatchingCalls;
+      return 0;
+    };
+  }, [
+    legacyServerViewCounts,
+    legacyTotalMatchingCalls,
+    legacyCallFilters.activeView,
+  ]);
+
   // ---- Tab state ----
   const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
-    tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)
+    tabParam &&
+      ["calls", "legacy-calls", "tickets", "manual-records"].includes(tabParam)
       ? tabParam
       : "calls",
   );
@@ -379,6 +435,7 @@ export default function TicketsPage() {
   const [isScheduleSubmitting, setIsScheduleSubmitting] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
+  const [timelineReadOnly, setTimelineReadOnly] = useState(false);
   const [drawerSuccessToast, setDrawerSuccessToast] = useState(false);
   const [drawerErrorToast, setDrawerErrorToast] = useState(false);
   const [drawerErrorMessage, setDrawerErrorMessage] = useState<string>();
@@ -671,6 +728,7 @@ export default function TicketsPage() {
 
   const handleCloseCallDrawer = () => {
     setShowTimelineDrawer(false);
+    setTimelineReadOnly(false);
     setDrawerSuccessToast(false);
     setDrawerErrorToast(false);
     if (callIdParam && !isNavigatingBackRef.current) {
@@ -687,7 +745,10 @@ export default function TicketsPage() {
   };
 
   useEffect(() => {
-    if (tabParam && ["calls", "tickets", "manual-records"].includes(tabParam)) {
+    if (
+      tabParam &&
+      ["calls", "legacy-calls", "tickets", "manual-records"].includes(tabParam)
+    ) {
       setActiveTab(tabParam);
       return;
     }
@@ -783,6 +844,7 @@ export default function TicketsPage() {
 
   // ---- Handlers ----
   const openTicketModal = (ticket: Call) => {
+    setTimelineReadOnly(Boolean((ticket as any).isLegacy));
     populateEditFormFromCall(ticket);
     setTimelineGroup(buildGroupFromCall(ticket));
     setShowTimelineDrawer(true);
@@ -902,6 +964,7 @@ export default function TicketsPage() {
   /** Open the customer timeline drawer (grouped view) */
   const handleOpenTimeline = (group: CustomerCallGroup) => {
     const call = group.latestCall as Call;
+    setTimelineReadOnly(false);
     // Open drawer immediately with available data
     populateEditFormFromCall(call);
     setTimelineGroup(group);
@@ -920,6 +983,7 @@ export default function TicketsPage() {
 
   /** Called when user clicks a call in the timeline sidebar */
   const handleSelectCallInTimeline = (call: Call) => {
+    setTimelineReadOnly(false);
     // Update form immediately with available data
     populateEditFormFromCall(call);
     // Fetch full data in background to get customer notes
@@ -931,6 +995,19 @@ export default function TicketsPage() {
         }
       })
       .catch(() => {});
+  };
+
+  const handleOpenLegacyTimeline = (group: CustomerCallGroup) => {
+    const call = group.latestCall as Call;
+    setTimelineReadOnly(true);
+    populateEditFormFromCall({ ...call, isLegacy: true } as Call);
+    setTimelineGroup(group);
+    setShowTimelineDrawer(true);
+  };
+
+  const handleSelectLegacyCallInTimeline = (call: Call) => {
+    setTimelineReadOnly(true);
+    populateEditFormFromCall({ ...call, isLegacy: true } as Call);
   };
 
   const handleUpdateTicketFromModal = async (
@@ -1243,6 +1320,8 @@ export default function TicketsPage() {
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
               {activeTab === "calls"
                 ? "Call Management"
+                : activeTab === "legacy-calls"
+                  ? "Legacy Calls"
                 : activeTab === "tickets"
                   ? "Tickets"
                   : "Manual Records"}
@@ -1250,6 +1329,8 @@ export default function TicketsPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               {activeTab === "calls"
                 ? `${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${refData.agents?.length || 14} Active Agents`
+                : activeTab === "legacy-calls"
+                  ? "Historical Aircall records, read-only"
                 : activeTab === "tickets"
                   ? "Manage support tickets and escalations"
                   : "Track manual records and entries"}
@@ -1263,6 +1344,7 @@ export default function TicketsPage() {
                 { value: "calls", label: "Calls" },
                 { value: "tickets", label: "Tickets" },
                 { value: "manual-records", label: "Manual Records" },
+                { value: "legacy-calls", label: "Legacy Calls" },
               ].map((tab) => {
                 const isActive = activeTab === tab.value;
                 return (
@@ -1455,14 +1537,18 @@ export default function TicketsPage() {
           />
 
           <CustomerTimelineDrawer
-            open={showTimelineDrawer}
+            open={showTimelineDrawer && !timelineReadOnly}
             onClose={handleCloseCallDrawer}
             returnToLabel={returnBackLabel ?? undefined}
             onBackToReturn={safeReturnPath ? handleBackToReturn : undefined}
             group={timelineGroup}
             activeFilters={ticketFilters.filters}
             selectedCall={selectedTicket}
-            onSelectCall={handleSelectCallInTimeline}
+            onSelectCall={
+              timelineReadOnly
+                ? handleSelectLegacyCallInTimeline
+                : handleSelectCallInTimeline
+            }
             editFormData={editFormData}
             setEditFormData={(next) =>
               setEditFormData((prev) => ({ ...prev, ...next }))
@@ -1477,6 +1563,10 @@ export default function TicketsPage() {
             }
             isUpdating={isUpdating}
             onUpdate={handleUpdateTicketFromModal}
+            readOnly={timelineReadOnly}
+            historyApiPath={
+              timelineReadOnly ? "/api/calls/legacy" : "/api/calls"
+            }
             showSuccessToast={drawerSuccessToast}
             onSuccessToastDismiss={() => setDrawerSuccessToast(false)}
             showErrorToast={drawerErrorToast}
@@ -1490,7 +1580,145 @@ export default function TicketsPage() {
             getAttachmentUrl={(v: string) =>
               getAttachmentUrl(v, refData.apiBase)
             }
-            onCreateTicket={handleCreateTicketFromCall}
+            onCreateTicket={
+              timelineReadOnly ? undefined : handleCreateTicketFromCall
+            }
+          />
+        </TabsContent>
+
+        <TabsContent
+          value="legacy-calls"
+          className="flex-1 flex flex-col gap-0 mt-0"
+        >
+          <div className="flex items-end border-b border-border">
+            <div className="flex min-w-0 flex-1 items-end overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex px-0.5">
+                {[
+                  {
+                    id: "all",
+                    label: "All Legacy",
+                    count: getLegacyCountForView("all") || 0,
+                  },
+                  {
+                    id: "active",
+                    label: "Active",
+                    count: getLegacyCountForView("active") || 0,
+                  },
+                  {
+                    id: "pending_followup",
+                    label: "Pending Follow-up",
+                    count: getLegacyCountForView("pending_followup") || 0,
+                  },
+                  {
+                    id: "overdue",
+                    label: "Overdue",
+                    count: getLegacyCountForView("overdue") || 0,
+                    isOverdue: true,
+                  },
+                  {
+                    id: "missed",
+                    label: "Missed",
+                    count: getLegacyCountForView("missed") || 0,
+                  },
+                  {
+                    id: "complete",
+                    label: "Complete",
+                    count: getLegacyCountForView("complete") || 0,
+                  },
+                ].map((tab) => {
+                  const isActive = legacyCallFilters.activeView === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => legacyCallFilters.handleViewChange(tab.id)}
+                      className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
+                        isActive
+                          ? "border-[#008f68] text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab.label}
+                      <span
+                        className={`py-px px-1.5 rounded-full text-[11px] border ${
+                          isActive
+                            ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                            : "bg-muted/40 text-muted-foreground font-medium border-border"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                      {tab.isOverdue && tab.count > 0 && (
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mb-1 ml-2 shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
+              View only
+            </div>
+          </div>
+
+          <GroupedCallsTable
+            tickets={legacyCalls}
+            isLoading={isLoadingLegacyCalls}
+            focusCallId={null}
+            search={legacyCallFilters.search}
+            onSearchChange={legacyCallFilters.setSearch}
+            dateRange={legacyCallFilters.dateRange}
+            onDateRangeChange={legacyCallFilters.setDateRange}
+            filters={legacyCallFilters.filters}
+            onFilterChange={legacyCallFilters.setFilter}
+            yards={refData.yards}
+            campaigns={refData.campaigns}
+            agents={refData.agents}
+            phoneLines={refData.phoneLines}
+            onOpenTimeline={handleOpenLegacyTimeline}
+            currentPage={legacyCallFilters.currentPage}
+            onPageChange={legacyCallFilters.setCurrentPage}
+            itemsPerPage={legacyCallFilters.itemsPerPage}
+            onItemsPerPageChange={legacyCallFilters.setItemsPerPage}
+            totalCount={legacyTotalMatchingCalls}
+            totalCustomers={legacyTotalCustomerGroups}
+            totalPages={
+              legacyCallsPageData?.totalPages ??
+              Math.max(
+                1,
+                Math.ceil(
+                  legacyTotalCustomerGroups / legacyCallFilters.itemsPerPage,
+                ),
+              )
+            }
+            onClearFocus={legacyCallFilters.clearFocusMode}
+          />
+
+          <CustomerTimelineDrawer
+            open={showTimelineDrawer && timelineReadOnly}
+            onClose={handleCloseCallDrawer}
+            group={timelineGroup}
+            activeFilters={legacyCallFilters.filters}
+            selectedCall={selectedTicket}
+            onSelectCall={handleSelectLegacyCallInTimeline}
+            editFormData={editFormData}
+            setEditFormData={(next) =>
+              setEditFormData((prev) => ({ ...prev, ...next }))
+            }
+            attachmentFiles={attachmentFiles}
+            setAttachmentFiles={setAttachmentFiles}
+            savedAttachments={savedAttachments}
+            isUpdating={isUpdating}
+            onUpdate={handleUpdateTicketFromModal}
+            readOnly
+            historyApiPath="/api/calls/legacy"
+            customers={refData.customers}
+            yards={refData.yards}
+            agents={refData.agents}
+            campaigns={refData.campaigns}
+            getAttachmentLabel={getAttachmentLabel}
+            getAttachmentUrl={(v: string) =>
+              getAttachmentUrl(v, refData.apiBase)
+            }
           />
         </TabsContent>
 

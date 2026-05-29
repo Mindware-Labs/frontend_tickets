@@ -140,6 +140,8 @@ interface CustomerTimelineDrawerProps {
   errorToastMessage?: string;
   /** Called when the error toast finishes its exit animation so the parent can reset the flag */
   onErrorToastDismiss?: () => void;
+  readOnly?: boolean;
+  historyApiPath?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -445,7 +447,10 @@ export function CustomerTimelineDrawer({
   showErrorToast,
   errorToastMessage,
   onErrorToastDismiss,
+  readOnly = false,
+  historyApiPath = "/api/calls",
 }: CustomerTimelineDrawerProps) {
+  const canEdit = !readOnly;
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -643,7 +648,7 @@ export function CustomerTimelineDrawer({
 
   // Fetch recording via backend proxy (avoids CORS on direct Aircall URL)
   useEffect(() => {
-    if (!selectedCall?.id) return;
+    if (!selectedCall?.id || readOnly || (selectedCall as any).isLegacy) return;
     const id = selectedCall.id;
     let blobUrl: string | null = null;
     const token =
@@ -672,7 +677,7 @@ export function CustomerTimelineDrawer({
     return () => {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [selectedCall?.id]);
+  }, [selectedCall?.id, readOnly]);
 
   const {
     dial,
@@ -713,8 +718,8 @@ export function CustomerTimelineDrawer({
       if (activeFilters.phoneLine && activeFilters.phoneLine !== "all")
         params.set("phoneLineId", activeFilters.phoneLine);
     }
-    return `/api/calls?${params.toString()}`;
-  }, [open, group?.customerId, activeFilters]);
+    return `${historyApiPath}?${params.toString()}`;
+  }, [open, group?.customerId, activeFilters, historyApiPath]);
 
   const { data: historyData, isLoading: isLoadingHistory } = useSWR(
     historyUrl,
@@ -729,8 +734,8 @@ export function CustomerTimelineDrawer({
       customerId: String(group.customerId),
       limit: "200",
     });
-    return `/api/calls?${params.toString()}`;
-  }, [open, group?.customerId]);
+    return `${historyApiPath}?${params.toString()}`;
+  }, [open, group?.customerId, historyApiPath]);
 
   const { data: customerAllCallsData } = useSWR(customerAllCallsUrl, fetcher, {
     revalidateOnFocus: false,
@@ -879,7 +884,7 @@ export function CustomerTimelineDrawer({
 
   // ── Call Linking helpers ──────────────────────────────────────────────────
   const handleOpenCallLinker = () => {
-    if (!canLinkCalls) return;
+    if (!canEdit || !canLinkCalls) return;
     setShowCallLinker(true);
     setSelectedLinkCall(null);
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -888,6 +893,7 @@ export function CustomerTimelineDrawer({
   };
 
   const handleRemoveLink = () => {
+    if (!canEdit) return;
     const orig = selectedCall as any;
     setEditFormData({
       ...editFormData,
@@ -911,7 +917,7 @@ export function CustomerTimelineDrawer({
   };
 
   const handleLinkCall = () => {
-    if (!selectedLinkCall) return;
+    if (!canEdit || !selectedLinkCall) return;
     const target = selectedLinkCall as any;
     const newFormData: CreateTicketFormData = {
       ...editFormData,
@@ -951,6 +957,7 @@ export function CustomerTimelineDrawer({
   };
 
   const handleEscalateClick = async () => {
+    if (!canEdit) return;
     const customerIdForCheck =
       editFormData.customerId?.trim() ||
       (group?.customerId != null ? String(group.customerId) : "") ||
@@ -1034,6 +1041,7 @@ export function CustomerTimelineDrawer({
   // ── File Upload Handlers ─────────────────────────────────────────────────────
 
   const handleFileSelect = async (file: File) => {
+    if (!canEdit) return;
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -1101,16 +1109,18 @@ export function CustomerTimelineDrawer({
   };
 
   const removeFile = (index: number) => {
+    if (!canEdit) return;
     const currentFiles = attachmentFiles || [];
     setAttachmentFiles(currentFiles.filter((_, idx) => idx !== index));
   };
 
   const removeSavedAttachment = (url: string) => {
+    if (!canEdit) return;
     setDeleteConfirmUrl(url);
   };
 
   const executeDeleteAttachment = async (url: string) => {
-    if (!selectedCall?.id) return;
+    if (!canEdit || !selectedCall?.id) return;
 
     try {
       const token =
@@ -1407,7 +1417,7 @@ export function CustomerTimelineDrawer({
                   <PhoneOutgoing className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Call</span>
                 </button>
-                {selectedCall && (
+                {canEdit && selectedCall && (
                   <button
                     type="button"
                     onClick={handleOpenCallLinker}
@@ -1425,7 +1435,7 @@ export function CustomerTimelineDrawer({
                     </span>
                   </button>
                 )}
-                {onCreateTicket && (
+                {canEdit && onCreateTicket && (
                   <button
                     type="button"
                     onClick={handleEscalateClick}
@@ -1592,7 +1602,7 @@ export function CustomerTimelineDrawer({
                 ) : (
                   <div className="pt-1 px-4 pb-4 space-y-3">
                     {/* ── Active ticket warning — full-width banner ── */}
-                    {activeTicketWarning && (
+                    {canEdit && activeTicketWarning && (
                       <div
                         className={`w-full flex flex-row items-center justify-between px-5 py-3 bg-white rounded-2xl border border-amber-300 shadow-sm ${
                           isClosingTicketWarning
@@ -1651,7 +1661,8 @@ export function CustomerTimelineDrawer({
                     )}
 
                     {/* ── Overdue Call Link Recommendation ── */}
-                    {canLinkCalls &&
+                    {canEdit &&
+                      canLinkCalls &&
                       overdueCallsSuggestions.length > 0 &&
                       !editFormData.relatedCallId &&
                       !showCallLinker && (
@@ -1686,7 +1697,7 @@ export function CustomerTimelineDrawer({
                       )}
 
                     {/* ── Call Linker (inline panel) ── */}
-                    {showCallLinker && (
+                    {canEdit && showCallLinker && (
                       <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-slate-100">
                           <div className="w-6 h-6 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
@@ -1893,6 +1904,7 @@ export function CustomerTimelineDrawer({
                             Call #{editFormData.relatedCallId}
                           </p>
                         </div>
+                        {canEdit && (
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -1916,6 +1928,7 @@ export function CustomerTimelineDrawer({
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                        )}
                       </div>
                     )}
 
@@ -1930,7 +1943,9 @@ export function CustomerTimelineDrawer({
                         </span>
                       </div>
 
-                      <div className="p-4">
+                      <div
+                        className={`p-4 ${readOnly ? "pointer-events-none" : ""}`}
+                      >
                         {/* Row 1: Campaign + Yard — priority controls */}
                         <div className="grid grid-cols-2 gap-3 mb-3">
                           {/* Campaign */}
@@ -2255,6 +2270,7 @@ export function CustomerTimelineDrawer({
                     </section>
 
                     {/* ── Recording card ── */}
+                    {!readOnly && (
                     <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                         <div className="w-6 h-6 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
@@ -2440,6 +2456,7 @@ export function CustomerTimelineDrawer({
                         className="hidden"
                       />
                     </section>
+                    )}
 
                     {/* ── Internal Note card ── */}
                     <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -2455,6 +2472,7 @@ export function CustomerTimelineDrawer({
                         <textarea
                           rows={3}
                           value={editFormData.notes || ""}
+                          readOnly={readOnly}
                           onChange={(e) =>
                             setEditFormData({
                               ...editFormData,
@@ -2492,6 +2510,7 @@ export function CustomerTimelineDrawer({
 
                       <div className="px-4 pb-4 space-y-2">
                         {/* ── Dropzone ultra-compacto ── */}
+                        {canEdit && (
                         <div
                           onDragOver={(e) => {
                             e.preventDefault();
@@ -2553,6 +2572,7 @@ export function CustomerTimelineDrawer({
                             </div>
                           </label>
                         </div>
+                        )}
 
                         {/* ── Archivos pendientes (no guardados aún) ── */}
                         {attachmentFiles.length > 0 && (
@@ -2588,6 +2608,7 @@ export function CustomerTimelineDrawer({
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-0.5 shrink-0">
+                                    {canEdit && (
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -2603,6 +2624,8 @@ export function CustomerTimelineDrawer({
                                     >
                                       <Download className="w-3 h-3" />
                                     </button>
+                                    )}
+                                    {canEdit && (
                                     <button
                                       type="button"
                                       onClick={() => removeFile(idx)}
@@ -2611,6 +2634,7 @@ export function CustomerTimelineDrawer({
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -2680,14 +2704,18 @@ export function CustomerTimelineDrawer({
                                     >
                                       <Download className="w-3 h-3" />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeSavedAttachment(url)}
-                                      className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                      aria-label="Remove"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
+                                    {canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          removeSavedAttachment(url)
+                                        }
+                                        className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        aria-label="Remove"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -2701,7 +2729,7 @@ export function CustomerTimelineDrawer({
               </div>
 
               {/* ── Sticky Save Changes footer ── */}
-              {selectedCall && (
+              {selectedCall && canEdit && (
                 <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
                   <button
                     type="button"
