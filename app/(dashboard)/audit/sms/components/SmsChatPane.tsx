@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AircallLoader } from "@/components/ui/AircallLoader";
+import { EntityLoadingSpinner } from "@/components/shared/entity-loading-state";
 import {
   avatarHueFromString,
   classifySmsStatus,
@@ -100,11 +100,8 @@ export function SmsChatPane({
 
   if (loading && !conversation) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#f7f8fa] dark:bg-slate-950/60">
-        <AircallLoader />
-        <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
-          Loading messages…
-        </p>
+      <div className="flex h-full flex-col items-center justify-center bg-[#f7f8fa] dark:bg-slate-950/60">
+        <EntityLoadingSpinner kind="sms" size="md" label="Loading messages" />
       </div>
     );
   }

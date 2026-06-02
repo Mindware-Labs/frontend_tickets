@@ -12,12 +12,15 @@ import {
 import {
   AlertCircle,
   CheckCircle2,
+  Clock,
   Info,
   Loader2,
+  PhoneCall,
   type LucideIcon,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
-type ToastTone = "default" | "destructive" | "loading" | "info";
+type ToastTone = "default" | "destructive" | "loading" | "info" | "reminder";
 
 const TONE_STYLES: Record<
   ToastTone,
@@ -59,7 +62,26 @@ const TONE_STYLES: Record<
     eyebrow: "Info",
     eyebrowColor: "text-sky-700 dark:text-sky-300",
   },
+  reminder: {
+    bg: "bg-indigo-50 dark:bg-indigo-500/10",
+    icon: "text-indigo-600 dark:text-indigo-400",
+    Icon: Clock,
+    eyebrow: "Reminder",
+    eyebrowColor: "text-indigo-700 dark:text-indigo-300",
+  },
 };
+
+function getToastText(value: ReactNode): string {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(getToastText).join(" ");
+  }
+
+  return "";
+}
 
 export function Toaster() {
   const { toasts } = useToast();
@@ -75,26 +97,44 @@ export function Toaster() {
         variant,
         ...props
       }) {
+        const titleText = getToastText(title);
+        const descriptionText = getToastText(description);
+        const isScheduledCallReminder =
+          /scheduled call (due|reminder)/i.test(titleText) ||
+          /scheduled call due/i.test(descriptionText);
+        const resolvedVariant = isScheduledCallReminder
+          ? "reminder"
+          : variant;
+        const resolvedTitle = isScheduledCallReminder
+          ? "Scheduled Call Reminder"
+          : title;
+        const resolvedAction = isScheduledCallReminder ? null : action;
         const tone: ToastTone =
-          variant === "destructive"
+          resolvedVariant === "destructive"
             ? "destructive"
-            : variant === "loading"
+            : resolvedVariant === "loading"
               ? "loading"
-              : variant === "info"
+              : resolvedVariant === "info"
                 ? "info"
-                : "default";
+                : resolvedVariant === "reminder"
+                  ? "reminder"
+                  : "default";
         const palette = TONE_STYLES[tone];
         const ToneIcon = palette.Icon;
 
         const resolvedIcon = icon ?? (
-          <ToneIcon
-            className={`h-4 w-4 ${palette.icon} ${palette.spin ? "animate-spin" : ""}`}
-            aria-hidden
-          />
+          isScheduledCallReminder ? (
+            <PhoneCall className={`h-4 w-4 ${palette.icon}`} aria-hidden />
+          ) : (
+            <ToneIcon
+              className={`h-4 w-4 ${palette.icon} ${palette.spin ? "animate-spin" : ""}`}
+              aria-hidden
+            />
+          )
         );
 
         return (
-          <Toast key={id} variant={variant} {...props}>
+          <Toast key={id} variant={resolvedVariant} {...props}>
             <span
               className={`mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ring-white/40 ${palette.bg}`}
             >
@@ -106,11 +146,11 @@ export function Toaster() {
               >
                 {palette.eyebrow}
               </span>
-              {title && (
-                <ToastTitle className="mt-0.5">{title}</ToastTitle>
+              {resolvedTitle && (
+                <ToastTitle className="mt-0.5">{resolvedTitle}</ToastTitle>
               )}
               {description && <ToastDescription>{description}</ToastDescription>}
-              {action ? <div className="mt-2">{action}</div> : null}
+              {resolvedAction ? <div className="mt-2">{resolvedAction}</div> : null}
             </div>
             <ToastClose />
           </Toast>

@@ -2,7 +2,7 @@
 
 import { AlertTriangle, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AircallLoader } from "@/components/ui/AircallLoader";
+import { EntityLoadingSpinner } from "@/components/shared/entity-loading-state";
 import {
   avatarHueFromString,
   conversationAgentLabel,
@@ -34,11 +34,8 @@ export function SmsConversationList({
 }: SmsConversationListProps) {
   if (loading && conversations.length === 0) {
     return (
-      <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 bg-[#f7f8fa] dark:bg-slate-950/60">
-        <AircallLoader />
-        <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
-          Loading conversations…
-        </p>
+      <div className="flex h-full min-h-[240px] flex-col items-center justify-center bg-[#f7f8fa] dark:bg-slate-950/60">
+        <EntityLoadingSpinner kind="sms" size="md" />
       </div>
     );
   }

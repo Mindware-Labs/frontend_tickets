@@ -45,6 +45,8 @@ const toastVariants = cva(
         loading:
           "before:bg-gradient-to-b before:from-amber-400 before:to-amber-500",
         info: "before:bg-gradient-to-b before:from-sky-500 before:to-sky-600",
+        reminder:
+          "before:bg-gradient-to-b before:from-indigo-500 before:to-indigo-600",
       },
     },
     defaultVariants: {

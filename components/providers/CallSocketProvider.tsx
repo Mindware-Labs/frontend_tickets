@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { auth } from "@/lib/auth";
 import { revalidateNotifications } from "@/hooks/use-notifications";
+import { PhoneCall } from "lucide-react";
 
 // -- Live call context --------------------------------------------------------
 export type DashboardRealtimeEventType =
@@ -24,7 +25,8 @@ export type DashboardRealtimeEventType =
   | "aircall-wallboard-changed"
   | "sms-message-changed"
   | "callback-due"
-  | "ticket-follow-up-due";
+  | "ticket-follow-up-due"
+  | "scheduled-call-due";
 
 export type DashboardRealtimeEvent = {
   type: DashboardRealtimeEventType;
@@ -306,22 +308,20 @@ export function CallSocketProvider({
         } catch (e) {}
 
         toast({
-          title: "📞 Scheduled Call Due",
+          title: "Scheduled Call Reminder",
           description: data.message,
           duration: 10000,
-          variant: "destructive",
-          action: (
-            <ToastAction
-              altText="View"
-              onClick={() => router.push(`/calls`)}
-            >
-              View Calls
-            </ToastAction>
+          variant: "reminder",
+          icon: (
+            <PhoneCall
+              className="h-4 w-4 text-indigo-600 dark:text-indigo-400"
+              aria-hidden
+            />
           ),
         });
 
         revalidateNotifications();
-        markDashboardRealtime("callback-due", data.createdAt);
+        markDashboardRealtime("scheduled-call-due", data.createdAt);
         revalidateCallCaches();
       },
     );

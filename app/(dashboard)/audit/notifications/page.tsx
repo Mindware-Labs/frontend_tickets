@@ -23,7 +23,7 @@ import {
   Table2,
   Users,
 } from "lucide-react";
-import { AircallLoader } from "@/components/ui/AircallLoader";
+import { EntityLoadingSpinner, TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
 import { getPaginationPageItems } from "@/lib/pagination-pages";
 import { cn } from "@/lib/utils";
@@ -1074,9 +1074,8 @@ export default function NotificationsAuditPage() {
         {viewMode === "timeline" ? (
           <div style={{ padding: "14px 18px" }}>
             {isLoading ? (
-              <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
-                <AircallLoader size="sm" className="mx-auto mb-2" />
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>Loading notifications</div>
+              <div className="flex items-center justify-center py-10 bg-gradient-to-b from-[#f0faf5]/50 via-white to-white dark:from-[#008f68]/5 dark:via-card dark:to-card rounded-xl">
+                <EntityLoadingSpinner kind="notifications" size="sm" />
               </div>
             ) : slice.length === 0 ? (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
@@ -1114,12 +1113,7 @@ export default function NotificationsAuditPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center">
-                      <AircallLoader size="sm" className="mx-auto mb-2" />
-                      <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">Loading notifications</div>
-                    </td>
-                  </tr>
+                  <TableLoadingRow colSpan={7} kind="notifications" compact />
                 ) : slice.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center">

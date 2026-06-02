@@ -485,7 +485,7 @@ export function CustomerTimelineDrawer({
   // ── Call Peek Panel ───────────────────────────────────────────────────────
   const [peekCallId, setPeekCallId] = useState<number | null>(null);
   const { data: peekData, isLoading: isPeekLoading } = useSWR(
-    peekCallId ? `/api/calls/${peekCallId}` : null,
+    peekCallId ? `${historyApiPath}/${peekCallId}` : null,
     fetcher,
     { revalidateOnFocus: false },
   );

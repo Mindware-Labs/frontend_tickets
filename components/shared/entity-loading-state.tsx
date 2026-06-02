@@ -3,10 +3,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  Bell,
   Building2,
   FileText,
   Landmark,
   Megaphone,
+  MessagesSquare,
   Phone,
   Ticket,
   UserCog,
@@ -26,7 +28,9 @@ export type EntityLoadingKind =
   | "phone-lines"
   | "campaigns"
   | "users"
-  | "dashboard";
+  | "dashboard"
+  | "sms"
+  | "notifications";
 
 const ENTITY_META: Record<
   EntityLoadingKind,
@@ -42,6 +46,8 @@ const ENTITY_META: Record<
   campaigns: { label: "Loading campaigns", icon: Megaphone },
   users: { label: "Loading team members", icon: UserCog },
   dashboard: { label: "Loading dashboard", icon: BarChart3 },
+  sms: { label: "Loading conversations", icon: MessagesSquare },
+  notifications: { label: "Loading notifications", icon: Bell },
 };
 
 const SPINNER_SIZE = {
