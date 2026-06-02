@@ -23,7 +23,6 @@ export type DashboardRealtimeEventType =
   | "tickets-updated"
   | "live-call-changed"
   | "aircall-wallboard-changed"
-  | "sms-message-changed"
   | "callback-due"
   | "ticket-follow-up-due"
   | "scheduled-call-due";
@@ -210,13 +209,6 @@ export function CallSocketProvider({
       "aircallWallboardChanged",
       (data: { timestamp: string }) => {
         markDashboardRealtime("aircall-wallboard-changed", data.timestamp);
-      },
-    );
-
-    socket.on(
-      "smsMessageChanged",
-      (data: { smsMessageId: number; direction: string; timestamp: string }) => {
-        markDashboardRealtime("sms-message-changed", data.timestamp);
       },
     );
 

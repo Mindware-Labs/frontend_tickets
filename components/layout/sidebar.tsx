@@ -10,7 +10,6 @@ import {
   Headset,
   LayoutDashboard,
   Megaphone,
-  MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
@@ -99,10 +98,6 @@ const sections: NavSection[] = [
       },
       { title: "Landlords", url: "/landlords", icon: User },
     ],
-  },
-  {
-    title: "SMS",
-    items: [{ title: "SMS Audit", url: "/audit/sms", icon: MessageSquare }],
   },
   {
     title: "Notifications",

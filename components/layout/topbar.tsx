@@ -71,9 +71,6 @@ function resolvePageMeta(pathname: string): PageMeta {
   if (path.startsWith("/reports/landlords"))
     return { section: "Management", title: "Landlord Reports" };
 
-  if (path.startsWith("/audit/sms"))
-    return { section: "SMS", title: "SMS Audit" };
-
   if (path.startsWith("/audit/notifications"))
     return { section: "Notifications", title: "Notifications Audit" };
 

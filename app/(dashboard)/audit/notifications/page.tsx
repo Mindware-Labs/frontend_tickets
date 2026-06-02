@@ -7,10 +7,6 @@ import {
   ArrowUp,
   ArrowUpDown,
   Bell,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronLeft,
-  ChevronRight,
   Check,
   Clock3,
   FileText,
@@ -25,8 +21,8 @@ import {
 } from "lucide-react";
 import { EntityLoadingSpinner, TableLoadingRow } from "@/components/shared/entity-loading-state";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
-import { getPaginationPageItems } from "@/lib/pagination-pages";
 import { cn } from "@/lib/utils";
+import { PaginationFooter } from "@/components/common/pagination-footer";
 import { NotificationsFilters } from "./components/NotificationsFilters";
 import { NotificationsStatsGrid } from "./components/NotificationsStatsGrid";
 import type { NotificationTab } from "./components/notification-types";
@@ -715,7 +711,7 @@ export default function NotificationsAuditPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const PAGE_SIZE = 10;
+  const pageSize = 10;
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -846,8 +842,8 @@ export default function NotificationsAuditPage() {
     return arr;
   }, [filters, sortField, sortDir, activeTab, allData]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const slice = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const setFilter = useCallback((key: string, val: string) => {
     setFilters(prev => ({ ...prev, [key]: val }));
@@ -1186,35 +1182,14 @@ export default function NotificationsAuditPage() {
           </div>
         )}
 
-        {/* Paginación más compacta */}
-        {totalPages > 1 && (
-          <div className="flex flex-col gap-2 border-t border-slate-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-            <span style={{ fontSize: 11, color: "#9CA3AF" }}>
-              <strong style={{ color: "#374151" }}>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong> of <strong style={{ color: "#374151" }}>{filtered.length}</strong>
-            </span>
-            <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-              <button className="page-btn" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
-                <ChevronsLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
-                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              {getPaginationPageItems(page, totalPages).map((item, i) =>
-                item === "ellipsis" ? (
-                  <span key={`e${i}`} style={{ width: 28, textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>...</span>
-                ) : (
-                  <button key={item} className={`page-btn ${page === item ? "active" : ""}`} onClick={() => setPage(item)} style={{ minWidth: 28, height: 28 }}>{item}</button>
-                ),
-              )}
-              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
-                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
-                <ChevronsRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        )}
+        <PaginationFooter
+          totalCount={filtered.length}
+          currentPage={page}
+          totalPages={totalPages}
+          itemsPerPage={pageSize}
+          onPageChange={setPage}
+          className="border-t border-slate-100 px-4 dark:border-slate-800"
+        />
       </div>
     </div>
   );
