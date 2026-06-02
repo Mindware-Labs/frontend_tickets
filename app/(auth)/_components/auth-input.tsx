@@ -3,62 +3,105 @@
 import React, { useState } from "react";
 
 export function AuthInput({
-  id, type = "text", value, onChange, placeholder, autoComplete,
-  leadingIcon, trailing, autoFocus, disabled, invalid, onKeyDown,
+  id,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  leadingIcon,
+  trailing,
+  autoFocus,
+  disabled,
+  invalid,
+  onKeyDown,
+  onBlur: onBlurProp,
 }: {
-  id?: string; type?: string; value: string; disabled?: boolean; invalid?: boolean;
+  id?: string;
+  type?: string;
+  value: string;
+  disabled?: boolean;
+  invalid?: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  placeholder?: string; autoComplete?: string;
-  leadingIcon?: React.ReactNode; trailing?: React.ReactNode; autoFocus?: boolean;
+  onBlur?: () => void;
+  placeholder?: string;
+  autoComplete?: string;
+  leadingIcon?: React.ReactNode;
+  trailing?: React.ReactNode;
+  autoFocus?: boolean;
 }) {
   const [focus, setFocus] = useState(false);
 
   const borderColor = invalid && !focus
-    ? "rgba(200,74,31,.45)"
+    ? "#f87171"
     : focus
-      ? "rgba(31,142,120,.65)"
-      : "rgba(15,30,28,.10)";
+      ? "#008f68"
+      : "transparent";
 
   const boxShadow = focus
     ? invalid
-      ? "0 0 0 3px rgba(200,74,31,.12),0 1px 3px rgba(0,0,0,.04)"
-      : "0 0 0 3px rgba(31,142,120,.12),0 1px 3px rgba(0,0,0,.04)"
-    : "0 1px 2px rgba(0,0,0,.03)";
+      ? "0 0 0 2px rgba(248,113,113,.20)"
+      : "0 0 0 2px rgba(0,143,104,.20)"
+    : "none";
 
   const iconColor = invalid && !focus
-    ? "rgba(200,74,31,.6)"
+    ? "#f87171"
     : focus
-      ? "rgba(31,142,120,.7)"
-      : "rgba(15,30,28,.35)";
+      ? "#008f68"
+      : "#94a3b8";
 
   return (
     <div
       style={{
-        display: "flex", alignItems: "center", gap: 10,
-        background: disabled ? "rgba(15,30,28,.03)" : focus ? "#fff" : "#FAFCFB",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        height: 36, /* h-9 */
+        background: disabled ? "rgba(248,250,252,.5)" : focus ? "#ffffff" : "#f8fafc",
         border: `1.5px solid ${borderColor}`,
         boxShadow,
-        borderRadius: 12, padding: "0 14px", height: 44,
-        transition: "border-color .18s,box-shadow .18s,background .18s",
+        borderRadius: 8, /* rounded-lg */
+        padding: "0 10px",
+        transition: "border-color .15s,box-shadow .15s,background .15s",
         cursor: disabled ? "not-allowed" : "text",
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.55 : 1,
       }}
     >
       {leadingIcon && (
-        <span style={{ color: iconColor, display: "inline-flex", flexShrink: 0, transition: "color .18s" }}>
+        <span
+          style={{
+            color: iconColor,
+            display: "inline-flex",
+            flexShrink: 0,
+            transition: "color .15s",
+          }}
+        >
           {leadingIcon}
         </span>
       )}
       <input
-        id={id} type={type} value={value} onChange={onChange}
-        placeholder={placeholder} autoComplete={autoComplete}
-        autoFocus={autoFocus} disabled={disabled} onKeyDown={onKeyDown}
-        onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
+        disabled={disabled}
+        onKeyDown={onKeyDown}
+        onFocus={() => setFocus(true)}
+        onBlur={() => { setFocus(false); onBlurProp?.(); }}
         style={{
-          flex: 1, border: 0, outline: "none", background: "transparent",
-          fontFamily: "inherit", fontSize: 14, color: "#0E1B19", height: "100%",
-          letterSpacing: "-.01em", cursor: disabled ? "not-allowed" : "text",
+          flex: 1,
+          border: 0,
+          outline: "none",
+          background: "transparent",
+          fontFamily: "inherit",
+          fontSize: 13,
+          color: "#0f172a",
+          height: "100%",
+          cursor: disabled ? "not-allowed" : "text",
         }}
       />
       {trailing}

@@ -6,26 +6,54 @@ import { Loader2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { AuthShell } from "../_components/auth-shell";
 
 const PAGE_CSS = `
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes scaleIn { 0%{opacity:0;transform:scale(.88)} 60%{transform:scale(1.04)} 100%{opacity:1;transform:scale(1)} }
+  @keyframes auth-spin    { to { transform: rotate(360deg); } }
+  @keyframes auth-fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes auth-scaleIn { 0%{opacity:0;transform:scale(.90)} 60%{transform:scale(1.03)} 100%{opacity:1;transform:scale(1)} }
 
-  .ve-card { animation: fadeUp  .6s  cubic-bezier(.22,1,.36,1) .14s both; }
-  .ve-icon { animation: scaleIn .45s cubic-bezier(.22,1,.36,1) .2s  both; }
+  .ve-card { animation: auth-fadeUp  .5s  cubic-bezier(.22,1,.36,1) .12s both; }
+  .ve-icon { animation: auth-scaleIn .4s  cubic-bezier(.22,1,.36,1) .18s both; }
 
   .ve-btn {
-    position: relative; overflow: hidden;
-    transition: filter .18s ease, box-shadow .18s ease;
+    transition: background .15s ease, box-shadow .15s ease;
   }
-  .ve-btn::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(105deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);
-    transform: translateX(-100%) skewX(-15deg); transition: none;
-  }
-  .ve-btn:not(:disabled):hover { filter: brightness(1.08); box-shadow: 0 18px 36px -12px rgba(15,93,78,.50) !important; }
-  .ve-btn:not(:disabled):hover::after { transform: translateX(240%) skewX(-15deg); transition: transform .55s ease; }
-  .ve-btn:not(:disabled):active { filter: brightness(.96); }
+  .ve-btn:hover  { background: #007a5a !important; box-shadow: 0 8px 24px -6px rgba(0,122,90,.40) !important; }
+  .ve-btn:active { background: #065f4a !important; }
 `;
+
+const cardStyle: React.CSSProperties = {
+  position: "relative",
+  zIndex: 10,
+  width: "100%",
+  maxWidth: 420,
+  background: "#ffffff",
+  border: "1px solid rgba(15,23,42,0.10)",
+  borderRadius: 16,
+  padding: "32px 28px 28px",
+  boxShadow: "0 1px 3px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.08)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 20,
+  textAlign: "center",
+};
+
+const btnStyle: React.CSSProperties = {
+  height: 44,
+  borderRadius: 8,
+  border: 0,
+  background: "#008f68",
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 7,
+  fontFamily: "inherit",
+  width: "100%",
+  boxShadow: "0 1px 3px rgba(0,0,0,.08)",
+};
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -90,46 +118,45 @@ function VerifyEmailContent() {
     <AuthShell subtitle="Email verification">
       <style dangerouslySetInnerHTML={{ __html: PAGE_CSS }} />
 
-      <div className="ve-card" style={{
-        position: "relative", zIndex: 10, width: "100%", maxWidth: 432,
-        background: "rgba(255,255,255,0.82)",
-        border: "1px solid rgba(15,30,28,0.07)",
-        borderRadius: 20, padding: "32px 28px 28px",
-        backdropFilter: "blur(16px)",
-        boxShadow: "0 2px 4px rgba(0,0,0,.04),0 8px 24px -8px rgba(15,30,28,.10),0 32px 64px -24px rgba(15,30,28,.14),inset 0 1px 0 rgba(255,255,255,.9)",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
-        textAlign: "center",
-      }}>
-        {/* Top edge accent */}
-        <div aria-hidden style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: "linear-gradient(90deg,transparent,rgba(46,169,142,.5),transparent)", borderRadius: "0 0 4px 4px" }} />
+      <div className="ve-card" style={cardStyle}>
+        {/* Top accent line — DS §5.3 */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0, left: "18%", right: "18%", height: 1,
+            background: "linear-gradient(90deg,transparent,rgba(0,143,104,.5),transparent)",
+            borderRadius: "0 0 4px 4px",
+          }}
+        />
 
         {/* Status icon */}
         <div className="ve-icon" style={{ marginTop: 4 }}>
           {status === "loading" && (
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(31,142,120,.08)", border: "1px solid rgba(31,142,120,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Loader2 size={28} style={{ color: "#1F8E78", animation: "spin 1s linear infinite" }} />
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f0faf5", border: "1px solid rgba(0,143,104,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Loader2 size={26} style={{ color: "#008f68", animation: "auth-spin 1s linear infinite" }} />
             </div>
           )}
           {status === "success" && (
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(31,142,120,.10)", border: "1px solid rgba(31,142,120,.20)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CheckCircle2 size={28} style={{ color: "#1F8E78" }} />
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f0faf5", border: "1px solid rgba(0,143,104,.20)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircle2 size={26} style={{ color: "#008f68" }} />
             </div>
           )}
           {status === "error" && (
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(200,74,31,.08)", border: "1px solid rgba(200,74,31,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <XCircle size={28} style={{ color: "#C84A1F" }} />
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#fef2f2", border: "1px solid rgba(239,68,68,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <XCircle size={26} style={{ color: "#ef4444" }} />
             </div>
           )}
         </div>
 
         {/* Title + message */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0B1714", letterSpacing: -.3 }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3 }}>
             {status === "loading" && "Verifying your email…"}
             {status === "success" && "Email verified!"}
             {status === "error"   && "Verification failed"}
           </h2>
-          <p style={{ margin: 0, fontSize: 13.5, color: "rgba(15,30,28,.55)", lineHeight: 1.55 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "#64748b", lineHeight: 1.55 }}>
             {status === "loading" && !message
               ? "Please wait while we verify your email address…"
               : message}
@@ -137,54 +164,28 @@ function VerifyEmailContent() {
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "rgba(15,30,28,.06)", width: "100%" }} />
+        <div style={{ height: 1, background: "#f1f5f9", width: "100%" }} />
 
         {/* Actions */}
         {status === "success" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-            <p style={{ margin: 0, fontSize: 12, color: "rgba(15,30,28,.45)" }}>
+            <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
               Redirecting to sign in in 3 seconds…
             </p>
-            <button
-              onClick={() => router.push("/login")}
-              className="ve-btn"
-              style={{
-                height: 44, borderRadius: 12, border: 0,
-                background: "linear-gradient(160deg,#22957D 0%,#0F5D4E 100%)",
-                color: "#fff", fontSize: 14, fontWeight: 600, letterSpacing: -.1,
-                cursor: "pointer",
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                boxShadow: "0 10px 28px -8px rgba(15,93,78,.40),inset 0 1px 0 rgba(255,255,255,.16)",
-                fontFamily: "inherit", width: "100%",
-                transition: "filter .18s,box-shadow .18s",
-              }}
-            >
+            <button onClick={() => router.push("/login")} className="ve-btn" style={btnStyle}>
               <span>Sign in now</span>
-              <ArrowRight size={14} />
+              <ArrowRight size={13} />
             </button>
           </div>
         )}
 
         {status === "error" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-            <button
-              onClick={() => router.push("/login")}
-              className="ve-btn"
-              style={{
-                height: 44, borderRadius: 12, border: 0,
-                background: "linear-gradient(160deg,#22957D 0%,#0F5D4E 100%)",
-                color: "#fff", fontSize: 14, fontWeight: 600, letterSpacing: -.1,
-                cursor: "pointer",
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                boxShadow: "0 10px 28px -8px rgba(15,93,78,.40),inset 0 1px 0 rgba(255,255,255,.16)",
-                fontFamily: "inherit", width: "100%",
-                transition: "filter .18s,box-shadow .18s",
-              }}
-            >
+            <button onClick={() => router.push("/login")} className="ve-btn" style={btnStyle}>
               <span>Back to sign in</span>
-              <ArrowRight size={14} />
+              <ArrowRight size={13} />
             </button>
-            <p style={{ margin: 0, fontSize: 11.5, color: "rgba(15,30,28,.38)" }}>
+            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>
               Need help? Contact support.
             </p>
           </div>
@@ -198,9 +199,9 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: "100vh", background: "#F4F8F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <Loader2 size={26} style={{ color: "#1F8E78", animation: "spin 1s linear infinite" }} />
+        <div style={{ minHeight: "100vh", background: "#f4f5f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <style>{`@keyframes auth-spin{to{transform:rotate(360deg)}}`}</style>
+          <Loader2 size={24} style={{ color: "#008f68", animation: "auth-spin 1s linear infinite" }} />
         </div>
       }
     >

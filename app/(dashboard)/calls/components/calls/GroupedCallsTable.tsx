@@ -403,22 +403,22 @@ export function GroupedCallsTable({
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative w-full table-fixed text-[12px]">
             <colgroup>
-              <col className="w-[17%]" />
-              <col className="w-[5%]" />
               <col className="w-[14%]" />
+              <col className="w-[6%]" />
+              <col className="w-[15%]" />
               <col className="w-[16%]" />
-              <col className="w-[14%]" />
-              <col className="w-[9%]" />
-              <col className="w-[7%]" />
-              <col className="w-[7%]" />
               <col className="w-[11%]" />
+              <col className="w-[10%]" />
+              <col className="w-[8%]" />
+              <col className="w-[9%]" />
+              <col className="w-[12%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Calls
                 </TableHead>
                 <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
@@ -446,11 +446,11 @@ export function GroupedCallsTable({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={10} kind="calls" compact />
+                <TableLoadingRow colSpan={9} kind="calls" compact />
               ) : groups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={9}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No calls found.
@@ -539,7 +539,7 @@ export function GroupedCallsTable({
                         </TableCell>
 
                         {/* Calls chip */}
-                        <TableCell className="px-1 py-1.5 text-center align-middle">
+                        <TableCell className="px-2 py-1.5 text-left align-middle">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -627,7 +627,7 @@ export function GroupedCallsTable({
                           className="bg-slate-50/50 hover:bg-slate-50/50 border-b relative"
                         >
                           <TableCell
-                            colSpan={10}
+                            colSpan={9}
                             className="border-t-0 py-1.5 px-0"
                           >
                             <InlineCallTimeline
