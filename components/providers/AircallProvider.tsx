@@ -9,7 +9,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import type {
   default as AircallWorkspaceType,
   AircallLoginSettings,
@@ -20,7 +19,6 @@ import { Phone, PhoneIncoming, X, Minus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
 import { fetchFromBackend } from "@/lib/api-client";
 import { GlobalIncomingCallPanel } from "@/components/calls/global-incoming-call-panel";
 
@@ -87,7 +85,6 @@ export function useAircall(): AircallContextValue {
 const DOM_CONTAINER_ID = "aircall-phone-container";
 
 export function AircallProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const { toast } = useToast();
 
   const workspaceRef = useRef<AircallWorkspaceType | null>(null);
@@ -325,38 +322,6 @@ export function AircallProvider({ children }: { children: React.ReactNode }) {
     [isLoggedIn, on, toast],
   );
 
-  // ── Incoming call toast (global, survives route changes) ────────────────
-  useEffect(() => {
-    const off = on<AircallIncomingCallPayload>("incoming_call", (data) => {
-      const contactName = data.contact
-        ? [data.contact.first_name, data.contact.last_name]
-            .filter(Boolean)
-            .join(" ") || data.contact.company_name
-        : undefined;
-      const label = contactName || data.from || "Unknown";
-
-      toast({
-        title: "Incoming call",
-        description: `From ${label}${data.to ? ` → ${data.to}` : ""}`,
-        duration: 15_000,
-        action: (
-          <ToastAction
-            altText="View tickets"
-            onClick={() => {
-              if (data.from) {
-                router.push(`/calls?search=${encodeURIComponent(data.from)}`);
-              } else {
-                router.push("/calls");
-              }
-            }}
-          >
-            View tickets
-          </ToastAction>
-        ),
-      });
-    });
-    return off;
-  }, [on, router, toast]);
 
   // ── Context value ───────────────────────────────────────────────────────
   const openDock = useCallback(() => setDockOpen(true), []);
@@ -461,6 +426,7 @@ function AircallDock({
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dockParentRef = useRef<HTMLDivElement | null>(null);
+  const fabRef = useRef<HTMLButtonElement | null>(null);
 
   // ── Drag state ────────────────────────────────────────────────────────────
   // null = default CSS position (bottom-right). Set after first drag.
@@ -481,9 +447,6 @@ function AircallDock({
     Math.max(min, Math.min(max, v));
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    // Stop the native event from reaching Radix's document-level listener,
-    // which would otherwise treat this as an "outside click" and close any
-    // open Sheet/Dialog.
     e.nativeEvent.stopImmediatePropagation();
     if (isFullscreen) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -503,16 +466,52 @@ function AircallDock({
     const dx = e.clientX - drag.startX;
     const dy = e.clientY - drag.startY;
     if (!drag.moved && Math.hypot(dx, dy) < 5) return;
-    drag.moved = true;
-    const newX = clamp(drag.originX + dx, 0, window.innerWidth - BTN_SIZE);
-    const newY = clamp(drag.originY + dy, 0, window.innerHeight - BTN_SIZE);
-    setPos({ x: newX, y: newY });
+    if (!drag.moved) {
+      drag.moved = true;
+      // Suppress CSS transitions during drag and show grabbing cursor
+      const fab = fabRef.current;
+      if (fab) {
+        fab.style.transition = "none";
+        fab.style.cursor = "grabbing";
+      }
+    }
+    // Manipulate the DOM directly — zero React re-renders during drag,
+    // GPU-composited transform keeps the element glued to the cursor.
+    const fab = fabRef.current;
+    if (fab) {
+      fab.style.transform = `translate(${dx}px, ${dy}px)`;
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
-    if (!drag?.moved) onToggle(); // pure click
+    const fab = fabRef.current;
+    if (fab) fab.style.cursor = "";
+    if (!drag?.moved) {
+      onToggle();
+      return;
+    }
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    const newX = clamp(drag.originX + dx, 0, window.innerWidth - BTN_SIZE);
+    const newY = clamp(drag.originY + dy, 0, window.innerHeight - BTN_SIZE);
+    if (fab) {
+      // Commit final position to inline style BEFORE clearing transform so
+      // the element never snaps back to its old left/top for even one frame.
+      fab.style.left = `${newX}px`;
+      fab.style.top = `${newY}px`;
+      fab.style.bottom = "";
+      fab.style.right = "";
+      fab.style.transform = "";
+      // Restore className-driven transitions after one paint so the
+      // sheet-open snap animation still works on subsequent moves.
+      requestAnimationFrame(() => {
+        if (fabRef.current) fabRef.current.style.transition = "";
+      });
+    }
+    // Sync React state so the style prop stays consistent on re-renders.
+    setPos({ x: newX, y: newY });
   };
 
   const stopDockDismissPropagation = (
@@ -566,6 +565,7 @@ function AircallDock({
     <>
       {/* Floating toggle button — draggable */}
       <button
+        ref={fabRef}
         type="button"
         data-aircall-fab="true"
         onPointerDown={handlePointerDown}
@@ -573,7 +573,7 @@ function AircallDock({
         onPointerUp={handlePointerUp}
         aria-label={open ? "Hide Aircall phone" : "Show Aircall phone"}
         className={cn(
-          "fixed z-[60] h-14 w-14 rounded-full shadow-lg select-none",
+          "fixed z-[60] h-14 w-14 rounded-full shadow-lg select-none touch-none",
           "flex items-center justify-center",
           "transition-[bottom,right,left] duration-300 ease-in-out",
           "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -583,11 +583,12 @@ function AircallDock({
           !pos && !sheetOpen && "bottom-6 right-6",
           !pos && sheetOpen && "bottom-6 left-6",
         )}
-        style={
-          pos
-            ? { left: pos.x, top: pos.y, cursor: "grab", pointerEvents: "auto" }
-            : { cursor: "grab", pointerEvents: "auto" }
-        }
+        style={{
+          ...(pos ? { left: pos.x, top: pos.y } : {}),
+          cursor: "grab",
+          pointerEvents: "auto",
+          willChange: "transform",
+        }}
       >
         {lastIncomingCall &&
         Date.now() - lastIncomingCall.receivedAt < 30_000 ? (

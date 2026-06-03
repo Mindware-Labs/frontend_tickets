@@ -83,9 +83,9 @@ export function AuthShell({
         {/* Logo container — light surface with teal accent border */}
         <div
           style={{
-            width: 80,
-            height: 80,
-            borderRadius: 20,
+            width: 96,
+            height: 96,
+            borderRadius: 24,
             background: "#ffffff",
             border: "1.5px solid rgba(0,143,104,0.22)",
             boxShadow:
@@ -93,14 +93,15 @@ export function AuthShell({
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
           }}
         >
           <Image
-            src="/images/LOGO CQ-10.jpg"
+            src="/images/logo-cq-10-mark-transparent.png"
             alt="Center Quest"
-            width={60}
-            height={60}
-            style={{ objectFit: "contain", borderRadius: 12 }}
+            width={84}
+            height={84}
+            style={{ objectFit: "contain" }}
             priority
           />
         </div>
