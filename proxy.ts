@@ -45,6 +45,8 @@ export function proxy(request: NextRequest) {
   const authToken = cookieToken || headerToken || null;
   let role: string | null = null;
 
+  let tokenExpired = false;
+
   if (authToken) {
     try {
       const payloadPart = authToken.split(".")[1];
@@ -54,10 +56,26 @@ export function proxy(request: NextRequest) {
         const payloadString = atob(padded);
         const payload = JSON.parse(payloadString);
         role = payload?.role || null;
+
+        if (payload?.exp && Date.now() >= payload.exp * 1000) {
+          tokenExpired = true;
+          role = null;
+        }
       }
     } catch {
       role = null;
     }
+  }
+
+  if (tokenExpired && !publicRoutes.includes(pathname)) {
+    const loginUrl = new URL("/login", request.url);
+    if (pathname !== "/") {
+      loginUrl.searchParams.set("redirect", pathname);
+    }
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    redirectResponse.cookies.delete("auth-token");
+    redirectResponse.cookies.delete("auth_token");
+    return redirectResponse;
   }
 
   if (pathname === "/tickets" || pathname.startsWith("/tickets/")) {

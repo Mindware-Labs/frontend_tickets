@@ -27,42 +27,71 @@ function handleUnauthorized(): void {
   window.location.href = loginUrl;
 }
 
+function parseTokenPayload(token: string): Record<string, any> | null {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return null;
+    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token: string): boolean {
+  const payload = parseTokenPayload(token);
+  return payload?.exp ? Date.now() >= payload.exp * 1000 : false;
+}
+
+/** Returns the ms timestamp when the stored token expires, or null if no token / no exp. */
+export function getTokenExpiresAt(): number | null {
+  if (typeof window === "undefined") return null;
+  const token = getCookie("auth-token") || localStorage.getItem("auth_token");
+  if (!token) return null;
+  const payload = parseTokenPayload(token);
+  return payload?.exp ? payload.exp * 1000 : null;
+}
+
+/** Clears auth state and redirects to /login immediately. */
+export function redirectToLogin(): void {
+  handleUnauthorized();
+}
+
 function getAuthToken(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  // Try to get token from cookies first
   const cookieToken = getCookie("auth-token");
-  if (cookieToken) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[api-client] Token found in cookie, length:", cookieToken.length);
-    }
-    return cookieToken;
-  }
+  const token = cookieToken || localStorage.getItem("auth_token") || null;
 
-  // Fallback to localStorage
-  const localStorageToken = localStorage.getItem("auth_token");
-  if (localStorageToken) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[api-client] Token found in localStorage, length:", localStorageToken.length);
-      // Also try to set it as cookie if it's in localStorage but not in cookie
-      try {
-        document.cookie = `auth-token=${localStorageToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      } catch (e) {
-        // Ignore cookie setting errors
-      }
-    }
-    return localStorageToken;
+  if (!token) return null;
+
+  // Redirect immediately if token is already expired — skip the network round-trip
+  if (isTokenExpired(token)) {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_data");
+    document.cookie = "auth-token=; path=/; max-age=0; SameSite=Lax";
+    handleUnauthorized();
+    return null;
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.warn("[api-client] No token found in cookies or localStorage");
-    console.warn("[api-client] document.cookie:", document.cookie.substring(0, 200));
-    console.warn("[api-client] localStorage keys:", Object.keys(localStorage));
+    const source = cookieToken ? "cookie" : "localStorage";
+    console.log(`[api-client] Token found in ${source}, length:`, token.length);
   }
 
-  return null;
+  // Sync to cookie when only found in localStorage
+  if (!cookieToken) {
+    try {
+      document.cookie = `auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    } catch {
+      // ignore
+    }
+  }
+
+  return token;
 }
 
 /**
@@ -76,8 +105,15 @@ export async function fetchFromBackend(
     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
   }`;
 
-  // Get auth token
+  // Get auth token — may trigger immediate redirect if expired
   const token = getAuthToken();
+
+  // If getAuthToken already triggered a redirect (expired token), abort the fetch
+  if (typeof window !== "undefined" && isRedirecting) {
+    const err = new Error("Session expired. Please login again.") as Error & { status?: number };
+    err.status = 401;
+    throw err;
+  }
 
   // Prepare headers
   const headers: any = {

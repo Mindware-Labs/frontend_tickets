@@ -274,8 +274,20 @@ export const auth = {
     return null;
   },
 
-  /** Returns true when a valid JWT cookie is present. */
+  /** Returns true when a valid, non-expired JWT cookie is present. */
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const payloadPart = token.split(".")[1];
+      if (!payloadPart) return false;
+      const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+      const payload = JSON.parse(atob(padded));
+      if (payload?.exp && Date.now() >= payload.exp * 1000) return false;
+    } catch {
+      return false;
+    }
+    return true;
   },
 };
