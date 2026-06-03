@@ -249,7 +249,7 @@ export function GlobalIncomingCallPanel() {
         startedAt: activeCall.startedAt,
         answeredAt: activeCall.answeredAt,
       }}
-      position="bottom-right"
+      position="center"
     />
   );
 }

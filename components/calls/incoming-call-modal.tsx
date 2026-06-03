@@ -87,11 +87,10 @@ interface IncomingCallModalProps {
    */
   draggable?: boolean;
   /**
-   * Where the panel anchors itself. Defaults to `bottom-right` (sits to the
-   * left of the Aircall dock, with a viewport-relative offset). Use
-   * `inline` to render in document flow — handy for previews.
+   * Where the panel anchors itself. Defaults to `center` (always centered in
+   * the viewport). Use `inline` to render in document flow — handy for previews.
    */
-  position?: "bottom-right" | "bottom-left" | "inline";
+  position?: "center" | "bottom-right" | "bottom-left" | "inline";
 }
 
 const STATE_META: Record<
@@ -1279,7 +1278,7 @@ export function IncomingCallModal({
   call,
   persistent = false,
   draggable = true,
-  position = "bottom-right",
+  position = "center",
 }: IncomingCallModalProps) {
   // Drag-to-move: offset applied as a transform on top of the anchor position.
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -1380,8 +1379,16 @@ export function IncomingCallModal({
       ? "relative"
       : position === "bottom-left"
         ? "fixed bottom-6 left-6 z-[55]"
-        : // Default: bottom-right with offset to clear the Aircall dock
-          "fixed bottom-6 right-[26.25rem] z-[55] max-[920px]:right-6 max-[920px]:bottom-[28rem]";
+        : position === "bottom-right"
+          ? "fixed bottom-6 right-[26.25rem] z-[55] max-[920px]:right-6 max-[920px]:bottom-[28rem]"
+          : // center (default): top-1/2 left-1/2, centering baked into the transform
+            "fixed top-1/2 left-1/2 z-[55]";
+
+  // For centered mode the -50%/-50% is baked into the transform so the
+  // drag offset composes naturally without an extra wrapper element.
+  const isCentered = position === "center";
+  const tx = isCentered ? `calc(-50% + ${offset.x}px)` : `${offset.x}px`;
+  const ty = isCentered ? `calc(-50% + ${offset.y}px)` : `${offset.y}px`;
 
   return (
     <aside
@@ -1389,7 +1396,7 @@ export function IncomingCallModal({
       role={persistent ? undefined : "dialog"}
       aria-label="Incoming call · customer profile"
       style={{
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        transform: `translate(${tx}, ${ty})`,
         ...(dragging ? { transition: "none" } : null),
       }}
       className={cn(

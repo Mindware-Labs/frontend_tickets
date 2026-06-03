@@ -44,6 +44,11 @@ export const metadata: Metadata = {
       "Support ticket management system for tracking, managing, and resolving customer inquiries across campaigns, yards, and phone lines.",
     images: ["/apple-icon.png"],
   },
+  icons: {
+    icon: "/images/LOGO CQ-10.png",
+    shortcut: "/images/LOGO CQ-10.png",
+    apple: "/images/LOGO CQ-10.png",
+  },
   robots: {
     index: true,
     follow: true,
