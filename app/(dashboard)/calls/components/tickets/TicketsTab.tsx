@@ -35,7 +35,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
   Search,
@@ -47,9 +46,7 @@ import {
   ChevronDown,
   Ticket as TicketIcon,
   RotateCcw,
-  MousePointerClick,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import {
   TableCampaignBadge,
   TableYardBadge,
@@ -75,11 +72,9 @@ import { CreateTicketForm } from "./CreateTicketForm";
 import type { CustomerSearchOption } from "../shared/AsyncCustomerCombobox";
 import { DataTablePagination } from "../shared/DataTablePagination";
 import { TableLoadingRow } from "@/components/shared/entity-loading-state";
-import { SourceCallViaCallBadge } from "../calls/SourceCallViaCallModal";
 import {
   SupportTicketStatus,
   SupportTicketPriority,
-  SupportTicketType,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
 } from "../../types";
@@ -885,37 +880,36 @@ export function TicketsTab({
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative w-full table-fixed text-[12px]">
             <colgroup>
-              <col className="w-[5%]" />
-              <col className="w-[17%]" />
-              <col className="w-[5%]" />
-              <col className="w-[8%]" />
-              <col className="w-[8%]" />
-              <col className="w-[9%]" />
               <col className="w-[11%]" />
-              <col className="w-[10%]" />
-              <col className="w-[9%]" />
-              <col className="w-[11%]" />
+              <col className="w-[5%]" />
               <col className="w-[7%]" />
+              <col className="w-[9%]" />
+              <col className="w-[7%]" />
+              <col className="w-[8%]" />
+              <col className="w-[7%]" />
+              <col className="w-[15%]" />
+              <col className="w-[23%]" />
+              <col className="w-[8%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  ID
-                </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Tickets
+                <TableHead className="px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Tix
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Priority
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Type
+                </TableHead>
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Option
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
@@ -926,21 +920,18 @@ export function TicketsTab({
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Campaign
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Line
-                </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={11} kind="tickets" compact />
+                <TableLoadingRow colSpan={10} kind="tickets" compact />
               ) : ticketGroups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={11}
+                    colSpan={10}
                     className="h-24 text-center text-slate-400 text-sm"
                   >
                     No tickets found
@@ -974,12 +965,7 @@ export function TicketsTab({
                         )}
                         onClick={() => openView(t)}
                       >
-                        <TableCell className="px-2 py-1 align-top ">
-                          <span className="text-[10px] font-bold text-slate-700 tabular-nums">
-                            #{t.id}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="px-2 py-0.5 align-middle">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
@@ -994,12 +980,17 @@ export function TicketsTab({
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <p
-                                className="truncate text-[12px] font-bold leading-tight text-foreground"
-                                title={customerName(t)}
-                              >
-                                {customerName(t)}
-                              </p>
+                              <div className="flex min-w-0 items-baseline gap-1">
+                                <span className="shrink-0 font-mono text-[9px] font-semibold text-slate-400 tabular-nums">
+                                  #{t.id}
+                                </span>
+                                <p
+                                  className="truncate text-[12px] font-bold leading-tight text-foreground"
+                                  title={customerName(t)}
+                                >
+                                  {customerName(t)}
+                                </p>
+                              </div>
                               {(group.customerPhone || t.customer?.phone) && (
                                 <div className="flex min-w-0 items-center gap-0.5">
                                   <p
@@ -1030,7 +1021,7 @@ export function TicketsTab({
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="px-2 py-1 text-center align-middle">
+                        <TableCell className="px-2 py-0.5 text-center align-middle">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1054,14 +1045,14 @@ export function TicketsTab({
                             </span>
                           </button>
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="px-2 py-0.5 text-center align-middle">
                           <TableSupportStatusPill status={t.status} />
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="px-2 py-0.5 text-center align-middle">
                           <TablePriorityPill priority={t.priority} />
                         </TableCell>
                         <TableCell
-                          className="max-w-0 px-2 py-1 align-middle text-[11px] font-medium text-slate-600"
+                          className="max-w-0 px-2 py-0.5 align-middle text-[11px] font-medium text-slate-600"
                           title={
                             t.ticketType ? formatLabel(t.ticketType) : undefined
                           }
@@ -1071,39 +1062,47 @@ export function TicketsTab({
                           </span>
                         </TableCell>
                         <TableCell
-                          className="max-w-0 px-2 py-1 align-middle text-[11px] text-slate-600"
+                          className="max-w-0 px-2 py-0.5 align-middle text-[11px] font-medium"
+                          title={t.campaignOption ? formatLabel(t.campaignOption) : undefined}
+                        >
+                          {t.campaignOption ? (
+                            <span className={cn(
+                              "block truncate rounded-full px-1.5 py-px text-[10px] font-semibold w-fit",
+                              t.campaignOption.includes("PAID") || t.campaignOption === "REGISTERED" || t.campaignOption === "ENROLLED"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : t.campaignOption.includes("NOT_") || t.campaignOption === "DISPUTE" || t.campaignOption === "CANCELED"
+                                  ? "bg-red-50 text-red-600"
+                                  : t.campaignOption === "PROMISE_TO_PAY"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600",
+                            )}>
+                              {formatLabel(t.campaignOption)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className="max-w-0 px-2 py-0.5 align-middle text-[11px] text-slate-600"
                           title={agentName(t)}
                         >
                           <span className="block truncate font-medium">
                             {agentName(t)}
                           </span>
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <TableYardBadge
                             compact
                             name={t.yard?.commonName || t.yard?.name}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <TableCampaignBadge
                             compact
                             name={t.campaign?.nombre}
                           />
                         </TableCell>
-                        <TableCell
-                          className="max-w-0 px-2 py-1 align-middle text-[11px] font-medium text-slate-600"
-                          title={lineLabel || undefined}
-                        >
-                          <span
-                            className={cn(
-                              "block truncate",
-                              !lineLabel && "text-slate-400",
-                            )}
-                          >
-                            {lineLabel || "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap px-2 py-1 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
+                        <TableCell className="whitespace-nowrap px-2 py-0.5 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
                           {createdLabel}
                         </TableCell>
                       </TableRow>
@@ -1113,7 +1112,7 @@ export function TicketsTab({
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
                           <TableCell
-                            colSpan={11}
+                            colSpan={10}
                             className="border-t-0 py-1.5 px-0"
                           >
                             <InlineTicketTimeline

@@ -517,6 +517,34 @@ export function CustomerTicketDrawer({
   const customerPhone =
     group?.customerPhone ?? selectedTicket?.customer?.phone ?? "";
   const ticketCount = allTickets.length || group?.tickets.length || 0;
+  const customersForTicketSheet = useMemo(() => {
+    const map = new Map<string, any>();
+    customers.forEach((customer) => {
+      if (customer?.id != null) map.set(String(customer.id), customer);
+    });
+
+    const selectedCustomerId =
+      selectedTicket?.customer?.id ?? selectedTicket?.customerId;
+    if (selectedCustomerId != null && !map.has(String(selectedCustomerId))) {
+      map.set(String(selectedCustomerId), {
+        id: selectedCustomerId,
+        name:
+          selectedTicket?.customer?.name ||
+          group?.customerName ||
+          `Customer #${selectedCustomerId}`,
+        phone: selectedTicket?.customer?.phone || group?.customerPhone || null,
+        email: selectedTicket?.customer?.email || null,
+      });
+    }
+
+    return Array.from(map.values());
+  }, [
+    customers,
+    group?.customerName,
+    group?.customerPhone,
+    selectedTicket?.customer,
+    selectedTicket?.customerId,
+  ]);
 
   // Campaign options derived in one memo
   const campaignOptionValues = useMemo(() => {
@@ -556,11 +584,11 @@ export function CustomerTicketDrawer({
   );
 
   const filteredCustomers = useMemo(() => {
-    if (!customerSearch.trim()) return customers;
+    if (!customerSearch.trim()) return customersForTicketSheet;
     const s = customerSearch.toLowerCase();
     const sd = normalizePhone(customerSearch);
     const sds = stripUsCode(sd);
-    return customers.filter((c: any) => {
+    return customersForTicketSheet.filter((c: any) => {
       const cpd = normalizePhone(c.phone);
       const cpds = stripUsCode(cpd);
       const phoneMatch =
@@ -577,14 +605,14 @@ export function CustomerTicketDrawer({
         phoneMatch
       );
     });
-  }, [customers, customerSearch]);
+  }, [customersForTicketSheet, customerSearch]);
 
   const mainFilteredCustomers = useMemo(() => {
-    if (!mainCustomerSearch.trim()) return customers;
+    if (!mainCustomerSearch.trim()) return customersForTicketSheet;
     const s = mainCustomerSearch.toLowerCase();
     const sd = normalizePhone(mainCustomerSearch);
     const sds = stripUsCode(sd);
-    return customers.filter((c: any) => {
+    return customersForTicketSheet.filter((c: any) => {
       const cpd = normalizePhone(c.phone);
       const cpds = stripUsCode(cpd);
       const phoneMatch =
@@ -601,7 +629,7 @@ export function CustomerTicketDrawer({
         phoneMatch
       );
     });
-  }, [customers, mainCustomerSearch]);
+  }, [customersForTicketSheet, mainCustomerSearch]);
 
   const sp = STATUS_PILL[normalizeStatusKey(selectedTicket?.status)] || null;
   const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
@@ -1021,7 +1049,7 @@ export function CustomerTicketDrawer({
                   <TicketPropertiesCard
                     editFormData={editFormData}
                     setEditFormData={setEditFormData}
-                    customers={customers}
+                    customers={customersForTicketSheet}
                     yards={yards}
                     agents={agents}
                     campaigns={campaigns}
@@ -1651,7 +1679,7 @@ export function CustomerTicketDrawer({
                           >
                             <span className="truncate text-slate-800 font-medium">
                               {editFormData.customerId
-                                ? customers.find(
+                                ? customersForTicketSheet.find(
                                     (c: any) =>
                                       c.id.toString() ===
                                       editFormData.customerId,
@@ -1726,7 +1754,7 @@ export function CustomerTicketDrawer({
                     <div>
                       <InspLabel>Phone</InspLabel>
                       <div className="h-7 flex items-center px-2.5 text-xs bg-slate-50 rounded-lg text-slate-500 font-mono">
-                        {customers.find(
+                        {customersForTicketSheet.find(
                           (c: any) =>
                             c.id.toString() === editFormData.customerId,
                         )?.phone || "Auto-filled"}
