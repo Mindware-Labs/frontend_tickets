@@ -880,15 +880,15 @@ export function TicketsTab({
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative w-full table-fixed text-[12px]">
             <colgroup>
-              <col className="w-[11%]" />
-              <col className="w-[5%]" />
-              <col className="w-[7%]" />
-              <col className="w-[9%]" />
-              <col className="w-[7%]" />
+              <col className="w-[14%]" />
+              <col className="w-[4%]" />
+              <col className="w-[10%]" />
               <col className="w-[8%]" />
-              <col className="w-[7%]" />
-              <col className="w-[15%]" />
-              <col className="w-[23%]" />
+              <col className="w-[9%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[14%]" />
+              <col className="w-[13%]" />
               <col className="w-[8%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">

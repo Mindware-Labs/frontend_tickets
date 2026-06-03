@@ -405,13 +405,13 @@ export function GroupedCallsTable({
             <colgroup>
               <col className="w-[14%]" />
               <col className="w-[6%]" />
-              <col className="w-[15%]" />
-              <col className="w-[16%]" />
-              <col className="w-[11%]" />
               <col className="w-[10%]" />
-              <col className="w-[8%]" />
+              <col className="w-[17%]" />
+              <col className="w-[17%]" />
+              <col className="w-[10%]" />
               <col className="w-[9%]" />
-              <col className="w-[12%]" />
+              <col className="w-[9%]" />
+              <col className="w-[8%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
@@ -439,7 +439,7 @@ export function GroupedCallsTable({
                 <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Direction
                 </TableHead>
-                <TableHead className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="pl-2 pr-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Agent
                 </TableHead>
               </TableRow>
@@ -613,7 +613,7 @@ export function GroupedCallsTable({
 
                         {/* Agent */}
                         <TableCell
-                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] text-slate-600"
+                          className="max-w-0 pl-2 pr-3 py-1.5 align-middle text-[11px] text-slate-600"
                           title={(t as any).agent?.name}
                         >
                           <span className="block truncate font-medium">

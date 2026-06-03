@@ -746,28 +746,26 @@ export function ManualRecordsTab() {
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
           <Table className="relative w-full table-fixed text-[12px]">
             <colgroup>
-              <col className="w-[5%]" />
-              <col className="w-[22%]" />
-              <col className="w-[5%]" />
+              <col className="w-[13%]" />
+              <col className="w-[4%]" />
               <col className="w-[9%]" />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
-              <col className="w-[14%]" />
-              <col className="w-[12%]" />
-              <col className="w-[7%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[9%]" />
+              <col className="w-[9%]" />
+              <col className="w-[16%]" />
+              <col className="w-[8%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  ID
-                </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
                 </TableHead>
-                <TableHead className="px-1 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Records
+                <TableHead className="px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Rec
                 </TableHead>
-                <TableHead className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <TableHead className="px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Status
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
@@ -780,20 +778,26 @@ export function ManualRecordsTab() {
                   Campaign
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Option
+                </TableHead>
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Disposition
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Notes
+                </TableHead>
+                <TableHead className="px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Created
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={9} kind="manual-records" compact />
+                <TableLoadingRow colSpan={10} kind="manual-records" compact />
               ) : recordGroups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className="h-24 text-center text-sm text-slate-400"
                   >
                     No records found
@@ -824,12 +828,7 @@ export function ManualRecordsTab() {
                         )}
                         onClick={() => openView(r)}
                       >
-                        <TableCell className="px-2 py-1 align-middle">
-                          <span className="font-mono text-[11px] font-semibold tabular-nums text-slate-500">
-                            #{r.id}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="px-2 py-0.5 align-middle">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
@@ -844,12 +843,17 @@ export function ManualRecordsTab() {
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <p
-                                className="truncate text-[12px] font-bold leading-tight text-foreground"
-                                title={group.customerName}
-                              >
-                                {group.customerName}
-                              </p>
+                              <div className="flex min-w-0 items-baseline gap-1">
+                                <span className="shrink-0 font-mono text-[9px] font-semibold text-slate-400 tabular-nums">
+                                  #{r.id}
+                                </span>
+                                <p
+                                  className="truncate text-[12px] font-bold leading-tight text-foreground"
+                                  title={group.customerName}
+                                >
+                                  {group.customerName}
+                                </p>
+                              </div>
                               {phone && (
                                 <div className="flex min-w-0 items-center gap-0.5">
                                   <p
@@ -874,7 +878,7 @@ export function ManualRecordsTab() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="px-2 py-1 text-center align-middle">
+                        <TableCell className="px-2 py-0.5 text-center align-middle">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -898,12 +902,12 @@ export function ManualRecordsTab() {
                             </span>
                           </button>
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="px-2 py-0.5 text-center align-middle">
                           <TableSupportStatusPill
                             status={r.status || SupportTicketStatus.ACTIVE}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <span
                             className="block truncate text-[11px] font-medium text-slate-700"
                             title={recordAgentName(r)}
@@ -911,40 +915,57 @@ export function ManualRecordsTab() {
                             {recordAgentName(r)}
                           </span>
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <TableYardBadge
                             compact
                             name={r.yard?.commonName || r.yard?.name}
                           />
                         </TableCell>
                         <TableCell
-                          className="px-2 py-1 align-middle"
-                          title={[
-                            r.campaign
-                              ? (r.campaign as { nombre?: string }).nombre
-                              : null,
-                            r.campaignOption
-                              ? formatLabel(r.campaignOption)
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          className="max-w-0 px-2 py-0.5 align-middle"
+                          title={(r.campaign as { nombre?: string } | null)?.nombre || undefined}
                         >
                           <TableCampaignBadge
                             compact
-                            name={
-                              r.campaign
-                                ? (r.campaign as { nombre?: string }).nombre
-                                : r.campaignOption
-                                  ? formatLabel(r.campaignOption)
-                                  : null
-                            }
+                            name={(r.campaign as { nombre?: string } | null)?.nombre}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1 align-middle">
+                        <TableCell
+                          className="max-w-0 px-2 py-0.5 align-middle"
+                          title={r.campaignOption ? formatLabel(r.campaignOption) : undefined}
+                        >
+                          {r.campaignOption ? (
+                            <span className={cn(
+                              "block truncate rounded-full px-1.5 py-px text-[10px] font-semibold w-fit",
+                              r.campaignOption.includes("PAID") || r.campaignOption === "REGISTERED" || r.campaignOption === "ENROLLED"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : r.campaignOption.includes("NOT_") || r.campaignOption === "DISPUTE" || r.campaignOption === "CANCELED"
+                                  ? "bg-red-50 text-red-600"
+                                  : r.campaignOption === "PROMISE_TO_PAY"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600",
+                            )}>
+                              {formatLabel(r.campaignOption)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <TableDispositionPill disposition={r.disposition} />
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-2 py-1 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
+                        <TableCell
+                          className="max-w-0 px-2 py-0.5 align-middle"
+                          title={r.notes || undefined}
+                        >
+                          <span className={cn(
+                            "block truncate text-[11px]",
+                            r.notes ? "text-slate-600" : "text-slate-400",
+                          )}>
+                            {r.notes || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-2 py-0.5 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
                           {createdLabel}
                         </TableCell>
                       </TableRow>
@@ -954,7 +975,7 @@ export function ManualRecordsTab() {
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
                           <TableCell
-                            colSpan={9}
+                            colSpan={10}
                             className="border-t-0 px-0 py-1.5"
                           >
                             <InlineManualRecordTimeline
