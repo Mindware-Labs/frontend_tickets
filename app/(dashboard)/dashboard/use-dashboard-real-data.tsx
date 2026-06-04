@@ -96,6 +96,7 @@ type PerformanceReport = {
     totalManualRecords?: number;
     activeAgents?: number;
     avgCallDurationSec?: number;
+    avgQueueWaitSec?: number;
     overallResolutionRate?: number;
   };
   callsByDay?: {
@@ -506,6 +507,8 @@ function buildOperationsMetrics({
   const avgDuration = numberValue(
     summary?.avgCallDurationSec ?? performance?.kpis?.avgDurationSeconds,
   );
+  const avgQueueWait = numberValue(summary?.avgQueueWaitSec);
+  const answeredCalls = numberValue(summary?.totalAnsweredCalls);
   const followUps =
     numberValue(summary?.pendingTickets) +
     numberValue(summary?.overdueTickets) +
@@ -520,10 +523,15 @@ function buildOperationsMetrics({
       tone: "emerald",
     }),
     buildMetric(operationsMetricTemplates[1], {
-      value: "—",
+      value: answeredCalls > 0 ? formatDuration(avgQueueWait) : "—",
       detail: "Average time to answer",
-      trend: "Queue data unavailable",
-      tone: "sky",
+      trend:
+        answeredCalls > 0
+          ? avgQueueWait <= 90
+            ? "Within answer-time goal"
+            : "Above answer-time goal"
+          : "Queue data unavailable",
+      tone: answeredCalls === 0 ? "sky" : avgQueueWait <= 90 ? "emerald" : "amber",
     }),
     buildMetric(operationsMetricTemplates[2], {
       value: formatDuration(avgDuration),
@@ -876,7 +884,7 @@ function buildScorecards({
   performance,
 }: DashboardSources): ScorecardItem[] {
   const summary = performance?.summary;
-  const avgWait = 0;
+  const avgWait = numberValue(summary?.avgQueueWaitSec);
   const avgDuration = numberValue(summary?.avgCallDurationSec);
   const totalAnswered = numberValue(summary?.totalAnsweredCalls);
   const activeInPeriod = numberValue(summary?.activeAgents);
