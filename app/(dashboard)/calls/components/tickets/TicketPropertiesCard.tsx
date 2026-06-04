@@ -33,6 +33,10 @@ import {
   type CustomerSearchOption,
 } from "../shared/AsyncCustomerCombobox";
 import {
+  TablePriorityPill,
+  TableTicketTypePill,
+} from "@/components/entity-table-pills";
+import {
   CREATE_TICKET_STATUSES,
   TicketStatusToggle,
 } from "./TicketStatusToggle";
@@ -366,7 +370,7 @@ export function TicketPropertiesCard({
               >
                 {Object.values(SupportTicketPriority).map((p) => (
                   <SelectItem key={p} value={p}>
-                    {formatEnumLabel(p)}
+                    <TablePriorityPill priority={p} />
                   </SelectItem>
                 ))}
               </InspectorSelect>
@@ -387,7 +391,7 @@ export function TicketPropertiesCard({
                 <SelectItem value="none">None</SelectItem>
                 {Object.values(SupportTicketType).map((t) => (
                   <SelectItem key={t} value={t}>
-                    {formatEnumLabel(t)}
+                    <TableTicketTypePill type={t} />
                   </SelectItem>
                 ))}
               </InspectorSelect>

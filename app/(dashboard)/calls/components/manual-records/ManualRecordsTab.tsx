@@ -602,17 +602,17 @@ export function ManualRecordsTab() {
                   key={tab.key}
                   type="button"
                   onClick={() => filters.handleViewChange(tab.key)}
-                  className={`-mb-px mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-[10px] text-[13px] font-medium transition-colors ${
+                  className={`-mb-px mr-2 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors ${
                     isActive
-                      ? "border-[#008f68] text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
                   }`}
                 >
                   {tab.label}
                   <span
                     className={`rounded-full border px-[7px] py-[1px] text-[11px] ${
                       isActive
-                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        ? "border-[#008f68] bg-[#008f68] font-semibold text-white"
                         : "border-border bg-muted/40 font-medium text-muted-foreground"
                     }`}
                   >

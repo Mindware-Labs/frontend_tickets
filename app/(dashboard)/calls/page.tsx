@@ -1413,17 +1413,17 @@ export default function TicketsPage() {
                       <button
                         key={tab.id}
                         onClick={() => ticketFilters.handleViewChange(tab.id)}
-                        className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
+                        className={`mr-2 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors -mb-px ${
                           isActive
-                            ? "border-[#008f68] text-foreground"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
+                            ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                            : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
                         }`}
                       >
                         {tab.label}
                         <span
                           className={`py-px px-1.5 rounded-full text-[11px] border ${
                             isActive
-                              ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                              ? "bg-[#008f68] text-white font-semibold border-[#008f68]"
                               : "bg-muted/40 text-muted-foreground font-medium border-border"
                           }`}
                         >

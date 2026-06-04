@@ -91,6 +91,23 @@ const PRIORITY_PILL: Record<string, PillColors> = {
 
 const DEFAULT_PRIORITY: PillColors = PRIORITY_PILL.LOW;
 
+const TICKET_TYPE_PILL: Record<string, PillColors> = {
+  BOOKING: { dot: "#2563eb", bg: "#eff6ff", fg: "#1d4ed8" },
+  GENERAL_INFO: { dot: "#0891b2", bg: "#ecfeff", fg: "#0e7490" },
+  COMPLAINT: { dot: "#dc2626", bg: "#fee2e2", fg: "#b91c1c" },
+  SUPPORT: { dot: "#008f68", bg: "#e6f5f0", fg: "#006d50" },
+  BILLING: { dot: "#7c3aed", bg: "#ede9fe", fg: "#6d28d9" },
+  TECHNICAL_ISSUE: { dot: "#f97316", bg: "#ffedd5", fg: "#c2410c" },
+  NEW_LEAD: { dot: "#059669", bg: "#d1fae5", fg: "#047857" },
+  SPAM: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },
+};
+
+const DEFAULT_TICKET_TYPE: PillColors = {
+  dot: "#94a3b8",
+  bg: "#f1f5f9",
+  fg: "#475569",
+};
+
 function EntityPill({
   label,
   colors,
@@ -167,4 +184,18 @@ export function TablePriorityPill({
   const colors = PRIORITY_PILL[key] || DEFAULT_PRIORITY;
 
   return <EntityPill label={formatPillLabel(raw)} colors={colors} bold />;
+}
+
+export function TableTicketTypePill({
+  type,
+}: {
+  type?: string | null;
+}) {
+  const raw = type?.trim();
+  if (!raw) return tableEmptyCell;
+
+  const key = normalizeEntityKey(raw);
+  const colors = TICKET_TYPE_PILL[key] || DEFAULT_TICKET_TYPE;
+
+  return <EntityPill label={formatPillLabel(raw)} colors={colors} />;
 }
