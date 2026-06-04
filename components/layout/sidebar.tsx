@@ -63,9 +63,8 @@ type NavSection = {
 
 const sections: NavSection[] = [
   {
-    title: "Communications",
+    title: "Aircall",
     items: [
-      { title: "Contact Center", url: "/calls", icon: Headset },
       { title: "Aircall", url: "/aircall", icon: Radio },
     ],
   },
@@ -82,6 +81,12 @@ const sections: NavSection[] = [
           { title: "Reports", url: "/reports/campaigns", icon: BarChart3 },
         ],
       },
+    ],
+  },
+  {
+    title: "Communications",
+    items: [
+      { title: "Contact Center", url: "/calls", icon: Headset },
     ],
   },
   {
@@ -102,7 +107,7 @@ const sections: NavSection[] = [
   {
     title: "Notifications",
     items: [
-      { title: "Notifications Audit", url: "/audit/notifications", icon: Bell },
+      { title: "Notifications", url: "/audit/notifications", icon: Bell },
     ],
   },
   {
@@ -110,7 +115,12 @@ const sections: NavSection[] = [
     items: [
       { title: "Customers", url: "/customers", icon: Users },
       { title: "Users", url: "/users", icon: Users, adminOnly: true },
-      { title: "Phone Lines", url: "/phone-lines", icon: Phone, adminOnly: true },
+      {
+        title: "Phone Lines",
+        url: "/phone-lines",
+        icon: Phone,
+        adminOnly: true,
+      },
       { title: "Profile", url: "/profile", icon: CircleUser },
     ],
   },
@@ -186,7 +196,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             }))
             .filter(
               (item) =>
-                item.url || item.children === undefined || item.children.length > 0,
+                item.url ||
+                item.children === undefined ||
+                item.children.length > 0,
             ),
         }))
         .filter((section) => section.items.length > 0),
@@ -197,7 +209,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     Boolean(url && (pathname === url || pathname.startsWith(`${url}/`)));
 
   const groupIsActive = (item: NavItem) =>
-    isActive(item.url) || Boolean(item.children?.some((child) => isActive(child.url)));
+    isActive(item.url) ||
+    Boolean(item.children?.some((child) => isActive(child.url)));
 
   const toggleGroup = (key: string) => {
     if (isCollapsed) {
@@ -239,7 +252,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     "mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500";
 
   const wrapCollapsed = (label: string, node: React.ReactElement) =>
-    isCollapsed ? <CollapsedTooltip label={label}>{node}</CollapsedTooltip> : node;
+    isCollapsed ? (
+      <CollapsedTooltip label={label}>{node}</CollapsedTooltip>
+    ) : (
+      node
+    );
 
   const renderNavItem = (item: NavItem | NavChild, child = false) => {
     if (!item.url) return null;
@@ -274,23 +291,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const Icon = item.icon;
     const active = groupIsActive(item);
     const isOpen =
-      openGroups[item.title] ?? Boolean(item.children?.some((child) => isActive(child.url)));
+      openGroups[item.title] ??
+      Boolean(item.children?.some((child) => isActive(child.url)));
 
     const button = (
       <button
         type="button"
         onClick={() => toggleGroup(item.title)}
         aria-expanded={isOpen}
-        className={cn(
-          itemBase,
-          itemSize,
-          active ? itemActive : itemIdle,
-        )}
+        className={cn(itemBase, itemSize, active ? itemActive : itemIdle)}
       >
         <NavIcon icon={Icon} active={active} />
         {!isCollapsed && (
           <>
-            <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
+            <span className="min-w-0 flex-1 truncate text-left">
+              {item.title}
+            </span>
             <ChevronDown
               size={14}
               strokeWidth={ICON_STROKE}
@@ -388,13 +404,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         <div className="scrollbar-app min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pb-1">
           {isCollapsed ? (
-            <section
-              className="rounded-xl border border-slate-200/80 bg-white px-1 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950"
-            >
+            <section className="rounded-xl border border-slate-200/80 bg-white px-1 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
               <ul className="flex flex-col items-center space-y-0.5">
                 {visibleSections.flatMap((section) =>
                   section.items.map((item) =>
-                    item.children?.length ? renderGroup(item) : renderNavItem(item),
+                    item.children?.length
+                      ? renderGroup(item)
+                      : renderNavItem(item),
                   ),
                 )}
               </ul>
@@ -408,7 +424,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <p className={sectionLabel}>{section.title}</p>
                 <ul className="space-y-0.5">
                   {section.items.map((item) =>
-                    item.children?.length ? renderGroup(item) : renderNavItem(item),
+                    item.children?.length
+                      ? renderGroup(item)
+                      : renderNavItem(item),
                   )}
                 </ul>
               </section>

@@ -9,6 +9,7 @@ import {
   Shield,
   Trash2,
   UserCog,
+  ShieldOff,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,8 +53,8 @@ function StatusPill({ active }: { active: boolean }) {
       Active
     </span>
   ) : (
-    <span className="inline-flex h-6 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-100 px-2 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-500/15 dark:text-slate-400">
-      <span className="size-1.5 shrink-0 rounded-full bg-slate-400" />
+    <span className="inline-flex h-6 items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 text-[11px] font-bold text-red-700 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-400">
+      <ShieldOff className="size-3 shrink-0" strokeWidth={2.5} />
       Blocked
     </span>
   );
@@ -125,18 +126,18 @@ export function UserCard({
   return (
     <article
       className={cn(
-        "group relative flex min-h-[268px] flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all duration-200",
-        "border-slate-200/80 hover:-translate-y-0.5 hover:border-[#008f68]/35 hover:shadow-[0_12px_32px_rgba(0,111,80,0.12)]",
-        "dark:border-slate-800 dark:bg-slate-950 dark:hover:border-emerald-500/30",
-        !user.isActive && "opacity-[0.92]",
+        "group relative flex min-h-[268px] flex-col overflow-hidden rounded-2xl border text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all duration-200",
+        user.isActive
+          ? "border-slate-200/80 bg-white hover:-translate-y-0.5 hover:border-[#008f68]/35 hover:shadow-[0_12px_32px_rgba(0,111,80,0.12)] dark:border-slate-800 dark:bg-slate-950 dark:hover:border-emerald-500/30"
+          : "border-red-200 bg-red-50/40 hover:-translate-y-0.5 hover:border-red-300 hover:shadow-[0_12px_32px_rgba(220,38,38,0.10)] dark:border-red-900/50 dark:bg-red-950/20 dark:hover:border-red-700/50",
       )}
     >
       <div
         className={cn(
-          "absolute inset-x-0 top-0 h-px",
+          "absolute inset-x-0 top-0 h-0.5",
           user.isActive
             ? "bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
-            : "bg-gradient-to-r from-transparent via-slate-300 to-transparent dark:via-slate-700",
+            : "bg-gradient-to-r from-transparent via-red-400/70 to-transparent dark:via-red-500/50",
         )}
       />
 
@@ -151,8 +152,13 @@ export function UserCard({
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  Team member
+                <p className={cn(
+                  "text-[10px] font-semibold uppercase tracking-widest",
+                  user.isActive
+                    ? "text-slate-400 dark:text-slate-500"
+                    : "text-red-400 dark:text-red-500",
+                )}>
+                  {user.isActive ? "Team member" : "Access blocked"}
                 </p>
                 <h3
                   className="mt-1 truncate text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-50"
@@ -183,7 +189,12 @@ export function UserCard({
       </div>
 
       <div
-        className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/40"
+        className={cn(
+          "flex items-center justify-between gap-2 border-t px-3.5 py-2.5",
+          user.isActive
+            ? "border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/40"
+            : "border-red-100 bg-red-50/60 dark:border-red-900/30 dark:bg-red-950/30",
+        )}
       >
         <span className="truncate text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           Actions

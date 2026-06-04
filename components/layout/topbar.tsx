@@ -72,7 +72,7 @@ function resolvePageMeta(pathname: string): PageMeta {
     return { section: "Management", title: "Landlord Reports" };
 
   if (path.startsWith("/audit/notifications"))
-    return { section: "Notifications", title: "Notifications Audit" };
+    return { section: "Notifications", title: "Notifications" };
 
   if (path.startsWith("/yards"))
     return { section: "Management", title: "Yards" };
@@ -95,9 +95,7 @@ function resolvePageMeta(pathname: string): PageMeta {
   const segment = pathname.split("/").filter(Boolean).pop() || "dashboard";
 
   return {
-    title: segment
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase()),
+    title: segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
   };
 }
 
@@ -197,13 +195,17 @@ export default function Topbar() {
               <SidebarTrigger className={topbarIconBtnClass} />
             ) : null}
 
-            <span className={cn(topbarAccentBarClass, isMobile ? "hidden sm:block" : "block")} aria-hidden />
+            <span
+              className={cn(
+                topbarAccentBarClass,
+                isMobile ? "hidden sm:block" : "block",
+              )}
+              aria-hidden
+            />
 
             <div className="flex min-w-0 flex-col justify-center gap-0.5">
               {pageMeta.section ? (
-                <p className={topbarSectionLabelClass}>
-                  {pageMeta.section}
-                </p>
+                <p className={topbarSectionLabelClass}>{pageMeta.section}</p>
               ) : null}
               <h1 className={topbarTitleClass}>{pageMeta.title}</h1>
             </div>
@@ -211,7 +213,10 @@ export default function Topbar() {
 
           <div className={topbarActionsGroupClass}>
             <div className="hidden h-8 items-center gap-1.5 rounded-md border border-[#008f68]/10 bg-[#f0faf5] px-2 text-[11px] font-semibold text-[#008f68] md:flex dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-              <ShieldCheck className="size-3.5 text-[#008f68] dark:text-emerald-400" aria-hidden />
+              <ShieldCheck
+                className="size-3.5 text-[#008f68] dark:text-emerald-400"
+                aria-hidden
+              />
               <span className="max-w-[82px] truncate">{roleLabel}</span>
             </div>
 
@@ -296,7 +301,9 @@ export default function Topbar() {
                           <CircleUser className="size-3.5" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block font-semibold leading-tight">Profile</span>
+                          <span className="block font-semibold leading-tight">
+                            Profile
+                          </span>
                           <span className="block truncate text-[11px] font-medium leading-tight text-slate-400 group-focus/menuitem:text-[#008f68]/70 dark:text-slate-500">
                             Personal details and settings
                           </span>
@@ -314,7 +321,9 @@ export default function Topbar() {
                         <LogOut className="size-3.5" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block font-semibold leading-tight">Sign out</span>
+                        <span className="block font-semibold leading-tight">
+                          Sign out
+                        </span>
                         <span className="block truncate text-[11px] font-medium leading-tight text-rose-400 dark:text-rose-500">
                           End this browser session
                         </span>
@@ -346,7 +355,8 @@ export default function Topbar() {
             </div>
 
             <AlertDialogDescription className="pl-14 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
-              Your current browser session will end and you will return to the login screen.
+              Your current browser session will end and you will return to the
+              login screen.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

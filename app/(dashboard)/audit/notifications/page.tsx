@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   ArrowDown,
-  ArrowDownToLine,
   ArrowUp,
   ArrowUpDown,
   Bell,
@@ -11,7 +10,6 @@ import {
   Clock3,
   FileText,
   List,
-  Loader2,
   Phone,
   Radio,
   RefreshCw,
@@ -19,7 +17,10 @@ import {
   Table2,
   Users,
 } from "lucide-react";
-import { EntityLoadingSpinner, TableLoadingRow } from "@/components/shared/entity-loading-state";
+import {
+  EntityLoadingSpinner,
+  TableLoadingRow,
+} from "@/components/shared/entity-loading-state";
 import { appPanelClass } from "@/components/layout/sidebar-theme";
 import { cn } from "@/lib/utils";
 import { PaginationFooter } from "@/components/common/pagination-footer";
@@ -36,7 +37,6 @@ type NotificationType =
 type SortField = "id" | "type" | "agentId" | "read" | "createdAt";
 type SortDir = "asc" | "desc";
 type ViewMode = "table" | "timeline";
-type ExcelJsModule = typeof import("exceljs");
 
 interface AuditEntry {
   id: number;
@@ -88,18 +88,32 @@ const TYPE_CFG: Record<
 };
 
 const AGENT_COLORS: [string, string][] = [
-  ["#ECFDF5","#065F46"], ["#EFF6FF","#1E40AF"], ["#FFFBEB","#92400E"],
-  ["#F5F3FF","#5B21B6"], ["#FFF1F2","#9F1239"],
+  ["#ECFDF5", "#065F46"],
+  ["#EFF6FF", "#1E40AF"],
+  ["#FFFBEB", "#92400E"],
+  ["#F5F3FF", "#5B21B6"],
+  ["#FFF1F2", "#9F1239"],
 ];
 
 const AUDIT_FETCH_LIMIT = 250;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtDateFull(d: string) {
-  return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 function fmtDateShort(d: string) {
-  return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 function timeAgo(d: string) {
   const diff = Date.now() - new Date(d).getTime();
@@ -133,18 +147,30 @@ function fmtCompactDuration(minutes: number | null) {
 }
 function initials(name?: string) {
   if (!name) return "?";
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 function agentColors(id: number): [string, string] {
   return AGENT_COLORS[id % AGENT_COLORS.length];
 }
 function groupByDay(entries: AuditEntry[]): Record<string, AuditEntry[]> {
-  return entries.reduce((acc, e) => {
-    const day = new Date(e.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(e);
-    return acc;
-  }, {} as Record<string, AuditEntry[]>);
+  return entries.reduce(
+    (acc, e) => {
+      const day = new Date(e.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      if (!acc[day]) acc[day] = [];
+      acc[day].push(e);
+      return acc;
+    },
+    {} as Record<string, AuditEntry[]>,
+  );
 }
 
 const NOTIFICATION_TYPES = new Set<NotificationType>([
@@ -165,7 +191,7 @@ function normalizeAgent(raw: any, agentId: number | null): AuditEntry["agent"] {
   if (agent && typeof agent === "object") {
     const id = Number(agent.id ?? agentId);
     return {
-      id: Number.isFinite(id) ? id : agentId ?? 0,
+      id: Number.isFinite(id) ? id : (agentId ?? 0),
       name:
         agent.name ||
         [agent.firstName, agent.lastName].filter(Boolean).join(" ") ||
@@ -231,198 +257,7 @@ function extractNotificationRows(payload: any): AuditEntry[] {
     .filter((entry): entry is AuditEntry => Boolean(entry));
 }
 
-async function exportNotificationsWorkbook({
-  entries,
-  filename,
-}: {
-  entries: AuditEntry[];
-  filename: string;
-}) {
-  const ExcelJS: ExcelJsModule = await import("exceljs");
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Frontend Tickets";
-  workbook.created = new Date();
 
-  const stats = buildNotificationExportStats(entries);
-  const summary = workbook.addWorksheet("Summary", {
-    views: [{ state: "frozen", ySplit: 9 }],
-  });
-  summary.columns = [
-    { key: "label", width: 28 },
-    { key: "value", width: 38 },
-    { key: "count", width: 12 },
-    { key: "unread", width: 12 },
-    { key: "read", width: 12 },
-    { key: "avgRead", width: 16 },
-  ];
-  summary.addRows([
-    ["Report", "Notifications audit export"],
-    ["Exported at", fmtDateFull(new Date().toISOString())],
-    ["Notifications", stats.total],
-    ["Unread / Read", `${stats.unread} / ${stats.read}`],
-    ["Broadcast", stats.broadcast],
-    ["Average read latency", fmtCompactDuration(stats.averageReadLatency)],
-    [],
-    ["Type", "Label", "Count", "Unread", "Read", "Avg read latency"],
-  ]);
-  stats.byType.forEach((row) => {
-    summary.addRow([
-      row.type,
-      TYPE_CFG[row.type].label,
-      row.total,
-      row.unread,
-      row.read,
-      fmtCompactDuration(row.averageReadLatency),
-    ]);
-  });
-  styleNotificationSummary(summary);
-  styleNotificationTable(summary, 8);
-
-  const detail = workbook.addWorksheet("Notifications", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-  detail.columns = [
-    { header: "ID", key: "id", width: 10 },
-    { header: "Type", key: "type", width: 26 },
-    { header: "Message", key: "message", width: 70 },
-    { header: "Recipient", key: "recipient", width: 28 },
-    { header: "Recipient ID", key: "agentId", width: 12 },
-    { header: "Status", key: "status", width: 12 },
-    { header: "Created at", key: "createdAt", width: 24 },
-    { header: "Read at", key: "readAt", width: 24 },
-    { header: "Read latency", key: "readLatency", width: 16 },
-    { header: "Delivered via", key: "deliveredVia", width: 16 },
-    { header: "Call ID", key: "callId", width: 12 },
-    { header: "Ticket ID", key: "ticketId", width: 12 },
-    { header: "Schedule call ID", key: "scheduleCallId", width: 16 },
-  ];
-  detail.addRows(entries.map(notificationToExportRow));
-  styleNotificationTable(detail, 1);
-  detail.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: Math.max(detail.rowCount, 1), column: detail.columnCount },
-  };
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadBlob(
-    new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }),
-    filename,
-  );
-}
-
-function buildNotificationExportStats(entries: AuditEntry[]) {
-  const total = entries.length;
-  const unread = entries.filter((entry) => !entry.read).length;
-  const read = total - unread;
-  const broadcast = entries.filter((entry) => !entry.agentId).length;
-  const averageReadLatency = averageLatency(entries);
-  const byType = Array.from(NOTIFICATION_TYPES).map((type) => {
-    const rows = entries.filter((entry) => entry.type === type);
-    return {
-      type,
-      total: rows.length,
-      unread: rows.filter((entry) => !entry.read).length,
-      read: rows.filter((entry) => entry.read).length,
-      averageReadLatency: averageLatency(rows),
-    };
-  });
-
-  return { total, unread, read, broadcast, averageReadLatency, byType };
-}
-
-function averageLatency(entries: AuditEntry[]): number | null {
-  const values = entries
-    .map((entry) => readLatencyMinutes(entry.createdAt, entry.readAt))
-    .filter((value): value is number => value !== null);
-  if (values.length === 0) return null;
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
-
-function notificationToExportRow(entry: AuditEntry) {
-  return {
-    id: entry.id,
-    type: TYPE_CFG[entry.type].label,
-    message: entry.message,
-    recipient: entry.agent?.name || entry.agent?.email || "Broadcast",
-    agentId: entry.agentId ?? "",
-    status: entry.read ? "Read" : "Unread",
-    createdAt: fmtDateFull(entry.createdAt),
-    readAt: entry.readAt ? fmtDateFull(entry.readAt) : "",
-    readLatency: readLatency(entry.createdAt, entry.readAt) ?? "",
-    deliveredVia: entry.deliveredVia ?? "",
-    callId: entry.callId ?? "",
-    ticketId: entry.ticketId ?? "",
-    scheduleCallId: entry.scheduleCallId ?? "",
-  };
-}
-
-function styleNotificationSummary(worksheet: import("exceljs").Worksheet) {
-  worksheet.getCell("A1").font = { bold: true, color: { argb: "FFFFFFFF" } };
-  worksheet.getCell("B1").font = { bold: true, color: { argb: "FFFFFFFF" } };
-  worksheet.getRow(1).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF008F68" },
-  };
-  for (let rowNumber = 2; rowNumber <= 6; rowNumber += 1) {
-    worksheet.getCell(rowNumber, 1).font = { bold: true };
-    worksheet.getCell(rowNumber, 1).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFF0FAF5" },
-    };
-  }
-}
-
-function styleNotificationTable(
-  worksheet: import("exceljs").Worksheet,
-  headerRow: number,
-) {
-  const header = worksheet.getRow(headerRow);
-  header.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  header.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF008F68" },
-  };
-  header.alignment = { vertical: "middle", wrapText: true };
-
-  worksheet.eachRow((row, rowNumber) => {
-    row.alignment = { vertical: "top", wrapText: true };
-    row.eachCell((cell) => {
-      cell.border = {
-        top: { style: "thin", color: { argb: "FFE2E8F0" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-    });
-    if (rowNumber > headerRow && rowNumber % 2 === 0) {
-      row.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFF8FAFC" },
-      };
-    }
-  });
-}
-
-function dateStamp(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function TypeBadge({ type }: { type: NotificationType }) {
@@ -460,7 +295,11 @@ function ReadBadge({ read }: { read: boolean }) {
   );
 }
 
-function AgentChip({ agent }: { agent: { id: number; name?: string; role?: string } | null }) {
+function AgentChip({
+  agent,
+}: {
+  agent: { id: number; name?: string; role?: string } | null;
+}) {
   if (!agent)
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -491,11 +330,22 @@ function AgentChip({ agent }: { agent: { id: number; name?: string; role?: strin
   );
 }
 
-function ResourceLinks({ callId, ticketId }: { callId: number | null; ticketId: number | null }) {
+function ResourceLinks({
+  callId,
+  ticketId,
+}: {
+  callId: number | null;
+  ticketId: number | null;
+}) {
   if (!callId && !ticketId)
-    return <span className="text-xs text-slate-300 dark:text-slate-600">—</span>;
+    return (
+      <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
+    );
   return (
-    <div className="flex flex-col items-start gap-1" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="flex flex-col items-start gap-1"
+      onClick={(e) => e.stopPropagation()}
+    >
       {callId && (
         <a
           href={`/calls/${callId}`}
@@ -541,7 +391,10 @@ const DELIVERY_CFG: Record<
 };
 
 function DeliveryChip({ via }: { via?: "websocket" | "poll" | "push" }) {
-  if (!via) return <span className="text-xs text-slate-300 dark:text-slate-600">—</span>;
+  if (!via)
+    return (
+      <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
+    );
   const cfg = DELIVERY_CFG[via] ?? {
     label: via,
     icon: Radio,
@@ -584,7 +437,9 @@ function ExpandedDetail({ n }: { n: AuditEntry }) {
         <p className="text-[11px] text-slate-600 dark:text-slate-300">
           {fmtDateFull(n.createdAt)}
         </p>
-        <p className="mt-0.5 text-[10px] text-slate-400">{timeAgo(n.createdAt)}</p>
+        <p className="mt-0.5 text-[10px] text-slate-400">
+          {timeAgo(n.createdAt)}
+        </p>
       </div>
       <div>
         <DetailLabel>Read at</DetailLabel>
@@ -709,7 +564,6 @@ export default function NotificationsAuditPage() {
   const [allData, setAllData] = useState<AuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [exportingExcel, setExportingExcel] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const pageSize = 10;
   const [page, setPage] = useState(1);
@@ -718,7 +572,9 @@ export default function NotificationsAuditPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [animIn, setAnimIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "unread" | "overdue">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "unread" | "overdue">(
+    "all",
+  );
   const [filters, setFilters] = useState({
     type: "" as NotificationType | "",
     agentId: "",
@@ -730,7 +586,9 @@ export default function NotificationsAuditPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setTimeout(() => setAnimIn(true), 50); }, []);
+  useEffect(() => {
+    setTimeout(() => setAnimIn(true), 50);
+  }, []);
 
   const loadNotifications = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true);
@@ -746,7 +604,8 @@ export default function NotificationsAuditPage() {
 
       if (!response.ok || payload?.success === false) {
         throw new Error(
-          payload?.message || `Failed to load notifications (${response.status})`,
+          payload?.message ||
+            `Failed to load notifications (${response.status})`,
         );
       }
 
@@ -768,23 +627,39 @@ export default function NotificationsAuditPage() {
   // ── Derived stats ────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const total = allData.length;
-    const unread = allData.filter(n => !n.read).length;
-    const overdue = allData.filter(n => n.type.includes("OVERDUE")).length;
-    const read = allData.filter(n => n.read).length;
-    const broadcast = allData.filter(n => !n.agentId).length;
-    const calls = allData.filter(n => n.callId).length;
-    const tickets = allData.filter(n => n.ticketId).length;
-    const schedules = allData.filter(n => n.scheduleCallId).length;
+    const unread = allData.filter((n) => !n.read).length;
+    const overdue = allData.filter((n) => n.type.includes("OVERDUE")).length;
+    const read = allData.filter((n) => n.read).length;
+    const broadcast = allData.filter((n) => !n.agentId).length;
+    const calls = allData.filter((n) => n.callId).length;
+    const tickets = allData.filter((n) => n.ticketId).length;
+    const schedules = allData.filter((n) => n.scheduleCallId).length;
     const todayKey = new Date().toDateString();
-    const today = allData.filter(n => new Date(n.createdAt).toDateString() === todayKey).length;
+    const today = allData.filter(
+      (n) => new Date(n.createdAt).toDateString() === todayKey,
+    ).length;
     const latencyValues = allData
-      .map(n => readLatencyMinutes(n.createdAt, n.readAt))
+      .map((n) => readLatencyMinutes(n.createdAt, n.readAt))
       .filter((value): value is number => value !== null);
     const avgReadMinutes =
       latencyValues.length > 0
-        ? Math.round(latencyValues.reduce((sum, value) => sum + value, 0) / latencyValues.length)
+        ? Math.round(
+            latencyValues.reduce((sum, value) => sum + value, 0) /
+              latencyValues.length,
+          )
         : null;
-    return { total, unread, overdue, read, broadcast, calls, tickets, schedules, today, avgReadMinutes };
+    return {
+      total,
+      unread,
+      overdue,
+      read,
+      broadcast,
+      calls,
+      tickets,
+      schedules,
+      today,
+      avgReadMinutes,
+    };
   }, [allData]);
 
   const agentOptions = useMemo(() => {
@@ -797,7 +672,9 @@ export default function NotificationsAuditPage() {
       }
       byId.set(
         String(notification.agentId),
-        notification.agent?.name || notification.agent?.email || `Agent #${notification.agentId}`,
+        notification.agent?.name ||
+          notification.agent?.email ||
+          `Agent #${notification.agentId}`,
       );
     }
     return [
@@ -812,32 +689,46 @@ export default function NotificationsAuditPage() {
   // ── Filter + sort ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let arr = [...allData];
-    if (activeTab === "unread") arr = arr.filter(n => !n.read);
-    if (activeTab === "overdue") arr = arr.filter(n => n.type.includes("OVERDUE"));
-    if (filters.type) arr = arr.filter(n => n.type === filters.type);
-    if (filters.agentId === "broadcast") arr = arr.filter(n => !n.agentId);
-    else if (filters.agentId) arr = arr.filter(n => String(n.agentId) === filters.agentId);
-    if (filters.read !== "") arr = arr.filter(n => String(n.read) === filters.read);
-    if (filters.from) arr = arr.filter(n => new Date(n.createdAt) >= new Date(filters.from));
-    if (filters.to) arr = arr.filter(n => new Date(n.createdAt) <= new Date(filters.to + "T23:59:59Z"));
+    if (activeTab === "unread") arr = arr.filter((n) => !n.read);
+    if (activeTab === "overdue")
+      arr = arr.filter((n) => n.type.includes("OVERDUE"));
+    if (filters.type) arr = arr.filter((n) => n.type === filters.type);
+    if (filters.agentId === "broadcast") arr = arr.filter((n) => !n.agentId);
+    else if (filters.agentId)
+      arr = arr.filter((n) => String(n.agentId) === filters.agentId);
+    if (filters.read !== "")
+      arr = arr.filter((n) => String(n.read) === filters.read);
+    if (filters.from)
+      arr = arr.filter((n) => new Date(n.createdAt) >= new Date(filters.from));
+    if (filters.to)
+      arr = arr.filter(
+        (n) => new Date(n.createdAt) <= new Date(filters.to + "T23:59:59Z"),
+      );
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      arr = arr.filter(n =>
-        n.message.toLowerCase().includes(q) ||
-        String(n.id).includes(q) ||
-        (n.agent?.name?.toLowerCase().includes(q)) ||
-        (n.agent?.email?.toLowerCase().includes(q)) ||
-        (n.callId && String(n.callId).includes(q)) ||
-        (n.ticketId && String(n.ticketId).includes(q)) ||
-        (n.scheduleCallId && String(n.scheduleCallId).includes(q))
+      arr = arr.filter(
+        (n) =>
+          n.message.toLowerCase().includes(q) ||
+          String(n.id).includes(q) ||
+          n.agent?.name?.toLowerCase().includes(q) ||
+          n.agent?.email?.toLowerCase().includes(q) ||
+          (n.callId && String(n.callId).includes(q)) ||
+          (n.ticketId && String(n.ticketId).includes(q)) ||
+          (n.scheduleCallId && String(n.scheduleCallId).includes(q)),
       );
     }
     arr.sort((a, b) => {
-      let av: any = a[sortField], bv: any = b[sortField];
-      if (sortField === "createdAt") { av = new Date(av).getTime(); bv = new Date(bv).getTime(); }
-      if (av === null || av === undefined) av = sortDir === "asc" ? Infinity : -Infinity;
-      if (bv === null || bv === undefined) bv = sortDir === "asc" ? Infinity : -Infinity;
-      return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+      let av: any = a[sortField],
+        bv: any = b[sortField];
+      if (sortField === "createdAt") {
+        av = new Date(av).getTime();
+        bv = new Date(bv).getTime();
+      }
+      if (av === null || av === undefined)
+        av = sortDir === "asc" ? Infinity : -Infinity;
+      if (bv === null || bv === undefined)
+        bv = sortDir === "asc" ? Infinity : -Infinity;
+      return sortDir === "asc" ? (av > bv ? 1 : -1) : av < bv ? 1 : -1;
     });
     return arr;
   }, [filters, sortField, sortDir, activeTab, allData]);
@@ -846,7 +737,7 @@ export default function NotificationsAuditPage() {
   const slice = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const setFilter = useCallback((key: string, val: string) => {
-    setFilters(prev => ({ ...prev, [key]: val }));
+    setFilters((prev) => ({ ...prev, [key]: val }));
     setPage(1);
   }, []);
 
@@ -856,18 +747,28 @@ export default function NotificationsAuditPage() {
   };
 
   const clearFilters = () => {
-    setFilters({ type: "", agentId: "", read: "", from: "", to: "", search: "" });
+    setFilters({
+      type: "",
+      agentId: "",
+      read: "",
+      from: "",
+      to: "",
+      search: "",
+    });
     setPage(1);
     if (searchRef.current) searchRef.current.value = "";
   };
 
   const toggleSort = (field: SortField) => {
-    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortField(field); setSortDir("desc"); }
+    if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortField(field);
+      setSortDir("desc");
+    }
   };
 
   const toggleExpand = (id: number) => {
-    setExpandedRows(prev => {
+    setExpandedRows((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -876,7 +777,13 @@ export default function NotificationsAuditPage() {
 
   const handleRowClick = async (n: AuditEntry) => {
     if (!n.read) {
-      setAllData(prev => prev.map(item => item.id === n.id ? { ...item, read: true, readAt: new Date().toISOString() } : item));
+      setAllData((prev) =>
+        prev.map((item) =>
+          item.id === n.id
+            ? { ...item, read: true, readAt: new Date().toISOString() }
+            : item,
+        ),
+      );
       try {
         const response = await fetch(`/api/notifications/${n.id}/read`, {
           method: "PATCH",
@@ -885,32 +792,25 @@ export default function NotificationsAuditPage() {
           throw new Error("Failed to mark notification read");
         }
       } catch {
-        setAllData(prev => prev.map(item => item.id === n.id ? { ...item, read: false, readAt: null } : item));
+        setAllData((prev) =>
+          prev.map((item) =>
+            item.id === n.id ? { ...item, read: false, readAt: null } : item,
+          ),
+        );
       }
     }
     toggleExpand(n.id);
   };
 
-  const exportWorkbook = async () => {
-    if (filtered.length === 0) return;
-
-    setExportingExcel(true);
-    try {
-      await exportNotificationsWorkbook({
-        entries: filtered,
-        filename: `notifications-audit-${dateStamp()}.xlsx`,
-      });
-    } catch (error: any) {
-      setLoadError(error?.message || "Failed to export notifications workbook");
-    } finally {
-      setExportingExcel(false);
-    }
-  };
-
-  const hasFilters = Object.values(filters).some(v => v !== "");
+  const hasFilters = Object.values(filters).some((v) => v !== "");
 
   const SortIcon = ({ field }: { field: SortField }) => (
-    <span className={cn("ml-1 inline-flex align-middle", sortField === field ? "opacity-100" : "opacity-30")}>
+    <span
+      className={cn(
+        "ml-1 inline-flex align-middle",
+        sortField === field ? "opacity-100" : "opacity-30",
+      )}
+    >
       {sortField === field ? (
         sortDir === "asc" ? (
           <ArrowUp className="h-3 w-3" aria-hidden="true" />
@@ -975,38 +875,48 @@ export default function NotificationsAuditPage() {
       `}</style>
 
       {/* ── Page header ── */}
-      <div className={cn(appPanelClass, "mb-2 flex flex-col gap-2 px-3.5 py-2 lg:flex-row lg:items-center lg:justify-between")}>
+      <div
+        className={cn(
+          appPanelClass,
+          "mb-2 flex flex-col gap-2 px-3.5 py-2 lg:flex-row lg:items-center lg:justify-between",
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
           <span className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]" />
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15">
             <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Audit · Notifications</p>
-            <h1 className="text-[14px] font-bold leading-tight tracking-[-0.02em] text-slate-900">Notification delivery log</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              Audit · Notifications
+            </p>
+            <h1 className="text-[14px] font-bold leading-tight tracking-[-0.02em] text-slate-900">
+              Notification delivery log
+            </h1>
             <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-              Latest {allData.length.toLocaleString()} loaded · {filtered.length.toLocaleString()} visible
+              Latest {allData.length.toLocaleString()} loaded ·{" "}
+              {filtered.length.toLocaleString()} visible
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-0.5">
-            <button className={`view-btn ${viewMode === "table" ? "active" : ""}`} onClick={() => setViewMode("table")} title="Table view">
+            <button
+              className={`view-btn ${viewMode === "table" ? "active" : ""}`}
+              onClick={() => setViewMode("table")}
+              title="Table view"
+            >
               <Table2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <button className={`view-btn ${viewMode === "timeline" ? "active" : ""}`} onClick={() => setViewMode("timeline")} title="Timeline view">
+            <button
+              className={`view-btn ${viewMode === "timeline" ? "active" : ""}`}
+              onClick={() => setViewMode("timeline")}
+              title="Timeline view"
+            >
               <List className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
-          <button className="export-btn" onClick={exportWorkbook} disabled={filtered.length === 0 || exportingExcel}>
-            {exportingExcel ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            {exportingExcel ? "Exporting" : `Export XLSX (${filtered.length})`}
-          </button>
         </div>
       </div>
 
@@ -1074,10 +984,25 @@ export default function NotificationsAuditPage() {
                 <EntityLoadingSpinner kind="notifications" size="sm" />
               </div>
             ) : slice.length === 0 ? (
-              <div style={{ padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
-                <Search className="mx-auto mb-2 h-7 w-7 text-slate-300" aria-hidden="true" />
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>No notifications found</div>
-                <div style={{ fontSize: 11, marginTop: 2 }}>Try adjusting your filters</div>
+              <div
+                style={{
+                  padding: "40px 20px",
+                  textAlign: "center",
+                  color: "#9CA3AF",
+                }}
+              >
+                <Search
+                  className="mx-auto mb-2 h-7 w-7 text-slate-300"
+                  aria-hidden="true"
+                />
+                <div
+                  style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}
+                >
+                  No notifications found
+                </div>
+                <div style={{ fontSize: 11, marginTop: 2 }}>
+                  Try adjusting your filters
+                </div>
               </div>
             ) : (
               <TimelineView entries={slice} />
@@ -1088,21 +1013,45 @@ export default function NotificationsAuditPage() {
             <table className="w-full border-collapse" style={{ minWidth: 820 }}>
               <thead>
                 <tr>
-                  <th className={auditTh("id")} style={{ width: 50 }} onClick={() => toggleSort("id")}>
+                  <th
+                    className={auditTh("id")}
+                    style={{ width: 50 }}
+                    onClick={() => toggleSort("id")}
+                  >
                     ID <SortIcon field="id" />
                   </th>
-                  <th className={auditTh("type")} style={{ width: 140 }} onClick={() => toggleSort("type")}>
+                  <th
+                    className={auditTh("type")}
+                    style={{ width: 140 }}
+                    onClick={() => toggleSort("type")}
+                  >
                     Type <SortIcon field="type" />
                   </th>
-                  <th className={auditTh()} style={{ minWidth: 200 }}>Message</th>
-                  <th className={auditTh("agentId")} style={{ width: 140 }} onClick={() => toggleSort("agentId")}>
+                  <th className={auditTh()} style={{ minWidth: 200, maxWidth: 320 }}>
+                    Message
+                  </th>
+                  <th
+                    className={auditTh("agentId")}
+                    style={{ width: 140 }}
+                    onClick={() => toggleSort("agentId")}
+                  >
                     Recipient <SortIcon field="agentId" />
                   </th>
-                  <th className={auditTh()} style={{ width: 90 }}>Resource</th>
-                  <th className={auditTh("read")} style={{ width: 75 }} onClick={() => toggleSort("read")}>
+                  <th className={auditTh()} style={{ width: 90 }}>
+                    Resource
+                  </th>
+                  <th
+                    className={auditTh("read")}
+                    style={{ width: 75 }}
+                    onClick={() => toggleSort("read")}
+                  >
                     Status <SortIcon field="read" />
                   </th>
-                  <th className={auditTh("createdAt", "right")} style={{ width: 120 }} onClick={() => toggleSort("createdAt")}>
+                  <th
+                    className={auditTh("createdAt", "right")}
+                    style={{ width: 120 }}
+                    onClick={() => toggleSort("createdAt")}
+                  >
                     Date <SortIcon field="createdAt" />
                   </th>
                 </tr>
@@ -1113,70 +1062,99 @@ export default function NotificationsAuditPage() {
                 ) : slice.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center">
-                      <Search className="mx-auto mb-2 h-7 w-7 text-slate-300 dark:text-slate-600" aria-hidden="true" />
-                      <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">No notifications match</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">Try adjusting or clearing your filters</div>
+                      <Search
+                        className="mx-auto mb-2 h-7 w-7 text-slate-300 dark:text-slate-600"
+                        aria-hidden="true"
+                      />
+                      <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                        No notifications match
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        Try adjusting or clearing your filters
+                      </div>
                     </td>
                   </tr>
-                ) : slice.map((n) => {
-                  const isExp = expandedRows.has(n.id);
-                  return [
-                    <tr
-                      key={n.id}
-                      onClick={() => handleRowClick(n)}
-                      className={cn(
-                        "cursor-pointer transition-colors",
-                        n.read
-                          ? "bg-white hover:bg-[#f0faf5]/60 dark:bg-slate-950 dark:hover:bg-slate-900/60"
-                          : "bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20",
-                      )}
-                    >
-                      <td className={auditTd(isExp)}>
-                        <span className="font-mono text-[10px] text-slate-400">#{n.id}</span>
-                      </td>
-                      <td className={auditTd(isExp)}>
-                        <TypeBadge type={n.type} />
-                      </td>
-                      <td className={auditTd(isExp)} style={{ maxWidth: 260 }}>
-                        <span
-                          className={cn(
-                            "block truncate",
-                            n.read
-                              ? "font-normal text-slate-500 dark:text-slate-400"
-                              : "font-semibold text-slate-900 dark:text-slate-100",
-                          )}
-                          title={n.message}
-                        >
-                          {n.message}
-                        </span>
-                      </td>
-                      <td className={auditTd(isExp)}>
-                        <AgentChip agent={n.agent} />
-                      </td>
-                      <td className={auditTd(isExp)}>
-                        <ResourceLinks callId={n.callId} ticketId={n.ticketId} />
-                      </td>
-                      <td className={auditTd(isExp)}>
-                        <ReadBadge read={n.read} />
-                      </td>
-                      <td className={cn(auditTd(isExp), "text-right")}>
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span className="whitespace-nowrap font-mono text-[11px] text-slate-600 dark:text-slate-300">
-                            {fmtDateShort(n.createdAt)}
+                ) : (
+                  slice.map((n) => {
+                    const isExp = expandedRows.has(n.id);
+                    return [
+                      <tr
+                        key={n.id}
+                        onClick={() => handleRowClick(n)}
+                        className={cn(
+                          "cursor-pointer transition-colors",
+                          n.read
+                            ? "bg-white hover:bg-[#f0faf5]/60 dark:bg-slate-950 dark:hover:bg-slate-900/60"
+                            : "bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20",
+                        )}
+                      >
+                        <td className={auditTd(isExp)}>
+                          <span className="font-mono text-[10px] text-slate-400">
+                            #{n.id}
                           </span>
-                          <span className="text-[9px] text-slate-400">{timeAgo(n.createdAt)}</span>
-                        </div>
-                      </td>
-                    </tr>,
-                    isExp && (
-                      <tr key={`exp-${n.id}`} className={n.read ? "bg-white dark:bg-slate-950" : "bg-amber-50/50 dark:bg-amber-950/10"}>
-                        <td colSpan={7} className="border-b border-slate-100 px-3 pb-2 dark:border-slate-800">
-                          <ExpandedDetail n={n} />
                         </td>
-                      </tr>
-                    ),
-                  ];
-                })}
+                        <td className={auditTd(isExp)}>
+                          <TypeBadge type={n.type} />
+                        </td>
+                        <td
+                          className={auditTd(isExp)}
+                          style={{ maxWidth: 200 }}
+                        >
+                          <span
+                            className={cn(
+                              "block truncate",
+                              n.read
+                                ? "font-normal text-slate-500 dark:text-slate-400"
+                                : "font-semibold text-slate-900 dark:text-slate-100",
+                            )}
+                            title={n.message}
+                          >
+                            {n.message}
+                          </span>
+                        </td>
+                        <td className={auditTd(isExp)}>
+                          <AgentChip agent={n.agent} />
+                        </td>
+                        <td className={auditTd(isExp)}>
+                          <ResourceLinks
+                            callId={n.callId}
+                            ticketId={n.ticketId}
+                          />
+                        </td>
+                        <td className={auditTd(isExp)}>
+                          <ReadBadge read={n.read} />
+                        </td>
+                        <td className={cn(auditTd(isExp), "text-right")}>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="whitespace-nowrap font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                              {fmtDateShort(n.createdAt)}
+                            </span>
+                            <span className="text-[9px] text-slate-400">
+                              {timeAgo(n.createdAt)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>,
+                      isExp && (
+                        <tr
+                          key={`exp-${n.id}`}
+                          className={
+                            n.read
+                              ? "bg-white dark:bg-slate-950"
+                              : "bg-amber-50/50 dark:bg-amber-950/10"
+                          }
+                        >
+                          <td
+                            colSpan={7}
+                            className="border-b border-slate-100 px-3 pb-2 dark:border-slate-800"
+                          >
+                            <ExpandedDetail n={n} />
+                          </td>
+                        </tr>
+                      ),
+                    ];
+                  })
+                )}
               </tbody>
             </table>
           </div>
