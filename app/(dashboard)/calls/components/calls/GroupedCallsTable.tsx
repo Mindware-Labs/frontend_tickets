@@ -460,6 +460,13 @@ export function GroupedCallsTable({
                 paginatedGroups.map((group, i) => {
                   const t = group.latestCall;
                   const isLive = !!(t.isLive || liveCallIds.has(Number(t.id)));
+                  const isOverdue = group.calls.some(
+                    (c) =>
+                      (c.status || "")
+                        .toString()
+                        .toUpperCase()
+                        .replace(/\s+/g, "_") === "OVERDUE",
+                  );
                   const yardBadgeName = getYardBadgeName(t, yards);
 
                   const latestDate = new Date(t.callDate || t.createdAt || "");
@@ -483,12 +490,14 @@ export function GroupedCallsTable({
                   return (
                     <React.Fragment key={group.key}>
                       <TableRow
-                        className={`cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150 ${
+                        className={`cursor-pointer group dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150 ${
                           isLive
-                            ? "bg-emerald-50/40 dark:bg-emerald-500/5 border-l-2 border-l-emerald-400"
-                            : i % 2 === 1
-                              ? "bg-slate-50/60 dark:bg-muted/20"
-                              : "bg-white dark:bg-card"
+                            ? "bg-emerald-50/40 dark:bg-emerald-500/5 border-l-2 border-l-emerald-400 hover:bg-[#f0faf5]/60"
+                            : isOverdue
+                              ? "bg-red-50/70 dark:bg-red-500/10 border-l-2 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-500/15"
+                              : i % 2 === 1
+                                ? "bg-slate-50/60 dark:bg-muted/20 hover:bg-[#f0faf5]/60"
+                                : "bg-white dark:bg-card hover:bg-[#f0faf5]/60"
                         }`}
                         onClick={() => onOpenTimeline(group)}
                       >
@@ -522,6 +531,12 @@ export function GroupedCallsTable({
                                 {isLive ? (
                                   <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500 px-1 py-px text-[8px] font-bold leading-none text-white">
                                     LIVE
+                                  </span>
+                                ) : null}
+                                {isOverdue ? (
+                                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-red-500 px-1 py-px text-[8px] font-bold leading-none text-white shadow-sm">
+                                    <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+                                    OVERDUE
                                   </span>
                                 ) : null}
                               </div>

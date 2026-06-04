@@ -46,6 +46,7 @@ import {
   ChevronDown,
   Ticket as TicketIcon,
   RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import {
   TableCampaignBadge,
@@ -729,6 +730,7 @@ export function TicketsTab({
             {TICKET_STATUS_VIEW_TABS.map((tab) => {
               const isActive = ticketFilters.activeView === tab.key;
               const count = viewCounts?.[tab.countKey] ?? 0;
+              const isOverdueAlert = !!tab.isOverdue && count > 0;
               return (
                 <button
                   key={tab.key}
@@ -737,25 +739,34 @@ export function TicketsTab({
                     ticketFilters.handleViewChange(tab.key);
                     ticketFilters.setFilter("status", "all");
                   }}
-                  className={`mr-2 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors -mb-px ${
-                    isActive
-                      ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                      : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
+                  className={`mr-2 flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors -mb-px ${
+                    isOverdueAlert
+                      ? isActive
+                        ? "border-red-500 bg-red-50/80 font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                        : "border-red-300 font-semibold text-red-600 hover:bg-red-50/70 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+                      : isActive
+                        ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                        : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
                   }`}
                 >
+                  {isOverdueAlert && (
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  )}
                   {tab.label}
                   <span
-                    className={`py-[1px] px-[7px] rounded-full text-[11px] border ${
-                      isActive
-                        ? "bg-[#008f68] text-white font-semibold border-[#008f68]"
-                        : "bg-muted/40 text-muted-foreground font-medium border-border"
+                    className={`inline-flex items-center gap-1 rounded-full border px-[7px] py-[1px] text-[11px] tabular-nums ${
+                      isOverdueAlert
+                        ? "border-red-500 bg-red-500 font-semibold text-white"
+                        : isActive
+                          ? "border-[#008f68] bg-[#008f68] font-semibold text-white"
+                          : "border-border bg-muted/40 font-medium text-muted-foreground"
                     }`}
                   >
+                    {isOverdueAlert && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                    )}
                     {count}
                   </span>
-                  {tab.isOverdue && count > 0 && (
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5" />
-                  )}
                 </button>
               );
             })}
@@ -941,6 +952,10 @@ export function TicketsTab({
               ) : (
                 ticketGroups.map((group, i) => {
                   const t = group.latestTicket;
+                  const isOverdue = group.tickets.some(
+                    (tk) =>
+                      normalizeSupportStatusKey(tk.status) === "OVERDUE",
+                  );
                   const initials = (
                     group.customerName ||
                     t.customer?.name ||
@@ -959,10 +974,12 @@ export function TicketsTab({
                     <React.Fragment key={group.key}>
                       <TableRow
                         className={cn(
-                          "cursor-pointer group hover:bg-[#f0faf5]/60 dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150",
-                          i % 2 === 1
-                            ? "bg-slate-50/60 dark:bg-muted/20"
-                            : "bg-white dark:bg-card",
+                          "cursor-pointer group dark:hover:bg-muted/50 border-b border-border/70 relative transition-all duration-150",
+                          isOverdue
+                            ? "bg-red-50/70 dark:bg-red-500/10 border-l-2 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-500/15"
+                            : i % 2 === 1
+                              ? "bg-slate-50/60 dark:bg-muted/20 hover:bg-[#f0faf5]/60"
+                              : "bg-white dark:bg-card hover:bg-[#f0faf5]/60",
                         )}
                         onClick={() => openView(t)}
                       >
@@ -991,6 +1008,12 @@ export function TicketsTab({
                                 >
                                   {customerName(t)}
                                 </p>
+                                {isOverdue ? (
+                                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-red-500 px-1 py-px text-[8px] font-bold leading-none text-white shadow-sm">
+                                    <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+                                    OVERDUE
+                                  </span>
+                                ) : null}
                               </div>
                               {(group.customerPhone || t.customer?.phone) && (
                                 <div className="flex min-w-0 items-center gap-0.5">

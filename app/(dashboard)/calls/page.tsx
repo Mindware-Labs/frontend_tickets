@@ -6,7 +6,16 @@ import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2, Plus, CalendarIcon } from "lucide-react";
+import {
+  CheckCircle2,
+  Plus,
+  CalendarIcon,
+  Phone,
+  Ticket as TicketIcon,
+  ClipboardList,
+  History,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Call } from "@/lib/mock-data";
 import {
@@ -1337,26 +1346,41 @@ export default function TicketsPage() {
             </p>
           </div>
 
-          {/* Segmented Control */}
+          {/* Segmented Control (DESIGN_SYSTEM §7) */}
           <div className="w-full md:w-auto mt-1 md:mt-0">
-            <div className="flex items-center w-full md:w-auto rounded-lg bg-slate-100 dark:bg-slate-800/60 p-1 border border-slate-200/80 dark:border-slate-700/50 shadow-sm">
+            <div className="flex w-full items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-1 shadow-sm md:w-auto dark:border-slate-700/50 dark:bg-slate-900/80">
               {[
-                { value: "calls", label: "Calls" },
-                { value: "tickets", label: "Tickets" },
-                { value: "manual-records", label: "Manual Records" },
-                { value: "legacy-calls", label: "Legacy Calls" },
+                { value: "calls", label: "Calls", icon: Phone },
+                { value: "tickets", label: "Tickets", icon: TicketIcon },
+                {
+                  value: "manual-records",
+                  label: "Manual Records",
+                  icon: ClipboardList,
+                },
+                { value: "legacy-calls", label: "Legacy Calls", icon: History },
               ].map((tab) => {
                 const isActive = activeTab === tab.value;
+                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.value}
+                    type="button"
                     onClick={() => handleTabChange(tab.value)}
-                    className={`flex-1 md:flex-none relative inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md text-[12.5px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                    aria-pressed={isActive}
+                    className={`relative inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 md:flex-none ${
                       isActive
-                        ? "bg-white dark:bg-slate-900 text-[#008f68] shadow-sm border border-[#d1e7dd] dark:border-[#008f68]/30"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent"
+                        ? "bg-white text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
+                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                     }`}
                   >
+                    <Icon
+                      className={`size-3.5 shrink-0 ${
+                        isActive
+                          ? "text-[#008f68] dark:text-emerald-400"
+                          : "text-slate-400"
+                      }`}
+                      strokeWidth={2}
+                    />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -1409,29 +1433,39 @@ export default function TicketsPage() {
                     },
                   ].map((tab) => {
                     const isActive = ticketFilters.activeView === tab.id;
+                    const isOverdueAlert = !!tab.isOverdue && tab.count > 0;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => ticketFilters.handleViewChange(tab.id)}
-                        className={`mr-2 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors -mb-px ${
-                          isActive
-                            ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                            : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
+                        className={`mr-2 flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors -mb-px ${
+                          isOverdueAlert
+                            ? isActive
+                              ? "border-red-500 bg-red-50/80 font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                              : "border-red-300 font-semibold text-red-600 hover:bg-red-50/70 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+                            : isActive
+                              ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
+                              : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
                         }`}
                       >
+                        {isOverdueAlert && (
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        )}
                         {tab.label}
                         <span
-                          className={`py-px px-1.5 rounded-full text-[11px] border ${
-                            isActive
-                              ? "bg-[#008f68] text-white font-semibold border-[#008f68]"
-                              : "bg-muted/40 text-muted-foreground font-medium border-border"
+                          className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[11px] tabular-nums ${
+                            isOverdueAlert
+                              ? "border-red-500 bg-red-500 font-semibold text-white"
+                              : isActive
+                                ? "border-[#008f68] bg-[#008f68] font-semibold text-white"
+                                : "border-border bg-muted/40 font-medium text-muted-foreground"
                           }`}
                         >
+                          {isOverdueAlert && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                          )}
                           {tab.count}
                         </span>
-                        {tab.isOverdue && tab.count > 0 && (
-                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
-                        )}
                       </button>
                     );
                   })}
@@ -1627,29 +1661,37 @@ export default function TicketsPage() {
                   },
                 ].map((tab) => {
                   const isActive = legacyCallFilters.activeView === tab.id;
+                  const isOverdueAlert = !!tab.isOverdue && tab.count > 0;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => legacyCallFilters.handleViewChange(tab.id)}
-                      className={`mr-4 flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
-                        isActive
-                          ? "border-[#008f68] text-foreground"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      className={`mr-4 flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] font-medium transition-colors -mb-px ${
+                        isOverdueAlert
+                          ? "border-red-300 font-semibold text-red-600 hover:text-red-700 dark:border-red-500/40 dark:text-red-400"
+                          : isActive
+                            ? "border-[#008f68] text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
                       }`}
                     >
+                      {isOverdueAlert && (
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      )}
                       {tab.label}
                       <span
-                        className={`py-px px-1.5 rounded-full text-[11px] border ${
-                          isActive
-                            ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
-                            : "bg-muted/40 text-muted-foreground font-medium border-border"
+                        className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[11px] tabular-nums ${
+                          isOverdueAlert
+                            ? "border-red-500 bg-red-500 font-semibold text-white"
+                            : isActive
+                              ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                              : "border-border bg-muted/40 font-medium text-muted-foreground"
                         }`}
                       >
+                        {isOverdueAlert && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                        )}
                         {tab.count}
                       </span>
-                      {tab.isOverdue && tab.count > 0 && (
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse -ml-0.5"></div>
-                      )}
                     </button>
                   );
                 })}

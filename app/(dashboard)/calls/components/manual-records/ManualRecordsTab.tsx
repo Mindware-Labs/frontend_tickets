@@ -806,6 +806,13 @@ export function ManualRecordsTab() {
               ) : (
                 recordGroups.map((group, i) => {
                   const r = group.latestRecord;
+                  const isOverdue = group.records.some(
+                    (rec) =>
+                      (rec.status || "")
+                        .toString()
+                        .toUpperCase()
+                        .replace(/\s+/g, "_") === "OVERDUE",
+                  );
                   const initials = (group.customerName || "?")
                     .substring(0, 2)
                     .toUpperCase();
@@ -823,8 +830,12 @@ export function ManualRecordsTab() {
                     <React.Fragment key={group.key}>
                       <TableRow
                         className={cn(
-                          "relative cursor-pointer border-b border-border/70 transition-all duration-150 hover:bg-[#f0faf5]/60",
-                          i % 2 === 1 ? "bg-slate-50/60" : "bg-white",
+                          "relative cursor-pointer border-b border-border/70 transition-all duration-150",
+                          isOverdue
+                            ? "bg-red-50/70 dark:bg-red-500/10 border-l-2 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-500/15"
+                            : i % 2 === 1
+                              ? "bg-slate-50/60 hover:bg-[#f0faf5]/60"
+                              : "bg-white hover:bg-[#f0faf5]/60",
                         )}
                         onClick={() => openView(r)}
                       >
@@ -853,6 +864,12 @@ export function ManualRecordsTab() {
                                 >
                                   {group.customerName}
                                 </p>
+                                {isOverdue ? (
+                                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-red-500 px-1 py-px text-[8px] font-bold leading-none text-white shadow-sm">
+                                    <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+                                    OVERDUE
+                                  </span>
+                                ) : null}
                               </div>
                               {phone && (
                                 <div className="flex min-w-0 items-center gap-0.5">
