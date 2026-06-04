@@ -608,7 +608,7 @@ export function CallPeekPanel({
                 </button>
                 {notesExpanded && (
                   <div className="px-3 py-2.5">
-                    <p className="text-[12px] text-slate-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                    <p className="text-[13.5px] text-slate-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
                       {notes}
                     </p>
                   </div>

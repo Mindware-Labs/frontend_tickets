@@ -1092,7 +1092,7 @@ export function CustomerTicketDrawer({
                           }))
                         }
                         placeholder="Original issue reported by the customer..."
-                        className="w-full text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 leading-relaxed shadow-sm"
+                        className="w-full field-sizing-content text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 leading-relaxed shadow-sm"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                         Official intake summary. Changes here do not modify
@@ -1114,7 +1114,7 @@ export function CustomerTicketDrawer({
                         value={selectedTicket.issueDetail || ""}
                         readOnly
                         placeholder="No activity update has been recorded yet"
-                        className="w-full text-xs text-slate-700 placeholder:text-slate-400 bg-emerald-50/40 border border-dashed border-emerald-200 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
+                        className="w-full field-sizing-content text-xs text-slate-700 placeholder:text-slate-400 bg-emerald-50/40 border border-dashed border-emerald-200 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                         Maintained through{" "}

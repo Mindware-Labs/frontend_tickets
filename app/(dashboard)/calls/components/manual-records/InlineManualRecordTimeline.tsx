@@ -239,7 +239,7 @@ export function InlineManualRecordTimeline({
                   </div>
 
                   {notes && (
-                    <p className="mt-1 line-clamp-2 border-l-2 border-slate-200 pl-2 text-[10.5px] leading-snug text-slate-500">
+                    <p className="mt-1 whitespace-pre-wrap wrap-break-word border-l-2 border-slate-200 pl-2 text-[12.5px] leading-snug text-slate-500">
                       {notes}
                     </p>
                   )}

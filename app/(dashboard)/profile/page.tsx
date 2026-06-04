@@ -31,6 +31,7 @@ import { settingsApi } from "@/lib/settings-api";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ChangePasswordCard } from "./ChangePasswordCard";
 
 type ProfileState = {
   name: string;
@@ -377,6 +378,8 @@ export default function ProfilePage() {
             </div>
           </section>
         </div>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );

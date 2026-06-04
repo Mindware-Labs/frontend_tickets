@@ -231,4 +231,28 @@ export const settingsApi = {
     }
   },
 
+  // Security - verify the current password (step gate, does not change anything)
+  async verifyCurrentPassword(data: {
+    password: string;
+  }): Promise<{ valid: boolean }> {
+    return fetchFromBackend('/auth/verify-password', {
+      method: 'PATCH',
+      body: JSON.stringify({ password: data.password }),
+    }) as Promise<{ valid: boolean }>;
+  },
+
+  // Security - change the authenticated user's password
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string }> {
+    return fetchFromBackend('/auth/change-password', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      }),
+    }) as Promise<{ message: string }>;
+  },
+
 };

@@ -2488,7 +2488,7 @@ export function CustomerTimelineDrawer({
                             })
                           }
                           placeholder="Add a note about this call…"
-                          className="w-full text-[13px] text-slate-800 placeholder:text-slate-300 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
+                          className="w-full field-sizing-content text-[13px] text-slate-800 placeholder:text-slate-300 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
                         />
                       </div>
                       <div className="px-4 pb-2.5 flex justify-end">

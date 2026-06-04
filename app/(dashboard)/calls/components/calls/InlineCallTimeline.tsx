@@ -266,7 +266,7 @@ export function InlineCallTimeline({
                   )}
 
                   {notes && (
-                    <p className="mt-1 text-[10.5px] text-slate-500 leading-snug line-clamp-2 border-l-2 border-slate-200 pl-2">
+                    <p className="mt-1 text-[12.5px] text-slate-500 leading-snug whitespace-pre-wrap wrap-break-word border-l-2 border-slate-200 pl-2">
                       {notes}
                     </p>
                   )}
