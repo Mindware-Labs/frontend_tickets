@@ -105,6 +105,11 @@ const DISPOSITION_COLORS: Record<
     bg: "#fffbeb",
     label: "Callback Scheduled",
   },
+  CALLBACK_COMPLETE: {
+    text: "#065f4a",
+    bg: "#d1fae5",
+    label: "Callback Complete",
+  },
   VOICEMAIL_LEFT: { text: "#2563eb", bg: "#eff6ff", label: "Voicemail Left" },
   NO_ANSWER: { text: "#c0392b", bg: "#fde8e6", label: "No Answer" },
   NEW_LEAD: { text: "#047857", bg: "#d1fae5", label: "New Lead" },

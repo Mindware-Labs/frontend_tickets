@@ -201,6 +201,11 @@ const DISPOSITION_COLORS: Record<
     bg: "#fffbeb",
     label: "Callback Scheduled",
   },
+  CALLBACK_COMPLETE: {
+    text: "#065f4a",
+    bg: "#d1fae5",
+    label: "Callback Complete",
+  },
   VOICEMAIL_LEFT: { text: "#2563eb", bg: "#eff6ff", label: "Voicemail Left" },
   NO_ANSWER: { text: "#c0392b", bg: "#fde8e6", label: "No Answer" },
   NEW_LEAD: { text: "#047857", bg: "#d1fae5", label: "New Lead" },
@@ -1797,44 +1802,47 @@ export function CustomerTimelineDrawer({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const allSelected =
-                                    Object.values(importChecklist).every(
-                                      Boolean,
-                                    );
-                                  const next = {
-                                    notes: !allSelected,
-                                    campaign: !allSelected,
-                                    yard: !allSelected,
-                                    disposition: !allSelected,
-                                    status: !allSelected,
-                                    agent: !allSelected,
+                                  const t = selectedLinkCall as any;
+                                  const availableKeys = {
+                                    notes: !!t?.notes,
+                                    campaign: !!t?.campaignId,
+                                    yard: !!t?.yardId,
+                                    disposition: !!t?.disposition,
+                                    status: !!t?.status,
+                                    agent: !!t?.agentId,
                                   };
-                                  setImportChecklist(next);
+                                  const allSelected = Object.entries(availableKeys)
+                                    .filter(([, has]) => has)
+                                    .every(([key]) => importChecklist[key as keyof typeof importChecklist]);
+                                  setImportChecklist({
+                                    notes: availableKeys.notes ? !allSelected : false,
+                                    campaign: availableKeys.campaign ? !allSelected : false,
+                                    yard: availableKeys.yard ? !allSelected : false,
+                                    disposition: availableKeys.disposition ? !allSelected : false,
+                                    status: availableKeys.status ? !allSelected : false,
+                                    agent: availableKeys.agent ? !allSelected : false,
+                                  });
                                 }}
                                 className="text-[9.5px] font-semibold text-[#008f68] hover:underline"
                               >
-                                {Object.values(importChecklist).every(Boolean)
-                                  ? "Deselect all"
-                                  : "Select all"}
+                                {(() => {
+                                  const t = selectedLinkCall as any;
+                                  const available = ["notes","campaign","yard","disposition","status","agent"].filter(k => !!(t as any)?.[k === "campaign" ? "campaignId" : k === "yard" ? "yardId" : k === "agent" ? "agentId" : k]);
+                                  return available.length > 0 && available.every(k => importChecklist[k as keyof typeof importChecklist]) ? "Deselect all" : "Select all";
+                                })()}
                               </button>
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap justify-center">
                               {(
                                 [
-                                  { key: "notes" as const, label: "Notes" },
-                                  {
-                                    key: "campaign" as const,
-                                    label: "Campaign",
-                                  },
-                                  { key: "yard" as const, label: "Yard" },
-                                  {
-                                    key: "disposition" as const,
-                                    label: "Disposition",
-                                  },
-                                  { key: "status" as const, label: "Status" },
-                                  { key: "agent" as const, label: "Agent" },
+                                  { key: "notes" as const, label: "Notes", hasValue: !!((selectedLinkCall as any)?.notes) },
+                                  { key: "campaign" as const, label: "Campaign", hasValue: !!((selectedLinkCall as any)?.campaignId) },
+                                  { key: "yard" as const, label: "Yard", hasValue: !!((selectedLinkCall as any)?.yardId) },
+                                  { key: "disposition" as const, label: "Disposition", hasValue: !!((selectedLinkCall as any)?.disposition) },
+                                  { key: "status" as const, label: "Status", hasValue: !!((selectedLinkCall as any)?.status) },
+                                  { key: "agent" as const, label: "Agent", hasValue: !!((selectedLinkCall as any)?.agentId) },
                                 ] as const
-                              ).map(({ key, label }) => (
+                              ).filter(({ hasValue }) => hasValue).map(({ key, label }) => (
                                 <button
                                   key={key}
                                   type="button"
