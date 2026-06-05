@@ -1,13 +1,8 @@
-import type { RefObject } from "react";
-
 export type NotificationType =
   | "CALLBACK_OVERDUE"
   | "TICKET_FOLLOWUP_OVERDUE"
   | "SCHEDULED_CALL_DUE";
 
-export type SortField = "id" | "type" | "agentId" | "read" | "createdAt";
-export type SortDir = "asc" | "desc";
-export type ViewMode = "table" | "timeline";
 export type NotificationTab = "all" | "unread" | "overdue";
 
 export interface AuditAgent {
@@ -54,20 +49,3 @@ export interface NotificationStats {
   avgReadMinutes: number | null;
 }
 
-export interface AgentFilterOption {
-  value: string;
-  label: string;
-}
-
-export interface NotificationFiltersProps {
-  activeTab: NotificationTab;
-  filters: NotificationFiltersState;
-  stats: NotificationStats;
-  hasFilters: boolean;
-  agentOptions: AgentFilterOption[];
-  searchRef: RefObject<HTMLInputElement | null>;
-  onTabChange: (tab: NotificationTab) => void;
-  onFilterChange: (key: keyof NotificationFiltersState, value: string) => void;
-  onSearchChange: (value: string) => void;
-  onClearFilters: () => void;
-}

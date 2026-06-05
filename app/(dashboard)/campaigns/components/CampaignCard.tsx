@@ -361,17 +361,6 @@ export function CampaignCard({
         onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-lg px-2.5 text-[11px] font-semibold"
-          >
-            <Link href={`/calls?campaignId=${campaign.id}`}>
-              <ActivitiesIcon className="h-3.5 w-3.5" />
-              Activities
-            </Link>
-          </Button>
           {showReportLink ? (
             <Button
               asChild

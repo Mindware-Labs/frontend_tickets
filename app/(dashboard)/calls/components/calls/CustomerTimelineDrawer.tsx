@@ -460,6 +460,7 @@ export function CustomerTimelineDrawer({
 
   // ── Call Linking states ───────────────────────────────────────────────────
   const [showCallLinker, setShowCallLinker] = useState(false);
+  const [overduebannerDismissed, setOverdueBannerDismissed] = useState(false);
   const [customerCallsCache, setCustomerCallsCache] = useState<Ticket[]>([]);
   const [loadingCustomerCalls, setLoadingCustomerCalls] = useState(false);
   const [selectedLinkCall, setSelectedLinkCall] = useState<Ticket | null>(null);
@@ -1664,7 +1665,8 @@ export function CustomerTimelineDrawer({
                       canLinkCalls &&
                       overdueCallsSuggestions.length > 0 &&
                       !editFormData.relatedCallId &&
-                      !showCallLinker && (
+                      !showCallLinker &&
+                      !overduebannerDismissed && (
                         <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200/70 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
                           <div className="w-6 h-6 rounded-lg bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
                             <AlertCircle className="w-3.5 h-3.5 text-red-500" />
@@ -1682,16 +1684,26 @@ export function CustomerTimelineDrawer({
                               previous overdue callback.
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedLinkCall(overdueCallsSuggestions[0]);
-                              handleOpenCallLinker();
-                            }}
-                            className="shrink-0 px-3 py-1.5 text-[11px] font-semibold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors whitespace-nowrap active:scale-[0.97]"
-                          >
-                            Link Now
-                          </button>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedLinkCall(overdueCallsSuggestions[0]);
+                                handleOpenCallLinker();
+                              }}
+                              className="px-3 py-1.5 text-[11px] font-semibold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors whitespace-nowrap active:scale-[0.97]"
+                            >
+                              Link Now
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOverdueBannerDismissed(true)}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-red-400 transition-colors hover:bg-red-100 hover:text-red-600"
+                              aria-label="Dismiss"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       )}
 

@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       "limit",
       "includeTotal",
       "audit",
+      "stats",
     ];
 
     for (const key of passthroughKeys) {
