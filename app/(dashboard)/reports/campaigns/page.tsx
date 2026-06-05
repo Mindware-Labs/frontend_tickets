@@ -88,7 +88,6 @@ import {
   ActivityHeatmap,
   buildCoverageDetail,
   FunnelChart,
-  TimeMetricsCard,
   TouchpointsHistogram,
   formatDuration,
   type CoverageStats,

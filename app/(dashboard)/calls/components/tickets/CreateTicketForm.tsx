@@ -11,7 +11,6 @@ import { TicketPropertiesCard } from "./TicketPropertiesCard";
 import {
   Paperclip,
   CloudUpload,
-  FileIcon,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

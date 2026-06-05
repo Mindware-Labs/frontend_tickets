@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SelectItem } from "@/components/ui/select";
 import {
@@ -10,7 +9,6 @@ import {
 } from "@/components/ui/popover";
 import {
   Ticket as TicketIcon,
-  CalendarIcon,
   ChevronsUpDown,
   Check,
 } from "lucide-react";

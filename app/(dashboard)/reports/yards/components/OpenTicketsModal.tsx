@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ClipboardList,
@@ -20,7 +19,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { buildContactCenterUrl } from "@/lib/contact-center-url";
 import { cn } from "@/lib/utils";
 import { YardContextChip } from "./yard-dashboard-chrome";
 import {

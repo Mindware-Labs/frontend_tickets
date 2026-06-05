@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Phone, Copy, Check, MapPin, PhoneCall, Ticket,
   Calendar, Clock, AlertCircle, PhoneIncoming, PhoneOutgoing,
-  PhoneMissed, ArrowRight,
+  PhoneMissed,
 } from "lucide-react";
 import { Customer } from "../types";
 import { fetchFromBackend } from "@/lib/api-client";

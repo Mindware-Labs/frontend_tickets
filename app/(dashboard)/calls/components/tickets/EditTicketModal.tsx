@@ -52,7 +52,6 @@ import {
   SupportTicketStatus,
   SupportTicketPriority,
   SupportTicketType,
-  CampaignOptionEnum,
   ManagementType,
   OnboardingOption,
   ArOption,

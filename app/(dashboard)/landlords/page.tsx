@@ -12,8 +12,6 @@ import {
 } from "@/hooks/use-paginated-list";
 import { useRole } from "@/components/providers/role-provider";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 import { Landlord, LandlordFormData, YardOption } from "./types";
 import { LandlordsToolbar } from "./components/LandlordsToolbar";

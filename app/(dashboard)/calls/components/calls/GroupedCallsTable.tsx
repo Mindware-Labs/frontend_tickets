@@ -12,13 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import {
   Popover,
   PopoverContent,
@@ -32,13 +27,10 @@ import {
   AlertTriangle,
   X,
   Calendar,
-  PhoneCall,
   Phone,
   PhoneOutgoing,
   PhoneIncoming,
   ChevronDown,
-  Radio,
-  MousePointerClick,
 } from "lucide-react";
 import {
   TableCampaignBadge,
@@ -60,18 +52,8 @@ import { CallFiltersBar } from "./CallFiltersBar";
 import {
   getClientName,
   getClientPhone,
-  getClientInitials,
-  getAssigneeName,
-  getAssigneeInitials,
-  getTicketAssignee,
-  getStatusBadgeColor,
-  getDirectionIcon,
-  getDirectionText,
-  getYardTypeColor,
-  getYardTypeIcon,
   getYardBadgeName,
   getCampaign,
-  formatEnumLabel,
 } from "../../utils/call-helpers";
 import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { InlineCallTimeline } from "./InlineCallTimeline";

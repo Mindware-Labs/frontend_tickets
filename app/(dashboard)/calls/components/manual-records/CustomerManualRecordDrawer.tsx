@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   CalendarIcon,
   Trash2,
-  X,
   PhoneOutgoing,
 } from "lucide-react";
 import { useAircall } from "@/components/providers/AircallProvider";

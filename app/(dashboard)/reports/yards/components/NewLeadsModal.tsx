@@ -5,10 +5,8 @@ import { useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Calendar,
   Phone,
   Ticket as TicketIcon,
-  User,
   UserPlus,
   ChevronRight,
 } from "lucide-react";
@@ -28,20 +26,13 @@ import { cn } from "@/lib/utils";
 import { YardContextChip } from "./yard-dashboard-chrome";
 import {
   InsightEmptyState,
-  InsightExpandableDetails,
-  InsightIssueBlock,
   InsightKpiStrip,
-  InsightMetaRow,
-  InsightRecordPanel,
   InsightSheetAccent,
-  InsightStatusPill,
   InsightSummaryBadge,
-  formatInsightDateTime,
   formatInsightLabel,
   getInsightCardsGridClass,
   getInsightSheetMaxWidthClass,
   insightCardClass,
-  insightCardExpandedClass,
   insightSheetHeaderClass,
   useInsightSheetChrome,
 } from "./yard-insight-ui";

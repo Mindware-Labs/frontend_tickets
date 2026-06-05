@@ -17,12 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+
+
 import {
   X,
   PhoneCall,
@@ -46,7 +42,6 @@ import {
   Pencil,
   CloudUpload,
   Paperclip,
-  FileIcon,
   Trash2,
   Download,
   Eye,
@@ -85,7 +80,6 @@ import {
   InspectorSelect,
   InspectorCombobox,
 } from "../shared/InspectorHelpers";
-import { CustomerNotesAlert } from "../shared/CustomerNotesAlert";
 import type { Filters } from "../../hooks/useCallFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";

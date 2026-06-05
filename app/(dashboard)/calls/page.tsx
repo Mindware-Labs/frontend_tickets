@@ -5,10 +5,9 @@ import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   CheckCircle2,
-  Plus,
   CalendarIcon,
   Phone,
   Ticket as TicketIcon,

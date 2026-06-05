@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 import type { ComponentType } from "react"
 

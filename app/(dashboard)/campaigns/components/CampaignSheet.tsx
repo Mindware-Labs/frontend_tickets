@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
   type MouseEvent,
   type ReactNode,
@@ -19,7 +18,6 @@ import {
 import { ManagementType } from "../../calls/types";
 import { fetchFromBackend } from "@/lib/api-client";
 import { useAircall } from "@/components/providers/AircallProvider";
-import { ActivitiesIcon } from "@/components/icons/activities-icon";
 import { useRole } from "@/components/providers/role-provider";
 import { cn } from "@/lib/utils";
 import {
@@ -30,7 +28,6 @@ import {
   Clock,
   DollarSign,
   FileText,
-  Loader2,
   MapPin,
   Megaphone,
   Pencil,

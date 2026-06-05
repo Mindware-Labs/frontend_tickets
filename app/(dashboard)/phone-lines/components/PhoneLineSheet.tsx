@@ -33,7 +33,6 @@ import {
   formatPhoneDisplay,
   hasDialablePhone,
 } from "../utils";
-import { PhoneLineMark } from "./PhoneLineMark";
 
 interface PhoneLineSheetProps {
   open: boolean;

@@ -14,7 +14,6 @@ import {
   Mail,
   Instagram,
   ExternalLink,
-  MessageCircle,
 } from "lucide-react";
 
 export default function SupportPage() {

@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { SelectItem } from "@/components/ui/select";
 import {
   X,
-  ArrowLeft,
   PhoneOutgoing,
   Loader2,
   Activity,
@@ -24,15 +23,12 @@ import {
   Link2,
   Ticket as TicketIcon,
   Paperclip,
-  FileIcon,
-  Upload,
   Check,
   ChevronsUpDown,
   ExternalLink,
   CloudUpload,
   Download,
   AlertCircle,
-  Clock,
 } from "lucide-react";
 import {
   SupportTicketStatus,

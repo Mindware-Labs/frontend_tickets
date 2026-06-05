@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { MousePointerClick, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface UsersToolbarProps {
   search: string;

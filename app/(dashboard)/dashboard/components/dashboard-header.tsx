@@ -10,7 +10,6 @@ import { useSupportDashboardData } from "../use-dashboard-real-data";
 import { parseCustomDashboardPeriod } from "../dashboard-filters";
 
 import {
-  DashboardFilterTrigger,
   DashboardInlineActiveFilters,
   FilterHelpPopover,
 } from "./dashboard-filter-bar";

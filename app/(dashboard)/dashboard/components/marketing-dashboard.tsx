@@ -20,7 +20,6 @@ import {
   chartAxisTickStyle,
   chartGridStroke,
   chartLegendStyle,
-  dashboardListItemClass,
   dashboardRowClass,
   dashboardShellClass,
   dashboardTableCellClass,

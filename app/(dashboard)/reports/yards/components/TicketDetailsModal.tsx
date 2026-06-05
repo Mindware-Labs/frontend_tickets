@@ -8,7 +8,6 @@ import {
   Phone,
   Ticket as TicketIcon,
   User,
-  AlertTriangle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { buildContactCenterUrl } from "@/lib/contact-center-url";
-import { cn } from "@/lib/utils";
 import {
   InsightIssueBlock,
   InsightMetaRow,

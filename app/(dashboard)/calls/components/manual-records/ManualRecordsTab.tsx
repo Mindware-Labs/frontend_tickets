@@ -35,12 +35,9 @@ import {
   Loader2,
   X,
   ClipboardList,
-  Trash2,
   CalendarIcon,
-  PhoneOutgoing,
   ChevronDown,
   RotateCcw,
-  MousePointerClick,
 } from "lucide-react";
 import { ManualRecordFiltersBar } from "./ManualRecordFiltersBar";
 import { ManualRecordForm } from "./ManualRecordForm";

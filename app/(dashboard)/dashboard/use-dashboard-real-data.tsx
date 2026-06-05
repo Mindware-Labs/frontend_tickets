@@ -19,7 +19,6 @@ import {
   operationsMetricTemplates,
   scorecardTemplates,
 } from "./dashboard-config";
-import { createEmptyDashboardData } from "./dashboard-empty";
 import { formatDuration } from "./dashboard-format";
 import type {
   DashboardDataSet,

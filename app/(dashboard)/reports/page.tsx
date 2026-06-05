@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarDateRangePicker } from "@/components/dashboard/date-range-picker"
-import { Download, BarChart, PieChart, LineChart, FileText, ShieldAlert } from "lucide-react"
-import KPICard from "@/components/dashboard/kpi-card"
+import { Download, PieChart, LineChart } from "lucide-react"
 
 export default function ReportsPage() {
   return (

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Pencil, Check, X, User, Search, Pin } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   EntityFormCard,

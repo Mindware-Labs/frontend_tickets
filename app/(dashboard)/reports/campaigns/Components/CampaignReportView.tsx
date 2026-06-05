@@ -4,24 +4,13 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   PhoneIncoming,
-  PhoneOutgoing,
-  PhoneMissed,
   Ticket,
   Search,
   ChevronDown,
   ChevronRight,
-  FileText,
-  CheckCircle2,
-  XCircle,
-  Ban,
-  PhoneOff,
-  BadgeDollarSign,
-  ReceiptText,
-  MoveRight,
   Clock,
   ClipboardList,
   User,
-  AlertCircle,
   History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
