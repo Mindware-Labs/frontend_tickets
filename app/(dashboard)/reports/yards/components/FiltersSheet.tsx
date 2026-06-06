@@ -12,6 +12,12 @@ import {
   AlertCircle,
   Filter,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useEffect, useState, type WheelEvent } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -85,6 +91,7 @@ export function FiltersSheet({
   // Popover states for auto-closing dates
   const [startPopoverOpen, setStartPopoverOpen] = useState(false);
   const [endPopoverOpen, setEndPopoverOpen] = useState(false);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   const [localStartDate, setLocalStartDate] = useState<Date | undefined>(
     undefined,
@@ -115,12 +122,14 @@ export function FiltersSheet({
 
   const handleStartSelect = (date: Date | undefined) => {
     setLocalStartDate(date);
-    setStartPopoverOpen(false); // Auto-close UX
+    setStartPopoverOpen(false);
+    setActivePreset(null);
   };
 
   const handleEndSelect = (date: Date | undefined) => {
     setLocalEndDate(date);
-    setEndPopoverOpen(false); // Auto-close UX
+    setEndPopoverOpen(false);
+    setActivePreset(null);
   };
 
   const handleYardSelect = (yardId: string) => {
@@ -147,6 +156,15 @@ export function FiltersSheet({
     ? localStartDate <= localEndDate
     : true;
   const showMissingDateAlert = Boolean(selectedYardId) && !hasDateRange;
+
+
+  const presetBtn = (active: boolean) =>
+    cn(
+      "flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border transition-all",
+      active
+        ? "border-emerald-300 bg-emerald-50 dark:border-emerald-600/50 dark:bg-emerald-500/10"
+        : "border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80",
+    );
   const isYardPopoverOpen = open && yardOpen;
   const isStartDatePopoverOpen = open && startPopoverOpen;
   const isEndDatePopoverOpen = open && endPopoverOpen;
@@ -288,99 +306,149 @@ export function FiltersSheet({
             </div>
 
             {/* Date Shortcuts Grid */}
+            <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  let start = new Date(2026, 0, 1);
-                  const selectedYard = yards.find((y) => y.id.toString() === selectedYardId);
-                  if (selectedYard?.createdAt) {
-                    const parsed = new Date(selectedYard.createdAt);
-                    if (!isNaN(parsed.getTime())) start = parsed;
-                  }
-                  setLocalStartDate(start);
-                  setLocalEndDate(today);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">All time</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YARD HISTORY</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "allTime")}
+                    onClick={() => {
+                      const today = new Date();
+                      let start = new Date(2026, 0, 1);
+                      const selectedYard = yards.find((y) => y.id.toString() === selectedYardId);
+                      if (selectedYard?.createdAt) {
+                        const parsed = new Date(selectedYard.createdAt);
+                        if (!isNaN(parsed.getTime())) start = parsed;
+                      }
+                      setLocalStartDate(start);
+                      setLocalEndDate(today);
+                      setActivePreset("allTime");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "allTime" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>All time</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YARD HISTORY</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  From yard start date → today
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  const start = new Date();
-                  start.setDate(today.getDate() - 7);
-                  setLocalStartDate(start);
-                  setLocalEndDate(today);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 7 days</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">RECENT ACTIVITY</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "last7")}
+                    onClick={() => {
+                      const today = new Date();
+                      const start = new Date();
+                      start.setDate(today.getDate() - 7);
+                      setLocalStartDate(start);
+                      setLocalEndDate(today);
+                      setActivePreset("last7");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last7" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last 7 days</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">RECENT ACTIVITY</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {format(new Date(new Date().setDate(new Date().getDate() - 7)), "MMM d")} → {format(new Date(), "MMM d, yyyy")}
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  const start = new Date();
-                  start.setDate(today.getDate() - 30);
-                  setLocalStartDate(start);
-                  setLocalEndDate(today);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last 30 days</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">ROLLING MONTH</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "last30")}
+                    onClick={() => {
+                      const today = new Date();
+                      const start = new Date();
+                      start.setDate(today.getDate() - 30);
+                      setLocalStartDate(start);
+                      setLocalEndDate(today);
+                      setActivePreset("last30");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last30" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last 30 days</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">ROLLING MONTH</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {format(new Date(new Date().setDate(new Date().getDate() - 30)), "MMM d")} → {format(new Date(), "MMM d, yyyy")}
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                  setLocalStartDate(start);
-                  setLocalEndDate(today);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">This month</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">MONTH TO DATE</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "thisMonth")}
+                    onClick={() => {
+                      const today = new Date();
+                      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                      setLocalStartDate(start);
+                      setLocalEndDate(today);
+                      setActivePreset("thisMonth");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "thisMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>This month</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">MONTH TO DATE</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "MMM d")} → {format(new Date(), "MMM d, yyyy")}
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                  const end = new Date(today.getFullYear(), today.getMonth(), 0);
-                  setLocalStartDate(start);
-                  setLocalEndDate(end);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">Last month</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">PREVIOUS MONTH</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "lastMonth")}
+                    onClick={() => {
+                      const today = new Date();
+                      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                      const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                      setLocalStartDate(start);
+                      setLocalEndDate(end);
+                      setActivePreset("lastMonth");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "lastMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last month</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">PREVIOUS MONTH</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {format(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1), "MMM d")} → {format(new Date(new Date().getFullYear(), new Date().getMonth(), 0), "MMM d, yyyy")}
+                </TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                className="flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 transition-all dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80"
-                onClick={() => {
-                  const today = new Date();
-                  const start = new Date(today.getFullYear(), 0, 1);
-                  setLocalStartDate(start);
-                  setLocalEndDate(today);
-                }}
-              >
-                <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 leading-tight">YTD</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YEAR TO DATE</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={presetBtn(activePreset === "ytd")}
+                    onClick={() => {
+                      const today = new Date();
+                      const start = new Date(today.getFullYear(), 0, 1);
+                      setLocalStartDate(start);
+                      setLocalEndDate(today);
+                      setActivePreset("ytd");
+                    }}
+                  >
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "ytd" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>YTD</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YEAR TO DATE</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {format(new Date(new Date().getFullYear(), 0, 1), "MMM d")} → {format(new Date(), "MMM d, yyyy")}
+                </TooltipContent>
+              </Tooltip>
             </div>
+            </TooltipProvider>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
