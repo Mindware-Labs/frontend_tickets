@@ -27,16 +27,12 @@ import {
 import { useAircall } from "@/components/providers/AircallProvider";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
-  ArOption,
-  CampaignOptionEnum,
-  ManagementType,
-  OnboardingOption,
   SupportTicketPriority,
-  SupportTicketType,
   type AgentOption,
   type CampaignOption,
   type YardOption,
 } from "../../types";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import { TicketStatusToggle } from "./TicketStatusToggle";
 import type {
   TicketFilterKey,
@@ -72,6 +68,7 @@ export function TicketFiltersBar({
   const [yardSearch, setYardSearch] = useState("");
 
   const { setSheetOpen } = useAircall();
+  const { ticketTypes, getOptionsForCampaignType } = useConfigurations(true);
 
   useEffect(() => {
     if (open) setDraft({ ...filters });
@@ -135,13 +132,10 @@ export function TicketFiltersBar({
     return found?.tipo ?? null;
   }, [draft.campaign, campaigns]);
 
-  const availableCampaignOptions: string[] = useMemo(() => {
-    if (selectedCampaignTipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (selectedCampaignTipo === ManagementType.AR)
-      return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [selectedCampaignTipo]);
+  const availableCampaignOptions = useMemo(() => {
+    if (!selectedCampaignTipo) return [];
+    return getOptionsForCampaignType(selectedCampaignTipo);
+  }, [selectedCampaignTipo, getOptionsForCampaignType]);
 
   const activeChips = useMemo(() => {
     const labelMap: Record<TicketFilterKey, string> = {
@@ -303,9 +297,9 @@ export function TicketFiltersBar({
                   </SelectTrigger>
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Types</SelectItem>
-                    {Object.values(SupportTicketType).map((type) => (
-                      <SelectItem className={filterSelectItemClassName} key={type} value={type}>
-                        {formatLabel(type)}
+                    {ticketTypes.map((t) => (
+                      <SelectItem className={filterSelectItemClassName} key={t.value} value={t.value}>
+                        {t.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -343,13 +337,8 @@ export function TicketFiltersBar({
                     );
                     const newTipo =
                       value === "all" ? null : (newCampaign?.tipo ?? null);
-                    const newOptions: string[] =
-                      newTipo === ManagementType.ONBOARDING
-                        ? Object.values(OnboardingOption)
-                        : newTipo === ManagementType.AR
-                          ? Object.values(ArOption)
-                          : Object.values(CampaignOptionEnum);
-                    if (!newOptions.includes(draft.campaignOption)) {
+                    const newOptions = newTipo ? getOptionsForCampaignType(newTipo) : [];
+                    if (!newOptions.some((o) => o.value === draft.campaignOption)) {
                       setDraftKey("campaignOption", "all");
                     }
                   }}
@@ -389,7 +378,7 @@ export function TicketFiltersBar({
                 <Select
                   value={
                     draft.campaignOption !== "all" &&
-                    !availableCampaignOptions.includes(draft.campaignOption)
+                    !availableCampaignOptions.some((o) => o.value === draft.campaignOption)
                       ? "all"
                       : draft.campaignOption
                   }
@@ -402,9 +391,9 @@ export function TicketFiltersBar({
                   </SelectTrigger>
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
-                    {availableCampaignOptions.map((option) => (
-                      <SelectItem className={filterSelectItemClassName} key={option} value={option}>
-                        {formatLabel(option)}
+                    {availableCampaignOptions.map((opt) => (
+                      <SelectItem className={filterSelectItemClassName} key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

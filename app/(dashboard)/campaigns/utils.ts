@@ -1,11 +1,15 @@
 import { ManagementType } from "../calls/types";
 import type { Campaign, YardSummary } from "./types";
 
-export const CAMPAIGN_TYPE_LABELS: Record<ManagementType, string> = {
+export const CAMPAIGN_TYPE_LABELS: Record<string, string> = {
   [ManagementType.ONBOARDING]: "Onboarding",
   [ManagementType.AR]: "AR",
   [ManagementType.OTHER]: "Other",
 };
+
+export function getCampaignTypeLabel(tipo: string): string {
+  return CAMPAIGN_TYPE_LABELS[tipo] ?? tipo.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function getYardLabel(
   campaign: Campaign,

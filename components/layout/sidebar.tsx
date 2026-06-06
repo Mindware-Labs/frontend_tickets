@@ -15,6 +15,7 @@ import {
   Phone,
   PhoneCall,
   Radio,
+  Settings,
   User,
   Users,
   type LucideIcon,
@@ -108,6 +109,17 @@ const sections: NavSection[] = [
     title: "Notifications",
     items: [
       { title: "Notifications", url: "/audit/notifications", icon: Bell },
+    ],
+  },
+  {
+    title: "Configuration",
+    items: [
+      {
+        title: "Settings",
+        url: "/settings",
+        icon: Settings,
+        adminOnly: true,
+      },
     ],
   },
   {

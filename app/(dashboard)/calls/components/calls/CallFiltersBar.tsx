@@ -29,17 +29,13 @@ import { SlidersHorizontal, X } from "lucide-react";
 import {
   CallStatus,
   CallDirection,
-  CallDisposition,
-  CampaignOptionEnum,
-  OnboardingOption,
-  ArOption,
-  ManagementType,
   type AgentOption,
   type CampaignOption,
   type YardOption,
 } from "../../types";
 import { formatEnumLabel } from "../../utils/call-helpers";
 import type { Filters, FilterKey } from "../../hooks/useCallFilters";
+import { useConfigurations } from "@/hooks/useConfigurations";
 
 interface CallFiltersBarProps {
   filters: Filters;
@@ -72,6 +68,7 @@ export function CallFiltersBar({
   const [yardSearch, setYardSearch] = useState("");
 
   const { setSheetOpen } = useAircall();
+  const { dispositions, getOptionsForCampaignType } = useConfigurations(true);
 
   // Sync draft when drawer opens
   useEffect(() => {
@@ -136,13 +133,10 @@ export function CallFiltersBar({
     return found?.tipo ?? null;
   }, [draft.campaign, campaigns]);
 
-  const availableCampaignOptions: string[] = useMemo(() => {
-    if (selectedCampaignTipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (selectedCampaignTipo === ManagementType.AR)
-      return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [selectedCampaignTipo]);
+  const availableCampaignOptions = useMemo(() => {
+    if (!selectedCampaignTipo) return [];
+    return getOptionsForCampaignType(selectedCampaignTipo);
+  }, [selectedCampaignTipo, getOptionsForCampaignType]);
 
   const filteredYards = useMemo(() => {
     const term = yardSearch.toLowerCase();
@@ -320,9 +314,9 @@ export function CallFiltersBar({
                   </SelectTrigger>
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Dispositions</SelectItem>
-                    {Object.values(CallDisposition).map((value) => (
-                      <SelectItem className={filterSelectItemClassName} key={value} value={value}>
-                        {formatEnumLabel(value)}
+                    {dispositions.map((d) => (
+                      <SelectItem className={filterSelectItemClassName} key={d.value} value={d.value}>
+                        {d.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -362,13 +356,8 @@ export function CallFiltersBar({
                     );
                     const newTipo =
                       v === "all" ? null : (newCampaign?.tipo ?? null);
-                    const newOptions: string[] =
-                      newTipo === ManagementType.ONBOARDING
-                        ? Object.values(OnboardingOption)
-                        : newTipo === ManagementType.AR
-                          ? Object.values(ArOption)
-                          : Object.values(CampaignOptionEnum);
-                    if (!newOptions.includes(draft.campaignOption)) {
+                    const newOptions = newTipo ? getOptionsForCampaignType(newTipo) : [];
+                    if (!newOptions.some((o) => o.value === draft.campaignOption)) {
                       setDraftKey("campaignOption", "all");
                     }
                   }}
@@ -403,7 +392,7 @@ export function CallFiltersBar({
                 <Select
                   value={
                     draft.campaignOption !== "all" &&
-                    !availableCampaignOptions.includes(draft.campaignOption)
+                    !availableCampaignOptions.some((o) => o.value === draft.campaignOption)
                       ? "all"
                       : draft.campaignOption
                   }
@@ -414,9 +403,9 @@ export function CallFiltersBar({
                   </SelectTrigger>
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
-                    {availableCampaignOptions.map((value) => (
-                      <SelectItem className={filterSelectItemClassName} key={value} value={value}>
-                        {formatEnumLabel(value)}
+                    {availableCampaignOptions.map((opt) => (
+                      <SelectItem className={filterSelectItemClassName} key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -27,14 +27,10 @@ import {
 import { useAircall } from "@/components/providers/AircallProvider";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
-  ArOption,
-  CallDisposition,
-  CampaignOptionEnum,
-  ManagementType,
-  OnboardingOption,
   type AgentOption,
   type CampaignOption,
 } from "../../types";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import { TicketStatusToggle } from "../tickets/TicketStatusToggle";
 import type {
   ManualRecordFilterKey,
@@ -67,6 +63,7 @@ export function ManualRecordFiltersBar({
   const [campaignSearch, setCampaignSearch] = useState("");
   const [yardSearch, setYardSearch] = useState("");
   const { setSheetOpen } = useAircall();
+  const { dispositions, getOptionsForCampaignType } = useConfigurations(true);
 
   useEffect(() => {
     if (open) setDraft({ ...filters });
@@ -126,13 +123,10 @@ export function ManualRecordFiltersBar({
     return found?.tipo ?? null;
   }, [draft.campaign, campaigns]);
 
-  const availableCampaignOptions: string[] = useMemo(() => {
-    if (selectedCampaignTipo === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (selectedCampaignTipo === ManagementType.AR)
-      return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [selectedCampaignTipo]);
+  const availableCampaignOptions = useMemo(() => {
+    if (!selectedCampaignTipo) return [];
+    return getOptionsForCampaignType(selectedCampaignTipo);
+  }, [selectedCampaignTipo, getOptionsForCampaignType]);
 
   const activeChips = useMemo(() => {
     const labelMap: Record<ManualRecordFilterKey, string> = {
@@ -312,14 +306,9 @@ export function ManualRecordFiltersBar({
                     );
                     const newTipo =
                       v === "all" ? null : (newCampaign?.tipo ?? null);
-                    const newOptions: string[] =
-                      newTipo === ManagementType.ONBOARDING
-                        ? Object.values(OnboardingOption)
-                        : newTipo === ManagementType.AR
-                          ? Object.values(ArOption)
-                          : Object.values(CampaignOptionEnum);
+                    const newOptions = newTipo ? getOptionsForCampaignType(newTipo) : [];
                     setDraftKey("campaign", v);
-                    if (!newOptions.includes(draft.campaignOption)) {
+                    if (!newOptions.some((o) => o.value === draft.campaignOption)) {
                       setDraftKey("campaignOption", "all");
                     }
                   }}
@@ -353,7 +342,7 @@ export function ManualRecordFiltersBar({
                 <Select
                   value={
                     draft.campaignOption !== "all" &&
-                    !availableCampaignOptions.includes(draft.campaignOption)
+                    !availableCampaignOptions.some((o) => o.value === draft.campaignOption)
                       ? "all"
                       : draft.campaignOption
                   }
@@ -365,8 +354,8 @@ export function ManualRecordFiltersBar({
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Options</SelectItem>
                     {availableCampaignOptions.map((opt) => (
-                      <SelectItem className={filterSelectItemClassName} key={opt} value={opt}>
-                        {formatLabel(opt)}
+                      <SelectItem className={filterSelectItemClassName} key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -384,9 +373,9 @@ export function ManualRecordFiltersBar({
                   </SelectTrigger>
                   <SelectContent className={filterSelectContentClassName}>
                     <SelectItem className={filterSelectItemClassName} value="all">All Dispositions</SelectItem>
-                    {Object.values(CallDisposition).map((d) => (
-                      <SelectItem className={filterSelectItemClassName} key={d} value={d}>
-                        {formatLabel(d)}
+                    {dispositions.map((d) => (
+                      <SelectItem className={filterSelectItemClassName} key={d.value} value={d.value}>
+                        {d.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

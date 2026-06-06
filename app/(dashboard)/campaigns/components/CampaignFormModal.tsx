@@ -22,8 +22,7 @@ import {
   entityFormInputClassName,
   entityFormInputErrorClass,
 } from "@/components/forms/entity-form-layout";
-import { ManagementType } from "../../calls/types";
-import { CAMPAIGN_TYPE_LABELS } from "../utils";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import type { CampaignFormData, YardSummary } from "../types";
 
 interface CampaignFormModalProps {
@@ -43,27 +42,11 @@ interface CampaignFormModalProps {
   yards: YardSummary[];
 }
 
-const TYPE_OPTIONS: {
-  value: ManagementType;
-  icon: typeof Tag;
-  description: string;
-}[] = [
-  {
-    value: ManagementType.ONBOARDING,
-    icon: Tag,
-    description: "Registration and onboarding tickets.",
-  },
-  {
-    value: ManagementType.AR,
-    icon: DollarSign,
-    description: "Accounts receivable and payment tracking.",
-  },
-  {
-    value: ManagementType.OTHER,
-    icon: Clock,
-    description: "General campaigns with custom duration.",
-  },
-];
+const BUILTIN_TYPE_META: Record<string, { icon: typeof Tag; description: string }> = {
+  ONBOARDING: { icon: Tag, description: "Registration and onboarding tickets." },
+  AR: { icon: DollarSign, description: "Accounts receivable and payment tracking." },
+  OTHER: { icon: Clock, description: "General campaigns with custom duration." },
+};
 
 export function CampaignFormModal({
   open,
@@ -87,8 +70,10 @@ export function CampaignFormModal({
     }
   };
 
-  const setType = (tipo: ManagementType) => {
-    onFormChange({ ...formData, tipo });
+  const { campaignTypes } = useConfigurations(true);
+
+  const setType = (tipo: string) => {
+    onFormChange({ ...formData, tipo: tipo as any });
     clearError("tipo");
   };
 
@@ -142,7 +127,11 @@ export function CampaignFormModal({
           Campaign Type <span className="normal-case text-red-400">*</span>
         </EntityFormSectionHeading>
         <div className="grid gap-2 sm:grid-cols-3">
-          {TYPE_OPTIONS.map(({ value, icon: Icon, description }) => {
+          {campaignTypes.map((ct) => {
+            const meta = BUILTIN_TYPE_META[ct.value] ?? { icon: Megaphone, description: ct.label };
+            const Icon = meta.icon;
+            const value = ct.value;
+            const description = meta.description;
             const selected = formData.tipo === value;
             return (
               <button
@@ -158,7 +147,7 @@ export function CampaignFormModal({
               >
                 <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-slate-100">
                   <Icon className="h-3.5 w-3.5 shrink-0 text-[#008f68]" />
-                  {CAMPAIGN_TYPE_LABELS[value]}
+                  {ct.label}
                 </span>
                 <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-slate-500">
                   {description}
@@ -192,7 +181,7 @@ export function CampaignFormModal({
           <EntityFormField
             id={`${idPrefix}-duracion`}
             label="Duration"
-            className={formData.tipo === ManagementType.OTHER ? "" : "opacity-90"}
+            className={(formData.tipo as string) === "OTHER" ? "" : "opacity-90"}
           >
             <Input
               id={`${idPrefix}-duracion`}
@@ -201,7 +190,7 @@ export function CampaignFormModal({
                 onFormChange({ ...formData, duracion: e.target.value })
               }
               placeholder={
-                formData.tipo === ManagementType.OTHER
+                (formData.tipo as string) === "OTHER"
                   ? "e.g. 30 days"
                   : "Optional"
               }

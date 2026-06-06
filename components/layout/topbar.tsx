@@ -92,6 +92,9 @@ function resolvePageMeta(pathname: string): PageMeta {
   if (path.startsWith("/profile"))
     return { section: "Directory", title: "Profile" };
 
+  if (path.startsWith("/settings"))
+    return { section: "Admin", title: "Configuration" };
+
   const segment = pathname.split("/").filter(Boolean).pop() || "dashboard";
 
   return {

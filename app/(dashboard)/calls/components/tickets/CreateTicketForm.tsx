@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import {
-  ManagementType,
-  OnboardingOption,
-  ArOption,
   type CreateSupportTicketFormData,
 } from "../../types";
 import { TicketPropertiesCard } from "./TicketPropertiesCard";
@@ -46,14 +44,14 @@ export function CreateTicketForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mainCustomerOpen, setMainCustomerOpen] = useState(false);
   const [mainCustomerSearch, setMainCustomerSearch] = useState("");
+  const { getOptionsForCampaignType } = useConfigurations(true);
+
   const campaignOptionValues = useMemo(() => {
     if (!form.campaignId) return [];
     const camp = campaigns.find((c) => c.id.toString() === form.campaignId);
-    const type = camp?.tipo?.toString().toUpperCase();
-    if (type === ManagementType.ONBOARDING) return Object.values(OnboardingOption);
-    if (type === ManagementType.AR) return Object.values(ArOption);
-    return [];
-  }, [campaigns, form.campaignId]);
+    if (!camp?.tipo) return [];
+    return getOptionsForCampaignType(camp.tipo.toString().toUpperCase());
+  }, [campaigns, form.campaignId, getOptionsForCampaignType]);
 
   const mainFilteredCustomers = useMemo(() => {
     if (!mainCustomerSearch.trim()) return customers;

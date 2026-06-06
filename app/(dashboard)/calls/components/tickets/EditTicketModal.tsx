@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,10 +52,6 @@ import {
 import {
   SupportTicketStatus,
   SupportTicketPriority,
-  SupportTicketType,
-  ManagementType,
-  OnboardingOption,
-  ArOption,
   type SupportTicketRecord,
   type CreateSupportTicketFormData,
 } from "../../types";
@@ -71,10 +68,7 @@ const formatLabel = (v: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const formatEnumLabel = (value: string) => {
-  if (value === OnboardingOption.PAID_WITH_LL) return "Paid with LL";
-  return formatLabel(value);
-};
+const formatEnumLabel = (value: string) => formatLabel(value);
 
 // ---------------------------------------------------------------------------
 // Props
@@ -131,6 +125,8 @@ export function EditTicketModal({
   const canDial = aircallStatus === "ready" && aircallLoggedIn;
   const dialPhone = ticket?.customer?.phone || "";
 
+  const { ticketTypes, getOptionsForCampaignType } = useConfigurations(true);
+
   // ---- Campaign logic ----
   const selectedCampaign = useMemo(() => {
     if (!form.campaignId) return null;
@@ -138,14 +134,10 @@ export function EditTicketModal({
   }, [campaigns, form.campaignId]);
 
   const selectedCampaignType = selectedCampaign?.tipo?.toString().toUpperCase();
-  const isOnboardingCampaign =
-    selectedCampaignType === ManagementType.ONBOARDING;
-  const isArCampaign = selectedCampaignType === ManagementType.AR;
-  const campaignOptionValues = isOnboardingCampaign
-    ? Object.values(OnboardingOption)
-    : isArCampaign
-      ? Object.values(ArOption)
-      : [];
+  const campaignOptionValues = useMemo(
+    () => (selectedCampaignType ? getOptionsForCampaignType(selectedCampaignType) : []),
+    [selectedCampaignType, getOptionsForCampaignType],
+  );
 
   // ---- Customer search ----
   const normalizePhone = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
@@ -377,9 +369,9 @@ export function EditTicketModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">No option</SelectItem>
-                        {campaignOptionValues.map((v) => (
-                          <SelectItem key={v} value={v}>
-                            {formatEnumLabel(v)}
+                        {campaignOptionValues.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -634,9 +626,9 @@ export function EditTicketModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      {Object.values(SupportTicketType).map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {formatLabel(t)}
+                      {ticketTypes.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

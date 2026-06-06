@@ -84,6 +84,7 @@ import { useReportSession } from "@/hooks/use-report-session";
 import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { CampaignFiltersSheet } from "./Components/CampaignFiltersSheet";
+import { CampaignReportSetupEmptyState } from "./Components/CampaignReportSetupEmptyState";
 import {
   ActivityHeatmap,
   buildCoverageDetail,
@@ -3306,92 +3307,22 @@ export default function CampaignReportsPage() {
         />
 
         {!hasParams && !campaignIdParam ? (
-          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
-            <Empty className="min-h-0 w-full max-w-[420px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
-              <EmptyHeader className="max-w-[340px] gap-2">
-                <EmptyMedia
-                  variant="icon"
-                  className="mb-0 size-10 rounded-xl bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                >
-                  <SlidersHorizontal className="size-4" aria-hidden />
-                </EmptyMedia>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                  Campaign report setup
-                </span>
-                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  Configure a campaign report
-                </EmptyTitle>
-                <EmptyDescription className="max-w-[320px] text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  Select a campaign and date range to load campaign analytics,
-                  cross-filters, and export actions.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent className="max-w-none gap-0">
-                <Button
-                  size="sm"
-                  className="h-9 rounded-lg bg-[#008f68] px-3.5 text-xs font-semibold shadow-sm hover:bg-[#007a5a]"
-                  onClick={() => setFiltersOpen(true)}
-                >
-                  <SlidersHorizontal data-icon="inline-start" />
-                  Configure Report
-                </Button>
-              </EmptyContent>
-            </Empty>
-          </div>
+          <CampaignReportSetupEmptyState
+            mode="no-campaign"
+            onConfigure={() => setFiltersOpen(true)}
+          />
         ) : !hasParams && campaignIdParam ? (
-          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
-            <Empty className="min-h-0 w-full max-w-[400px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
-              <EmptyHeader className="max-w-[320px] gap-2">
-                <EmptyMedia
-                  variant="icon"
-                  className="mb-0 size-10 rounded-xl bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                >
-                  <CalendarDays className="size-4" aria-hidden />
-                </EmptyMedia>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                  Campaign report setup
-                </span>
-                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  Select a date range
-                </EmptyTitle>
-                <EmptyDescription className="max-w-[300px] text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  Choose a start date and end date in Configure Report to load
-                  the campaign dashboard.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent className="max-w-none gap-0">
-                <Button
-                  size="sm"
-                  className="h-9 rounded-lg bg-[#008f68] px-3.5 text-xs font-semibold shadow-sm hover:bg-[#007a5a]"
-                  onClick={() => setFiltersOpen(true)}
-                >
-                  <SlidersHorizontal data-icon="inline-start" />
-                  Configure Report
-                </Button>
-              </EmptyContent>
-            </Empty>
-          </div>
+          <CampaignReportSetupEmptyState
+            mode="no-dates"
+            onConfigure={() => setFiltersOpen(true)}
+          />
         ) : !isDateRangeValid ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-amber-300/70 bg-amber-50/40 p-6 text-center dark:border-amber-500/35 dark:bg-amber-950/15">
-            <AlertCircle className="size-6 text-amber-600" aria-hidden />
-            <div>
-              <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                Date range invalid
-              </h2>
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-200">
-                The start date ({startDate}) cannot be after the end date (
-                {endDate}).
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-amber-800"
-              onClick={() => setFiltersOpen(true)}
-            >
-              Open Configure Report
-            </Button>
-          </div>
+          <CampaignReportSetupEmptyState
+            mode="invalid-range"
+            startDate={startDate}
+            endDate={endDate}
+            onConfigure={() => setFiltersOpen(true)}
+          />
         ) : loading ? (
           <EntityGridLoading kind="dashboard" className="my-12" />
         ) : report ? (

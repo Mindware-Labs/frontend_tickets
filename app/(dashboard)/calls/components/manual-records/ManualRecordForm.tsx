@@ -2,14 +2,10 @@
 
 import { useMemo } from "react";
 import {
-  CallDisposition,
-  ManagementType,
-  OnboardingOption,
-  ArOption,
-  CampaignOptionEnum,
   SupportTicketStatus,
   type CreateManualRecordFormData,
 } from "../../types";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import { TicketStatusToggle } from "../tickets/TicketStatusToggle";
 import {
   InspectorSelect,
@@ -74,14 +70,14 @@ export function ManualRecordForm({
   existingAttachments = [],
   getAttachmentUrl,
 }: ManualRecordFormProps) {
+  const { dispositions, getOptionsForCampaignType } = useConfigurations(true);
+
   const campaignOptionValues = useMemo(() => {
     if (!form.campaignId) return [];
     const camp = campaigns.find((c) => c.id.toString() === form.campaignId);
-    const type = camp?.tipo?.toString().toUpperCase();
-    if (type === ManagementType.ONBOARDING) return Object.values(OnboardingOption);
-    if (type === ManagementType.AR) return Object.values(ArOption);
-    return Object.values(CampaignOptionEnum);
-  }, [campaigns, form.campaignId]);
+    if (!camp?.tipo) return [];
+    return getOptionsForCampaignType(camp.tipo.toString().toUpperCase());
+  }, [campaigns, form.campaignId, getOptionsForCampaignType]);
 
   const customerItems = useMemo(
     () =>
@@ -158,9 +154,8 @@ export function ManualRecordForm({
                   onChange={(v) => {
                     const camp = campaigns.find((c) => c.id.toString() === v);
                     const type = camp?.tipo?.toString().toUpperCase();
-                    const supportsOption =
-                      type === ManagementType.ONBOARDING ||
-                      type === ManagementType.AR;
+                    const newOptions = type ? getOptionsForCampaignType(type) : [];
+                    const supportsOption = newOptions.length > 0;
                     setForm((f) => ({
                       ...f,
                       campaignId: v,
@@ -210,8 +205,8 @@ export function ManualRecordForm({
                   >
                     <SelectItem value="none">None</SelectItem>
                     {campaignOptionValues.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {formatLabel(opt)}
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </InspectorSelect>
@@ -236,9 +231,9 @@ export function ManualRecordForm({
                   placeholder="Disposition"
                 >
                   <SelectItem value="none">None</SelectItem>
-                  {Object.values(CallDisposition).map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {formatLabel(d)}
+                  {dispositions.map((d) => (
+                    <SelectItem key={d.value} value={d.value}>
+                      {d.label}
                     </SelectItem>
                   ))}
                 </InspectorSelect>

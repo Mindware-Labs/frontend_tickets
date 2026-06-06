@@ -63,11 +63,9 @@ import {
   CallStatus,
   CreateTicketFormData,
   CustomerOption,
-  ManagementType,
-  OnboardingOption,
-  ArOption,
   YardOption,
 } from "../../types";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import {
   formatEnumLabel,
   fmtDate,
@@ -458,6 +456,8 @@ export function CustomerTimelineDrawer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const { dispositions, getOptionsForCampaignType } = useConfigurations(true);
+
   // ── Call Linking states ───────────────────────────────────────────────────
   const [showCallLinker, setShowCallLinker] = useState(false);
   const [overduebannerDismissed, setOverdueBannerDismissed] = useState(false);
@@ -791,12 +791,9 @@ export function CustomerTimelineDrawer({
     const camp = campaigns.find(
       (c) => c.id.toString() === editFormData.campaignId,
     );
-    const type = camp?.tipo?.toString().toUpperCase();
-    if (type === ManagementType.ONBOARDING)
-      return Object.values(OnboardingOption);
-    if (type === ManagementType.AR) return Object.values(ArOption);
-    return [];
-  }, [campaigns, editFormData.campaignId]);
+    if (!camp?.tipo) return [];
+    return getOptionsForCampaignType(camp.tipo.toString().toUpperCase());
+  }, [campaigns, editFormData.campaignId, getOptionsForCampaignType]);
 
   const isCallbackDisposition =
     editFormData.disposition === CallDisposition.CALLBACK_REQUIRED ||
@@ -2023,9 +2020,9 @@ export function CustomerTimelineDrawer({
                               placeholder="Option"
                             >
                               <SelectItem value="none">None</SelectItem>
-                              {campaignOptionValues.map((v) => (
-                                <SelectItem key={v} value={v}>
-                                  {formatEnumLabel(v)}
+                              {campaignOptionValues.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
                                 </SelectItem>
                               ))}
                             </InspectorSelect>
@@ -2082,19 +2079,20 @@ export function CustomerTimelineDrawer({
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="none">None</SelectItem>
-                                  {Object.entries(DISPOSITION_COLORS).map(
-                                    ([key, cfg]) => (
-                                      <SelectItem key={key} value={key}>
+                                  {dispositions.map((d) => {
+                                    const cfg = DISPOSITION_COLORS[d.value] ?? null;
+                                    return (
+                                      <SelectItem key={d.value} value={d.value}>
                                         <span className="inline-flex items-center gap-1.5">
                                           <span
                                             className="w-2 h-2 rounded-full shrink-0"
-                                            style={{ background: cfg.text }}
+                                            style={{ background: cfg?.text ?? "#64748b" }}
                                           />
-                                          {cfg.label}
+                                          {d.label}
                                         </span>
                                       </SelectItem>
-                                    ),
-                                  )}
+                                    );
+                                  })}
                                 </SelectContent>
                               </Select>
                             );

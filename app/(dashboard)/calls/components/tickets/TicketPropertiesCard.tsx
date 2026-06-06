@@ -16,10 +16,9 @@ import { cn } from "@/lib/utils";
 import {
   SupportTicketStatus,
   SupportTicketPriority,
-  SupportTicketType,
-  ManagementType,
   type CreateSupportTicketFormData,
 } from "../../types";
+import { useConfigurations } from "@/hooks/useConfigurations";
 import { formatEnumLabel } from "../../utils/call-helpers";
 import {
   InspectorSelect,
@@ -66,7 +65,7 @@ export interface TicketPropertiesCardProps {
   agents: any[];
   campaigns: any[];
   phoneLines?: { id: number; label: string | null; phoneNumber: string }[];
-  campaignOptionValues: string[];
+  campaignOptionValues: { value: string; label: string }[];
   mainCustomerOpen: boolean;
   setMainCustomerOpen: (open: boolean) => void;
   mainCustomerSearch: string;
@@ -106,6 +105,8 @@ export function TicketPropertiesCard({
   popoverClassName,
   selectContentClassName,
 }: TicketPropertiesCardProps) {
+  const { ticketTypes } = useConfigurations(true);
+
   const selectedPhoneLine = phoneLines.find(
     (line) => line.id.toString() === editFormData.phoneLineId,
   );
@@ -268,9 +269,7 @@ export function TicketPropertiesCard({
                     (c: any) => c.id.toString() === v,
                   );
                   const type = camp?.tipo?.toString().toUpperCase();
-                  const supportsOption =
-                    type === ManagementType.ONBOARDING ||
-                    type === ManagementType.AR;
+                  const supportsOption = !!type && campaignOptionValues.length > 0;
                   setEditFormData((f) => ({
                     ...f,
                     campaignId: v,
@@ -319,9 +318,9 @@ export function TicketPropertiesCard({
                   placeholder="Option"
                 >
                   <SelectItem value="none">None</SelectItem>
-                  {campaignOptionValues.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {formatEnumLabel(v)}
+                  {campaignOptionValues.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
                     </SelectItem>
                   ))}
                 </InspectorSelect>
@@ -387,9 +386,9 @@ export function TicketPropertiesCard({
                 placeholder="Type"
               >
                 <SelectItem value="none">None</SelectItem>
-                {Object.values(SupportTicketType).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    <TableTicketTypePill type={t} />
+                {ticketTypes.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    <TableTicketTypePill type={t.value} />
                   </SelectItem>
                 ))}
               </InspectorSelect>
