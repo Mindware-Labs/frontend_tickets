@@ -215,6 +215,8 @@ export default function TicketsPage() {
         ? ticketsPageData.total
         : tickets.length;
   const serverViewCounts = ticketsPageData?.viewCounts || null;
+  const legacyCallCountByCustomer: Record<number, number> =
+    ticketsPageData?.legacyCallCountByCustomer ?? {};
   const legacyCalls: Call[] = Array.isArray(legacyCallsPageData)
     ? legacyCallsPageData
     : legacyCallsPageData?.data || [];
@@ -1502,6 +1504,7 @@ export default function TicketsPage() {
             isLoading={isLoading}
             focusCallId={callIdParam}
             legacyCalls={legacyCalls}
+            legacyCallCountByCustomer={legacyCallCountByCustomer}
             search={ticketFilters.search}
             onSearchChange={ticketFilters.setSearch}
             dateRange={ticketFilters.dateRange}

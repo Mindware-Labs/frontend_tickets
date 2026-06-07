@@ -834,12 +834,12 @@ export function ManualRecordsTab() {
                     <React.Fragment key={group.key}>
                       <TableRow
                         className={cn(
-                          "relative cursor-pointer border-b border-border/70 transition-all duration-150",
+                          "relative cursor-pointer group border-b border-border/70 transition-all duration-150 dark:hover:bg-muted/50",
                           isOverdue
                             ? "bg-red-50/70 dark:bg-red-500/10 border-l-2 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-500/15"
                             : i % 2 === 1
-                              ? "bg-slate-50/60 hover:bg-[#f0faf5]/60"
-                              : "bg-white hover:bg-[#f0faf5]/60",
+                              ? "bg-slate-50/60 dark:bg-muted/20 hover:bg-[#f0faf5]/60"
+                              : "bg-white dark:bg-card hover:bg-[#f0faf5]/60",
                         )}
                         onClick={() => openView(r)}
                       >

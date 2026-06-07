@@ -367,7 +367,7 @@ export function EditTicketModal({
                       <SelectTrigger>
                         <SelectValue placeholder="Select option" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-button]:hidden">
                         <SelectItem value="none">No option</SelectItem>
                         {campaignOptionValues.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
@@ -624,7 +624,7 @@ export function EditTicketModal({
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-button]:hidden">
                       <SelectItem value="none">None</SelectItem>
                       {ticketTypes.map((t) => (
                         <SelectItem key={t.value} value={t.value}>

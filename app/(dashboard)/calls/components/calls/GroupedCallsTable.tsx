@@ -142,6 +142,8 @@ interface GroupedCallsTableProps {
   focusCallId?: string | null;
   /** Legacy calls to merge into timeline and count chip */
   legacyCalls?: Call[];
+  /** Legacy call count per customerId from the backend (takes priority over legacyCalls length) */
+  legacyCallCountByCustomer?: Record<number, number>;
   search: string;
   onSearchChange: (value: string) => void;
   dateRange: DateRange | undefined;
@@ -168,6 +170,7 @@ export function GroupedCallsTable({
   isLoading,
   focusCallId,
   legacyCalls,
+  legacyCallCountByCustomer,
   search,
   onSearchChange,
   dateRange,
@@ -459,7 +462,11 @@ export function GroupedCallsTable({
               ) : (
                 paginatedGroups.map((group, i) => {
                   const groupLegacyCalls = legacyByGroupKey.get(group.key) ?? [];
-                  const totalCallCount = group.calls.length + groupLegacyCalls.length;
+                  const legacyCount =
+                    group.customerId != null && legacyCallCountByCustomer
+                      ? (legacyCallCountByCustomer[group.customerId] ?? groupLegacyCalls.length)
+                      : groupLegacyCalls.length;
+                  const totalCallCount = group.calls.length + legacyCount;
                   const t = group.latestCall;
                   const isLive = !!(t.isLive || liveCallIds.has(Number(t.id)));
                   const isOverdue = group.calls.some(

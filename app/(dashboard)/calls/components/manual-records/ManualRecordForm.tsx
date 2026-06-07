@@ -16,8 +16,29 @@ import {
   type CustomerSearchOption,
 } from "../shared/AsyncCustomerCombobox";
 import { EntityAttachmentsSection } from "../shared/EntityAttachmentsSection";
-import { SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ClipboardList } from "lucide-react";
+
+const DISPOSITION_COLORS: Record<string, { text: string; bg: string; label: string }> = {
+  RESOLVED: { text: "#008f68", bg: "#e6f5f0", label: "Resolved" },
+  CALLBACK_REQUIRED: { text: "#c47a00", bg: "#fef3d6", label: "Callback Required" },
+  CALLBACK_SCHEDULED: { text: "#d97706", bg: "#fffbeb", label: "Callback Scheduled" },
+  CALLBACK_COMPLETE: { text: "#065f4a", bg: "#d1fae5", label: "Callback Complete" },
+  VOICEMAIL_LEFT: { text: "#2563eb", bg: "#eff6ff", label: "Voicemail Left" },
+  NO_ANSWER: { text: "#c0392b", bg: "#fde8e6", label: "No Answer" },
+  NEW_LEAD: { text: "#047857", bg: "#d1fae5", label: "New Lead" },
+  PROMISE_TO_PAY: { text: "#0891b2", bg: "#ecfeff", label: "Promise to Pay" },
+  DISPUTE: { text: "#dc2626", bg: "#fef2f2", label: "Dispute" },
+  WRONG_NUMBER: { text: "#64748b", bg: "#f1f5f9", label: "Wrong Number" },
+  ENROLLED: { text: "#7c3aed", bg: "#f5f3ff", label: "Enrolled" },
+  ESCALATED: { text: "#9b1c1c", bg: "#fef2f2", label: "Escalated" },
+};
 
 const formatLabel = (v: string) =>
   v
@@ -221,23 +242,52 @@ export function ManualRecordForm({
             <div className="space-y-2.5">
               <div>
                 <FieldLabel>Disposition</FieldLabel>
-                <InspectorSelect
-                  value={form.disposition || ""}
-                  onChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      disposition: v === "none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Disposition"
-                >
-                  <SelectItem value="none">None</SelectItem>
-                  {dispositions.map((d) => (
-                    <SelectItem key={d.value} value={d.value}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </InspectorSelect>
+                {(() => {
+                  const dispKey = (form.disposition || "").toString().toUpperCase();
+                  const dispCfg = DISPOSITION_COLORS[dispKey] ?? null;
+                  return (
+                    <Select
+                      value={form.disposition || "none"}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, disposition: v === "none" ? "" : v }))
+                      }
+                    >
+                      <SelectTrigger className="h-7 bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
+                        {dispCfg ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold"
+                            style={{ background: dispCfg.bg, color: dispCfg.text }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ background: dispCfg.text }}
+                            />
+                            {dispCfg.label}
+                          </span>
+                        ) : (
+                          <SelectValue placeholder="Disposition" />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-button]:hidden">
+                        <SelectItem value="none">None</SelectItem>
+                        {dispositions.map((d) => {
+                          const cfg = DISPOSITION_COLORS[d.value] ?? null;
+                          return (
+                            <SelectItem key={d.value} value={d.value}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ background: cfg?.text ?? "#64748b" }}
+                                />
+                                {d.label}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
               </div>
 
               {mode === "edit" && (

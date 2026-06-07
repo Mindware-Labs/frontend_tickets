@@ -502,8 +502,26 @@ export function CustomerTimelineDrawer({
   const peekCall: Ticket | null =
     peekData?.success && peekData.data ? (peekData.data as Ticket) : null;
 
-  const closeCallPeek = useCallback(() => setPeekCallId(null), []);
-  useTicketPeekAircallExclusion(peekCallId !== null, closeCallPeek);
+  // ── Legacy Call Peek Panel ────────────────────────────────────────────────
+  const [legacyPeekCallId, setLegacyPeekCallId] = useState<number | null>(null);
+  const { data: legacyPeekData, isLoading: isLegacyPeekLoading } = useSWR(
+    legacyPeekCallId ? `/api/calls/legacy/${legacyPeekCallId}` : null,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+  const legacyPeekCall: Ticket | null =
+    legacyPeekData?.success && legacyPeekData.data
+      ? (legacyPeekData.data as Ticket)
+      : null;
+
+  const closeCallPeek = useCallback(() => {
+    setPeekCallId(null);
+    setLegacyPeekCallId(null);
+  }, []);
+  useTicketPeekAircallExclusion(
+    peekCallId !== null || legacyPeekCallId !== null,
+    closeCallPeek,
+  );
 
   // ── Sheet-anchored success toast ──────────────────────────────────────────
   // toastActive  → controls whether the element is in the DOM
@@ -1246,6 +1264,11 @@ export function CustomerTimelineDrawer({
             : undefined
         }
       />
+      <CallPeekPanel
+        call={legacyPeekCall}
+        isLoading={legacyPeekCallId !== null && isLegacyPeekLoading}
+        onClose={() => setLegacyPeekCallId(null)}
+      />
 
       {/* ── Sheet-anchored error toast ───────────────────────────────────── */}
       {open && errorToastActive && (
@@ -1614,7 +1637,7 @@ export function CustomerTimelineDrawer({
           {/* ══ BODY ════════════════════════════════════════════════════════════ */}
           <div className="flex-1 overflow-hidden min-h-0 flex">
             {/* ── MAIN AREA (~70%) ─────────────────────────────────────────────── */}
-            <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <main className="flex-1 overflow-hidden flex flex-col min-h-0 border-t border-slate-100 bg-slate-50/80">
               <div
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
@@ -1629,7 +1652,7 @@ export function CustomerTimelineDrawer({
                     </div>
                   </div>
                 ) : (
-                  <div className="pt-1 px-4 pb-4 space-y-3">
+                  <div className="pt-2 px-3 pb-4 space-y-2">
                     {/* ── Active ticket warning — full-width banner ── */}
                     {canEdit && activeTicketWarning && (
                       <div
@@ -1977,8 +2000,8 @@ export function CustomerTimelineDrawer({
 
                     {/* ── Combined Call Details & Properties card ── */}
                     <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-                      <div className="flex items-center gap-2 px-5 pt-3 pb-3 border-b border-slate-50">
-                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100">
                           <Hash className="w-3 h-3 text-slate-500" />
                         </div>
                         <span className="text-[12px] font-bold text-slate-700">
@@ -2109,7 +2132,7 @@ export function CustomerTimelineDrawer({
                                     <SelectValue placeholder="Disposition" />
                                   )}
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-button]:hidden">
                                   <SelectItem value="none">None</SelectItem>
                                   {dispositions.map((d) => {
                                     const cfg = DISPOSITION_COLORS[d.value] ?? null;
@@ -2793,7 +2816,7 @@ export function CustomerTimelineDrawer({
             </main>
 
             {/* ── ASIDE: Call History (~30%) ────────────────────────────────────── */}
-            <aside className="hidden sm:flex w-72 xl:w-80 shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
+            <aside className="hidden sm:flex w-72 xl:w-80 shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden border-t border-slate-100">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
@@ -2830,12 +2853,22 @@ export function CustomerTimelineDrawer({
                         isLegacy={(call as any)._isLegacy === true}
                         onClick={() => {
                           setPeekCallId(null);
+                          setLegacyPeekCallId(null);
                           onSelectCall(call);
                         }}
-                        onPeek={(call as any)._isLegacy ? undefined : () => {
-                          const numId = Number(call.id);
-                          setPeekCallId(peekCallId === numId ? null : numId);
-                        }}
+                        onPeek={(call as any)._isLegacy
+                          ? () => {
+                              const numId = Number(call.id);
+                              setPeekCallId(null);
+                              setLegacyPeekCallId(
+                                legacyPeekCallId === numId ? null : numId,
+                              );
+                            }
+                          : () => {
+                              const numId = Number(call.id);
+                              setLegacyPeekCallId(null);
+                              setPeekCallId(peekCallId === numId ? null : numId);
+                            }}
                         isLast={idx === allCalls.length - 1}
                         linkedFromId={
                           linkedFromId !== undefined

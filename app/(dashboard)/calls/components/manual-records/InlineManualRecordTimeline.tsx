@@ -1,13 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { ClipboardList, History, UserRound } from "lucide-react";
-import {
-  formatDistanceToNow,
-  format,
-  isToday,
-  isYesterday,
-} from "date-fns";
+import { History, UserRound } from "lucide-react";
+import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
+import { es } from "date-fns/locale";
 import type { ManualRecord } from "../../types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,74 +19,36 @@ export interface CustomerManualRecordGroup {
 
 const STATUS_META: Record<
   string,
-  { label: string; color: string; bg: string; ring: string }
+  { label: string; color: string; bg: string; dot: string }
 > = {
-  ACTIVE: {
-    label: "Active",
-    color: "#008f68",
-    bg: "#e6f5f0",
-    ring: "border-emerald-400",
-  },
-  OPEN: {
-    label: "Active",
-    color: "#008f68",
-    bg: "#e6f5f0",
-    ring: "border-emerald-400",
-  },
-  IN_PROGRESS: {
-    label: "Active",
-    color: "#008f68",
-    bg: "#e6f5f0",
-    ring: "border-emerald-400",
-  },
-  PENDING_FOLLOWUP: {
-    label: "Follow-up",
-    color: "#c47a00",
-    bg: "#fef3d6",
-    ring: "border-amber-400",
-  },
-  OVERDUE: {
-    label: "Overdue",
-    color: "#c0392b",
-    bg: "#fde8e6",
-    ring: "border-rose-400",
-  },
-  RESOLVED: {
-    label: "Resolved",
-    color: "#008f68",
-    bg: "#e6f5f0",
-    ring: "border-emerald-400",
-  },
-  CLOSED: {
-    label: "Closed",
-    color: "#64748b",
-    bg: "#f1f5f9",
-    ring: "border-slate-300",
-  },
+  ACTIVE:          { label: "Active",    color: "#006d50", bg: "#e6f5f0", dot: "#008f68" },
+  OPEN:            { label: "Active",    color: "#006d50", bg: "#e6f5f0", dot: "#008f68" },
+  IN_PROGRESS:     { label: "Active",    color: "#006d50", bg: "#e6f5f0", dot: "#008f68" },
+  PENDING_FOLLOWUP:{ label: "Follow-up", color: "#b45309", bg: "#fef3c7", dot: "#d97706" },
+  OVERDUE:         { label: "Overdue",   color: "#b91c1c", bg: "#fee2e2", dot: "#dc2626" },
+  RESOLVED:        { label: "Resolved",  color: "#006d50", bg: "#e6f5f0", dot: "#008f68" },
+  CLOSED:          { label: "Closed",    color: "#475569", bg: "#f1f5f9", dot: "#64748b" },
+};
+
+const normalizeStatusKey = (s?: string | null) => {
+  const k = (s || "").toUpperCase().replace(/\s+/g, "_");
+  return k === "OPEN" || k === "IN_PROGRESS" ? "ACTIVE" : k;
 };
 
 const formatLabel = (v: string) =>
-  v
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  v.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
-const normalizeStatusKey = (status?: string | null) => {
-  const key = (status || "").toString().toUpperCase().replace(/\s+/g, "_");
-  return key === "OPEN" || key === "IN_PROGRESS" ? "ACTIVE" : key;
-};
-
-function formatShortDate(date: Date): string {
-  if (isToday(date)) return `Today ${format(date, "HH:mm")}`;
-  if (isYesterday(date)) return `Yesterday ${format(date, "HH:mm")}`;
-  return format(date, "MMM d, HH:mm");
+function formatCardDate(date: Date): string {
+  if (isToday(date))     return format(date, "HH:mm");
+  if (isYesterday(date)) return `ayer ${format(date, "HH:mm")}`;
+  return format(date, "EEE, d MMM", { locale: es });
 }
 
-function recordAgentName(record: ManualRecord): string | null {
+function recordAgentName(r: ManualRecord): string | null {
   return (
-    record.createdBy?.name?.trim() ||
-    record.createdByName?.trim() ||
-    (record.createdByAgentId ? `Agent #${record.createdByAgentId}` : null)
+    r.createdBy?.name?.trim() ||
+    r.createdByName?.trim() ||
+    (r.createdByAgentId ? `Agent #${r.createdByAgentId}` : null)
   );
 }
 
@@ -103,32 +61,26 @@ export function InlineManualRecordTimeline({
   group,
   onOpenRecord,
 }: InlineManualRecordTimelineProps) {
-  const sortedRecords = useMemo(() => {
-    return [...group.records].sort((a, b) => {
-      const ad = new Date(a.createdAt || 0).getTime();
-      const bd = new Date(b.createdAt || 0).getTime();
-      return bd - ad;
-    });
-  }, [group.records]);
+  const sortedRecords = useMemo(
+    () =>
+      [...group.records].sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime(),
+      ),
+    [group.records],
+  );
 
   const lastEventAgo = useMemo(() => {
     const first = sortedRecords[0];
     if (!first?.createdAt) return null;
     const d = new Date(first.createdAt);
-    if (isNaN(d.getTime())) return null;
-    return formatDistanceToNow(d, { addSuffix: true });
+    return isNaN(d.getTime()) ? null : formatDistanceToNow(d, { addSuffix: true });
   }, [sortedRecords]);
-
-  const latestRecord = sortedRecords[0];
-  const latestStatusKey = latestRecord
-    ? normalizeStatusKey(latestRecord.status)
-    : null;
-  const latestMeta = latestStatusKey
-    ? STATUS_META[latestStatusKey] ?? STATUS_META.CLOSED
-    : null;
 
   return (
     <div className="mx-2 mb-2 rounded-xl border border-slate-200/80 bg-[#f8f9fb] shadow-sm">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3 overflow-hidden rounded-t-xl border-b border-slate-100 bg-white px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#008f68]/10">
@@ -145,123 +97,138 @@ export function InlineManualRecordTimeline({
             )}
           </div>
         </div>
-        {latestMeta && (
-          <span
-            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold"
-            style={{ color: latestMeta.color, background: latestMeta.bg }}
-          >
-            Latest: {latestMeta.label}
-          </span>
-        )}
+        <span className="shrink-0 text-[10.5px] text-slate-400">
+          {sortedRecords.length}{" "}
+          {sortedRecords.length === 1 ? "record" : "records"}
+          {lastEventAgo ? ` · ${lastEventAgo}` : ""}
+        </span>
       </div>
 
+      {/* Timeline */}
       <div className="px-3 py-3">
-        <div className="mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Record timeline · {sortedRecords.length}{" "}
-            {sortedRecords.length === 1 ? "record" : "records"}
-          </p>
-          {lastEventAgo && (
-            <p className="mt-0.5 text-[10.5px] text-slate-400">
-              Last activity {lastEventAgo}
-            </p>
-          )}
-        </div>
+        <ol className="relative space-y-2">
+          {sortedRecords.map((record, index) => {
+            const isLast = index === sortedRecords.length - 1;
+            const date = new Date(record.createdAt || 0);
+            const dateLabel = isNaN(date.getTime()) ? "—" : formatCardDate(date);
+            const sk = normalizeStatusKey(record.status);
+            const sm = STATUS_META[sk] ?? STATUS_META.CLOSED;
+            const agent = recordAgentName(record);
+            const notes = record.notes?.trim();
+            const isLatest = index === 0;
 
-        <div className="relative rounded-lg border border-slate-100 bg-white px-3 py-2.5">
-          <div className="absolute bottom-3 left-[1.15rem] top-3 w-px bg-slate-200" />
-          <ol className="space-y-2.5">
-            {sortedRecords.map((record, index) => {
-              const date = new Date(record.createdAt || 0);
-              const dateLabel = isNaN(date.getTime())
-                ? "—"
-                : formatShortDate(date);
-              const statusKey = normalizeStatusKey(record.status);
-              const sm = STATUS_META[statusKey] ?? STATUS_META.CLOSED;
-              const agent = recordAgentName(record);
-              const notes = record.notes?.trim();
-              const isLatest = index === 0;
+            return (
+              <li key={record.id} className="relative flex gap-3 pl-1">
+                {/* Dot + vertical connector */}
+                <div className="relative flex flex-col items-center">
+                  <span
+                    className="relative z-10 mt-3 flex h-3 w-3 shrink-0 rounded-full border-2 border-white shadow-sm"
+                    style={{ background: sm.dot }}
+                  />
+                  {/* Line: only between items, not after the last */}
+                  {!isLast && (
+                    <span className="mt-1 w-px flex-1 bg-slate-200" />
+                  )}
+                </div>
 
-              return (
-                <li
-                  key={record.id}
+                {/* Card */}
+                <button
+                  type="button"
+                  onClick={() => onOpenRecord?.(record)}
                   className={cn(
-                    "relative min-w-0 pl-8",
-                    isLatest && "rounded-md bg-slate-50/80 py-1",
+                    "mb-2 w-full rounded-xl border text-left transition-all",
+                    isLatest
+                      ? "border-[#008f68]/20 bg-[#008f68]/5 shadow-sm hover:border-[#008f68]/30 hover:bg-[#008f68]/8"
+                      : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/60",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border-2",
-                      sm.ring,
-                    )}
-                  >
-                    <ClipboardList
-                      className="h-2.5 w-2.5"
-                      style={{ color: sm.color }}
-                    />
-                  </span>
-
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="whitespace-nowrap text-[10.5px] tabular-nums text-slate-500">
-                      {dateLabel}
-                      <span className="mx-1.5 text-slate-300">·</span>
-                      <span className="font-mono text-slate-400">
+                  <div className="px-3 py-2.5">
+                    {/* Top row: ID + date */}
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span
+                        className="font-mono text-[11px] font-bold"
+                        style={{ color: sm.color }}
+                      >
                         #{record.id}
                       </span>
-                    </p>
-                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      <span className="shrink-0 text-[10px] tabular-nums text-slate-400">
+                        {dateLabel}
+                      </span>
+                    </div>
+
+                    {/* Pills */}
+                    <div className="mb-1.5 flex flex-wrap items-center gap-1">
                       <span
-                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold"
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
                         style={{ color: sm.color, background: sm.bg }}
                       >
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: sm.dot }}
+                        />
                         {sm.label}
                       </span>
+
+                      {record.campaignOption && (
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                          {formatLabel(record.campaignOption)}
+                        </span>
+                      )}
+
                       {record.disposition && (
-                        <span className="shrink-0 text-[10.5px] text-slate-600">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           {formatLabel(record.disposition)}
                         </span>
                       )}
-                      {agent && (
-                        <>
-                          <span className="shrink-0 text-slate-300">·</span>
-                          <span className="max-w-[9rem] truncate text-[10.5px] text-slate-600">
-                            {agent}
-                          </span>
-                        </>
-                      )}
+
                       {isLatest && (
-                        <span className="shrink-0 rounded bg-[#008f68]/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-[#008f68]">
+                        <span className="ml-auto shrink-0 rounded bg-[#008f68]/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-[#008f68]">
                           Latest
                         </span>
                       )}
                     </div>
+
+                    {/* Agent */}
+                    {agent && (
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+                        <span className="truncate text-[11px] text-slate-600">
+                          {agent}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {notes && (
+                      <p className="line-clamp-2 text-[11.5px] italic leading-snug text-slate-500">
+                        {notes}
+                      </p>
+                    )}
+
+                    {/* Campaign name */}
+                    {record.campaign?.nombre && (
+                      <p className="mt-1 truncate text-[10px] text-slate-400">
+                        {record.campaign.nombre}
+                      </p>
+                    )}
                   </div>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
 
-                  {notes && (
-                    <p className="mt-1 whitespace-pre-wrap wrap-break-word border-l-2 border-slate-200 pl-2 text-[12.5px] leading-snug text-slate-500">
-                      {notes}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-
-        {onOpenRecord && latestRecord && (
-          <div className="mt-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8 rounded-lg border-slate-200 px-3.5 text-[12px] font-semibold text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#008f68]/8"
-              onClick={() => onOpenRecord(latestRecord)}
-            >
-              <History className="mr-1.5 h-3.5 w-3.5" />
-              Open record
-            </Button>
-          </div>
+        {onOpenRecord && sortedRecords[0] && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="mt-1 h-8 w-full rounded-lg border-slate-200 px-3.5 text-[12px] font-semibold text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#008f68]/8"
+            onClick={() => onOpenRecord(sortedRecords[0])}
+          >
+            <History className="mr-1.5 h-3.5 w-3.5" />
+            Open latest record
+          </Button>
         )}
       </div>
     </div>

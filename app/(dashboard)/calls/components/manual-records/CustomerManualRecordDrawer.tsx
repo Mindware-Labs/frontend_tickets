@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -10,13 +10,16 @@ import {
   CalendarIcon,
   Trash2,
   PhoneOutgoing,
+  Eye,
 } from "lucide-react";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { cn } from "@/lib/utils";
 import type { CreateManualRecordFormData, ManualRecord } from "../../types";
 import type { CustomerManualRecordGroup } from "./InlineManualRecordTimeline";
 import { ManualRecordForm } from "./ManualRecordForm";
+import { ManualRecordPeekPanel } from "./ManualRecordPeekPanel";
 import { fmtDate, fmtDateTime } from "../../utils/call-helpers";
+import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
 import { TimelineReturnBar } from "../shared/TimelineReturnBar";
 import {
   SheetAnchoredToasts,
@@ -61,11 +64,15 @@ const normalizeStatusKey = (status?: string | null) => {
 function RecordCard({
   record,
   isActive,
+  isLast,
   onClick,
+  onPeek,
 }: {
   record: ManualRecord;
   isActive: boolean;
+  isLast: boolean;
   onClick: () => void;
+  onPeek?: () => void;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -76,6 +83,12 @@ function RecordCard({
 
   const sp =
     STATUS_PILL[normalizeStatusKey(record.status)] || STATUS_PILL.CLOSED;
+
+  const agentName =
+    record.createdBy?.name || record.createdByName || null;
+  const campaignName = record.campaign?.nombre || null;
+  const yardName = record.yard?.name || null;
+  const noteText = record.notes || null;
 
   return (
     <div className="relative flex gap-2 pl-3.5 pr-2.5">
@@ -88,6 +101,9 @@ function RecordCard({
               : "border-slate-300 bg-white",
           )}
         />
+        {!isLast && (
+          <span className="absolute left-[5px] top-[14px] w-px flex-1 bg-slate-200" style={{ bottom: "-0.5rem" }} />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <button
@@ -101,6 +117,7 @@ function RecordCard({
               : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/60",
           )}
         >
+          {/* ID + date */}
           <div className="mb-1.5 flex items-center justify-between gap-1">
             <span
               className={cn(
@@ -114,17 +131,64 @@ function RecordCard({
               {record.createdAt ? fmtDateTime(record.createdAt) : "—"}
             </span>
           </div>
-          <span
-            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-semibold"
-            style={{ color: sp.fg, background: sp.bg }}
-          >
+
+          {/* Status pill */}
+          <div className="mb-1.5">
             <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: sp.dot }}
-            />
-            {sp.label}
-          </span>
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-semibold"
+              style={{ color: sp.fg, background: sp.bg }}
+            >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: sp.dot }}
+              />
+              {sp.label}
+            </span>
+          </div>
+
+          {/* Campaign + Yard */}
+          {(campaignName || yardName) && (
+            <div className="mb-1.5 flex flex-col gap-0.5">
+              {campaignName && (
+                <span className="truncate text-[9.5px] font-medium text-slate-600">
+                  {campaignName}
+                </span>
+              )}
+              {yardName && (
+                <span className="truncate text-[9px] text-slate-400">
+                  {yardName}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Agent */}
+          {agentName && (
+            <div className="mb-1.5 flex items-center gap-0.5">
+              <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+              <span className="text-[9.5px] text-slate-500">{agentName}</span>
+            </div>
+          )}
+
+          {/* Notes preview */}
+          {noteText && (
+            <p className="line-clamp-2 border-l border-slate-200 pl-1.5 text-[9.5px] italic leading-tight text-slate-500">
+              {noteText}
+            </p>
+          )}
         </button>
+
+        {/* Preview action — visible on non-active cards */}
+        {!isActive && onPeek && (
+          <button
+            type="button"
+            onClick={onPeek}
+            className="w-full flex items-center justify-center gap-1.5 mb-1.5 h-6 rounded-lg border border-slate-100 bg-slate-50 hover:bg-green-50 hover:border-[#008f68]/30 hover:text-[#008f68] text-slate-400 text-[9.5px] font-medium transition-all"
+          >
+            <Eye className="w-3 h-3" />
+            Preview
+          </button>
+        )}
       </div>
     </div>
   );
@@ -181,6 +245,8 @@ export function CustomerManualRecordDrawer({
   errorToastMessage,
   onErrorToastDismiss,
 }: CustomerManualRecordDrawerProps) {
+  const [peekRecord, setPeekRecord] = useState<ManualRecord | null>(null);
+
   const historyUrl = useMemo(() => {
     if (!open || !group?.customerId) return null;
     const params = new URLSearchParams();
@@ -275,6 +341,15 @@ export function CustomerManualRecordDrawer({
           hideClose
           className="flex w-svw flex-col gap-0 overflow-hidden border-l border-slate-200/80 bg-white p-0 sm:w-[80vw]"
           style={{ maxWidth: "1100px" }}
+          onPointerDownOutside={(e) => {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) e.preventDefault();
+          }}
+          onFocusOutside={(e) => {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (shouldIgnoreTicketSheetOutsideEvent(e)) e.preventDefault();
+          }}
         >
           <SheetTitle className="sr-only">
             Manual Record — {customerName}
@@ -386,18 +461,19 @@ export function CustomerManualRecordDrawer({
                 )}
               </div>
               <div className="relative flex-1 overflow-y-auto py-2">
-                <div className="absolute bottom-4 left-[1.35rem] top-4 w-px bg-slate-200" />
                 {allRecords.length === 0 ? (
                   <p className="px-4 py-8 text-center text-xs text-slate-400">
                     No records
                   </p>
                 ) : (
-                  allRecords.map((r) => (
+                  allRecords.map((r, idx) => (
                     <RecordCard
                       key={r.id}
                       record={r}
                       isActive={r.id === activeRecordId}
+                      isLast={idx === allRecords.length - 1}
                       onClick={() => onSelectRecord(r)}
+                      onPeek={() => setPeekRecord(r)}
                     />
                   ))
                 )}
@@ -470,6 +546,11 @@ export function CustomerManualRecordDrawer({
           </div>
         </SheetContent>
       </Sheet>
+
+      <ManualRecordPeekPanel
+        record={peekRecord}
+        onClose={() => setPeekRecord(null)}
+      />
     </>
   );
 }
