@@ -17,7 +17,9 @@ import { Bar, BarChart, Cell, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart";
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartLegendStyle,
   toneClasses,
   tooltipStyle,
@@ -440,7 +442,7 @@ export function TouchpointsHistogram({
                 tickLine={false}
                 allowDecimals={false}
               />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
               <Legend wrapperStyle={chartLegendStyle} iconType="circle" />
               <Bar
                 dataKey="converted"
@@ -448,6 +450,8 @@ export function TouchpointsHistogram({
                 name="Converted"
                 fill={toneClasses.emerald.chart}
                 radius={[0, 0, 0, 0]}
+                maxBarSize={48}
+                animationDuration={CHART_ANIMATION_DURATION}
                 onClick={onToggleBucket ? handleBarClick : undefined}
                 style={onToggleBucket ? { cursor: "pointer" } : undefined}
               >
@@ -469,6 +473,8 @@ export function TouchpointsHistogram({
                 name="Not converted"
                 fill={toneClasses.slate.chart}
                 radius={[3, 3, 0, 0]}
+                maxBarSize={48}
+                animationDuration={CHART_ANIMATION_DURATION}
                 onClick={onToggleBucket ? handleBarClick : undefined}
                 style={onToggleBucket ? { cursor: "pointer" } : undefined}
               >

@@ -16,9 +16,12 @@ import {
 import type { TooltipProps } from "recharts";
 
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   chartLegendStyle,
+  chartLineCursor,
   dashboardListItemClass,
   dashboardRowClass,
   dashboardShellClass,
@@ -185,8 +188,14 @@ export function OperationsDashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="day" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={32} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={32}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={tooltipStyle} cursor={chartLineCursor} />
                 <Legend wrapperStyle={chartLegendStyle} />
 
                 {/* Vertical marker on the selected day */}
@@ -206,6 +215,7 @@ export function OperationsDashboard() {
                   stroke={toneClasses.emerald.chart}
                   fill="url(#inboundFill)"
                   strokeWidth={2}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   dot={makeDayDot(toneClasses.emerald.chart)}
                   activeDot={{
                     r: 5,
@@ -223,6 +233,7 @@ export function OperationsDashboard() {
                   stroke={toneClasses.sky.chart}
                   fill="url(#outboundFill)"
                   strokeWidth={2}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   dot={makeDayDot(toneClasses.sky.chart)}
                   activeDot={{
                     r: 5,
@@ -239,6 +250,7 @@ export function OperationsDashboard() {
                   name="Tickets"
                   stroke={toneClasses.indigo.chart}
                   strokeWidth={2}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   dot={makeDayDot(toneClasses.indigo.chart)}
                   activeDot={{
                     r: 5,
@@ -255,6 +267,7 @@ export function OperationsDashboard() {
                   name="Missed"
                   stroke={toneClasses.rose.chart}
                   strokeWidth={2}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   dot={makeDayDot(toneClasses.rose.chart)}
                   activeDot={{
                     r: 5,
@@ -319,7 +332,7 @@ export function OperationsDashboard() {
                   tick={chartAxisTickStyle}
                   width={36}
                 />
-                <Tooltip content={<AgentActivityTooltip />} />
+                <Tooltip content={<AgentActivityTooltip />} cursor={chartBarCursor} />
                 <Legend wrapperStyle={chartLegendStyle} />
 
                 <Bar

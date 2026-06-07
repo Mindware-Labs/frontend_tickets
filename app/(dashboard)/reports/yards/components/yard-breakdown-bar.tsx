@@ -7,7 +7,12 @@ import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart";
 import { DashboardEmptyState } from "@/app/(dashboard)/dashboard/components/dashboard-empty-state";
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
-import { chartAxisTickStyle, tooltipStyle } from "@/app/(dashboard)/dashboard/dashboard-theme";
+import {
+  CHART_ANIMATION_DURATION,
+  chartAxisTickStyle,
+  chartBarCursor,
+  tooltipStyle,
+} from "@/app/(dashboard)/dashboard/dashboard-theme";
 import { DISPOSITION_COLORS } from "./chart-colors";
 import {
   crossFilterBarOpacity,
@@ -107,6 +112,7 @@ export function YardBreakdownBar({
               />
               <Tooltip
                 contentStyle={tooltipStyle}
+                cursor={chartBarCursor}
                 formatter={(value, _name, item) => {
                   const row = item?.payload as { pct?: number } | undefined;
                   return [`${value ?? 0} (${row?.pct ?? 0}%)`, "Count"];
@@ -116,6 +122,7 @@ export function YardBreakdownBar({
                 dataKey="value"
                 radius={[0, 4, 4, 0]}
                 maxBarSize={18}
+                animationDuration={CHART_ANIMATION_DURATION}
                 cursor="pointer"
                 onClick={(bar) => {
                   const row = bar as { key?: string };

@@ -50,7 +50,9 @@ import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart";
 import { DashboardEmptyState } from "@/app/(dashboard)/dashboard/components/dashboard-empty-state";
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   chartLegendStyle,
   dashboardCanvasClass,
@@ -1015,12 +1017,14 @@ function BreakdownChart({
               />
               <Tooltip
                 contentStyle={tooltipStyle}
+                cursor={chartBarCursor}
                 formatter={(value) => [value, "Count"]}
               />
               <Bar
                 dataKey="value"
                 radius={[0, 4, 4, 0]}
                 maxBarSize={18}
+                animationDuration={CHART_ANIMATION_DURATION}
                 cursor="pointer"
                 onClick={(bar) => {
                   const row = bar as ChartDatum;
@@ -1093,7 +1097,7 @@ function ActivityChart({
               width={28}
               allowDecimals={false}
             />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
             <Legend wrapperStyle={chartLegendStyle} />
             {[
               ["calls", "Calls", toneClasses.sky.chart],
@@ -1107,6 +1111,7 @@ function ActivityChart({
                 fill={color}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={24}
+                animationDuration={CHART_ANIMATION_DURATION}
                 cursor="pointer"
                 onClick={(bar) => {
                   const row = bar as DayDatum;

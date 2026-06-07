@@ -209,13 +209,29 @@ const REALTIME_REFRESH_DEBOUNCE_MS = 700;
 const SOCKET_FALLBACK_REFRESH_MS = 10000;
 const IDLE_REFRESH_MS = 30000;
 const chartPalette = [
-  toneClasses.emerald.chart,
-  toneClasses.sky.chart,
-  toneClasses.amber.chart,
-  toneClasses.rose.chart,
-  toneClasses.indigo.chart,
-  toneClasses.slate.chart,
+  toneClasses.emerald.chart, // teal-green (brand)
+  toneClasses.sky.chart, // blue
+  toneClasses.amber.chart, // amber
+  toneClasses.rose.chart, // rose
+  toneClasses.indigo.chart, // indigo
+  "#0d9488", // teal
+  "#a855f7", // violet
+  "#db2777", // pink
+  "#65a30d", // lime
+  "#0891b2", // cyan
+  "#ea580c", // orange
 ];
+
+/**
+ * Color for the Nth breakdown slice. Uses the curated palette first, then
+ * falls back to golden-angle HSL hues so an unlimited number of dynamically
+ * added dispositions each get a distinct, repeatable color (no gray, no caps).
+ */
+function dynamicSliceColor(index: number): string {
+  if (index < chartPalette.length) return chartPalette[index];
+  const hue = Math.round((index * 137.508) % 360);
+  return `hsl(${hue}, 62%, 48%)`;
+}
 
 async function fetchDashboardEndpoint<T>(endpoint: string): Promise<T> {
   const response = await fetch(endpoint, { cache: "no-store" });
@@ -1207,10 +1223,11 @@ function buildDispositionBreakdown(
   const rows = (performance?.dispositionBreakdown || [])
     .map(breakdownValue)
     .filter((item) => item.value > 0 && !isUnspecifiedLabel(item.name))
+    .sort((a, b) => b.value - a.value)
     .map((item, index) => ({
       name: item.name,
       value: item.value,
-      color: chartPalette[index % chartPalette.length],
+      color: dynamicSliceColor(index),
     }));
 
   return rows;

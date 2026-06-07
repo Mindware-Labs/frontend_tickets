@@ -12,7 +12,9 @@ import {
 
 import type { ExecutiveCallIntentMix } from "../dashboard-types";
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   toneClasses,
   tooltipStyle,
@@ -116,6 +118,7 @@ export function ExecutiveCallIntentPanel({
               />
               <Tooltip
                 contentStyle={tooltipStyle}
+                cursor={chartBarCursor}
                 formatter={(value: number, _name, item) => {
                   const payload = item?.payload as { share?: number } | undefined;
                   return [
@@ -129,6 +132,7 @@ export function ExecutiveCallIntentPanel({
                 name="Calls"
                 radius={[0, 6, 6, 0]}
                 maxBarSize={22}
+                animationDuration={CHART_ANIMATION_DURATION}
                 cursor="pointer"
                 onClick={(bar) => {
                   const row = bar as { reason?: string };

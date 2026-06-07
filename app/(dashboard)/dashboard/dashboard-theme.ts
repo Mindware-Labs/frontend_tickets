@@ -75,6 +75,17 @@ export const chartGridStroke = "#e2e8f0";
 export const chartAxisTickStyle = { fontSize: 10, fill: "#94a3b8" } as const;
 export const chartLegendStyle = { fontSize: 11, color: "#64748b" } as const;
 
+/** Subtle brand-tinted hover band for bar/composed charts (replaces the heavy default grey cursor). */
+export const chartBarCursor = { fill: "rgba(0, 143, 104, 0.06)" } as const;
+/** Faint vertical guide for line/area chart tooltips. */
+export const chartLineCursor = {
+  stroke: "#94a3b8",
+  strokeWidth: 1,
+  strokeDasharray: "4 3",
+} as const;
+/** Shared entry animation timing so every chart eases in at the same pace. */
+export const CHART_ANIMATION_DURATION = 650;
+
 /** Matches entity-form scroll body — soft canvas behind dashboard panels. */
 export const dashboardCanvasClass =
   "rounded-xl bg-[#f4f5f7] p-2 dark:bg-slate-900/50";

@@ -16,7 +16,9 @@ import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard
 import { DashboardEmptyState } from "@/app/(dashboard)/dashboard/components/dashboard-empty-state";
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   chartLegendStyle,
   tooltipStyle,
@@ -82,7 +84,7 @@ export function YardActivityChart({
               width={28}
               allowDecimals={false}
             />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
             <Legend wrapperStyle={chartLegendStyle} />
             <Bar
               dataKey={primaryKey}
@@ -90,6 +92,7 @@ export function YardActivityChart({
               fill={primaryColor}
               radius={[3, 3, 0, 0]}
               maxBarSize={28}
+              animationDuration={CHART_ANIMATION_DURATION}
               cursor="pointer"
               onClick={(bar) => {
                 const row = bar as YardStatsDay;
@@ -112,6 +115,7 @@ export function YardActivityChart({
               fill={closedColor}
               radius={[3, 3, 0, 0]}
               maxBarSize={28}
+              animationDuration={CHART_ANIMATION_DURATION}
               cursor="pointer"
               onClick={(bar) => {
                 const row = bar as YardStatsDay;

@@ -15,9 +15,11 @@ import {
 } from "recharts";
 
 import {
+  CHART_ANIMATION_DURATION,
   DASHBOARD_CHART_HEIGHT_CLASS,
   DASHBOARD_CHART_HEIGHT_SM_CLASS,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   chartLegendStyle,
   dashboardRowClass,
@@ -71,9 +73,17 @@ export function MarketingDashboard() {
               <BarChart data={data.campaignRates} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="campaign" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis tickLine={false} axisLine={false} unit="%" tick={chartAxisTickStyle} width={28} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  unit="%"
+                  tick={chartAxisTickStyle}
+                  width={32}
+                  allowDecimals={false}
+                />
                 <Tooltip
                   contentStyle={tooltipStyle}
+                  cursor={chartBarCursor}
                   formatter={(value: number) => [`${value}%`, "Share of calls"]}
                 />
                 <Legend wrapperStyle={chartLegendStyle} />
@@ -82,6 +92,8 @@ export function MarketingDashboard() {
                   name="Share of calls"
                   fill={toneClasses.emerald.chart}
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={56}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   cursor="pointer"
                   onClick={(bar) => {
                     const row = bar as { campaign?: string };
@@ -136,7 +148,14 @@ export function MarketingDashboard() {
               <ComposedChart data={data.smsTrend} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="week" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={28} />
+                <YAxis
+                  yAxisId="left"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={28}
+                  allowDecimals={false}
+                />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
@@ -144,9 +163,11 @@ export function MarketingDashboard() {
                   axisLine={false}
                   unit="%"
                   tick={chartAxisTickStyle}
-                  width={32}
+                  width={36}
+                  allowDecimals={false}
+                  domain={[0, 100]}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
                 <Legend wrapperStyle={chartLegendStyle} />
                 <Bar
                   yAxisId="left"
@@ -154,6 +175,8 @@ export function MarketingDashboard() {
                   name="Sent"
                   fill={toneClasses.sky.chart}
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
                 <Bar
                   yAxisId="left"
@@ -161,6 +184,8 @@ export function MarketingDashboard() {
                   name="Replies"
                   fill={toneClasses.amber.chart}
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
                 <Line
                   yAxisId="right"
@@ -170,6 +195,8 @@ export function MarketingDashboard() {
                   stroke={toneClasses.emerald.chart}
                   strokeWidth={2}
                   dot={false}
+                  activeDot={{ r: 4 }}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
               </ComposedChart>
             </DashboardChart>
@@ -187,12 +214,15 @@ export function MarketingDashboard() {
           ) : (
             <div
               className={cn(
-                "flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center",
+                "flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:items-stretch",
                 DASHBOARD_CHART_HEIGHT_SM_CLASS,
               )}
             >
-              <div className="flex shrink-0 items-center justify-center sm:w-[168px]">
-                <DashboardChart size="sm" className="aspect-square w-full max-w-[168px]">
+              <div className="flex shrink-0 items-center justify-center sm:w-[180px]">
+                <DashboardChart
+                  size="sm"
+                  className="!h-full !min-h-[176px] !border-0 !bg-transparent !p-0 w-full max-w-[200px]"
+                >
                   <PieChart>
                     <Pie
                       data={data.dispositionBreakdown}
@@ -200,9 +230,11 @@ export function MarketingDashboard() {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={data.dispositionBreakdown.length === 1 ? 52 : 44}
-                      outerRadius={data.dispositionBreakdown.length === 1 ? 72 : 64}
+                      innerRadius={data.dispositionBreakdown.length === 1 ? "60%" : "56%"}
+                      outerRadius={data.dispositionBreakdown.length === 1 ? "92%" : "90%"}
                       paddingAngle={0}
+                      stroke="none"
+                      animationDuration={CHART_ANIMATION_DURATION}
                       cursor="pointer"
                       onClick={(slice) => {
                         const row = slice as { name?: string };
@@ -322,14 +354,22 @@ export function MarketingDashboard() {
               <BarChart data={data.yardVolume} margin={{ left: -12, right: 4, top: 4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="yard" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={28} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={28}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
                 <Legend wrapperStyle={chartLegendStyle} />
                 <Bar
                   dataKey="calls"
                   name="Calls"
                   fill={toneClasses.indigo.chart}
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   cursor="pointer"
                   onClick={(bar) => {
                     const row = bar as { yard?: string };
@@ -347,7 +387,14 @@ export function MarketingDashboard() {
                     />
                   ))}
                 </Bar>
-                <Bar dataKey="outcomes" name="Outcomes" fill={toneClasses.emerald.chart} radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="outcomes"
+                  name="Outcomes"
+                  fill={toneClasses.emerald.chart}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                  animationDuration={CHART_ANIMATION_DURATION}
+                />
               </BarChart>
             </DashboardChart>
           )}

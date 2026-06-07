@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import {
+  CHART_ANIMATION_DURATION,
   dashboardChartSurfaceClass,
   dashboardPanelBodyClass,
   dashboardPanelClass,
@@ -62,6 +63,7 @@ export function AgentActivityCharts({ data }: AgentActivityChartsProps) {
                   strokeWidth={2.5}
                   dot={{ r: 3, fill: "var(--color-calls)" }}
                   activeDot={{ r: 5 }}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
               </LineChart>
             </ChartContainer>
@@ -95,7 +97,13 @@ export function AgentActivityCharts({ data }: AgentActivityChartsProps) {
                 />
                 <XAxis type="number" hide />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="tickets" fill="var(--color-tickets)" radius={[0, 5, 5, 0]} barSize={16} />
+                <Bar
+                  dataKey="tickets"
+                  fill="var(--color-tickets)"
+                  radius={[0, 5, 5, 0]}
+                  barSize={16}
+                  animationDuration={CHART_ANIMATION_DURATION}
+                />
               </BarChart>
             </ChartContainer>
           </div>

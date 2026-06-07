@@ -15,7 +15,9 @@ import {
 } from "recharts";
 
 import {
+  CHART_ANIMATION_DURATION,
   chartAxisTickStyle,
+  chartBarCursor,
   chartGridStroke,
   chartLegendStyle,
   dashboardPairedRowClass,
@@ -81,14 +83,22 @@ export function ExecutiveDashboard() {
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                 <XAxis dataKey="week" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
-                <YAxis tickLine={false} axisLine={false} tick={chartAxisTickStyle} width={32} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={32}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={tooltipStyle} cursor={chartBarCursor} />
                 <Legend wrapperStyle={chartLegendStyle} />
                 <Bar
                   dataKey="calls"
                   name="Calls"
                   fill={toneClasses.emerald.chart}
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={48}
+                  animationDuration={CHART_ANIMATION_DURATION}
                   cursor="pointer"
                   onClick={(bar) => {
                     const row = bar as { week?: string };
@@ -113,6 +123,8 @@ export function ExecutiveDashboard() {
                   stroke={toneClasses.indigo.chart}
                   strokeWidth={2}
                   dot={false}
+                  activeDot={{ r: 4 }}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
                 <Line
                   type="monotone"
@@ -121,6 +133,8 @@ export function ExecutiveDashboard() {
                   stroke={toneClasses.sky.chart}
                   strokeWidth={2}
                   dot={false}
+                  activeDot={{ r: 4 }}
+                  animationDuration={CHART_ANIMATION_DURATION}
                 />
               </ComposedChart>
             </DashboardChart>

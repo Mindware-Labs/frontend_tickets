@@ -8,7 +8,9 @@ import { Bar, BarChart, Cell, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart";
 import { PanelCard } from "@/app/(dashboard)/dashboard/components/panel-card";
 import {
+  CHART_ANIMATION_DURATION,
   DASHBOARD_CHART_HEIGHT_SM_CLASS,
+  chartBarCursor,
   dashboardListItemClass,
   dashboardPairedRowClass,
   dashboardRowClass,
@@ -169,6 +171,7 @@ function YardRankedPanel({
               />
               <Tooltip
                 contentStyle={tooltipStyle}
+                cursor={chartBarCursor}
                 formatter={(value, _name, item) => {
                   const row = item?.payload as
                     | { fullLabel?: string; pct?: number }
@@ -184,6 +187,7 @@ function YardRankedPanel({
                 radius={[0, 4, 4, 0]}
                 maxBarSize={16}
                 fill={barColor}
+                animationDuration={CHART_ANIMATION_DURATION}
                 cursor={filterKey ? "pointer" : "default"}
                 onClick={(bar) => {
                   const row = bar as { filterValue?: string };
