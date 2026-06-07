@@ -122,6 +122,7 @@ export function ManualRecordForm({
                   searchPlaceholder="Search customer…"
                   noneLabel="Select customer…"
                   items={customerItems}
+                  selectedCustomer={selectedCustomerOption}
                 />
               </div>
               <div>

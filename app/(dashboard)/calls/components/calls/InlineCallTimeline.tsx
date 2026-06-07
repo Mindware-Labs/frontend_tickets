@@ -21,6 +21,7 @@ import { useAircall } from "@/components/providers/AircallProvider";
 interface InlineCallTimelineProps {
   group: CustomerCallGroup;
   agents: AgentOption[];
+  legacyCalls?: Call[];
   onOpenTimeline?: (group: CustomerCallGroup) => void;
 }
 
@@ -100,18 +101,21 @@ function notePreview(call: Call): string | null {
 export function InlineCallTimeline({
   group,
   agents,
+  legacyCalls,
   onOpenTimeline,
 }: InlineCallTimelineProps) {
   const { dial, status, isLoggedIn } = useAircall();
   const canDial = status === "ready" && isLoggedIn;
 
   const sortedCalls = useMemo(() => {
-    return [...group.calls].sort((a, b) => {
+    const tagged = group.calls.map((c) => ({ ...c, _isLegacy: false }));
+    const taggedLegacy = (legacyCalls ?? []).map((c) => ({ ...c, _isLegacy: true }));
+    return [...tagged, ...taggedLegacy].sort((a, b) => {
       const ad = new Date(a.callDate || a.createdAt || 0).getTime();
       const bd = new Date(b.callDate || b.createdAt || 0).getTime();
       return bd - ad;
     });
-  }, [group.calls]);
+  }, [group.calls, legacyCalls]);
 
   const lastEventAgo = useMemo(() => {
     const first = sortedCalls[0];
@@ -196,6 +200,7 @@ export function InlineCallTimeline({
               const notes = notePreview(call);
               const Icon = meta.Icon;
               const isLatest = index === 0;
+              const isLegacy = (call as any)._isLegacy === true;
               const relatedCallId = (call as any).relatedCallId as
                 | number
                 | string
@@ -254,6 +259,11 @@ export function InlineCallTimeline({
                       {isLatest && (
                         <span className="text-[9px] font-bold uppercase tracking-wide text-[#008f68] bg-[#008f68]/10 px-1.5 py-px rounded shrink-0">
                           Latest
+                        </span>
+                      )}
+                      {isLegacy && (
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-px rounded shrink-0">
+                          Legacy
                         </span>
                       )}
                     </div>

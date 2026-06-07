@@ -212,6 +212,13 @@ export function ManualRecordsTab() {
         if (thisDate > existingDate) {
           existing.latestRecord = r;
         }
+        // Upgrade fallback name/phone if this record has the real customer relation
+        if (r.customer?.name && existing.customerName === `Customer #${cid}`) {
+          existing.customerName = r.customer.name;
+        }
+        if (r.customer?.phone && existing.customerPhone === "unknown") {
+          existing.customerPhone = r.customer.phone;
+        }
       }
     }
 

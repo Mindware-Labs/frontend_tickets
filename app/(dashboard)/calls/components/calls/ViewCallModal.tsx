@@ -494,9 +494,12 @@ export function ViewCallModal({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            window.open(getAttachmentUrl(att), "_blank")
-                          }
+                          onClick={() => {
+                            const url = att.startsWith("s3://")
+                              ? `/api/calls/${ticket.id}/attachments/download/${encodeURIComponent(att)}`
+                              : getAttachmentUrl(att);
+                            window.open(url, "_blank");
+                          }}
                         >
                           <Download className="h-4 w-4" />
                         </Button>

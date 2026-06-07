@@ -313,11 +313,15 @@ export function getAttachmentUrl(
   if (!value) return "";
   if (value.startsWith("http")) return value;
   if (value.startsWith("s3://")) {
+    // Route through the Next.js proxy so the auth token is added server-side.
+    // Cookies are sent automatically on same-origin requests (both <a href> and window.open).
+    const encoded = encodeURIComponent(value);
     if (entity === "calls") {
-      const encoded = encodeURIComponent(value);
-      return `${apiBase}/calls/0/attachments/download/${encoded}`;
+      // Requires a call ID — callers that know the ID should construct the URL directly.
+      // This fallback exists for completeness but won't resolve a valid call.
+      return `/api/calls/0/attachments/download/${encoded}`;
     }
-    return `${apiBase}/${entity}/attachments/download?fileUrl=${encodeURIComponent(value)}`;
+    return `/api/${entity}/attachments/download?fileUrl=${encoded}`;
   }
   const normalized = value.startsWith("/") ? value : `/${value}`;
   return `${apiBase}${normalized}`;

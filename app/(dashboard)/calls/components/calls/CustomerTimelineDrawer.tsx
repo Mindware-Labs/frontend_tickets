@@ -227,6 +227,7 @@ function TimelineCard({
   onPeek,
   isLast,
   linkedFromId,
+  isLegacy,
 }: {
   call: Ticket;
   isActive: boolean;
@@ -234,6 +235,7 @@ function TimelineCard({
   onPeek?: () => void;
   isLast: boolean;
   linkedFromId?: number;
+  isLegacy?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -302,15 +304,22 @@ function TimelineCard({
         >
           {/* ID + date */}
           <div className="flex items-center justify-between mb-1.5">
-            <span
-              className={cn(
-                "text-[11px] font-bold font-mono",
-                isActive ? "text-[#008f68]" : "text-slate-700",
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className={cn(
+                  "text-[11px] font-bold font-mono",
+                  isActive ? "text-[#008f68]" : "text-slate-700",
+                )}
+              >
+                #{call.id}
+              </span>
+              {isLegacy && (
+                <span className="text-[8.5px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 border border-violet-200 px-1 py-px rounded shrink-0">
+                  Legacy
+                </span>
               )}
-            >
-              #{call.id}
-            </span>
-            <span className="text-[9.5px] text-slate-400 tabular-nums">
+            </div>
+            <span className="text-[9.5px] text-slate-400 tabular-nums shrink-0">
               {dateLabel}
             </span>
           </div>
@@ -447,7 +456,8 @@ export function CustomerTimelineDrawer({
   readOnly = false,
   historyApiPath = "/api/calls",
 }: CustomerTimelineDrawerProps) {
-  const canEdit = !readOnly;
+  const isSelectedCallLegacy = !!(selectedCall as any)?._isLegacy;
+  const canEdit = !readOnly && !isSelectedCallLegacy;
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -648,7 +658,7 @@ export function CustomerTimelineDrawer({
 
   // Fetch recording via backend proxy (avoids CORS on direct Aircall URL)
   useEffect(() => {
-    if (!selectedCall?.id || readOnly || (selectedCall as any).isLegacy) return;
+    if (!selectedCall?.id || readOnly || isSelectedCallLegacy) return;
     const id = selectedCall.id;
     let blobUrl: string | null = null;
     const token =
@@ -741,6 +751,21 @@ export function CustomerTimelineDrawer({
     revalidateOnFocus: false,
   });
 
+  // Fetch legacy calls for this customer when in normal (non-legacy) mode
+  const legacyHistoryUrl = useMemo(() => {
+    if (!open || !group?.customerId || readOnly) return null;
+    const params = new URLSearchParams({
+      mode: "page",
+      customerId: String(group.customerId),
+      limit: "200",
+    });
+    return `/api/calls/legacy?${params.toString()}`;
+  }, [open, group?.customerId, readOnly]);
+
+  const { data: legacyHistoryData } = useSWR(legacyHistoryUrl, fetcher, {
+    revalidateOnFocus: false,
+  });
+
   const allCalls = useMemo<Ticket[]>(() => {
     const sort = (arr: Ticket[]) =>
       [...arr].sort(
@@ -748,12 +773,26 @@ export function CustomerTimelineDrawer({
           new Date(b.callDate || b.createdAt || 0).getTime() -
           new Date(a.callDate || a.createdAt || 0).getTime(),
       );
+    let base: Ticket[];
     if (historyData?.success && Array.isArray(historyData.data?.data))
-      return sort(historyData.data.data);
-    if (historyData?.success && Array.isArray(historyData.data))
-      return sort(historyData.data);
-    return group?.calls ?? [];
-  }, [historyData, group?.calls]);
+      base = historyData.data.data;
+    else if (historyData?.success && Array.isArray(historyData.data))
+      base = historyData.data;
+    else
+      base = group?.calls ?? [];
+
+    const legacyRaw: Ticket[] = legacyHistoryData?.success
+      ? Array.isArray(legacyHistoryData.data?.data)
+        ? legacyHistoryData.data.data
+        : Array.isArray(legacyHistoryData.data)
+          ? legacyHistoryData.data
+          : []
+      : [];
+
+    const tagged = base.map((c) => ({ ...c, _isLegacy: false }));
+    const taggedLegacy = legacyRaw.map((c) => ({ ...c, _isLegacy: true }));
+    return sort([...tagged, ...taggedLegacy]);
+  }, [historyData, legacyHistoryData, group?.calls]);
 
   const activeCallId = selectedCall?.id ?? group?.latestCall?.id;
   const customerName = group?.customerName ?? getClientName(selectedCall);
@@ -1158,22 +1197,10 @@ export function CustomerTimelineDrawer({
     }
 
     try {
-      const token =
-        (typeof document !== "undefined" &&
-          document.cookie
-            .split("; ")
-            .find((r) => r.startsWith("auth-token="))
-            ?.split("=")[1]) ||
-        (typeof window !== "undefined" && localStorage.getItem("auth_token")) ||
-        null;
-
-      // Ask backend for a presigned S3 URL, then open it directly (no CORS issue)
       const encodedUrl = encodeURIComponent(url);
-      const proxyUrl = `${BACKEND_API_URL}/calls/${selectedCall.id}/attachments/download/${encodedUrl}`;
+      const proxyUrl = `/api/calls/${selectedCall.id}/attachments/download/${encodedUrl}`;
 
-      const res = await fetch(proxyUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await fetch(proxyUrl, { credentials: "include" });
 
       if (!res.ok) {
         throw new Error(`Download failed: ${res.status}`);
@@ -1181,14 +1208,11 @@ export function CustomerTimelineDrawer({
 
       const { signedUrl } = await res.json();
 
-      // Open presigned URL directly — browser handles the download
       const link = document.createElement("a");
       link.href = signedUrl;
       link.download = filename;
       link.target = "_blank";
       link.click();
-
-      console.log("[CustomerTimelineDrawer] File downloaded:", filename);
     } catch (error) {
       console.error("[CustomerTimelineDrawer] Download error:", error);
       alert("Failed to download file. Please try again.");
@@ -1387,6 +1411,14 @@ export function CustomerTimelineDrawer({
                   {customerPhone}
                 </p>
               </div>
+
+              {/* Legacy read-only badge */}
+              {isSelectedCallLegacy && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full shrink-0">
+                  <Eye className="w-2.5 h-2.5" />
+                  Legacy · View only
+                </span>
+              )}
 
               {/* Context indicators: note trigger + call count */}
               <div className="flex items-center gap-2 shrink-0">
@@ -1955,7 +1987,7 @@ export function CustomerTimelineDrawer({
                       </div>
 
                       <div
-                        className={`p-4 ${readOnly ? "pointer-events-none" : ""}`}
+                        className={`p-4 ${!canEdit ? "pointer-events-none opacity-60 select-none" : ""}`}
                       >
                         {/* Row 1: Campaign + Yard — priority controls */}
                         <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2792,14 +2824,15 @@ export function CustomerTimelineDrawer({
                     )?.id as number | undefined;
                     return (
                       <TimelineCard
-                        key={call.id}
+                        key={`${(call as any)._isLegacy ? "legacy" : "call"}-${call.id}`}
                         call={call}
                         isActive={call.id === activeCallId}
+                        isLegacy={(call as any)._isLegacy === true}
                         onClick={() => {
                           setPeekCallId(null);
                           onSelectCall(call);
                         }}
-                        onPeek={() => {
+                        onPeek={(call as any)._isLegacy ? undefined : () => {
                           const numId = Number(call.id);
                           setPeekCallId(peekCallId === numId ? null : numId);
                         }}

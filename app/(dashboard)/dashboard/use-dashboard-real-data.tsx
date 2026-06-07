@@ -219,7 +219,14 @@ const chartPalette = [
 
 async function fetchDashboardEndpoint<T>(endpoint: string): Promise<T> {
   const response = await fetch(endpoint, { cache: "no-store" });
-  const payload = (await response.json()) as ApiEnvelope<T>;
+  const rawText = await response.text();
+
+  let payload: ApiEnvelope<T>;
+  try {
+    payload = JSON.parse(rawText) as ApiEnvelope<T>;
+  } catch {
+    throw new Error(`${endpoint} returned non-JSON (status ${response.status})`);
+  }
 
   if (!response.ok || payload.success === false) {
     throw new Error(payload.message || `Failed to load ${endpoint}`);

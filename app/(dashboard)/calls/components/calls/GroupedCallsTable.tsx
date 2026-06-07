@@ -140,6 +140,8 @@ interface GroupedCallsTableProps {
   isLoading: boolean;
   /** When set via ?id= deep link, table shows only this call */
   focusCallId?: string | null;
+  /** Legacy calls to merge into timeline and count chip */
+  legacyCalls?: Call[];
   search: string;
   onSearchChange: (value: string) => void;
   dateRange: DateRange | undefined;
@@ -165,6 +167,7 @@ export function GroupedCallsTable({
   tickets,
   isLoading,
   focusCallId,
+  legacyCalls,
   search,
   onSearchChange,
   dateRange,
@@ -258,6 +261,21 @@ export function GroupedCallsTable({
         ).getTime(),
     );
   }, [scopedTickets]);
+
+  // ── Index legacy calls by group key (customerId or phone) ──────────────
+  const legacyByGroupKey = useMemo<Map<string, Call[]>>(() => {
+    const map = new Map<string, Call[]>();
+    if (!legacyCalls?.length) return map;
+    for (const lc of legacyCalls) {
+      const cid = lc.customerId != null ? Number(lc.customerId) : undefined;
+      const phone = getClientPhone(lc);
+      const key = cid != null ? `cid:${cid}` : `phone:${phone}`;
+      const existing = map.get(key);
+      if (existing) existing.push(lc);
+      else map.set(key, [lc]);
+    }
+    return map;
+  }, [legacyCalls]);
 
   // ── Server-side pagination: tickets are already the current page ────────
   // Grouping happens on the current page of calls.
@@ -440,6 +458,8 @@ export function GroupedCallsTable({
                 </TableRow>
               ) : (
                 paginatedGroups.map((group, i) => {
+                  const groupLegacyCalls = legacyByGroupKey.get(group.key) ?? [];
+                  const totalCallCount = group.calls.length + groupLegacyCalls.length;
                   const t = group.latestCall;
                   const isLive = !!(t.isLive || liveCallIds.has(Number(t.id)));
                   const isOverdue = group.calls.some(
@@ -555,7 +575,7 @@ export function GroupedCallsTable({
                           >
                             <Phone className="h-2.5 w-2.5" />
                             <span className="font-mono tabular-nums">
-                              {group.calls.length}
+                              {totalCallCount}
                             </span>
                           </button>
                         </TableCell>
@@ -630,6 +650,7 @@ export function GroupedCallsTable({
                             <InlineCallTimeline
                               group={group}
                               agents={agents}
+                              legacyCalls={groupLegacyCalls.length ? groupLegacyCalls : undefined}
                               onOpenTimeline={onOpenTimeline}
                             />
                           </TableCell>

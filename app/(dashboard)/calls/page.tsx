@@ -1501,6 +1501,7 @@ export default function TicketsPage() {
             tickets={tickets}
             isLoading={isLoading}
             focusCallId={callIdParam}
+            legacyCalls={legacyCalls}
             search={ticketFilters.search}
             onSearchChange={ticketFilters.setSearch}
             dateRange={ticketFilters.dateRange}
