@@ -118,6 +118,7 @@ export function TicketSheetActivitySection({
           <TicketActivityTimeline
             updates={updates}
             isLoading={isLoading}
+            ticketFollowUpDueDate={ticket.followUpDueDate ?? null}
           />
         </div>
       </div>

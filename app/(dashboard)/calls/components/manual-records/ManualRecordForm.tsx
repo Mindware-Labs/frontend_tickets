@@ -310,11 +310,11 @@ export function ManualRecordForm({
           Notes
         </p>
         <textarea
-          rows={4}
+          rows={3}
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           placeholder="Add notes about this record…"
-          className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
+          className="w-full field-sizing-content resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
         />
       </div>
 
