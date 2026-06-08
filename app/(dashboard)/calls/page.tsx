@@ -1314,7 +1314,14 @@ export default function TicketsPage() {
   };
 
   // ---- Computed ----
-  const savedAttachments = selectedTicket?.attachments || [];
+  const savedAttachments: string[] = (() => {
+    const raw: unknown = selectedTicket?.attachments;
+    if (Array.isArray(raw)) return raw as string[];
+    if (typeof raw === "string" && raw.length > 0) {
+      try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+    }
+    return [];
+  })();
 
   // ---- Render ----
   return (

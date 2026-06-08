@@ -380,7 +380,14 @@ export function CallPeekPanel({
   const notes = c?.notes ?? c?.issueDetail ?? null;
   const followUp = c?.followUpDueDate ?? null;
   const followUpAgent = c?.followUpAssignedTo?.name ?? null;
-  const attachments: string[] = c?.attachments ?? [];
+  const attachments: string[] = (() => {
+    const raw: unknown = c?.attachments;
+    if (Array.isArray(raw)) return raw as string[];
+    if (typeof raw === "string" && raw.length > 0) {
+      try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+    }
+    return [];
+  })();
   const dateLabel = fmtRelative(c?.callDate ?? c?.createdAt);
   const fullDate = fmtDateTime(c?.callDate ?? c?.createdAt);
   const duration = fmtDuration(c?.duration);

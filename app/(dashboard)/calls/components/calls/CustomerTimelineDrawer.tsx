@@ -456,6 +456,14 @@ export function CustomerTimelineDrawer({
   readOnly = false,
   historyApiPath = "/api/calls",
 }: CustomerTimelineDrawerProps) {
+  // Normalize savedAttachments — legacy records can arrive as a JSON string or null
+  const normalizedSavedAttachments: string[] = Array.isArray(savedAttachments)
+    ? savedAttachments
+    : typeof savedAttachments === "string" && (savedAttachments as string).length > 0
+      ? (() => { try { const p = JSON.parse(savedAttachments as unknown as string); return Array.isArray(p) ? p : []; } catch { return []; } })()
+      : [];
+  savedAttachments = normalizedSavedAttachments;
+
   const isSelectedCallLegacy = !!(selectedCall as any)?._isLegacy;
   const canEdit = !readOnly && !isSelectedCallLegacy;
   const [isPlaying, setIsPlaying] = useState(false);

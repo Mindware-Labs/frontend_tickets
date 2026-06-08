@@ -627,6 +627,26 @@ export function CustomerTicketDrawer({
   const sp = STATUS_PILL[normalizeStatusKey(selectedTicket?.status)] || null;
   const pp = PRIORITY_PILL[selectedTicket?.priority || ""] || null;
 
+  // Attachment download — proxied signed URL, same as calls
+  const handleDownloadAttachment = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(
+        `/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const { signedUrl } = await res.json();
+      const link = document.createElement("a");
+      link.href = signedUrl;
+      link.download = filename;
+      link.target = "_blank";
+      link.click();
+    } catch (err) {
+      console.error("[CustomerTicketDrawer] Download error:", err);
+      alert("Failed to download file. Please try again.");
+    }
+  };
+
   // File handling
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -1344,15 +1364,14 @@ export function CustomerTicketDrawer({
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-0.5 shrink-0">
-                                      <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={`Open ${filename}`}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDownloadAttachment(url, filename)}
+                                        aria-label={`Download ${filename}`}
                                         className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                       >
-                                        <ExternalLink className="w-3 h-3" />
-                                      </a>
+                                        <Download className="w-3 h-3" />
+                                      </button>
                                     </div>
                                   </div>
                                 );
