@@ -131,11 +131,26 @@ function asCallDirection(
   return "INBOUND";
 }
 
+/**
+ * Resolve a numeric record id, preferring the explicit id but falling back to
+ * the numeric suffix of the composite `entry.id` (e.g. "call-42" → 42).
+ * Uses Number.isFinite checks because `??` does not catch `NaN`, which would
+ * otherwise leak into the UI and render as the literal text "NaN".
+ */
+function resolveEntryId(
+  primary: number | null | undefined,
+  compositeId: string,
+): number {
+  if (typeof primary === "number" && Number.isFinite(primary)) return primary;
+  const parsed = Number(compositeId.split("-")[1]);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function mapEntryToActivity(entry: RawTimelineEntry): CustomerActivity | null {
   if (entry.type === "call") {
     const call: CallRecord = {
       kind: "call",
-      id: entry.callId ?? Number(entry.id.split("-")[1]) ?? 0,
+      id: resolveEntryId(entry.callId, entry.id),
       direction: asCallDirection(entry.direction),
       durationSec: entry.duration ?? undefined,
       agentName: entry.agentName ?? undefined,
@@ -152,7 +167,7 @@ function mapEntryToActivity(entry: RawTimelineEntry): CustomerActivity | null {
     const ticket: TicketV2Record = {
       kind: "ticket",
       variant: "v2",
-      id: entry.ticketId ?? Number(entry.id.split("-")[1]) ?? 0,
+      id: resolveEntryId(entry.ticketId, entry.id),
       title: summary
         ? summary.slice(0, 60)
         : `Ticket #${entry.ticketId ?? "—"}`,
@@ -171,7 +186,7 @@ function mapEntryToActivity(entry: RawTimelineEntry): CustomerActivity | null {
     const summary = (entry.manualRecordNotes ?? "").trim();
     const manual: ManualRecordEntry = {
       kind: "manual",
-      id: entry.manualRecordId ?? Number(entry.id.split("-")[1]) ?? 0,
+      id: resolveEntryId(entry.manualRecordId, entry.id),
       recordType: entry.disposition ?? "Manual record",
       title: summary ? summary.slice(0, 80) : "Manual record",
       loggedByName: entry.agentName ?? undefined,
