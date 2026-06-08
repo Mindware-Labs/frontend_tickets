@@ -169,6 +169,26 @@ export function EditTicketModal({
     });
   }, [customers, customerSearch]);
 
+  // ---- Attachment download (proxied signed URL, same flow as calls) ----
+  const handleDownloadAttachment = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(
+        `/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const { signedUrl } = await res.json();
+      const link = document.createElement("a");
+      link.href = signedUrl;
+      link.download = filename;
+      link.target = "_blank";
+      link.click();
+    } catch (err) {
+      console.error("[EditTicketModal] Download error:", err);
+      alert("Failed to download file. Please try again.");
+    }
+  };
+
   // ---- File handling ----
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -762,7 +782,7 @@ export function EditTicketModal({
                           </div>
                           <button
                             type="button"
-                            onClick={() => window.open(`/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`, "_blank")}
+                            onClick={() => handleDownloadAttachment(url, filename)}
                             className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors shrink-0"
                             aria-label="Download"
                           >

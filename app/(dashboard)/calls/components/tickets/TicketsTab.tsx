@@ -360,6 +360,25 @@ export function TicketsTab({
 
   const processedFocusTicketIdRef = useRef<string | null>(null);
 
+  const handleDownloadAttachment = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(
+        `/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const { signedUrl } = await res.json();
+      const link = document.createElement("a");
+      link.href = signedUrl;
+      link.download = filename;
+      link.target = "_blank";
+      link.click();
+    } catch (err) {
+      console.error("[TicketsTab] Download error:", err);
+      alert("Failed to download file. Please try again.");
+    }
+  };
+
   const handleBackToTimeline = () => {
     if (!returnTo.safeReturnPath) return;
     isNavigatingBackRef.current = true;
@@ -1409,7 +1428,7 @@ export function TicketsTab({
                           </div>
                           <button
                             type="button"
-                            onClick={() => window.open(`/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`, "_blank")}
+                            onClick={() => handleDownloadAttachment(url, filename)}
                             className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors shrink-0"
                             aria-label="Download"
                           >
