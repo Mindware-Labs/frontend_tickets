@@ -47,6 +47,7 @@ import {
   Ticket as TicketIcon,
   RotateCcw,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import {
   TableCampaignBadge,
@@ -1378,21 +1379,46 @@ export function TicketsTab({
               {selected.attachments && selected.attachments.length > 0 && (
                 <div>
                   <span className="text-muted-foreground">Attachments</span>
-                  <ul className="mt-1 space-y-1">
-                    {selected.attachments.map((url, i) => (
-                      <li key={i} className="flex items-center gap-1 text-xs">
-                        <Paperclip className="h-3 w-3" />
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline truncate max-w-75"
+                  <div className="mt-1 rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                    {selected.attachments.map((url, i) => {
+                      const raw = url.split("/").pop() || "file";
+                      const filename = raw.replace(/^\d+-\d+-/, "") || raw;
+                      const ext = filename.split(".").pop()?.toUpperCase() || "?";
+                      const isPdf = filename.toLowerCase().endsWith(".pdf");
+                      const isImage = /\.(svg|png|jpg|jpeg|webp)$/i.test(filename);
+                      const isAudio = /\.(mp3|wav|m4a|ogg)$/i.test(filename);
+                      const badge = isPdf
+                        ? "bg-red-50 text-red-500 ring-1 ring-red-100"
+                        : isImage
+                          ? "bg-blue-50 text-blue-500 ring-1 ring-blue-100"
+                          : isAudio
+                            ? "bg-violet-50 text-violet-500 ring-1 ring-violet-100"
+                            : "bg-slate-100 text-slate-500";
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
                         >
-                          {url.split("/").pop() || `Attachment ${i + 1}`}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+                          <span className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.5 py-0.5 uppercase shrink-0 ${badge}`}>
+                            {ext.slice(0, 4)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11.5px] font-medium text-slate-700 truncate leading-tight" title={filename}>
+                              {filename}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => window.open(`/api/tickets/attachments/download?fileUrl=${encodeURIComponent(url)}`, "_blank")}
+                            className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors shrink-0"
+                            aria-label="Download"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
               {selected.followUpDueDate && (
