@@ -12,6 +12,7 @@ import {
 import {
   Ban,
   CheckCircle2,
+  Code2,
   Clock,
   Mail,
   Pencil,
@@ -96,6 +97,7 @@ export function UserSheet({
   const data = detail || user;
   const fullName = data ? getUserFullName(data) : "";
   const isAdmin = data?.role === "admin";
+  const isDev = data?.role === "dev";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -182,6 +184,8 @@ export function UserSheet({
                       "rounded-xl border px-3.5 py-2.5 shadow-sm",
                       isAdmin
                         ? "border-violet-200/80 bg-violet-50 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/15"
+                        : isDev
+                          ? "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15"
                         : "border-blue-200/80 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15",
                     )}
                   >
@@ -191,10 +195,12 @@ export function UserSheet({
                     <p className="mt-1 flex items-center gap-1.5 text-[14px] font-bold">
                       {isAdmin ? (
                         <Shield className="h-4 w-4" strokeWidth={2} />
+                      ) : isDev ? (
+                        <Code2 className="h-4 w-4" strokeWidth={2} />
                       ) : (
                         <UserCog className="h-4 w-4" strokeWidth={2} />
                       )}
-                      {isAdmin ? "Admin" : "Agent"}
+                      {isAdmin ? "Admin" : isDev ? "Dev" : "Agent"}
                     </p>
                   </div>
                 </div>

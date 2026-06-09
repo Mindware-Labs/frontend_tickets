@@ -61,9 +61,10 @@ export default function CustomersPage() {
   const router = useRouter();
   const { role } = useRole();
 
-  const isAgent = role?.toString().toLowerCase() === "agent";
+  const normalizedRole = role?.toString().toLowerCase();
+  const isAgent = normalizedRole === "agent";
   const canManage = !isAgent;
-  const canDelete = role?.toString().toLowerCase() === "admin";
+  const canDelete = normalizedRole === "admin" || normalizedRole === "dev";
   const customerIdParam = searchParams?.get("customerId");
   const openTimelineFromUrl = searchParams?.get("timeline") === "1";
   const deepLinkedCustomerId =

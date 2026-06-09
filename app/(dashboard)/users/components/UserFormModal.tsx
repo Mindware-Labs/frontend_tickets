@@ -76,6 +76,7 @@ export function UserFormModal({
           >
             <Input
               id={`${idPrefix}-name`}
+              placeholder={mode === "create" ? "John" : undefined}
               value={formData.name}
               onChange={(e) =>
                 onFormChange({ ...formData, name: e.target.value })
@@ -95,6 +96,7 @@ export function UserFormModal({
           >
             <Input
               id={`${idPrefix}-lastName`}
+              placeholder={mode === "create" ? "Doe" : undefined}
               value={formData.lastName}
               onChange={(e) =>
                 onFormChange({ ...formData, lastName: e.target.value })
@@ -116,6 +118,7 @@ export function UserFormModal({
           <Input
             id={`${idPrefix}-email`}
             type="email"
+            placeholder={mode === "create" ? "john.doe@example.com" : undefined}
             value={formData.email}
             onChange={(e) =>
               onFormChange({ ...formData, email: e.target.value })

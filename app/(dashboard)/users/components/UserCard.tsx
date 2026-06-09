@@ -3,6 +3,7 @@
 import {
   Ban,
   CheckCircle2,
+  Code2,
   Clock,
   Mail,
   Pencil,
@@ -22,26 +23,33 @@ import {
 import { UserMark } from "./UserMark";
 
 function getRoleAccessLabel(role: User["role"]) {
-  return role === "admin" ? "Administrator access" : "Agent workspace access";
+  if (role === "admin") return "Administrator access";
+  if (role === "dev") return "Developer access";
+  return "Agent workspace access";
 }
 
 function RolePill({ role }: { role: User["role"] }) {
   const isAdmin = role === "admin";
+  const isDev = role === "dev";
   return (
     <span
       className={cn(
         "inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-semibold",
         isAdmin
           ? "border-[#008f68]/20 bg-[#f0faf5] text-[#007a5a] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          : isDev
+            ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
           : "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
       )}
     >
       {isAdmin ? (
         <Shield className="size-3 shrink-0" strokeWidth={2.25} />
+      ) : isDev ? (
+        <Code2 className="size-3 shrink-0" strokeWidth={2.25} />
       ) : (
         <UserCog className="size-3 shrink-0" strokeWidth={2.25} />
       )}
-      {isAdmin ? "Admin" : "Agent"}
+      {isAdmin ? "Admin" : isDev ? "Dev" : "Agent"}
     </span>
   );
 }

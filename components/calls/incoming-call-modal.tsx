@@ -56,6 +56,7 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { CallRecordingPlayer } from "@/app/(dashboard)/calls/components/calls/CallRecordingPlayer";
 
 import type {
   ActivityFilter,
@@ -159,6 +160,7 @@ const PRIORITY_STYLES: Record<string, string> = {
   MEDIUM: "border-sky-200 bg-sky-50 text-sky-700",
   HIGH: "border-amber-200 bg-amber-50 text-amber-700",
   URGENT: "border-rose-200 bg-rose-50 text-rose-700",
+  EMERGENCY: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
 // ── helpers ─────────────────────────────────────────────────────────────
@@ -626,13 +628,35 @@ function CallRow({
   );
 }
 
-function TicketActivityRow({ item }: { item: AnyTicketRecord }) {
+function TicketActivityRow({
+  item,
+  onSelect,
+}: {
+  item: AnyTicketRecord;
+  onSelect?: (ticket: AnyTicketRecord) => void;
+}) {
   const isLegacy = item.variant === "legacy";
   const statusClass =
     TICKET_STATUS_STYLES[item.status] ?? TICKET_STATUS_STYLES.CLOSED;
   const priority = !isLegacy ? item.priority : undefined;
   return (
-    <div className={ROW_CARD}>
+    <div
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      title={onSelect ? "View ticket details" : undefined}
+      onClick={onSelect ? () => onSelect(item) : undefined}
+      onKeyDown={
+        onSelect
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(item);
+              }
+            }
+          : undefined
+      }
+      className={cn(ROW_CARD, onSelect && "cursor-pointer")}
+    >
       <span
         className={cn(
           "flex size-6 shrink-0 items-center justify-center rounded-md",
@@ -710,13 +734,16 @@ function ManualRow({ item }: { item: ManualRecordEntry }) {
 function ActivityRow({
   item,
   onSelectCall,
+  onSelectTicket,
 }: {
   item: CustomerActivity;
   onSelectCall?: (call: CallRecord) => void;
+  onSelectTicket?: (ticket: AnyTicketRecord) => void;
 }) {
   if (item.kind === "call")
     return <CallRow item={item} onSelect={onSelectCall} />;
-  if (item.kind === "ticket") return <TicketActivityRow item={item} />;
+  if (item.kind === "ticket")
+    return <TicketActivityRow item={item} onSelect={onSelectTicket} />;
   return <ManualRow item={item} />;
 }
 
@@ -754,9 +781,11 @@ const ACTIVITY_PAGE_SIZE = 6;
 function ActivityTab({
   customer,
   onSelectCall,
+  onSelectTicket,
 }: {
   customer: CustomerProfile;
   onSelectCall?: (call: CallRecord) => void;
+  onSelectTicket?: (ticket: AnyTicketRecord) => void;
 }) {
   const [filter, setFilter] = useState<ActivityFilter>("all");
   const [page, setPage] = useState(1);
@@ -856,6 +885,7 @@ function ActivityTab({
                 key={`${item.kind}-${"id" in item ? item.id : "x"}-${item.occurredAt}`}
                 item={item}
                 onSelectCall={onSelectCall}
+                onSelectTicket={onSelectTicket}
               />
             ))}
           </div>
@@ -1229,25 +1259,26 @@ function CallDetailModal({
           </dl>
 
           {call.recordingUrl ? (
-            <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
-              <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
-                <Mic className="size-2.5" />
-                Recording
-              </p>
-              <audio
-                controls
-                src={call.recordingUrl}
-                className="mt-1.5 h-8 w-full"
-              />
-              <a
-                href={call.recordingUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] hover:underline"
-              >
-                <Mic className="size-2.5" />
-                Open recording in new tab
-              </a>
+            <section className="mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-[#008f68]/10">
+                  <Mic className="size-3 text-[#008f68]" />
+                </div>
+                <span className="flex-1 text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Recording
+                </span>
+                {duration ? (
+                  <span className="font-mono text-[10px] tabular-nums text-slate-400">
+                    {duration}
+                  </span>
+                ) : null}
+              </div>
+              <div className="px-3.5 pb-3.5">
+                <CallRecordingPlayer
+                  callId={call.id}
+                  durationSec={call.durationSec ?? null}
+                />
+              </div>
             </section>
           ) : null}
 
@@ -1271,6 +1302,259 @@ function CallDetailModal({
 }
 
 // ── main ────────────────────────────────────────────────────────────────
+function TicketDetailModal({
+  ticket,
+  anchor,
+  onClose,
+}: {
+  ticket: AnyTicketRecord;
+  anchor: AnchorPos | null;
+  onClose: () => void;
+}) {
+  const { offset, dragging, beginDrag } = useDragOffset();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  const isLegacy = ticket.variant === "legacy";
+  const statusClass =
+    TICKET_STATUS_STYLES[ticket.status] ?? TICKET_STATUS_STYLES.CLOSED;
+  const title = isLegacy ? ticket.legacyId : ticket.title;
+  const priority = !isLegacy ? ticket.priority : undefined;
+  const hasFollowUp =
+    !isLegacy &&
+    (Boolean(ticket.followUpDueDate) ||
+      Boolean(ticket.followUpAssignedToName) ||
+      Boolean(ticket.followUpAssignedToId));
+  const idRows =
+    !isLegacy
+      ? [
+          { label: "Customer ID", value: ticket.customerId },
+          { label: "Call ID", value: ticket.callId },
+          { label: "Yard ID", value: ticket.yardId },
+          { label: "Campaign ID", value: ticket.campaignId },
+          { label: "Agent ID", value: ticket.agentId },
+          { label: "Phone line ID", value: ticket.phoneLineId },
+          { label: "Follow-up ID", value: ticket.followUpAssignedToId },
+        ].filter((row) => row.value !== undefined && row.value !== null)
+      : [];
+
+  return createPortal(
+    <aside
+      role="dialog"
+      aria-label="Ticket details"
+      style={{
+        ...(anchor ? { left: anchor.left, top: anchor.top } : null),
+        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        ...(dragging ? { transition: "none" } : null),
+      }}
+      className={cn(
+        "fixed z-[70] flex max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950",
+        anchor ? "" : "bottom-6 left-6",
+        dragging && "shadow-[0_20px_50px_rgba(15,23,42,0.28)]",
+      )}
+    >
+      <div
+        onPointerDown={beginDrag}
+        className="relative flex cursor-grab touch-none select-none items-center gap-2.5 border-b border-slate-200/80 bg-white px-3.5 py-3 pr-10 active:cursor-grabbing dark:border-slate-800 dark:bg-slate-950"
+      >
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
+          aria-hidden
+        />
+        <GripHorizontal
+          className="pointer-events-none absolute left-1/2 top-0.5 size-3.5 -translate-x-1/2 text-slate-300 dark:text-slate-600"
+          aria-hidden
+        />
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            isLegacy
+              ? "bg-slate-100 text-slate-500"
+              : "bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15",
+          )}
+        >
+          {isLegacy ? (
+            <Archive className="size-4" strokeWidth={2.25} />
+          ) : (
+            <TicketIcon className="size-4" strokeWidth={2.25} />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Ticket details
+          </p>
+          <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+            {isLegacy ? "Legacy ticket" : title}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close ticket details"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+
+      <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-3 dark:bg-slate-900/40">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <MiniTag className={statusClass}>
+            {ticket.status.replace(/_/g, " ")}
+          </MiniTag>
+          {priority ? (
+            <MiniTag className={PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.LOW}>
+              {priority}
+            </MiniTag>
+          ) : null}
+          {!isLegacy && ticket.ticketType ? (
+            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+              {ticket.ticketType}
+            </MiniTag>
+          ) : null}
+          <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+            #{ticket.id}
+          </MiniTag>
+        </div>
+
+        <dl className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+          <DetailRow icon={Hash} label="Ticket ID" value={ticket.id} />
+          {!isLegacy ? (
+            <>
+              <DetailRow
+                icon={Tag}
+                label="Status"
+                value={ticket.status.replace(/_/g, " ")}
+              />
+              <DetailRow
+                icon={AlertTriangle}
+                label="Priority"
+                value={priority ?? "-"}
+              />
+              <DetailRow
+                icon={TicketIcon}
+                label="Type"
+                value={ticket.ticketType ?? "-"}
+              />
+            </>
+          ) : null}
+          <DetailRow
+            icon={CalendarClock}
+            label="Created"
+            value={formatDateTime(ticket.occurredAt) ?? "-"}
+          />
+          {!isLegacy && hasFollowUp ? (
+            <>
+              {ticket.followUpDueDate ? (
+                <DetailRow
+                  icon={Clock}
+                  label="Follow-up"
+                  value={formatDateTime(ticket.followUpDueDate) ?? "-"}
+                />
+              ) : null}
+              <DetailRow
+                icon={User2}
+                label="Follow-up agent"
+                value={
+                  ticket.followUpAssignedToName ??
+                  ticket.followUpAssignedToId ??
+                  "-"
+                }
+              />
+            </>
+          ) : null}
+          {isLegacy ? (
+            <DetailRow
+              icon={PhoneIncoming}
+              label="Direction"
+              value={ticket.direction ?? "-"}
+            />
+          ) : null}
+          {!isLegacy && ticket.resolvedAt ? (
+            <DetailRow
+              icon={Check}
+              label="Resolved"
+              value={formatDateTime(ticket.resolvedAt) ?? "-"}
+            />
+          ) : null}
+          {isLegacy && ticket.disposition ? (
+            <DetailRow
+              icon={Tag}
+              label="Disposition"
+              value={titleCase(ticket.disposition) ?? "-"}
+            />
+          ) : null}
+          {!isLegacy && ticket.campaignOption ? (
+            <DetailRow
+              icon={Tag}
+              label="Campaign option"
+              value={titleCase(ticket.campaignOption) ?? "-"}
+            />
+          ) : null}
+          <DetailRow
+            icon={User2}
+            label="Agent"
+            value={
+              (isLegacy ? ticket.agentName : ticket.assignedAgentName) ??
+              "Unassigned"
+            }
+            valueClass="text-slate-700 dark:text-slate-200"
+          />
+          <DetailRow
+            icon={Building2}
+            label="Yard"
+            value={ticket.yardName ?? "-"}
+            valueClass="text-sky-700 dark:text-sky-400"
+          />
+          <DetailRow
+            icon={Megaphone}
+            label="Campaign"
+            value={ticket.campaignName ?? "-"}
+            valueClass="text-[#006b4f] dark:text-emerald-400"
+          />
+        </dl>
+
+        {idRows.length > 0 ? (
+          <dl className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+            {idRows.map((row) => (
+              <DetailRow
+                key={row.label}
+                icon={Hash}
+                label={row.label}
+                value={row.value}
+              />
+            ))}
+          </dl>
+        ) : null}
+
+        <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
+          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
+            <FileText className="size-2.5" />
+            Issue detail
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+            {ticket.notes?.trim() || (
+              <span className="italic text-slate-400">
+                No details recorded for this ticket.
+              </span>
+            )}
+          </p>
+        </section>
+
+      </div>
+    </aside>,
+    document.body,
+  );
+}
+
 export function IncomingCallModal({
   open,
   onOpenChange,
@@ -1285,15 +1569,18 @@ export function IncomingCallModal({
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ px: 0, py: 0, ox: 0, oy: 0 });
 
-  // Currently expanded call (parallel detail modal) + where to anchor it.
+  // Currently expanded activity detail modal + where to anchor it.
   const [selectedCall, setSelectedCall] = useState<CallRecord | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<AnyTicketRecord | null>(
+    null,
+  );
   const panelRef = useRef<HTMLElement>(null);
   const [detailAnchor, setDetailAnchor] = useState<AnchorPos | null>(null);
 
   // Keep the detail window pinned beside the panel — recomputed while the
   // panel is dragged (offset) and on viewport resize.
   useIsoLayoutEffect(() => {
-    if (!selectedCall) return;
+    if (!selectedCall && !selectedTicket) return;
     const el = panelRef.current;
     if (!el) return;
     const compute = () => {
@@ -1316,7 +1603,7 @@ export function IncomingCallModal({
     compute();
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
-  }, [selectedCall, offset.x, offset.y]);
+  }, [selectedCall, selectedTicket, offset.x, offset.y]);
 
   // Re-center whenever the panel is reopened so it never gets "lost".
   useEffect(() => {
@@ -1326,6 +1613,7 @@ export function IncomingCallModal({
   // Drop any open detail when the panel closes or the customer changes.
   useEffect(() => {
     setSelectedCall(null);
+    setSelectedTicket(null);
   }, [open, customer?.id]);
 
   const beginDrag = useCallback(
@@ -1366,11 +1654,12 @@ export function IncomingCallModal({
   useEffect(() => {
     if (!open || persistent) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !selectedCall) onOpenChange(false);
+      if (e.key === "Escape" && !selectedCall && !selectedTicket)
+        onOpenChange(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, persistent, onOpenChange, selectedCall]);
+  }, [open, persistent, onOpenChange, selectedCall, selectedTicket]);
 
   if (!open) return null;
 
@@ -1487,7 +1776,17 @@ export function IncomingCallModal({
                 value="activity"
                 className="mt-2 focus-visible:outline-none"
               >
-                <ActivityTab customer={customer} onSelectCall={setSelectedCall} />
+                <ActivityTab
+                  customer={customer}
+                  onSelectCall={(nextCall) => {
+                    setSelectedTicket(null);
+                    setSelectedCall(nextCall);
+                  }}
+                  onSelectTicket={(nextTicket) => {
+                    setSelectedCall(null);
+                    setSelectedTicket(nextTicket);
+                  }}
+                />
               </TabsContent>
               <TabsContent
                 value="info"
@@ -1525,6 +1824,14 @@ export function IncomingCallModal({
           call={selectedCall}
           anchor={detailAnchor}
           onClose={() => setSelectedCall(null)}
+        />
+      ) : null}
+      {selectedTicket ? (
+        <TicketDetailModal
+          key={`${selectedTicket.variant}-${selectedTicket.id}`}
+          ticket={selectedTicket}
+          anchor={detailAnchor}
+          onClose={() => setSelectedTicket(null)}
         />
       ) : null}
     </aside>

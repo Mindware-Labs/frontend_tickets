@@ -59,15 +59,29 @@ export interface TicketV2Record {
   kind: "ticket";
   variant: "v2";
   id: number;
+  customerId?: number;
+  callId?: number;
+  yardId?: number;
+  campaignId?: number;
+  agentId?: number;
+  phoneLineId?: number;
   title: string;
   status: "ACTIVE" | "PENDING_FOLLOWUP" | "RESOLVED" | "CLOSED" | "OVERDUE";
-  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | "EMERGENCY";
   ticketType?: string;
+  phoneLineLabel?: string;
+  campaignOption?: string;
+  followUpDueDate?: string;
+  followUpAssignedToId?: number;
+  followUpAssignedToName?: string;
+  resolvedAt?: string;
   assignedAgentName?: string;
   yardName?: string;
   campaignName?: string;
   occurredAt: string;
   updatedAt?: string;
+  originalIssueDetail?: string;
+  attachments?: string[];
   notes?: string;
 }
 

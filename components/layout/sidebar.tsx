@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronDown,
   CircleUser,
+  Code2,
   Headset,
   LayoutDashboard,
   Megaphone,
@@ -47,6 +48,7 @@ type NavChild = {
   url: string;
   icon?: LucideIcon;
   adminOnly?: boolean;
+  devOnly?: boolean;
 };
 
 type NavItem = {
@@ -54,6 +56,7 @@ type NavItem = {
   url?: string;
   icon: LucideIcon;
   adminOnly?: boolean;
+  devOnly?: boolean;
   children?: NavChild[];
 };
 
@@ -67,6 +70,12 @@ const sections: NavSection[] = [
     title: "Aircall",
     items: [
       { title: "Aircall", url: "/aircall", icon: Radio },
+      {
+        title: "Incoming Lab",
+        url: "/incoming-call-lab",
+        icon: Code2,
+        devOnly: true,
+      },
     ],
   },
   {
@@ -188,6 +197,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const isCollapsed = state === "collapsed";
   const normalizedRole = role?.toString().toLowerCase();
   const isAgent = normalizedRole === "agent";
+  const isDev = normalizedRole === "dev";
 
   const visibleSections = useMemo(
     () =>
@@ -196,6 +206,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           ...section,
           items: section.items
             .filter((item) => !(item.adminOnly && isAgent))
+            .filter((item) => !(item.devOnly && !isDev))
             .map((item) => ({
               ...item,
               url:
@@ -204,7 +215,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   : item.url,
               children: item.children?.filter(
                 (child) => !(child.adminOnly && isAgent),
-              ),
+              ).filter((child) => !(child.devOnly && !isDev)),
             }))
             .filter(
               (item) =>
@@ -214,7 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             ),
         }))
         .filter((section) => section.items.length > 0),
-    [isAgent],
+    [isAgent, isDev],
   );
 
   const isActive = (url?: string) =>

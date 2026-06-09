@@ -62,12 +62,26 @@ type RawTimelineEntry = {
   phoneLineLabel?: string | null;
   yardName?: string | null;
   campaignName?: string | null;
+  recordingUrl?: string | null;
+  customerId?: number | null;
   callId?: number | null;
+  yardId?: number | null;
+  campaignId?: number | null;
+  agentId?: number | null;
+  phoneLineId?: number | null;
   ticketId?: number | null;
   ticketStatus?: string | null;
   ticketPriority?: string | null;
   ticketType?: string | null;
   ticketNotes?: string | null;
+  originalIssueDetail?: string | null;
+  attachments?: string[] | null;
+  campaignOption?: string | null;
+  followUpDueDate?: string | null;
+  followUpAssignedToId?: number | null;
+  followUpAssignedToName?: string | null;
+  updatedAt?: string | null;
+  resolvedAt?: string | null;
   assignedAgentName?: string | null;
   manualRecordId?: number | null;
   manualRecordNotes?: string | null;
@@ -131,6 +145,22 @@ function asCallDirection(
   return "INBOUND";
 }
 
+function asTicketPriority(
+  value: string | null | undefined,
+): TicketV2Record["priority"] | undefined {
+  const upper = (value ?? "").toUpperCase();
+  if (
+    upper === "LOW" ||
+    upper === "MEDIUM" ||
+    upper === "HIGH" ||
+    upper === "URGENT" ||
+    upper === "EMERGENCY"
+  ) {
+    return upper;
+  }
+  return undefined;
+}
+
 /**
  * Resolve a numeric record id, preferring the explicit id but falling back to
  * the numeric suffix of the composite `entry.id` (e.g. "call-42" → 42).
@@ -158,6 +188,7 @@ function mapEntryToActivity(entry: RawTimelineEntry): CustomerActivity | null {
       campaignName: entry.campaignName ?? undefined,
       disposition: entry.disposition ?? undefined,
       notes: entry.callNotes ?? undefined,
+      recordingUrl: entry.recordingUrl ?? undefined,
       occurredAt: toIso(entry.occurredAt),
     };
     return call;
@@ -168,16 +199,57 @@ function mapEntryToActivity(entry: RawTimelineEntry): CustomerActivity | null {
       kind: "ticket",
       variant: "v2",
       id: resolveEntryId(entry.ticketId, entry.id),
+      customerId:
+        typeof entry.customerId === "number" && Number.isFinite(entry.customerId)
+          ? entry.customerId
+          : undefined,
+      callId:
+        typeof entry.callId === "number" && Number.isFinite(entry.callId)
+          ? entry.callId
+          : undefined,
+      yardId:
+        typeof entry.yardId === "number" && Number.isFinite(entry.yardId)
+          ? entry.yardId
+          : undefined,
+      campaignId:
+        typeof entry.campaignId === "number" && Number.isFinite(entry.campaignId)
+          ? entry.campaignId
+          : undefined,
+      agentId:
+        typeof entry.agentId === "number" && Number.isFinite(entry.agentId)
+          ? entry.agentId
+          : undefined,
+      phoneLineId:
+        typeof entry.phoneLineId === "number" && Number.isFinite(entry.phoneLineId)
+          ? entry.phoneLineId
+          : undefined,
       title: summary
         ? summary.slice(0, 60)
         : `Ticket #${entry.ticketId ?? "—"}`,
       status: asTicketStatus(entry.ticketStatus),
-      priority: undefined,
+      priority: asTicketPriority(entry.ticketPriority),
       ticketType: entry.ticketType ?? undefined,
+      phoneLineLabel: entry.phoneLineLabel ?? undefined,
+      campaignOption: entry.campaignOption ?? undefined,
+      followUpDueDate: entry.followUpDueDate
+        ? toIso(entry.followUpDueDate)
+        : undefined,
+      followUpAssignedToId:
+        typeof entry.followUpAssignedToId === "number" &&
+        Number.isFinite(entry.followUpAssignedToId)
+          ? entry.followUpAssignedToId
+          : undefined,
+      followUpAssignedToName: entry.followUpAssignedToName ?? undefined,
+      updatedAt: entry.updatedAt ? toIso(entry.updatedAt) : undefined,
+      resolvedAt: entry.resolvedAt ? toIso(entry.resolvedAt) : undefined,
       assignedAgentName: entry.assignedAgentName ?? undefined,
       yardName: entry.yardName ?? undefined,
       campaignName: entry.campaignName ?? undefined,
       occurredAt: toIso(entry.occurredAt),
+      originalIssueDetail: entry.originalIssueDetail ?? undefined,
+      attachments: Array.isArray(entry.attachments)
+        ? entry.attachments
+        : undefined,
       notes: entry.ticketNotes ?? undefined,
     };
     return ticket;

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-type Role = "Admin" | "Agent";
+type Role = "Admin" | "Agent" | "Dev";
 
 interface RoleContextType {
   role: Role;
@@ -26,6 +26,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         setRole("Admin");
       } else if (normalized === "agent") {
         setRole("Agent");
+      } else if (normalized === "dev") {
+        setRole("Dev");
       }
     } catch {
       // Ignore parsing errors and keep current role.

@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isPrivilegedRole = (value: string | null) =>
+    value === "admin" || value === "dev";
 
   if (
     pathname.startsWith("/_next") ||
@@ -106,7 +108,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (pathname.startsWith("/dashboard") && role !== "admin") {
+  if (pathname.startsWith("/dashboard") && !isPrivilegedRole(role)) {
     return NextResponse.redirect(new URL("/calls", request.url));
   }
 
@@ -114,19 +116,23 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (pathname.startsWith("/reports/landlords") && role !== "admin") {
+  if (pathname.startsWith("/incoming-call-lab") && role !== "dev") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (pathname.startsWith("/reports/landlords") && !isPrivilegedRole(role)) {
     return NextResponse.redirect(new URL("/landlords", request.url));
   }
 
-  if (pathname.startsWith("/reports/campaigns") && role !== "admin") {
+  if (pathname.startsWith("/reports/campaigns") && !isPrivilegedRole(role)) {
     return NextResponse.redirect(new URL("/campaigns", request.url));
   }
 
-  if (pathname.startsWith("/reports/yards") && role !== "admin") {
+  if (pathname.startsWith("/reports/yards") && !isPrivilegedRole(role)) {
     return NextResponse.redirect(new URL("/yards", request.url));
   }
 
-  if (pathname.startsWith("/users") && role !== "admin") {
+  if (pathname.startsWith("/users") && !isPrivilegedRole(role)) {
     return NextResponse.redirect(new URL("/calls", request.url));
   }
 
