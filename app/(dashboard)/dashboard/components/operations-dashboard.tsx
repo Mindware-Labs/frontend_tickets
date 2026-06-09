@@ -3,8 +3,10 @@ import {
   Area,
   AreaChart,
   Bar,
+  BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   ComposedChart,
   Legend,
   Line,
@@ -120,6 +122,32 @@ export function OperationsDashboard() {
   const agentFilterActive = !!filters.agent;
   const dayFilterActive   = !!filters.day;
   const selectedDay       = filters.day ?? undefined;
+  const singleDayCallVolume =
+    data.operationsTrend.length === 1 ? data.operationsTrend[0] : null;
+  const singleDayCallVolumeRows = singleDayCallVolume
+    ? [
+        {
+          metric: "Inbound",
+          value: singleDayCallVolume.inbound,
+          color: toneClasses.emerald.chart,
+        },
+        {
+          metric: "Outbound",
+          value: singleDayCallVolume.outbound,
+          color: toneClasses.sky.chart,
+        },
+        {
+          metric: "Tickets",
+          value: singleDayCallVolume.tickets,
+          color: toneClasses.indigo.chart,
+        },
+        {
+          metric: "Missed",
+          value: singleDayCallVolume.missed,
+          color: toneClasses.rose.chart,
+        },
+      ]
+    : [];
 
   // Custom dot: renders only on the selected day when a day filter is active,
   // fades other days to hint that filtering is in effect.
@@ -169,6 +197,48 @@ export function OperationsDashboard() {
         >
           {data.operationsTrend.length === 0 ? (
             <DashboardEmptyState message="No call trend data for this period." compact />
+          ) : singleDayCallVolume ? (
+            <DashboardChart>
+              <BarChart
+                data={singleDayCallVolumeRows}
+                margin={{ left: -12, right: 10, top: 20, bottom: 0 }}
+                barCategoryGap="28%"
+                style={{ cursor: "pointer" }}
+                onClick={() => toggleFilter("day", singleDayCallVolume.day)}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="metric" tickLine={false} axisLine={false} tick={chartAxisTickStyle} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={chartAxisTickStyle}
+                  width={32}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={chartBarCursor}
+                  formatter={(value: number, name: string) => [value, name]}
+                  labelFormatter={() => singleDayCallVolume.day}
+                />
+                <Bar
+                  dataKey="value"
+                  name="Volume"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={72}
+                  animationDuration={CHART_ANIMATION_DURATION}
+                >
+                  <LabelList
+                    dataKey="value"
+                    position="top"
+                    className="fill-slate-700 text-[11px] font-semibold dark:fill-slate-200"
+                  />
+                  {singleDayCallVolumeRows.map((entry) => (
+                    <Cell key={entry.metric} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </DashboardChart>
           ) : (
             <DashboardChart>
               <AreaChart
