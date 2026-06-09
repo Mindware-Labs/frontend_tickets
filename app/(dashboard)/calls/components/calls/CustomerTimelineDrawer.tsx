@@ -82,6 +82,7 @@ import type { Filters } from "../../hooks/useCallFilters";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { useTicketPeekAircallExclusion } from "@/hooks/use-ticket-peek-aircall-exclusion";
 import { shouldIgnoreTicketSheetOutsideEvent } from "@/lib/ticket-sheet-outside-interaction";
+import { CustomerNotesAlert } from "../shared/CustomerNotesAlert";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1451,9 +1452,8 @@ export function CustomerTimelineDrawer({
                 </span>
               )}
 
-              {/* Context indicators: note trigger + call count */}
+              {/* Context indicators: call count */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Call count badge */}
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008f68] bg-[#008f68]/8 px-2 py-0.5 rounded-full">
                   <PhoneCall className="w-2.5 h-2.5" />
                   {isLoadingHistory ? (
@@ -1464,8 +1464,13 @@ export function CustomerTimelineDrawer({
                 </span>
               </div>
 
+              {/* Customer notes alert — fills the gap between customer info and actions */}
+              <div className="flex-1 min-w-0">
+                <CustomerNotesAlert customer={(selectedCall as any)?.customer} compact inline />
+              </div>
+
               {/* Action buttons */}
-              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => {

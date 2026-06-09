@@ -309,6 +309,20 @@ export function ManualRecordsTab() {
     setDrawerGroup(group);
     populateFormFromRecord(record);
     setShowDrawer(true);
+    // Background fetch to get customer.notes relation (not included in list query)
+    fetch(`/api/manual-records/${record.id}`)
+      .then((r) => r.json())
+      .then((result) => {
+        const data = result.data ?? result;
+        if (data?.customer) {
+          setSelected((prev) =>
+            prev?.id === record.id
+              ? { ...prev, customer: data.customer }
+              : prev,
+          );
+        }
+      })
+      .catch(() => {});
   }, [recordGroups]);
 
   const processedFocusRecordIdRef = useRef<string | null>(null);

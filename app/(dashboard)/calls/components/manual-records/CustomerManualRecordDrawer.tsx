@@ -389,7 +389,14 @@ export function CustomerManualRecordDrawer({
                   )}
                 </span>
               </div>
-              <div className="flex-1" />
+              {/* Customer notes alert — fills the gap between customer info and actions */}
+              <div className="flex-1 min-w-0 mx-1">
+                <CustomerNotesAlert
+                  customer={selectedRecord?.customer}
+                  compact
+                  inline
+                />
+              </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
@@ -436,14 +443,6 @@ export function CustomerManualRecordDrawer({
               </div>
             )}
 
-            {selectedRecord ? (
-              <div className="px-4 pb-2">
-                <CustomerNotesAlert
-                  customer={selectedRecord.customer}
-                  compact
-                />
-              </div>
-            ) : null}
           </div>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">

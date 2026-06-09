@@ -354,6 +354,19 @@ export function TicketsTab({
       });
       setPendingFiles([]);
       setShowDrawer(true);
+      // Background fetch to get customer.notes relation (not included in list query)
+      fetch(`/api/tickets/${t.id}`)
+        .then((r) => r.json())
+        .then((result) => {
+          if (result.success && result.data?.customer) {
+            setSelected((prev) =>
+              prev?.id === t.id
+                ? { ...prev, customer: result.data.customer }
+                : prev,
+            );
+          }
+        })
+        .catch(() => {});
     },
     [ticketGroups],
   );
@@ -460,6 +473,19 @@ export function TicketsTab({
       followUpAssignedToId: t.followUpAssignedToId?.toString() || "",
     });
     setPendingFiles([]);
+    // Background fetch to get customer.notes (not in list query)
+    fetch(`/api/tickets/${t.id}`)
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success && result.data?.customer) {
+          setSelected((prev) =>
+            prev?.id === t.id
+              ? { ...prev, customer: result.data.customer }
+              : prev,
+          );
+        }
+      })
+      .catch(() => {});
   };
 
   const openEdit = (t: SupportTicketRecord) => {

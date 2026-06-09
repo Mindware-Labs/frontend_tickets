@@ -845,7 +845,14 @@ export function CustomerTicketDrawer({
                   )}
                 </span>
               </div>
-              <div className="flex-1" />
+              {/* Customer notes alert — fills the gap between customer info and actions */}
+              <div className="flex-1 min-w-0 mx-1">
+                <CustomerNotesAlert
+                  customer={selectedTicket?.customer}
+                  compact
+                  inline
+                />
+              </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
@@ -920,14 +927,6 @@ export function CustomerTicketDrawer({
               </div>
             )}
 
-            {selectedTicket ? (
-              <div className="px-4 pb-2">
-                <CustomerNotesAlert
-                  customer={selectedTicket.customer}
-                  compact
-                />
-              </div>
-            ) : null}
           </div>
 
           {/* ── 3-Column Body ── */}
