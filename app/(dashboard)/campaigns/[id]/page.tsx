@@ -11,7 +11,11 @@ if (typeof window !== "undefined") {
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchFromBackend } from "@/lib/api-client";
+import { fetchBlobFromBackend, fetchFromBackend } from "@/lib/api-client";
+import {
+  EXCEL_MIME,
+  triggerDownload,
+} from "@/components/reports/bulk-export-core";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -126,6 +130,7 @@ export default function CampaignReportPage() {
   const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [campaignName, setCampaignName] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [reportData, setReportData] = useState<CampaignReportData | null>(null);
@@ -260,16 +265,44 @@ export default function CampaignReportPage() {
     }
   };
 
-  const handleExport = (fmt: "pdf" | "excel") => {
-    if (!startDate || !endDate) return;
-    const q = new URLSearchParams({
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-    });
-    // Ajusta la URL base según tu entorno (o usa una variable de entorno)
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
-    window.open(`${baseUrl}/campaign/${id}/report/${fmt}?${q}`, "_blank");
+  const handleExport = async (fmt: "pdf" | "excel") => {
+    if (!startDate || !endDate || exporting) return;
+    setExporting(fmt);
+    try {
+      const q = new URLSearchParams({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      });
+      if (fmt === "pdf") {
+        q.set("logoUrl", `${window.location.origin}/images/logo.jpeg`);
+      }
+      const blob = await fetchBlobFromBackend(
+        `/campaign/${id}/report/${fmt}?${q.toString()}`,
+        {
+          method: "GET",
+          headers: fmt === "excel" ? { Accept: EXCEL_MIME } : undefined,
+        },
+      );
+      const start = format(startDate, "yyyy-MM-dd");
+      const end = format(endDate, "yyyy-MM-dd");
+      triggerDownload(
+        blob,
+        `campaign_report_${id}_${start}_to_${end}.${fmt === "excel" ? "xlsx" : "pdf"}`,
+      );
+      toast({
+        title: "Download started",
+        description: `The ${fmt === "excel" ? "Excel" : "PDF"} report is downloading.`,
+      });
+    } catch (e) {
+      console.error("🔴 [Campaign Report] Export failed:", e);
+      toast({
+        title: "Error",
+        description: `Failed to download the ${fmt === "excel" ? "Excel" : "PDF"} report.`,
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(null);
+    }
   };
 
   console.log("🎨 RENDERING JSX - About to return component");
@@ -305,11 +338,29 @@ export default function CampaignReportPage() {
         </div>
         {reportData && (
           <div className="flex gap-2 ml-10 sm:ml-0">
-            <Button variant="outline" onClick={() => handleExport("pdf")}>
-              <FileDown className="mr-2 h-4 w-4 text-red-600" /> PDF
+            <Button
+              variant="outline"
+              onClick={() => void handleExport("pdf")}
+              disabled={exporting !== null}
+            >
+              {exporting === "pdf" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4 text-red-600" />
+              )}{" "}
+              PDF
             </Button>
-            <Button variant="outline" onClick={() => handleExport("excel")}>
-              <FileDown className="mr-2 h-4 w-4 text-green-600" /> Excel
+            <Button
+              variant="outline"
+              onClick={() => void handleExport("excel")}
+              disabled={exporting !== null}
+            >
+              {exporting === "excel" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4 text-green-600" />
+              )}{" "}
+              Excel
             </Button>
           </div>
         )}

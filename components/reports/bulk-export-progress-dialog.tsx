@@ -55,6 +55,9 @@ type BulkExportProgressDialogProps = {
   buildRequest: BulkExportBuildRequest;
 };
 
+/** How many reports to generate/download at the same time. */
+const CONCURRENT_DOWNLOADS = 3;
+
 export function BulkExportProgressDialog({
   open,
   onOpenChange,
@@ -85,34 +88,53 @@ export function BulkExportProgressDialog({
 
       let downloaded = 0;
       let failed = 0;
+      let nextIndex = 0;
 
-      for (const job of jobList) {
-        if (runIdRef.current !== runId) return;
-        if (cancelRef.current) {
-          updateJob(job.key, { status: "skipped" });
-          continue;
-        }
+      const runWorker = async () => {
+        while (runIdRef.current === runId) {
+          const index = nextIndex;
+          nextIndex += 1;
+          if (index >= jobList.length) return;
+          const job = jobList[index];
 
-        updateJob(job.key, { status: "active" });
-        try {
-          const request = buildRequest(job.item, job.format, startDate, endDate);
-          const blob = await fetchBlobFromBackend(request.endpoint, {
-            method: "GET",
-            headers: request.accept ? { Accept: request.accept } : undefined,
-          });
-          if (runIdRef.current !== runId) return;
-          triggerDownload(blob, request.fileName);
-          downloaded += 1;
-          updateJob(job.key, { status: "success" });
-        } catch (error) {
-          if (runIdRef.current !== runId) return;
-          failed += 1;
-          updateJob(job.key, {
-            status: "error",
-            error: toFriendlyError(error),
-          });
+          if (cancelRef.current) {
+            updateJob(job.key, { status: "skipped" });
+            continue;
+          }
+
+          updateJob(job.key, { status: "active" });
+          try {
+            const request = buildRequest(
+              job.item,
+              job.format,
+              startDate,
+              endDate,
+            );
+            const blob = await fetchBlobFromBackend(request.endpoint, {
+              method: "GET",
+              headers: request.accept ? { Accept: request.accept } : undefined,
+            });
+            if (runIdRef.current !== runId) return;
+            triggerDownload(blob, request.fileName);
+            downloaded += 1;
+            updateJob(job.key, { status: "success" });
+          } catch (error) {
+            if (runIdRef.current !== runId) return;
+            failed += 1;
+            updateJob(job.key, {
+              status: "error",
+              error: toFriendlyError(error),
+            });
+          }
         }
-      }
+      };
+
+      await Promise.all(
+        Array.from(
+          { length: Math.min(CONCURRENT_DOWNLOADS, jobList.length) },
+          () => runWorker(),
+        ),
+      );
 
       if (runIdRef.current !== runId) return;
       setIsRunning(false);
@@ -157,7 +179,8 @@ export function BulkExportProgressDialog({
   const errorCount = jobs.filter((job) => job.status === "error").length;
   const skippedCount = jobs.filter((job) => job.status === "skipped").length;
   const pendingCount = jobs.filter((job) => job.status === "pending").length;
-  const activeJob = jobs.find((job) => job.status === "active") ?? null;
+  const activeJobs = jobs.filter((job) => job.status === "active");
+  const activeJob = activeJobs[0] ?? null;
   const progressPct =
     jobs.length > 0 ? Math.round((completedCount / jobs.length) * 100) : 0;
   const failedOrSkipped = errorCount + skippedCount;
@@ -242,11 +265,13 @@ export function BulkExportProgressDialog({
                 className="text-[11px] font-medium text-slate-500 dark:text-slate-400"
                 aria-live="polite"
               >
-                {isRunning && activeJob
-                  ? `Generating ${FORMAT_META[activeJob.format].label} for ${activeJob.item.name}...`
-                  : isRunning
-                    ? "Starting export..."
-                    : `${successCount} downloaded - ${errorCount} failed - ${skippedCount} cancelled`}
+                {isRunning && activeJobs.length > 1
+                  ? `Generating ${activeJobs.length} files in parallel...`
+                  : isRunning && activeJob
+                    ? `Generating ${FORMAT_META[activeJob.format].label} for ${activeJob.item.name}...`
+                    : isRunning
+                      ? "Starting export..."
+                      : `${successCount} downloaded - ${errorCount} failed - ${skippedCount} cancelled`}
               </p>
 
               <div className="grid grid-cols-3 gap-1.5">

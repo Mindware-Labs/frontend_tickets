@@ -522,7 +522,7 @@ export default function CampaignBulkExportPage() {
               </div>
 
               {selectedCount > 0 ? (
-                <div className="sticky top-0 z-10 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3 py-2 shadow-sm backdrop-blur dark:border-emerald-500/30 dark:bg-emerald-950/80">
+                <div className="sticky top-0 z-10 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3 py-2 shadow-sm backdrop-blur animate-in fade-in slide-in-from-top-2 duration-300 ease-out dark:border-emerald-500/30 dark:bg-emerald-950/80">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800 dark:text-emerald-200">
                       Selected campaigns
@@ -537,7 +537,10 @@ export default function CampaignBulkExportPage() {
                   </div>
                   <ul className="scrollbar-app flex max-h-20 flex-wrap gap-1.5 overflow-y-auto">
                     {selectedCampaigns.map((campaign) => (
-                      <li key={campaign.id}>
+                      <li
+                        key={campaign.id}
+                        className="animate-in fade-in zoom-in-95 duration-200 ease-out"
+                      >
                         <button
                           type="button"
                           onClick={() => toggleCampaign(campaign.id)}
@@ -938,9 +941,12 @@ export default function CampaignBulkExportPage() {
                     Selected campaigns will appear here.
                   </p>
                 ) : (
-                  <ul className="scrollbar-app flex max-h-[160px] flex-wrap gap-1.5 overflow-y-auto">
+                  <ul className="scrollbar-app flex max-h-[160px] flex-wrap gap-1.5 overflow-y-auto animate-in fade-in duration-300 ease-out">
                     {selectedCampaigns.map((campaign) => (
-                      <li key={campaign.id}>
+                      <li
+                        key={campaign.id}
+                        className="animate-in fade-in zoom-in-95 duration-200 ease-out"
+                      >
                         <button
                           type="button"
                           onClick={() => toggleCampaign(campaign.id)}
