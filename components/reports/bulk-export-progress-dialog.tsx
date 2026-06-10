@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Clock3,
+  FileCheck2,
   FolderDown,
   Loader2,
   RotateCcw,
@@ -131,7 +133,6 @@ export function BulkExportProgressDialog({
     [buildRequest],
   );
 
-  // Kick off the export each time the dialog opens with a fresh plan.
   useEffect(() => {
     if (!open || !plan) return;
     const jobList: BulkJob[] = plan.items.flatMap((item) =>
@@ -155,10 +156,12 @@ export function BulkExportProgressDialog({
   const successCount = jobs.filter((job) => job.status === "success").length;
   const errorCount = jobs.filter((job) => job.status === "error").length;
   const skippedCount = jobs.filter((job) => job.status === "skipped").length;
+  const pendingCount = jobs.filter((job) => job.status === "pending").length;
   const activeJob = jobs.find((job) => job.status === "active") ?? null;
   const progressPct =
     jobs.length > 0 ? Math.round((completedCount / jobs.length) * 100) : 0;
   const failedOrSkipped = errorCount + skippedCount;
+  const remainingCount = Math.max(jobs.length - completedCount, 0);
 
   const retryFailed = () => {
     if (!plan) return;
@@ -182,7 +185,6 @@ export function BulkExportProgressDialog({
       return;
     }
     if (!nextOpen) {
-      // Invalidate any in-flight run so late responses are ignored.
       runIdRef.current += 1;
     }
     onOpenChange(nextOpen);
@@ -191,7 +193,7 @@ export function BulkExportProgressDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className={cn(entityFormDialogContentClass, "sm:max-w-[640px]")}
+        className={cn(entityFormDialogContentClass, "sm:max-w-[680px]")}
         onInteractOutside={(event) => {
           if (isRunning) event.preventDefault();
         }}
@@ -199,12 +201,17 @@ export function BulkExportProgressDialog({
           if (isRunning) event.preventDefault();
         }}
       >
-        <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800">
+        <DialogHeader className="relative overflow-hidden border-b border-slate-100 bg-white px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800 dark:bg-slate-950">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent dark:via-emerald-300/35" />
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68] dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-400">
-              <FolderDown className="h-5 w-5" aria-hidden />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-[#008f68] shadow-sm dark:border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300">
+              {isRunning ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : (
+                <FolderDown className="h-5 w-5" aria-hidden />
+              )}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-slate-50">
                 {title}
               </DialogTitle>
@@ -215,20 +222,20 @@ export function BulkExportProgressDialog({
           </div>
         </DialogHeader>
 
-        <div className="scrollbar-app max-h-[62dvh] space-y-2 overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 dark:bg-slate-900/40">
+        <div className="scrollbar-app max-h-[62dvh] space-y-2 overflow-y-auto bg-[#f4f5f7] px-3 py-2.5 sm:px-3.5 dark:bg-slate-900/40">
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
             <div className="space-y-2 px-3.5 py-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                  {isRunning ? "Exporting…" : "Export summary"}
+                  {isRunning ? "Exporting..." : "Export summary"}
                 </p>
-                <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200">
-                  {completedCount} / {jobs.length}
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold tabular-nums text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  {progressPct}%
                 </span>
               </div>
               <Progress
                 value={progressPct}
-                className="h-2 bg-slate-100 dark:bg-slate-800 [&>[data-slot=progress-indicator]]:bg-[#008f68]"
+                className="h-2.5 bg-slate-100 dark:bg-slate-800 [&>[data-slot=progress-indicator]]:bg-[#008f68] dark:[&>[data-slot=progress-indicator]]:bg-emerald-300"
                 aria-label="Bulk export progress"
               />
               <p
@@ -236,11 +243,38 @@ export function BulkExportProgressDialog({
                 aria-live="polite"
               >
                 {isRunning && activeJob
-                  ? `Generating ${FORMAT_META[activeJob.format].label} for ${activeJob.item.name}…`
+                  ? `Generating ${FORMAT_META[activeJob.format].label} for ${activeJob.item.name}...`
                   : isRunning
-                    ? "Starting export…"
-                    : `${successCount} downloaded · ${errorCount} failed · ${skippedCount} cancelled`}
+                    ? "Starting export..."
+                    : `${successCount} downloaded - ${errorCount} failed - ${skippedCount} cancelled`}
               </p>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-2.5 py-2 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                  <p className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
+                    Downloaded
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold leading-none tabular-nums text-emerald-900 dark:text-emerald-100">
+                    {successCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-2.5 py-2 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                  <p className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
+                    Remaining
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold leading-none tabular-nums text-emerald-900 dark:text-emerald-100">
+                    {remainingCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-rose-50 px-2.5 py-2 dark:border-rose-500/20 dark:bg-rose-500/10">
+                  <p className="text-[9px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-200">
+                    Failed
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold leading-none tabular-nums text-rose-900 dark:text-rose-100">
+                    {errorCount}
+                  </p>
+                </div>
+              </div>
 
               {!isRunning && jobs.length > 0 ? (
                 <div
@@ -268,6 +302,19 @@ export function BulkExportProgressDialog({
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <FileCheck2 className="h-3 w-3" aria-hidden />
+                </div>
+                <p className="text-[12px] font-bold leading-tight text-slate-700 dark:text-slate-200">
+                  Files
+                </p>
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                {pendingCount} queued
+              </span>
+            </div>
             <ul className="scrollbar-app max-h-[260px] divide-y divide-slate-50 overflow-y-auto dark:divide-slate-800/60">
               {jobs.map((job) => {
                 const meta = FORMAT_META[job.format];
@@ -276,9 +323,12 @@ export function BulkExportProgressDialog({
                   <li
                     key={job.key}
                     className={cn(
-                      "flex items-center gap-2.5 px-3.5 py-2",
+                      "flex items-center gap-2.5 px-3.5 py-2 transition-colors",
                       job.status === "active" &&
-                        "bg-emerald-50/50 dark:bg-emerald-500/10",
+                        "bg-emerald-50/70 dark:bg-emerald-500/10",
+                      job.status === "success" &&
+                        "bg-emerald-50/40 dark:bg-emerald-500/5",
+                      job.status === "error" && "bg-rose-50/50 dark:bg-rose-500/10",
                     )}
                   >
                     <JobStatusIcon status={job.status} />
@@ -301,11 +351,11 @@ export function BulkExportProgressDialog({
                     </span>
                     <span
                       className={cn(
-                        "shrink-0 text-[10px] font-semibold uppercase tracking-wide",
+                        "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                         job.status === "success" && "text-emerald-600",
                         job.status === "error" && "text-rose-500",
                         job.status === "active" &&
-                          "text-[#008f68] dark:text-emerald-400",
+                          "bg-white text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-300",
                         (job.status === "pending" ||
                           job.status === "skipped") &&
                           "text-slate-400",
@@ -323,9 +373,12 @@ export function BulkExportProgressDialog({
         <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
           {isRunning ? (
             <>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                Keep this window open — downloads start as each file is ready.
-              </p>
+              <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <Clock3 className="size-3.5 shrink-0 text-slate-400" aria-hidden />
+                <span>
+                  Keep this window open. Downloads start as each file is ready.
+                </span>
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -334,7 +387,7 @@ export function BulkExportProgressDialog({
                   setIsCancelling(true);
                 }}
                 disabled={isCancelling}
-                className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
               >
                 {isCancelling ? (
                   <>
@@ -342,7 +395,7 @@ export function BulkExportProgressDialog({
                       className="mr-1.5 size-3.5 animate-spin"
                       aria-hidden
                     />
-                    Cancelling…
+                    Cancelling...
                   </>
                 ) : (
                   <>
@@ -373,7 +426,7 @@ export function BulkExportProgressDialog({
                 <Button
                   type="button"
                   onClick={() => handleOpenChange(false)}
-                  className="h-9 rounded-lg bg-[#008f68] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#007a5a]"
+                  className="h-9 rounded-lg bg-[#008f68] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#007a5a] focus-visible:ring-[#008f68]/25 dark:text-white"
                 >
                   Done
                 </Button>

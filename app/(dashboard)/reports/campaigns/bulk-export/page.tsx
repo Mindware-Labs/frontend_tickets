@@ -187,7 +187,7 @@ export default function CampaignBulkExportPage() {
   const [search, setSearch] = useState("");
   const [typeTab, setTypeTab] = useState<CampaignTypeTab>("all");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [formats, setFormats] = useState<BulkExportFormat[]>(["pdf"]);
+  const [formats, setFormats] = useState<BulkExportFormat[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [activePreset, setActivePreset] = useState<DatePresetKey | null>(null);
@@ -520,6 +520,38 @@ export default function CampaignBulkExportPage() {
                   className="w-full !min-w-0 sm:w-auto"
                 />
               </div>
+
+              {selectedCount > 0 ? (
+                <div className="sticky top-0 z-10 rounded-xl border border-emerald-200/80 bg-emerald-50/95 px-3 py-2 shadow-sm backdrop-blur dark:border-emerald-500/30 dark:bg-emerald-950/80">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800 dark:text-emerald-200">
+                      Selected campaigns
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedIds(new Set())}
+                      className="rounded-md px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 hover:text-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-500/20"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <ul className="scrollbar-app flex max-h-20 flex-wrap gap-1.5 overflow-y-auto">
+                    {selectedCampaigns.map((campaign) => (
+                      <li key={campaign.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleCampaign(campaign.id)}
+                          title={`Remove ${campaign.nombre}`}
+                          className="inline-flex h-6 max-w-[240px] items-center gap-1 rounded-md border border-emerald-200 bg-white px-1.5 text-[11px] font-medium text-emerald-800 transition-colors hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100 dark:hover:bg-emerald-500/25"
+                        >
+                          <span className="truncate">{campaign.nombre}</span>
+                          <X className="size-3 shrink-0" aria-hidden />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
               {loadingCampaigns ? (
                 <div className="flex min-h-[280px] items-center justify-center rounded-xl bg-gradient-to-b from-[#f0faf5]/50 via-white to-white py-10 dark:from-[#008f68]/5 dark:via-slate-950 dark:to-slate-950">

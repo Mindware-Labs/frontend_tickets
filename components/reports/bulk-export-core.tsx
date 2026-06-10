@@ -55,13 +55,13 @@ export const FORMAT_META: Record<
 
 export const JOB_STATUS_LABELS: Record<BulkJobStatus, string> = {
   pending: "Queued",
-  active: "Generating…",
+  active: "Generating...",
   success: "Downloaded",
   error: "Failed",
   skipped: "Cancelled",
 };
 
-/** Backend errors arrive as raw JSON text — surface just the human message. */
+/** Backend errors arrive as raw JSON text; surface just the human message. */
 export function toFriendlyError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error ?? "");
   try {
@@ -71,7 +71,7 @@ export function toFriendlyError(error: unknown): string {
       : parsed?.message;
     if (typeof message === "string" && message.trim()) return message;
   } catch {
-    // Not JSON — use the raw text as-is.
+    // Not JSON; use the raw text as-is.
   }
   return raw || "Download failed";
 }
@@ -92,7 +92,7 @@ export function JobStatusIcon({ status }: { status: BulkJobStatus }) {
     case "active":
       return (
         <Loader2
-          className="size-3.5 shrink-0 animate-spin text-[#008f68] dark:text-emerald-400"
+          className="size-3.5 shrink-0 animate-spin text-[#008f68] dark:text-emerald-300"
           aria-hidden
         />
       );
