@@ -768,12 +768,11 @@ export function ManualRecordsTab() {
               <col className="w-[4%]" />
               <col className="w-[9%]" />
               <col className="w-[10%]" />
-              <col className="w-[11%]" />
-              <col className="w-[11%]" />
+              <col className="w-[14%]" />
+              <col className="w-[14%]" />
               <col className="w-[9%]" />
               <col className="w-[9%]" />
-              <col className="w-[16%]" />
-              <col className="w-[8%]" />
+              <col className="w-[18%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
@@ -804,18 +803,15 @@ export function ManualRecordsTab() {
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Notes
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Created
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={10} kind="manual-records" compact />
+                <TableLoadingRow colSpan={9} kind="manual-records" compact />
               ) : recordGroups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={9}
                     className="h-24 text-center text-sm text-slate-400"
                   >
                     No records found
@@ -835,11 +831,20 @@ export function ManualRecordsTab() {
                     .substring(0, 2)
                     .toUpperCase();
                   const createdDate = new Date(r.createdAt || "");
+                  const createdTimeStr = createdDate.toLocaleTimeString(
+                    "en-US",
+                    { hour: "numeric", minute: "2-digit" },
+                  );
                   const createdLabel = isNaN(createdDate.getTime())
                     ? "—"
                     : createdDate.toDateString() === new Date().toDateString()
-                      ? format(createdDate, "HH:mm")
-                      : format(createdDate, "MMM d");
+                      ? createdTimeStr
+                      : createdDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        }) +
+                        ", " +
+                        createdTimeStr;
                   const phone =
                     group.customerPhone && group.customerPhone !== "unknown"
                       ? group.customerPhone
@@ -910,6 +915,9 @@ export function ManualRecordsTab() {
                                   ></button>
                                 </div>
                               )}
+                              <p className="truncate text-[10px] text-slate-400">
+                                {createdLabel}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -1000,9 +1008,6 @@ export function ManualRecordsTab() {
                             {r.notes || "—"}
                           </span>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-2 py-0.5 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
-                          {createdLabel}
-                        </TableCell>
                       </TableRow>
                       {expandedKey === group.key && (
                         <TableRow
@@ -1010,7 +1015,7 @@ export function ManualRecordsTab() {
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
                           <TableCell
-                            colSpan={10}
+                            colSpan={9}
                             className="border-t-0 px-0 py-1.5"
                           >
                             <InlineManualRecordTimeline

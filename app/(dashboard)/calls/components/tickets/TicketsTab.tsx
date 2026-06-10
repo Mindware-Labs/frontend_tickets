@@ -940,14 +940,13 @@ export function TicketsTab({
             <colgroup>
               <col className="w-[14%]" />
               <col className="w-[4%]" />
-              <col className="w-[10%]" />
               <col className="w-[8%]" />
+              <col className="w-[8%]" />
+              <col className="w-[10%]" />
+              <col className="w-[15%]" />
+              <col className="w-[23%]" />
               <col className="w-[9%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
-              <col className="w-[14%]" />
-              <col className="w-[13%]" />
-              <col className="w-[8%]" />
+              <col className="w-[9%]" />
             </colgroup>
             <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
@@ -967,29 +966,26 @@ export function TicketsTab({
                   Type
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Option
-                </TableHead>
-                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Agent
+                  Campaign
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Yard
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Campaign
+                  Option
                 </TableHead>
-                <TableHead className="px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Created
+                <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Agent
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={10} kind="tickets" compact />
+                <TableLoadingRow colSpan={9} kind="tickets" compact />
               ) : ticketGroups.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={9}
                     className="h-24 text-center text-slate-400 text-sm"
                   >
                     No tickets found
@@ -1010,11 +1006,20 @@ export function TicketsTab({
                     .substring(0, 2)
                     .toUpperCase();
                   const createdDate = new Date(t.createdAt || "");
+                  const createdTimeStr = createdDate.toLocaleTimeString(
+                    "en-US",
+                    { hour: "numeric", minute: "2-digit" },
+                  );
                   const createdLabel = isNaN(createdDate.getTime())
                     ? "—"
                     : createdDate.toDateString() === new Date().toDateString()
-                      ? format(createdDate, "HH:mm")
-                      : format(createdDate, "MMM d");
+                      ? createdTimeStr
+                      : createdDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        }) +
+                        ", " +
+                        createdTimeStr;
                   const lineLabel = ticketPhoneLineLabel(t);
                   return (
                     <React.Fragment key={group.key}>
@@ -1088,6 +1093,9 @@ export function TicketsTab({
                                   ></button>
                                 </div>
                               )}
+                              <p className="truncate text-[10px] text-slate-400">
+                                {createdLabel}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -1129,6 +1137,18 @@ export function TicketsTab({
                         >
                           <TableTicketTypePill type={t.ticketType} />
                         </TableCell>
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
+                          <TableCampaignBadge
+                            compact
+                            name={t.campaign?.nombre}
+                          />
+                        </TableCell>
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
+                          <TableYardBadge
+                            compact
+                            name={t.yard?.commonName || t.yard?.name}
+                          />
+                        </TableCell>
                         <TableCell
                           className="max-w-0 px-2 py-0.5 align-middle text-[11px] font-medium"
                           title={t.campaignOption ? formatLabel(t.campaignOption) : undefined}
@@ -1158,21 +1178,6 @@ export function TicketsTab({
                             {agentName(t)}
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
-                          <TableYardBadge
-                            compact
-                            name={t.yard?.commonName || t.yard?.name}
-                          />
-                        </TableCell>
-                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
-                          <TableCampaignBadge
-                            compact
-                            name={t.campaign?.nombre}
-                          />
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap px-2 py-0.5 text-right align-middle font-mono text-[10.5px] tabular-nums text-slate-500">
-                          {createdLabel}
-                        </TableCell>
                       </TableRow>
                       {expandedKey === group.key && (
                         <TableRow
@@ -1180,7 +1185,7 @@ export function TicketsTab({
                           className="bg-slate-50/50 hover:bg-slate-50/50"
                         >
                           <TableCell
-                            colSpan={10}
+                            colSpan={9}
                             className="border-t-0 py-1.5 px-0"
                           >
                             <InlineTicketTimeline

@@ -674,7 +674,7 @@ function TicketActivityRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100">
-            {isLegacy ? item.legacyId : `#${item.id} · ${item.title}`}
+            {isLegacy ? item.legacyId : `Ticket #${item.id}`}
           </p>
           <MiniTag className={statusClass}>
             {item.status.replace(/_/g, " ")}
@@ -1326,7 +1326,6 @@ function TicketDetailModal({
   const isLegacy = ticket.variant === "legacy";
   const statusClass =
     TICKET_STATUS_STYLES[ticket.status] ?? TICKET_STATUS_STYLES.CLOSED;
-  const title = isLegacy ? ticket.legacyId : ticket.title;
   const priority = !isLegacy ? ticket.priority : undefined;
   const hasFollowUp =
     !isLegacy &&
@@ -1392,7 +1391,7 @@ function TicketDetailModal({
             Ticket details
           </p>
           <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
-            {isLegacy ? "Legacy ticket" : title}
+            {isLegacy ? "Legacy ticket" : `Ticket #${ticket.id}`}
           </p>
         </div>
         <button
