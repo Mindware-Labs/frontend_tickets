@@ -854,6 +854,7 @@ export default function YardReportsPage() {
             onViewAllTickets={handleViewAllTickets}
             onExportPDF={handleExportPDF}
             onExportExcel={handleExportExcel}
+            onOpenBulkExport={() => router.push("/reports/yards/bulk-export")}
             isExportingPdf={isExportingPdf}
             isExportingExcel={isExportingExcel}
           />

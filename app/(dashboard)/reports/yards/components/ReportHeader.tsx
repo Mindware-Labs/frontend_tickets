@@ -6,6 +6,7 @@ import {
   Download,
   FileSpreadsheet,
   Filter,
+  FolderDown,
   LayoutGrid,
   Loader2,
 } from "lucide-react";
@@ -26,6 +27,7 @@ type ReportHeaderProps = {
   onViewAllTickets: () => void;
   onExportPDF: () => void;
   onExportExcel: () => void;
+  onOpenBulkExport?: () => void;
   showCrossFilters?: boolean;
   isExportingPdf?: boolean;
   isExportingExcel?: boolean;
@@ -41,6 +43,7 @@ export function ReportHeader({
   onViewAllTickets,
   onExportPDF,
   onExportExcel,
+  onOpenBulkExport,
   showCrossFilters = false,
   isExportingPdf = false,
   isExportingExcel = false,
@@ -156,6 +159,18 @@ export function ReportHeader({
                   <span>{isExportingExcel ? "Preparing…" : "Excel"}</span>
                 </button>
               </>
+            ) : null}
+
+            {onOpenBulkExport ? (
+              <button
+                type="button"
+                onClick={onOpenBulkExport}
+                title="Export PDF/Excel reports for several yards at once"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+              >
+                <FolderDown className="size-3.5" aria-hidden />
+                <span>Bulk export</span>
+              </button>
             ) : null}
           </div>
 

@@ -62,8 +62,14 @@ function resolvePageMeta(pathname: string): PageMeta {
   if (path.startsWith("/campaigns"))
     return { section: "Operations", title: "Campaigns" };
 
+  if (path.startsWith("/reports/campaigns/bulk-export"))
+    return { section: "Operations", title: "Bulk Export" };
+
   if (path.startsWith("/reports/campaigns"))
     return { section: "Operations", title: "Campaign Reports" };
+
+  if (path.startsWith("/reports/yards/bulk-export"))
+    return { section: "Management", title: "Bulk Export" };
 
   if (path.startsWith("/reports/yards"))
     return { section: "Management", title: "Yard Reports" };

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  AlertCircle,
   ArrowRight,
   BarChart3,
   CalendarDays,
@@ -17,13 +16,13 @@ import {
   FileText,
   FileSpreadsheet,
   Filter,
+  FolderDown,
   Layers,
   ListFilter,
   Loader2,
   Megaphone,
   Phone,
   Search,
-  SlidersHorizontal,
   Target,
   Ticket,
   TrendingUp,
@@ -62,15 +61,8 @@ import {
   tooltipStyle,
 } from "@/app/(dashboard)/dashboard/dashboard-theme";
 import type { Metric, Tone } from "@/app/(dashboard)/dashboard/types";
-import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+
+
 import { Input } from "@/components/ui/input";
 import { useAircall } from "@/components/providers/AircallProvider";
 import {
@@ -799,6 +791,7 @@ function CampaignReportHeader({
   onClearFilters,
   onExportPDF,
   onExportExcel,
+  onOpenBulkExport,
   isExportingPdf = false,
   isExportingExcel = false,
 }: {
@@ -816,6 +809,7 @@ function CampaignReportHeader({
   onClearFilters: () => void;
   onExportPDF: () => void;
   onExportExcel: () => void;
+  onOpenBulkExport?: () => void;
   isExportingPdf?: boolean;
   isExportingExcel?: boolean;
 }) {
@@ -959,6 +953,18 @@ function CampaignReportHeader({
                 <span>{isExportingExcel ? "Preparing…" : "Excel"}</span>
               </button>
             </>
+          ) : null}
+
+          {onOpenBulkExport ? (
+            <button
+              type="button"
+              onClick={onOpenBulkExport}
+              title="Export PDF/Excel reports for several campaigns at once"
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+            >
+              <FolderDown className="size-3.5" aria-hidden />
+              <span>Bulk export</span>
+            </button>
           ) : null}
         </div>
       </div>
@@ -3286,6 +3292,9 @@ export default function CampaignReportsPage() {
           onClearFilters={() => setCrossFilters(emptyFilters())}
           onExportPDF={exportPdfBackend}
           onExportExcel={exportExcelBackend}
+          onOpenBulkExport={() =>
+            router.push("/reports/campaigns/bulk-export")
+          }
           isExportingPdf={isExportingPdf}
           isExportingExcel={isExportingExcel}
         />
