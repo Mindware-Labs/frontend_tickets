@@ -46,6 +46,7 @@ interface PhoneLinesTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  onItemsPerPageChange?: (value: number) => void;
   totalPages?: number;
 }
 
@@ -83,6 +84,7 @@ export function PhoneLinesTable({
   currentPage = 1,
   onPageChange,
   itemsPerPage = 10,
+  onItemsPerPageChange,
   totalPages = 1,
 }: PhoneLinesTableProps) {
   const showActions = canManage && Boolean(onEdit || onDelete || onRestore);
@@ -275,6 +277,9 @@ export function PhoneLinesTable({
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={onItemsPerPageChange}
+          showStats
+          itemLabel="lines"
           onPageChange={onPageChange}
           loading={loading}
         />

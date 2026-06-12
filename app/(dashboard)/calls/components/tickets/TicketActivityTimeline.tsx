@@ -2,14 +2,11 @@
 
 import {
   Activity,
-  CalendarClock,
-  MessageSquare,
-  Ticket as TicketIcon,
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TicketUpdateRecord } from "../../types";
-import { fmtRelative, formatEnumLabel } from "../../utils/call-helpers";
+import { formatEnumLabel } from "../../utils/call-helpers";
 import { format, isToday, isYesterday } from "date-fns";
 
 function fmtShortDate(iso?: string | null): string {

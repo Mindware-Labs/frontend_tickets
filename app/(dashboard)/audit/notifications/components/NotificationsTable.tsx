@@ -149,6 +149,7 @@ export function NotificationsTable({
   page,
   totalPages,
   pageSize,
+  onPageSizeChange,
   onPageChange,
 }: {
   rows: AuditEntry[];
@@ -157,6 +158,7 @@ export function NotificationsTable({
   page: number;
   totalPages: number;
   pageSize: number;
+  onPageSizeChange?: (size: number) => void;
   onPageChange: (page: number) => void;
 }) {
   return (
@@ -331,6 +333,9 @@ export function NotificationsTable({
         currentPage={page}
         totalPages={totalPages}
         itemsPerPage={pageSize}
+        onItemsPerPageChange={onPageSizeChange}
+        itemLabel="notifications"
+        showStats
         onPageChange={onPageChange}
         loading={isLoading}
         className="border-t border-slate-100 px-4 dark:border-slate-800"

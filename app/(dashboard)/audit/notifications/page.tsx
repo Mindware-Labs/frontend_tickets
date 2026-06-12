@@ -146,6 +146,7 @@ function normalizeStats(raw: any): NotificationStats {
 export default function NotificationsAuditPage() {
   const [rows, setRows] = useState<AuditEntry[]>([]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -183,36 +184,39 @@ export default function NotificationsAuditPage() {
   }, []);
 
   // One page of the ledger at a time — only `limit` rows leave the database.
-  const loadPage = useCallback(async (targetPage: number) => {
-    setIsLoading(true);
-    setLoadError(null);
+  const loadPage = useCallback(
+    async (targetPage: number) => {
+      setIsLoading(true);
+      setLoadError(null);
 
-    try {
-      const response = await fetch(
-        `/api/notifications?audit=true&includeTotal=true&page=${targetPage}&limit=${PAGE_SIZE}`,
-        { cache: "no-store", credentials: "include" },
-      );
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || payload?.success === false) {
-        throw new Error(
-          payload?.message ||
-            `Failed to load notifications (${response.status})`,
+      try {
+        const response = await fetch(
+          `/api/notifications?audit=true&includeTotal=true&page=${targetPage}&limit=${pageSize}`,
+          { cache: "no-store", credentials: "include" },
         );
-      }
+        const payload = await response.json().catch(() => null);
 
-      setRows(extractNotificationRows(payload));
-      setTotal(Number(payload?.total) || 0);
-      setTotalPages(Math.max(1, Number(payload?.totalPages) || 1));
-    } catch (error: any) {
-      setLoadError(error?.message || "Failed to load notifications");
-      setRows([]);
-      setTotal(0);
-      setTotalPages(1);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        if (!response.ok || payload?.success === false) {
+          throw new Error(
+            payload?.message ||
+              `Failed to load notifications (${response.status})`,
+          );
+        }
+
+        setRows(extractNotificationRows(payload));
+        setTotal(Number(payload?.total) || 0);
+        setTotalPages(Math.max(1, Number(payload?.totalPages) || 1));
+      } catch (error: any) {
+        setLoadError(error?.message || "Failed to load notifications");
+        setRows([]);
+        setTotal(0);
+        setTotalPages(1);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [pageSize],
+  );
 
   useEffect(() => {
     loadStats();
@@ -283,7 +287,8 @@ export default function NotificationsAuditPage() {
           total={total}
           page={page}
           totalPages={totalPages}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
           onPageChange={setPage}
         />
       </div>

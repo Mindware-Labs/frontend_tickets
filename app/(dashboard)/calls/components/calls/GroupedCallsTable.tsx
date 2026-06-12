@@ -677,6 +677,10 @@ export function GroupedCallsTable({
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        itemLabel="calls"
+        showStats
       />
     </div>
   );

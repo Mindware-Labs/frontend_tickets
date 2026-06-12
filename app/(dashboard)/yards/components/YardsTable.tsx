@@ -45,6 +45,7 @@ interface YardsTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  onItemsPerPageChange?: (value: number) => void;
   totalPages?: number;
 }
 
@@ -98,6 +99,7 @@ export function YardsTable({
   currentPage = 1,
   onPageChange,
   itemsPerPage = 10,
+  onItemsPerPageChange,
   totalPages = 1,
 }: YardsTableProps) {
   const showActions = canManage && Boolean(onEdit || onDelete || onRestore);
@@ -335,6 +337,9 @@ export function YardsTable({
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={onItemsPerPageChange}
+          showStats
+          itemLabel="yards"
           onPageChange={onPageChange}
           loading={loading}
         />

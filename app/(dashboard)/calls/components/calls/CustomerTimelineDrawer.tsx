@@ -1227,16 +1227,10 @@ export function CustomerTimelineDrawer({
       const encodedUrl = encodeURIComponent(url);
       const proxyUrl = `/api/calls/${selectedCall.id}/attachments/download/${encodedUrl}`;
 
-      const res = await fetch(proxyUrl, { credentials: "include" });
-
-      if (!res.ok) {
-        throw new Error(`Download failed: ${res.status}`);
-      }
-
-      const { signedUrl } = await res.json();
-
+      // Navigate instead of fetch: the proxy route 307-redirects to the signed
+      // storage URL, and following that redirect via fetch is blocked by CORS.
       const link = document.createElement("a");
-      link.href = signedUrl;
+      link.href = proxyUrl;
       link.download = filename;
       link.target = "_blank";
       link.click();
@@ -2915,8 +2909,8 @@ export function CustomerTimelineDrawer({
                   Delete attachment
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-[12px] text-slate-500 mt-0.5">
-                  This file will be permanently removed from S3. This action
-                  cannot be undone.
+                  This file will be permanently removed from storage. This
+                  action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
             </div>

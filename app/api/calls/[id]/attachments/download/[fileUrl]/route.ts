@@ -9,9 +9,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id, fileUrl } = await params;
 
+    // Next decodes the dynamic segment, so `fileUrl` arrives as a raw
+    // s3://bucket/key URI; re-encode it or its slashes break the backend route.
+    const encodedFileUrl = fileUrl.includes("://")
+      ? encodeURIComponent(fileUrl)
+      : fileUrl;
+
     const data = await fetchFromBackendServer(
       request,
-      `/calls/${id}/attachments/download/${fileUrl}`,
+      `/calls/${id}/attachments/download/${encodedFileUrl}`,
     );
 
     const signedUrl = (data as any)?.signedUrl;

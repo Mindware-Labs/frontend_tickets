@@ -1039,6 +1039,10 @@ export function ManualRecordsTab() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={filters.setCurrentPage}
+        itemsPerPage={filters.itemsPerPage}
+        onItemsPerPageChange={filters.setItemsPerPage}
+        itemLabel="records"
+        showStats
       />
 
       {/* ── Create Dialog ── */}

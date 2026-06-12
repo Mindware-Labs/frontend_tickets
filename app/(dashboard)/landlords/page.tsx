@@ -61,6 +61,7 @@ export default function LandlordsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -80,12 +81,12 @@ export default function LandlordsPage() {
   const listQuery = useMemo(() => {
     const qs = buildListQueryString({
       page: currentPage,
-      limit: ITEMS_PER_PAGE,
+      limit: itemsPerPage,
       search: debouncedSearch.trim() || undefined,
       landlordId: landlordIdFilter ?? undefined,
     });
     return `/landlords?${qs}`;
-  }, [currentPage, debouncedSearch, landlordIdFilter]);
+  }, [currentPage, itemsPerPage, debouncedSearch, landlordIdFilter]);
 
   const {
     items: landlords,
@@ -407,7 +408,8 @@ export default function LandlordsPage() {
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
           totalPages={totalPages}
         />
 

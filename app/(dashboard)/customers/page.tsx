@@ -86,6 +86,7 @@ export default function CustomersPage() {
     hasPinnedNote: "all",
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -104,7 +105,7 @@ export default function CustomersPage() {
       setListError(null);
       const params = new URLSearchParams({
         page: String(currentPage),
-        limit: String(ITEMS_PER_PAGE),
+        limit: String(itemsPerPage),
       });
       if (debouncedSearch.trim()) {
         params.set("search", debouncedSearch.trim());
@@ -136,8 +137,8 @@ export default function CustomersPage() {
             data,
             total: data.length,
             page: currentPage,
-            limit: ITEMS_PER_PAGE,
-            totalPages: Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE)),
+            limit: itemsPerPage,
+            totalPages: Math.max(1, Math.ceil(data.length / itemsPerPage)),
           }
         : data;
       setCustomers(normalized.data ?? []);
@@ -155,7 +156,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, filters]);
+  }, [currentPage, itemsPerPage, debouncedSearch, filters]);
 
   const fetchCampaigns = async () => {
     try {
@@ -519,7 +520,8 @@ export default function CustomersPage() {
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
           totalPages={totalPages}
         />
 

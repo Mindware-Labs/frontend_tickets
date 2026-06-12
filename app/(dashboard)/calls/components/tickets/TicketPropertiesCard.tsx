@@ -19,7 +19,6 @@ import {
   type CreateSupportTicketFormData,
 } from "../../types";
 import { useConfigurations } from "@/hooks/useConfigurations";
-import { formatEnumLabel } from "../../utils/call-helpers";
 import {
   InspectorSelect,
   InspectorCombobox,

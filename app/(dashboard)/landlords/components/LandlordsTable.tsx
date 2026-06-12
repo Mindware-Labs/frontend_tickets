@@ -46,6 +46,7 @@ interface LandlordsTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  onItemsPerPageChange?: (value: number) => void;
   totalPages?: number;
 }
 
@@ -68,6 +69,7 @@ export function LandlordsTable({
   currentPage = 1,
   onPageChange,
   itemsPerPage = 10,
+  onItemsPerPageChange,
   totalPages = 1,
 }: LandlordsTableProps) {
   const showActions = canManage && Boolean(onEdit || onDelete);
@@ -271,6 +273,9 @@ export function LandlordsTable({
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={onItemsPerPageChange}
+          showStats
+          itemLabel="landlords"
           onPageChange={onPageChange}
           loading={loading}
         />

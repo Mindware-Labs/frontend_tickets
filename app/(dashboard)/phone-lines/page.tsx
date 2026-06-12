@@ -65,6 +65,7 @@ export default function PhoneLinesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeView, setActiveView] = useState<LineView>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -83,14 +84,14 @@ export default function PhoneLinesPage() {
   const listQuery = useMemo(() => {
     const qs = buildListQueryString({
       page: currentPage,
-      limit: ITEMS_PER_PAGE,
+      limit: itemsPerPage,
       search: debouncedSearch.trim() || undefined,
       view: activeView !== "all" ? activeView : undefined,
       phoneLineId: phoneLineIdFilter ?? undefined,
       includeViewCounts: true,
     });
     return `/phone-lines?${qs}`;
-  }, [currentPage, debouncedSearch, activeView, phoneLineIdFilter]);
+  }, [currentPage, itemsPerPage, debouncedSearch, activeView, phoneLineIdFilter]);
 
   const {
     items: lines,
@@ -392,7 +393,8 @@ export default function PhoneLinesPage() {
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
           totalPages={totalPages}
         />
 

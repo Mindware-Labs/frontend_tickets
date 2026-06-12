@@ -39,7 +39,6 @@ import {
   Plus,
   Search,
   Loader2,
-  Paperclip,
   X,
   CalendarIcon,
   PhoneOutgoing,
@@ -1210,6 +1209,10 @@ export function TicketsTab({
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={ticketFilters.setCurrentPage}
+        itemsPerPage={ticketFilters.itemsPerPage}
+        onItemsPerPageChange={ticketFilters.setItemsPerPage}
+        itemLabel="tickets"
+        showStats
       />
 
       {/* ── Create Modal ─────────────────────────────────────────────── */}

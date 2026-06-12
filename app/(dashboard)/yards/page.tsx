@@ -89,6 +89,7 @@ export default function YardsPage() {
     status: "all",
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -107,7 +108,7 @@ export default function YardsPage() {
   const listQuery = useMemo(() => {
     const qs = buildListQueryString({
       page: currentPage,
-      limit: ITEMS_PER_PAGE,
+      limit: itemsPerPage,
       search: debouncedSearch.trim() || undefined,
       view: activeView !== "all" ? activeView : undefined,
       yardType: filters.type !== "all" ? filters.type : undefined,
@@ -118,6 +119,7 @@ export default function YardsPage() {
     return `/yards?${qs}`;
   }, [
     currentPage,
+    itemsPerPage,
     debouncedSearch,
     activeView,
     filters,
@@ -513,7 +515,8 @@ export default function YardsPage() {
           canManage={canManage}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          itemsPerPage={ITEMS_PER_PAGE}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
           totalPages={totalPages}
         />
 

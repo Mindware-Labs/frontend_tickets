@@ -26,6 +26,15 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.amazonaws.com",
       },
+      // Railway Buckets (Tigris-backed S3-compatible storage)
+      {
+        protocol: "https",
+        hostname: "**.t3.storageapi.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "**.storage.railway.app",
+      },
     ],
   },
 }

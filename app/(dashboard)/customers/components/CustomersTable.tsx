@@ -52,6 +52,7 @@ interface CustomersTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  onItemsPerPageChange?: (value: number) => void;
   totalPages?: number;
 }
 
@@ -110,6 +111,7 @@ export function CustomersTable({
   currentPage = 1,
   onPageChange,
   itemsPerPage = 10,
+  onItemsPerPageChange,
   totalPages = 1,
 }: CustomersTableProps) {
   const showActions = canManage && Boolean(onEdit || onDelete);
@@ -389,6 +391,8 @@ export function CustomersTable({
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={onItemsPerPageChange}
+          showStats
           onPageChange={onPageChange}
           itemLabel="customers"
           loading={loading}

@@ -26,7 +26,6 @@ import {
   Paperclip,
   Check,
   ChevronsUpDown,
-  ExternalLink,
   CloudUpload,
   Download,
   AlertCircle,
