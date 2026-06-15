@@ -67,49 +67,57 @@ export function PaginationFooter({
         className,
       )}
     >
-      {/* ── Left: stats + rows-per-page ── */}
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:justify-start">
-        {showStats && (
-          <p className="text-[12px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-slate-200">
-              {start}–{end}
-            </span>{" "}
-            of {totalCount} {itemLabel}
-          </p>
-        )}
+      {/* ── Left: stats + rows-per-page as one unified pill ── */}
+      {(showStats || onItemsPerPageChange) && (
+        <div className="flex items-center justify-center sm:justify-start">
+          <div className="flex h-8 items-stretch overflow-hidden rounded-lg border border-slate-200/60 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            {showStats && (
+              <p className="flex items-center whitespace-nowrap px-2.5 text-[12px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {start}–{end}
+                </span>
+                <span className="ml-1">
+                  of {totalCount} {itemLabel}
+                </span>
+              </p>
+            )}
 
-        {onItemsPerPageChange && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-              Rows
-            </span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={handlePageSizeChange}
-              disabled={loading}
-            >
-              <SelectTrigger
-                size="sm"
-                aria-label="Rows per page"
-                className="w-[54px] gap-1 rounded-lg border border-transparent bg-slate-50 px-2 text-[11px] font-semibold tabular-nums text-slate-700 shadow-none hover:border-slate-300 focus-visible:bg-white data-[size=sm]:h-7 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700 [&_svg]:size-3"
+            {onItemsPerPageChange && (
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={handlePageSizeChange}
+                disabled={loading}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start" className="min-w-[64px]">
-                {sizeOptions.map((size) => (
-                  <SelectItem
-                    key={size}
-                    value={size.toString()}
-                    className="py-1 text-[11px] tabular-nums"
-                  >
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger
+                  size="sm"
+                  aria-label="Rows per page"
+                  className={cn(
+                    "h-full gap-1 rounded-none border-0 bg-slate-50/80 px-2.5 text-[11px] font-semibold tabular-nums text-slate-700 shadow-none hover:bg-slate-100 focus-visible:ring-0 data-[size=sm]:h-full dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 [&_svg]:size-3",
+                    showStats &&
+                      "border-l border-slate-200/60 dark:border-slate-800",
+                  )}
+                >
+                  <SelectValue />
+                  <span className="font-normal text-slate-400 dark:text-slate-500">
+                    / page
+                  </span>
+                </SelectTrigger>
+                <SelectContent align="start" className="min-w-[64px]">
+                  {sizeOptions.map((size) => (
+                    <SelectItem
+                      key={size}
+                      value={size.toString()}
+                      className="py-1 text-[11px] tabular-nums"
+                    >
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Right: pager ── */}
       <div className="flex items-center justify-center gap-1.5 sm:justify-end">
