@@ -34,16 +34,16 @@ export function EntityAttachmentsSection({
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+    <section className="overflow-hidden rounded-2xl border border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-50">
           <Paperclip className="h-3 w-3 text-blue-500" />
         </div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">
           Attachments
         </span>
         {pendingFiles.length > 0 && (
-          <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-slate-400 tabular-nums">
+          <span className="ml-auto rounded-full bg-slate-100 dark:bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-slate-400 tabular-nums">
             {pendingFiles.length} new
           </span>
         )}
@@ -51,11 +51,11 @@ export function EntityAttachmentsSection({
 
       <div className="space-y-2 px-4 pb-4">
         {existingAttachments.length > 0 && (
-          <div className="rounded-xl border border-slate-100 divide-y divide-slate-50/80 overflow-hidden">
+          <div className="rounded-xl border border-slate-100 dark:border-neutral-800 divide-y divide-slate-50/80 dark:divide-neutral-700 overflow-hidden">
             {existingAttachments.map((url, i) => (
               <div
                 key={`${url}-${i}`}
-                className="flex items-center gap-2 bg-slate-50/50 px-2.5 py-1.5"
+                className="flex items-center gap-2 bg-slate-50/50 dark:bg-neutral-800/50 px-2.5 py-1.5"
               >
                 <Paperclip className="h-3 w-3 shrink-0 text-slate-400" />
                 <a
@@ -111,9 +111,9 @@ export function EntityAttachmentsSection({
           />
           <label
             htmlFor={inputId}
-            className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-slate-200 bg-linear-to-r from-slate-50/90 to-sky-50/30 px-3 py-2.5 transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-linear-to-r from-slate-50/90 to-sky-50/30 dark:from-neutral-800/50 dark:to-neutral-800/30 px-3 py-2.5 transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
           >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-100/80 bg-white shadow-sm">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-100/80 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm">
               <CloudUpload className="h-3.5 w-3.5 text-slate-400 transition-colors duration-150 group-hover:text-blue-400" />
             </div>
             <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export function EntityAttachmentsSection({
         </div>
 
         {pendingFiles.length > 0 && (
-          <div className="divide-y divide-slate-50/80 overflow-hidden rounded-xl border border-slate-100">
+          <div className="divide-y divide-slate-50/80 dark:divide-neutral-700 overflow-hidden rounded-xl border border-slate-100 dark:border-neutral-800">
             {pendingFiles.map((file, i) => {
               const ext = file.name.split(".").pop()?.toUpperCase() || "?";
               const isPdf = file.type === "application/pdf";
@@ -147,7 +147,7 @@ export function EntityAttachmentsSection({
               return (
                 <div
                   key={`${file.name}-${i}`}
-                  className="flex items-center gap-2 bg-white px-2.5 py-1.5 transition-colors hover:bg-slate-50/70"
+                  className="flex items-center gap-2 bg-white dark:bg-neutral-900 px-2.5 py-1.5 transition-colors hover:bg-slate-50/70 dark:hover:bg-neutral-800"
                 >
                   <span
                     className={cn(
@@ -159,7 +159,7 @@ export function EntityAttachmentsSection({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p
-                      className="truncate text-[11.5px] font-medium leading-tight text-slate-700"
+                      className="truncate text-[11.5px] font-medium leading-tight text-slate-700 dark:text-neutral-200"
                       title={file.name}
                     >
                       {file.name}

@@ -163,7 +163,7 @@ export function FiltersSheet({
       "flex flex-col items-start text-left w-full px-2.5 py-1.5 rounded-xl border transition-all",
       active
         ? "border-emerald-300 bg-emerald-50 dark:border-emerald-600/50 dark:bg-emerald-500/10"
-        : "border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900/80",
+        : "border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-neutral-900/80",
     );
   const isYardPopoverOpen = open && yardOpen;
   const isStartDatePopoverOpen = open && startPopoverOpen;
@@ -188,10 +188,10 @@ export function FiltersSheet({
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-slate-800 dark:bg-slate-950"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-neutral-800 dark:bg-neutral-950"
       >
-        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
-          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
+          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
             <span className="flex size-9 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
               <Filter className="size-4" aria-hidden />
             </span>
@@ -208,7 +208,7 @@ export function FiltersSheet({
         </SheetHeader>
 
         <div className="scrollbar-app flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
             <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               <MapPin className="size-3.5 text-[#008f68]" aria-hidden />
               Location
@@ -227,7 +227,7 @@ export function FiltersSheet({
                   role="combobox"
                   aria-expanded={yardOpen}
                   className={cn(
-                    "h-9 w-full justify-between rounded-lg border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                    "h-9 w-full justify-between rounded-lg border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700",
                     !selectedYardId && "text-slate-500",
                   )}
                   disabled={loadingYards}
@@ -240,7 +240,7 @@ export function FiltersSheet({
               </PopoverTrigger>
 
               <PopoverContent
-                className="z-[60] w-[var(--radix-popover-trigger-width)] rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                className="z-[60] w-[var(--radix-popover-trigger-width)] rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-neutral-800"
                 align="start"
               >
                 <Command>
@@ -292,7 +292,7 @@ export function FiltersSheet({
             </Popover>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
@@ -326,7 +326,7 @@ export function FiltersSheet({
                       setActivePreset("allTime");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "allTime" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>All time</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "allTime" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>All time</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YARD HISTORY</span>
                   </button>
                 </TooltipTrigger>
@@ -349,7 +349,7 @@ export function FiltersSheet({
                       setActivePreset("last7");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last7" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last 7 days</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last7" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>Last 7 days</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">RECENT ACTIVITY</span>
                   </button>
                 </TooltipTrigger>
@@ -372,7 +372,7 @@ export function FiltersSheet({
                       setActivePreset("last30");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last30" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last 30 days</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "last30" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>Last 30 days</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">ROLLING MONTH</span>
                   </button>
                 </TooltipTrigger>
@@ -394,7 +394,7 @@ export function FiltersSheet({
                       setActivePreset("thisMonth");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "thisMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>This month</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "thisMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>This month</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">MONTH TO DATE</span>
                   </button>
                 </TooltipTrigger>
@@ -417,7 +417,7 @@ export function FiltersSheet({
                       setActivePreset("lastMonth");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "lastMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>Last month</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "lastMonth" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>Last month</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">PREVIOUS MONTH</span>
                   </button>
                 </TooltipTrigger>
@@ -439,7 +439,7 @@ export function FiltersSheet({
                       setActivePreset("ytd");
                     }}
                   >
-                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "ytd" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>YTD</span>
+                    <span className={cn("text-[12px] font-semibold leading-tight", activePreset === "ytd" ? "text-[#008f68] dark:text-emerald-400" : "text-slate-800 dark:text-neutral-200")}>YTD</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">YEAR TO DATE</span>
                   </button>
                 </TooltipTrigger>
@@ -466,7 +466,7 @@ export function FiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700",
                         !localStartDate && "text-slate-500",
                       )}
                     >
@@ -482,7 +482,7 @@ export function FiltersSheet({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-neutral-800"
                     align="start"
                   >
                     <div className="flex flex-col gap-2 p-2">
@@ -495,11 +495,11 @@ export function FiltersSheet({
                         className="rounded-md"
                       />
                       {localStartDate && (
-                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                        <div className="border-t border-slate-200 pt-2 dark:border-neutral-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-neutral-100"
                             onClick={() => handleStartSelect(undefined)}
                           >
                             <X data-icon="inline-start" />
@@ -527,7 +527,7 @@ export function FiltersSheet({
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700",
                         !localEndDate && "text-slate-500",
                       )}
                     >
@@ -543,7 +543,7 @@ export function FiltersSheet({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-neutral-800"
                     align="end"
                   >
                     <div className="flex flex-col gap-2 p-2">
@@ -556,11 +556,11 @@ export function FiltersSheet({
                         className="rounded-md"
                       />
                       {localEndDate && (
-                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                        <div className="border-t border-slate-200 pt-2 dark:border-neutral-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-neutral-100"
                             onClick={() => handleEndSelect(undefined)}
                           >
                             <X data-icon="inline-start" />
@@ -575,8 +575,8 @@ export function FiltersSheet({
             </div>
 
             {hasDateRange && isDateRangeValid ? (
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 px-3.5 py-2.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
-                <span className="font-bold text-slate-900 dark:text-slate-100">
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 px-3.5 py-2.5 text-xs text-slate-700 dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-300">
+                <span className="font-bold text-slate-900 dark:text-neutral-100">
                   Range:
                 </span>{" "}
                 {formattedStartDate} to {formattedEndDate}
@@ -632,7 +632,7 @@ export function FiltersSheet({
                   type="button"
                   variant="outline"
                   onClick={onExportPDF}
-                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950"
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-neutral-950"
                   disabled={!hasDateRange || !isDateRangeValid || isExportingPdf}
                   aria-busy={isExportingPdf}
                 >
@@ -647,7 +647,7 @@ export function FiltersSheet({
                   type="button"
                   variant="outline"
                   onClick={onExportExcel}
-                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-slate-950 dark:hover:text-emerald-400"
+                  className="h-9 rounded-lg bg-white text-xs shadow-sm transition-all hover:border-[#008f68]/50 hover:text-[#008f68] dark:bg-neutral-950 dark:hover:text-emerald-400"
                   disabled={!hasDateRange || !isDateRangeValid || isExportingExcel}
                   aria-busy={isExportingExcel}
                 >
@@ -663,7 +663,7 @@ export function FiltersSheet({
           )}
         </div>
 
-        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-slate-800 dark:bg-slate-950">
+        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-neutral-800 dark:bg-neutral-950">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}

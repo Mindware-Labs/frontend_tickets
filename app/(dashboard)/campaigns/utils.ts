@@ -40,6 +40,6 @@ export function getTypePillStyles(tipo: ManagementType) {
     case ManagementType.AR:
       return "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300";
     default:
-      return "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-500/15 dark:text-slate-400";
+      return "border-slate-200 bg-slate-100 text-slate-600 dark:border-neutral-600 dark:bg-neutral-500/15 dark:text-neutral-400";
   }
 }

@@ -118,12 +118,12 @@ export function TicketPropertiesCard({
       : "No line";
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
-        <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
-          <TicketIcon className="w-3 h-3 text-slate-500" />
+    <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50 dark:border-neutral-800">
+        <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+          <TicketIcon className="w-3 h-3 text-slate-500 dark:text-neutral-400" />
         </div>
-        <span className="text-[12px] font-bold text-slate-700 leading-tight">
+        <span className="text-[12px] font-bold text-slate-700 dark:text-neutral-200 leading-tight">
           Ticket Details &amp; Properties
         </span>
       </div>
@@ -157,9 +157,9 @@ export function TicketPropertiesCard({
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="w-full h-8 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 rounded-lg transition-colors text-left"
+                    className="w-full h-8 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 dark:bg-neutral-800/50 border border-transparent hover:border-slate-300 dark:hover:border-neutral-600 rounded-lg transition-colors text-left"
                   >
-                    <span className="truncate text-slate-800 font-medium">
+                    <span className="truncate text-slate-800 dark:text-neutral-200 font-medium">
                       {editFormData.customerId
                         ? customers.find(
                             (c: any) =>
@@ -182,7 +182,7 @@ export function TicketPropertiesCard({
                     </div>
                     <div className="max-h-52 overflow-y-auto p-1">
                       {mainFilteredCustomers.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400">
+                        <div className="py-4 text-center text-xs text-slate-400 dark:text-neutral-500">
                           No customer found.
                         </div>
                       ) : (
@@ -190,9 +190,9 @@ export function TicketPropertiesCard({
                           <div
                             key={c.id}
                             className={cn(
-                              "flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-slate-100",
+                              "flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-slate-100 dark:hover:bg-neutral-700",
                               editFormData.customerId === c.id.toString() &&
-                                "bg-slate-100",
+                                "bg-slate-100 dark:bg-neutral-700",
                             )}
                             onClick={() => {
                               setEditFormData((f) => ({

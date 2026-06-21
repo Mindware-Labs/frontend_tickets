@@ -752,7 +752,7 @@ export function EditTicketModal({
 
                 {/* Existing attachments */}
                 {ticket.attachments && ticket.attachments.length > 0 && (
-                  <div className="rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80 mt-1">
+                  <div className="rounded-xl border border-slate-100 dark:border-neutral-800 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-700/50 mt-1">
                     {ticket.attachments.map((url, i) => {
                       const raw = url.split("/").pop() || "file";
                       const filename = raw.replace(/^\d+-\d+-/, "") || raw;
@@ -770,13 +770,13 @@ export function EditTicketModal({
                       return (
                         <div
                           key={i}
-                          className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800/70 transition-colors"
                         >
                           <span className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.5 py-0.5 uppercase shrink-0 ${badge}`}>
                             {ext.slice(0, 4)}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11.5px] font-medium text-slate-700 truncate leading-tight" title={filename}>
+                            <p className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-200 truncate leading-tight" title={filename}>
                               {filename}
                             </p>
                           </div>

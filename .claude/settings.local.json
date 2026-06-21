@@ -7,7 +7,17 @@
       "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx\\)$\")",
       "Bash(git rm *)",
       "Bash(git add *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(npm install *)",
+      "Bash(grep -v \"//.*bg-white\")",
+      "Bash(ls *.config.*)",
+      "Bash(cat tailwind.config*)",
+      "Bash(node -e \"const p = require\\('./node_modules/next-themes/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -m playwright install chromium --quiet)",
+      "Bash(python -m playwright install chromium)",
+      "Bash(python *)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

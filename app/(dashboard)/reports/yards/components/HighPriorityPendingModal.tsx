@@ -141,7 +141,7 @@ function CriticalTicketCard({
       >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <p className="flex items-center gap-1.5 text-[13px] font-bold text-slate-900 dark:text-slate-100">
+            <p className="flex items-center gap-1.5 text-[13px] font-bold text-slate-900 dark:text-neutral-100">
               <TicketIcon className="size-3.5 text-sky-600 dark:text-sky-400" />
               Ticket #{ticket.id}
             </p>
@@ -159,7 +159,7 @@ function CriticalTicketCard({
           onOpenChange={onDetailsOpenChange}
         >
         <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2 dark:border-neutral-800 dark:bg-neutral-900/40">
           <InsightMetaRow
             label="Status"
             value={<InsightStatusPill status={ticket.status} />}
@@ -243,7 +243,7 @@ function CriticalTicketCard({
         </InsightExpandableDetails>
       </div>
 
-      <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-slate-800">
+      <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-neutral-800">
         <Button
           type="button"
           onClick={() => onOpenTicket(ticket)}
@@ -334,9 +334,9 @@ export function HighPriorityPendingModal({
     tone: "danger" | "neutral",
   ) => (
     <section className="space-y-2.5">
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
         <div>
-          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-neutral-100">
             {title}
           </h3>
           <p className="text-[11px] text-slate-500">{subtitle}</p>
@@ -346,7 +346,7 @@ export function HighPriorityPendingModal({
             "inline-flex h-6 min-w-[28px] items-center justify-center rounded-md px-2 text-[11px] font-bold tabular-nums",
             tone === "danger"
               ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300"
-              : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-900 dark:text-slate-300",
+              : "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80 dark:bg-neutral-900 dark:text-neutral-300",
           )}
         >
           {sectionTickets.length}
@@ -377,7 +377,7 @@ export function HighPriorityPendingModal({
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/80 px-3 py-4 text-[11px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/70">
+        <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/80 px-3 py-4 text-[11px] text-slate-500 dark:border-neutral-800 dark:bg-neutral-950/70">
           No tickets in this section for the selected range.
         </div>
       )}
@@ -390,24 +390,24 @@ export function HighPriorityPendingModal({
         <SheetContent
           side={side}
           className={cn(
-            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950",
             sheetWidthClass,
           )}
         >
-          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-950">
             <InsightSheetAccent />
             <SheetHeader className={insightSheetHeaderClass}>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1 pr-1">
-                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 ring-1 ring-rose-200/70 dark:bg-rose-500/10 dark:text-rose-400">
                       <AlertTriangle className="size-3.5" aria-hidden />
                     </span>
                     High & Emergency
                   </SheetTitle>
-                  <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
                     Full ticket context for HIGH and EMERGENCY work in{" "}
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    <span className="font-semibold text-slate-800 dark:text-neutral-100">
                       {yardName}
                     </span>
                   </SheetDescription>
@@ -458,7 +458,7 @@ export function HighPriorityPendingModal({
             </div>
           </ScrollArea>
 
-          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-slate-500">
                 Expand a ticket to see full context · open in Contact Center below

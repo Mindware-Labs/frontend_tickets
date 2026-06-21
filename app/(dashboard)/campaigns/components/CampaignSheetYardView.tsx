@@ -65,7 +65,7 @@ function getMapsUrl(address?: string | null) {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-neutral-400">
       {children}
     </p>
   );
@@ -87,7 +87,7 @@ function InfoCard({
   const content = (
     <p
       className={cn(
-        "mt-0.5 text-[13px] font-medium leading-snug text-slate-800 [overflow-wrap:anywhere] dark:text-slate-100",
+        "mt-0.5 text-[13px] font-medium leading-snug text-slate-800 [overflow-wrap:anywhere] dark:text-neutral-100",
         mono && "font-mono font-semibold",
         !hasText(value) && "italic text-slate-400",
       )}
@@ -97,8 +97,8 @@ function InfoCard({
   );
 
   return (
-    <div className="flex gap-3 rounded-xl border border-slate-200/70 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex gap-3 rounded-xl border border-slate-200/70 bg-white p-3.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-100 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-500 dark:text-neutral-400">
         <Icon className="h-4 w-4" strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">
@@ -138,7 +138,7 @@ function YardPanelNav({
 }) {
   if (stacked) {
     return (
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:px-6 dark:border-slate-800 dark:bg-slate-950/95">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:px-6 dark:border-neutral-800 dark:bg-neutral-950/95">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#008f68]">
             Linked yard
@@ -151,7 +151,7 @@ function YardPanelNav({
           type="button"
           onClick={onBack}
           aria-label="Back to campaign"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 active:scale-95 dark:border-slate-700 dark:bg-slate-900"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900"
         >
           <ChevronRight className="h-5 w-5" strokeWidth={2.25} />
         </button>
@@ -163,7 +163,7 @@ function YardPanelNav({
     <button
       type="button"
       onClick={onBack}
-      className="flex shrink-0 items-center gap-2 border-b border-slate-200/70 bg-white py-3 pl-5 pr-14 text-left text-[13px] font-semibold text-[#008f68] transition-colors hover:bg-[#f0faf5]/80 active:scale-[0.99] sm:pl-6 sm:pr-16 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-emerald-500/10"
+      className="flex shrink-0 items-center gap-2 border-b border-slate-200/70 bg-white py-3 pl-5 pr-14 text-left text-[13px] font-semibold text-[#008f68] transition-colors hover:bg-[#f0faf5]/80 active:scale-[0.99] sm:pl-6 sm:pr-16 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-emerald-500/10"
     >
       <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#008f68]/20 bg-[#f0faf5] text-[#008f68]">
         <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
@@ -228,9 +228,9 @@ export function CampaignSheetYardView({
 
   if (loading && !yard) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-neutral-950">
         <YardPanelNav onBack={onBack} stacked={stacked} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-slate-500">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-slate-500 dark:text-neutral-400">
           <Loader2 className="h-8 w-8 animate-spin text-[#008f68]" />
           <p className="text-sm font-medium">Loading yard...</p>
         </div>
@@ -240,9 +240,9 @@ export function CampaignSheetYardView({
 
   if (!yard) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-neutral-950">
         <YardPanelNav onBack={onBack} stacked={stacked} />
-        <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-slate-500">
+        <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-slate-500 dark:text-neutral-400">
           Could not load yard details.
         </div>
       </div>
@@ -255,15 +255,15 @@ export function CampaignSheetYardView({
   const isSaas = yard.yardType === "SAAS";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-0 flex-1 flex-col bg-slate-50 dark:bg-neutral-950">
       <YardPanelNav onBack={onBack} stacked={stacked} />
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="border-b border-slate-200/70 bg-white px-5 pb-5 pt-4 sm:px-6 dark:border-slate-800 dark:bg-slate-950">
+        <div className="border-b border-slate-200/70 bg-white px-5 pb-5 pt-4 sm:px-6 dark:border-neutral-800 dark:bg-neutral-950">
           <div className="flex items-start gap-3.5">
             <YardMark className="h-14 w-14 rounded-2xl" iconClassName="h-6 w-6" />
             <div className="min-w-0 flex-1">
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500">
+              <span className="rounded-md bg-slate-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:text-neutral-400">
                 #{yard.id}
               </span>
               <h3 className="mt-2 text-[20px] font-bold leading-tight text-slate-950 [overflow-wrap:anywhere] dark:text-white">
@@ -271,7 +271,7 @@ export function CampaignSheetYardView({
               </h3>
               {hasText(yard.commonName) &&
               yard.commonName.trim() !== yard.name.trim() ? (
-                <p className="mt-1 text-[13px] font-medium text-slate-500">
+                <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-neutral-400">
                   {yard.commonName.trim()}
                 </p>
               ) : null}
@@ -284,7 +284,7 @@ export function CampaignSheetYardView({
                 "rounded-xl border px-3 py-2.5 shadow-sm",
                 yard.isActive
                   ? "border-emerald-200/80 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-slate-50 text-slate-600",
+                  : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300",
               )}
             >
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] opacity-70">
@@ -312,7 +312,7 @@ export function CampaignSheetYardView({
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
               <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400">
                 <ActivitiesIcon className="h-3 w-3" />
                 Activities
@@ -321,12 +321,12 @@ export function CampaignSheetYardView({
                 {ticketTotal}
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
               <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400">
                 <Clock className="h-3 w-3" />
                 Last activity
               </p>
-              <p className="mt-1 text-[12px] font-semibold leading-snug text-slate-700 dark:text-slate-200">
+              <p className="mt-1 text-[12px] font-semibold leading-snug text-slate-700 dark:text-neutral-200">
                 {formatActivityDate(yard.lastActivity)}
               </p>
             </div>
@@ -379,21 +379,21 @@ export function CampaignSheetYardView({
           {yard.landlord?.name ? (
             <div>
               <SectionLabel>Landlord</SectionLabel>
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-violet-200/80 bg-violet-50 text-violet-700">
                   <User className="h-4 w-4" strokeWidth={2} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-bold text-slate-900 dark:text-slate-50">
+                  <p className="text-[14px] font-bold text-slate-900 dark:text-neutral-50">
                     {yard.landlord.name}
                   </p>
                   {yard.landlord.email ? (
-                    <p className="mt-1 truncate text-[12px] text-slate-500">
+                    <p className="mt-1 truncate text-[12px] text-slate-500 dark:text-neutral-400">
                       {yard.landlord.email}
                     </p>
                   ) : null}
                   {yard.landlord.phone ? (
-                    <p className="mt-0.5 font-mono text-[12px] font-medium text-slate-600">
+                    <p className="mt-0.5 font-mono text-[12px] font-medium text-slate-600 dark:text-neutral-300">
                       {yard.landlord.phone}
                     </p>
                   ) : null}
@@ -406,7 +406,7 @@ export function CampaignSheetYardView({
             <div>
               <SectionLabel>Notes</SectionLabel>
               <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 [overflow-wrap:anywhere] dark:text-slate-200">
+                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 [overflow-wrap:anywhere] dark:text-neutral-200">
                   {yard.notes.trim()}
                 </p>
               </div>
@@ -419,7 +419,7 @@ export function CampaignSheetYardView({
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none sm:px-4 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800 sm:flex-none sm:px-4 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200"
               >
                 <MapPin className="h-4 w-4" />
                 Maps
@@ -429,7 +429,7 @@ export function CampaignSheetYardView({
               <button
                 type="button"
                 onClick={() => copyText("phone", yard.contactInfo)}
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none sm:px-4 dark:border-slate-800 dark:bg-slate-950"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800 sm:flex-none sm:px-4 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200"
               >
                 {copied === "phone" ? (
                   <Check className="h-4 w-4 text-emerald-600" />
@@ -444,7 +444,7 @@ export function CampaignSheetYardView({
                 href={yardLinkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none sm:px-4 dark:border-slate-800 dark:bg-slate-950"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800 sm:flex-none sm:px-4 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200"
               >
                 <ExternalLink className="h-4 w-4" />
                 Portal

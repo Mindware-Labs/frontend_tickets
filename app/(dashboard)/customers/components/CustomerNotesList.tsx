@@ -180,10 +180,10 @@ export function CustomerNotesList({
             className={cn(
               "min-h-0 flex-1 resize-none",
               isCompactSheet
-                ? "min-h-[36px] rounded-xl border-border bg-muted/30 px-3 py-2 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30 dark:bg-slate-900/60"
+                ? "min-h-[36px] rounded-xl border-border bg-muted/30 px-3 py-2 text-[12.5px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/30 dark:bg-neutral-900/60"
                 : isSheet
-                  ? "border-slate-200/80 bg-white text-sm dark:border-slate-700 dark:bg-slate-900"
-                  : "border-slate-200 text-sm",
+                  ? "border-slate-200/80 bg-white text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                  : "border-slate-200 dark:border-neutral-700 text-sm",
             )}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -201,7 +201,7 @@ export function CustomerNotesList({
             className={cn(
               "shrink-0",
               isForm
-                ? "h-8 w-8 border-slate-200 p-0"
+                ? "h-8 w-8 border-slate-200 dark:border-neutral-700 p-0"
                 : isCompactSheet
                   ? "h-9 rounded-full bg-[#008f68] px-3.5 text-[12px] font-semibold text-white shadow-sm hover:bg-[#007a5a] disabled:opacity-50"
                   : "h-9 w-auto bg-[#008f68] px-3 text-white hover:bg-[#007a5a]",
@@ -219,7 +219,7 @@ export function CustomerNotesList({
       ) : null}
 
       {loading ? (
-        <div className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 py-8 text-[11px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/40">
+        <div className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 py-8 text-[11px] font-medium text-slate-500 dark:border-neutral-800 dark:bg-neutral-900/40">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[#008f68]" />
           Loading notes…
         </div>
@@ -235,7 +235,7 @@ export function CustomerNotesList({
           >
             {!isCompactSheet ? (
               <div
-                className="absolute top-0.5 bottom-0.5 left-[7px] w-px bg-slate-200 dark:bg-slate-700"
+                className="absolute top-0.5 bottom-0.5 left-[7px] w-px bg-slate-200 dark:bg-neutral-700"
                 aria-hidden
               />
             ) : null}
@@ -251,22 +251,22 @@ export function CustomerNotesList({
                     )}
                   >
                     {!isCompactSheet ? (
-                      <span className="absolute left-0 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-950" />
+                      <span className="absolute left-0 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-2 ring-white dark:ring-neutral-950" />
                     ) : null}
                     {isEditing ? (
                       <div
                         className={cn(
-                          "space-y-2 rounded-xl border bg-white p-2.5 dark:bg-slate-900",
+                          "space-y-2 rounded-xl border bg-white p-2.5 dark:bg-neutral-900",
                           isCompactSheet
                             ? "border-amber-200/80 dark:border-amber-900/50"
-                            : "border-slate-200 dark:border-slate-700",
+                            : "border-slate-200 dark:border-neutral-700",
                         )}
                       >
                         <Textarea
                           value={editingText}
                           rows={2}
                           onChange={(e) => setEditingText(e.target.value)}
-                          className="resize-none rounded-lg border-slate-200 text-[12.5px] dark:border-slate-700"
+                          className="resize-none rounded-lg border-slate-200 text-[12.5px] dark:border-neutral-700"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -312,7 +312,7 @@ export function CustomerNotesList({
                         {meta ? (
                           <p
                             className={cn(
-                              "font-medium tabular-nums text-slate-500",
+                              "font-medium tabular-nums text-slate-500 dark:text-neutral-400",
                               isCompactSheet
                                 ? "text-[10px] uppercase tracking-[0.08em]"
                                 : "text-[11px]",
@@ -323,7 +323,7 @@ export function CustomerNotesList({
                         ) : null}
                         <p
                           className={cn(
-                            "whitespace-pre-wrap break-words leading-relaxed text-slate-800 dark:text-slate-100",
+                            "whitespace-pre-wrap break-words leading-relaxed text-slate-800 dark:text-neutral-100",
                             meta && "mt-1",
                             isCompactSheet ? "text-[12px]" : "mt-0.5 text-[13px]",
                           )}
@@ -373,7 +373,7 @@ export function CustomerNotesList({
               return (
                 <li
                   key={note.id}
-                  className="group flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm"
+                  className="group flex items-start gap-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50/60 dark:bg-neutral-800/50 px-3 py-2.5 text-sm"
                 >
                   {isEditing ? (
                     <>
@@ -420,7 +420,7 @@ export function CustomerNotesList({
                   ) : (
                     <>
                       <div className="min-w-0 flex-1">
-                        <p className="whitespace-pre-wrap break-words leading-snug text-slate-700">
+                        <p className="whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-neutral-200">
                           {note.content}
                         </p>
                         {formatNoteMeta(note) ? (
@@ -467,11 +467,11 @@ export function CustomerNotesList({
           </ul>
         )
       ) : isCompactSheet ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900/30">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center dark:border-neutral-700 dark:bg-neutral-900/30">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-950">
             <StickyNote className="h-4 w-4 text-slate-400" />
           </span>
-          <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">
+          <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300">
             No audit notes yet
           </p>
           <p className="max-w-[220px] text-[11px] leading-relaxed text-slate-400">

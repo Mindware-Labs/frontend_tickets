@@ -75,7 +75,7 @@ function FilterSelect({
             "h-3.5 w-3.5 shrink-0",
             active
               ? "text-[#008f68] dark:text-[#5bebb8]"
-              : "text-slate-400 dark:text-slate-500",
+              : "text-slate-400 dark:text-neutral-500",
           )}
         />
         <SelectValue placeholder={placeholder} />
@@ -84,7 +84,7 @@ function FilterSelect({
             "h-3 w-3 shrink-0",
             active
               ? "text-[#008f68]/60 dark:text-[#5bebb8]/60"
-              : "text-slate-400 dark:text-slate-500",
+              : "text-slate-400 dark:text-neutral-500",
           )}
         />
       </SelectTrigger>
@@ -269,7 +269,7 @@ export function CustomersToolbar({
           <button
             type="button"
             onClick={onClearFilters}
-            className="ml-1 cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-slate-500 dark:hover:text-slate-300"
+            className="ml-1 cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-neutral-500 dark:hover:text-neutral-300"
           >
             Clear filters
           </button>

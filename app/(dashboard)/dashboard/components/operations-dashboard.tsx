@@ -82,13 +82,13 @@ function AgentActivityTooltip({
 
   return (
     <div
-      className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs shadow-sm dark:border-slate-700 dark:bg-slate-900"
+      className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs shadow-sm dark:border-neutral-700 dark:bg-neutral-900"
       style={tooltipStyle}
     >
-      <p className="mb-1 font-semibold text-slate-900 dark:text-slate-100">
+      <p className="mb-1 font-semibold text-slate-900 dark:text-neutral-100">
         {label}
       </p>
-      <p className="text-slate-600 dark:text-slate-300">
+      <p className="text-slate-600 dark:text-neutral-300">
         Calls: <span className="font-semibold tabular-nums">{row.calls}</span>
         {row.calls > 0 ? (
           <span className="ml-1 text-slate-500">
@@ -96,7 +96,7 @@ function AgentActivityTooltip({
           </span>
         ) : null}
       </p>
-      <p className="text-slate-600 dark:text-slate-300">
+      <p className="text-slate-600 dark:text-neutral-300">
         Tickets:{" "}
         <span className="font-semibold tabular-nums">{row.totalTickets}</span>
         {row.totalTickets > 0 ? (
@@ -105,7 +105,7 @@ function AgentActivityTooltip({
           </span>
         ) : null}
       </p>
-      <p className="text-slate-600 dark:text-slate-300">Talk: {row.talk} min</p>
+      <p className="text-slate-600 dark:text-neutral-300">Talk: {row.talk} min</p>
       <p className="mt-1 text-[#008f68] dark:text-emerald-300">
         Combined resolution:{" "}
         <span className="font-semibold tabular-nums">
@@ -579,7 +579,7 @@ export function OperationsDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-neutral-800">
                   <th className={dashboardTableHeadClass}>Line / campaign</th>
                   <th className={dashboardTableHeadClass}>Calls</th>
                   <th className={dashboardTableHeadClass}>Response</th>
@@ -593,7 +593,7 @@ export function OperationsDashboard() {
                   <tr
                     key={line.line}
                     className={cn(
-                      "border-b border-slate-50 last:border-b-0 dark:border-slate-800/80",
+                      "border-b border-slate-50 last:border-b-0 dark:border-neutral-800/80",
                       crossFilterRowClass(isFilterActive("line", line.line)),
                     )}
                     onClick={() => toggleFilter("line", line.line)}

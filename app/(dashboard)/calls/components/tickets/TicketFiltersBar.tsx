@@ -215,12 +215,12 @@ export function TicketFiltersBar({
             {activeChips.map((chip) => (
               <span
                 key={chip.key}
-                className="inline-flex h-[30px] items-center gap-1 rounded-full border border-border bg-slate-50 px-3 text-[12.5px] dark:bg-slate-800"
+                className="inline-flex h-[30px] items-center gap-1 rounded-full border border-border bg-slate-50 px-3 text-[12.5px] dark:bg-neutral-800"
               >
                 <span className="font-normal text-muted-foreground">
                   {chip.label}:
                 </span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
+                <span className="font-medium text-slate-700 dark:text-neutral-200">
                   {chip.value}
                 </span>
               </span>
@@ -228,7 +228,7 @@ export function TicketFiltersBar({
             <button
               type="button"
               onClick={clearAll}
-              className="cursor-pointer text-[12.5px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+              className="cursor-pointer text-[12.5px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline dark:text-neutral-400 dark:hover:text-neutral-200"
             >
               Clear all
             </button>

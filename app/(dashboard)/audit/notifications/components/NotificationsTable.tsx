@@ -86,7 +86,7 @@ function clockTime(d: string) {
 function Recipient({ agent }: { agent: AuditEntry["agent"] }) {
   if (!agent)
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
         <Radio className="size-2.5" aria-hidden="true" />
         Broadcast
       </span>
@@ -100,7 +100,7 @@ function Recipient({ agent }: { agent: AuditEntry["agent"] }) {
       >
         {initials(agent.name)}
       </span>
-      <span className="min-w-0 truncate text-xs font-medium text-slate-700 dark:text-slate-200">
+      <span className="min-w-0 truncate text-xs font-medium text-slate-700 dark:text-neutral-200">
         {agent.name || `Agent #${agent.id}`}
       </span>
     </span>
@@ -121,7 +121,7 @@ function ResourceTags({
         <a
           href={`/calls/${callId}`}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-1 py-px text-[10px] font-semibold text-sky-700 transition-colors hover:bg-sky-100 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300"
+          className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-1 py-px text-[10px] font-semibold text-sky-700 transition-colors hover:bg-sky-100 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:bg-sky-500/20"
         >
           <Phone className="size-2.5" aria-hidden="true" />#{callId}
         </a>
@@ -130,7 +130,7 @@ function ResourceTags({
         <a
           href={`/tickets/${ticketId}`}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-1 py-px text-[10px] font-semibold text-[#006b4f] transition-colors hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-1 py-px text-[10px] font-semibold text-[#006b4f] transition-colors hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
         >
           <FileText className="size-2.5" aria-hidden="true" />#{ticketId}
         </a>
@@ -162,17 +162,17 @@ export function NotificationsTable({
   onPageChange: (page: number) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
       {/* Header strip */}
-      <div className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2.5 dark:border-slate-800">
+      <div className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2.5 dark:border-neutral-800">
         <span
           className="h-4 w-0.5 shrink-0 rounded-full bg-[#008f68]"
           aria-hidden="true"
         />
-        <span className="text-[12px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
+        <span className="text-[12px] font-bold tracking-tight text-slate-900 dark:text-neutral-100">
           Delivery ledger
         </span>
-        <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
           {total.toLocaleString()}
         </span>
       </div>
@@ -180,11 +180,11 @@ export function NotificationsTable({
       <div className="scrollbar-app max-h-[560px] overflow-auto">
         <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-0">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-slate-50/95 backdrop-blur dark:bg-slate-900/95">
+            <tr className="bg-slate-50/95 backdrop-blur dark:bg-neutral-900/95">
               <th
                 className={cn(
                   dashboardTableHeadClass,
-                  "w-[46%] border-b border-slate-100 pl-3.5 dark:border-slate-800",
+                  "w-[46%] border-b border-slate-100 pl-3.5 dark:border-neutral-800",
                 )}
               >
                 Notification
@@ -192,7 +192,7 @@ export function NotificationsTable({
               <th
                 className={cn(
                   dashboardTableHeadClass,
-                  "w-[22%] border-b border-slate-100 dark:border-slate-800",
+                  "w-[22%] border-b border-slate-100 dark:border-neutral-800",
                 )}
               >
                 Recipient
@@ -200,7 +200,7 @@ export function NotificationsTable({
               <th
                 className={cn(
                   dashboardTableHeadClass,
-                  "w-[14%] border-b border-slate-100 dark:border-slate-800",
+                  "w-[14%] border-b border-slate-100 dark:border-neutral-800",
                 )}
               >
                 Status
@@ -208,7 +208,7 @@ export function NotificationsTable({
               <th
                 className={cn(
                   dashboardTableHeadClass,
-                  "w-[18%] whitespace-nowrap border-b border-slate-100 pr-3.5 text-right dark:border-slate-800",
+                  "w-[18%] whitespace-nowrap border-b border-slate-100 pr-3.5 text-right dark:border-neutral-800",
                 )}
               >
                 When
@@ -222,10 +222,10 @@ export function NotificationsTable({
               <tr>
                 <td colSpan={4} className="px-4 py-16 text-center">
                   <Inbox
-                    className="mx-auto mb-2 size-8 text-slate-200 dark:text-slate-700"
+                    className="mx-auto mb-2 size-8 text-slate-200 dark:text-neutral-700"
                     aria-hidden="true"
                   />
-                  <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                  <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-200">
                     No notifications yet
                   </p>
                   <p className="mt-0.5 text-[11px] text-slate-400">
@@ -240,7 +240,7 @@ export function NotificationsTable({
                 return (
                   <tr
                     key={n.id}
-                    className="group border-b border-slate-100 transition-colors last:border-0 hover:bg-[#f0faf5]/60 dark:border-slate-800/70 dark:hover:bg-slate-900/50"
+                    className="group border-b border-slate-100 transition-colors last:border-0 hover:bg-[#f0faf5]/60 dark:border-neutral-800/70 dark:hover:bg-neutral-900/50"
                   >
                     {/* Notification — type tile + message + inline resources */}
                     <td className={cn(dashboardTableCellClass, "pl-3.5")}>
@@ -267,9 +267,9 @@ export function NotificationsTable({
                           </span>
                           <span
                             className={cn(
-                              "block max-w-[640px] truncate text-xs leading-snug text-slate-700 dark:text-slate-200",
+                              "block max-w-[640px] truncate text-xs leading-snug text-slate-700 dark:text-neutral-200",
                               !n.read &&
-                                "font-semibold text-slate-900 dark:text-slate-100",
+                                "font-semibold text-slate-900 dark:text-neutral-100",
                             )}
                             title={n.message}
                           >
@@ -313,7 +313,7 @@ export function NotificationsTable({
                         "pr-3.5 text-right",
                       )}
                     >
-                      <span className="block whitespace-nowrap font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                      <span className="block whitespace-nowrap font-mono text-[11px] text-slate-600 dark:text-neutral-300">
                         {clockTime(n.createdAt)}
                       </span>
                       <span className="block text-[9px] text-slate-400">
@@ -338,7 +338,7 @@ export function NotificationsTable({
         showStats
         onPageChange={onPageChange}
         loading={isLoading}
-        className="border-t border-slate-100 px-4 dark:border-slate-800"
+        className="border-t border-slate-100 px-4 dark:border-neutral-800"
       />
     </div>
   );

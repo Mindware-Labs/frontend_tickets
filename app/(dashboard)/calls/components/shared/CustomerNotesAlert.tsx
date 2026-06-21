@@ -201,7 +201,44 @@ export function CustomerNotesAlert({
           </span>
         </button>
       </PopoverTrigger>
-      <NotesPopoverContent notes={notes} />
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="z-50 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-amber-200 bg-white dark:bg-neutral-900 p-0 shadow-xl"
+      >
+        <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-4 py-3">
+          <StickyNote className="size-4 text-amber-600" aria-hidden />
+          <p className="text-[11px] font-bold uppercase tracking-widest text-amber-800">
+            Customer Notes
+          </p>
+          <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200">
+            {notes.length}
+          </span>
+        </div>
+        <div className="max-h-80 space-y-2 overflow-y-auto p-2 scrollbar-app">
+          {notes.map((note, index) => {
+            const dateLabel = formatNoteDate(note.createdAt);
+            const meta = [note.createdBy, dateLabel].filter(Boolean).join(" - ");
+
+            return (
+              <div
+                key={note.id ?? index}
+                className="rounded-xl border border-slate-100 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800/50 px-3 py-2.5"
+              >
+                <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-800 dark:text-neutral-200">
+                  {note.content}
+                </p>
+                {meta ? (
+                  <p className="mt-2 flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                    <CalendarIcon className="size-3" aria-hidden />
+                    {meta}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </PopoverContent>
     </Popover>
   );
 }

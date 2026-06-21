@@ -52,9 +52,9 @@ const toneTile: Record<
     accent: "bg-indigo-500",
   },
   slate: {
-    icon: "text-slate-500 dark:text-slate-400",
-    iconWrap: "bg-slate-100 dark:bg-slate-900",
-    link: "text-slate-600 dark:text-slate-400",
+    icon: "text-slate-500 dark:text-neutral-400",
+    iconWrap: "bg-slate-100 dark:bg-neutral-900",
+    link: "text-slate-600 dark:text-neutral-400",
     accent: "bg-slate-400",
   },
 };
@@ -76,7 +76,7 @@ export function InsightActionCard({
       onClick={onClick}
       className={cn(
         dashboardMetricTileClass,
-        "group relative flex min-h-[74px] w-full gap-2.5 overflow-hidden border-slate-200/80 bg-white py-2.5 text-left text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900/60",
+        "group relative flex min-h-[74px] w-full gap-2.5 overflow-hidden border-slate-200/80 bg-white py-2.5 text-left text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-900/60",
       )}
     >
       <span
@@ -95,11 +95,11 @@ export function InsightActionCard({
         <Icon className={cn("size-3.5", styles.icon)} aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-500 dark:text-slate-400">
+        <p className="text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-500 dark:text-neutral-400">
           {label}
         </p>
         <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <span className="text-lg font-bold leading-none tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">
+          <span className="text-lg font-bold leading-none tabular-nums text-slate-900 sm:text-xl dark:text-neutral-100">
             {value}
           </span>
           <span
@@ -113,12 +113,12 @@ export function InsightActionCard({
           </span>
         </div>
         {primaryHint ? (
-          <p className="mt-1 line-clamp-1 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
+          <p className="mt-1 line-clamp-1 text-[10px] leading-snug text-slate-500 dark:text-neutral-400">
             {primaryHint}
           </p>
         ) : null}
         {secondaryHint ? (
-          <p className="line-clamp-1 text-[10px] leading-snug text-slate-400 dark:text-slate-500">
+          <p className="line-clamp-1 text-[10px] leading-snug text-slate-400 dark:text-neutral-500">
             {secondaryHint}
           </p>
         ) : null}

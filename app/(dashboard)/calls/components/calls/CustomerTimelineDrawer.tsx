@@ -275,7 +275,7 @@ function TimelineCard({
     <div className="relative flex gap-2 pl-3.5 pr-2.5">
       {/* Vertical connector */}
       {!isLast && (
-        <div className="absolute left-5 top-5 bottom-0 w-px bg-slate-100" />
+        <div className="absolute left-5 top-5 bottom-0 w-px bg-slate-100 dark:bg-neutral-700" />
       )}
 
       {/* Dot */}
@@ -285,7 +285,7 @@ function TimelineCard({
             "w-3 h-3 rounded-full border-2 block transition-all",
             isActive
               ? "bg-[#008f68] border-[#008f68] shadow-[0_0_0_3px_#008f6820]"
-              : "bg-white border-slate-300",
+              : "bg-white dark:bg-neutral-800 border-slate-300 dark:border-neutral-600",
           )}
         />
       </div>
@@ -300,7 +300,7 @@ function TimelineCard({
             "w-full text-left mb-1 rounded-xl p-2.5 border transition-all",
             isActive
               ? "bg-[#008f68]/5 border-[#008f68]/20 shadow-sm"
-              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/60",
+              : "bg-white dark:bg-neutral-900 border-slate-100 dark:border-neutral-700 hover:border-slate-200 dark:hover:border-neutral-600 hover:bg-slate-50/60 dark:hover:bg-neutral-800/60",
           )}
         >
           {/* ID + date */}
@@ -359,7 +359,7 @@ function TimelineCard({
                 </span>
               )}
               {campaignOpt && (
-                <span className="text-[9.5px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                <span className="text-[9.5px] text-slate-400 bg-slate-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-md">
                   {campaignOpt}
                 </span>
               )}
@@ -412,7 +412,7 @@ function TimelineCard({
           <button
             type="button"
             onClick={onPeek}
-            className="w-full flex items-center justify-center gap-1.5 mb-1.5 h-6 rounded-lg border border-slate-100 bg-slate-50 hover:bg-green-50 hover:border-[#008f68]/30 hover:text-[#008f68] text-slate-400 text-[9.5px] font-medium transition-all"
+            className="w-full flex items-center justify-center gap-1.5 mb-1.5 h-6 rounded-lg border border-slate-100 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 hover:bg-green-50 dark:hover:bg-emerald-500/10 hover:border-[#008f68]/30 hover:text-[#008f68] text-slate-400 text-[9.5px] font-medium transition-all"
           >
             <Eye className="w-3 h-3" />
             Preview
@@ -1280,7 +1280,7 @@ export function CustomerTimelineDrawer({
           aria-live="assertive"
           className={cn(
             "fixed z-50 flex items-center gap-3",
-            "bg-white rounded-xl border border-slate-200/80",
+            "bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/80 dark:border-neutral-700",
             "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.10),0_4px_6px_-4px_rgba(0,0,0,0.10),inset_4px_0_0_0_#ef4444]",
             "px-4 py-3 min-w-65 max-w-80",
             "transition-all duration-300 ease-out",
@@ -1297,10 +1297,10 @@ export function CustomerTimelineDrawer({
             <AlertCircle className="w-3.5 h-3.5 text-red-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+            <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 leading-tight">
               Error
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
               {errorToastMessage ?? "Failed to save changes"}
             </p>
           </div>
@@ -1308,7 +1308,7 @@ export function CustomerTimelineDrawer({
             type="button"
             aria-label="Dismiss notification"
             onClick={dismissErrorToast}
-            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors"
           >
             <X className="w-3 h-3" />
           </button>
@@ -1327,7 +1327,7 @@ export function CustomerTimelineDrawer({
           className={cn(
             // fixed, same z-level as the Sheet so it sits above page content
             "fixed z-50 flex items-center gap-3",
-            "bg-white rounded-xl border border-slate-200/80",
+            "bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/80 dark:border-neutral-700",
             // Combined shadow: shadow-lg drop + 4 px inset green accent bar
             "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.10),0_4px_6px_-4px_rgba(0,0,0,0.10),inset_4px_0_0_0_#22c55e]",
             "px-4 py-3 min-w-65 max-w-80",
@@ -1348,10 +1348,10 @@ export function CustomerTimelineDrawer({
             <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+            <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 leading-tight">
               Saved
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
               Call updated successfully
             </p>
           </div>
@@ -1359,7 +1359,7 @@ export function CustomerTimelineDrawer({
             type="button"
             aria-label="Dismiss notification"
             onClick={dismissSuccessToast}
-            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors"
           >
             <X className="w-3 h-3" />
           </button>
@@ -1378,7 +1378,7 @@ export function CustomerTimelineDrawer({
       >
         <SheetContent
           side="right"
-          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80"
+          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] dark:bg-neutral-950 [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80 dark:border-neutral-700"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             if (shouldIgnoreTicketSheetOutsideEvent(e)) {
@@ -1401,13 +1401,13 @@ export function CustomerTimelineDrawer({
           </SheetTitle>
 
           {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
-          <div className="shrink-0 bg-white border-b border-slate-100">
+          <div className="shrink-0 bg-white dark:bg-neutral-900 border-b border-slate-100 dark:border-neutral-800">
             {onBackToReturn && returnToLabel ? (
               <div className="border-b border-[#008f68]/15 bg-[#f0faf5] px-4 py-2.5">
                 <button
                   type="button"
                   onClick={onBackToReturn}
-                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#008f68]/25 bg-white px-3 py-2 text-left text-[12px] font-semibold text-[#008f68] shadow-sm transition-colors hover:border-[#008f68]/45 hover:bg-[#e8faf0]"
+                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#008f68]/25 bg-white dark:bg-neutral-900 px-3 py-2 text-left text-[12px] font-semibold text-[#008f68] shadow-sm transition-colors hover:border-[#008f68]/45 hover:bg-[#e8faf0] dark:hover:bg-emerald-500/10"
                 >
                   <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.25} />
                   <span className="truncate">{returnToLabel}</span>
@@ -1430,10 +1430,10 @@ export function CustomerTimelineDrawer({
 
               {/* 2. Text block: name (top) + phone (bottom) */}
               <div className="min-w-0 shrink">
-                <p className="text-[15px] font-bold text-slate-900 leading-none truncate">
+                <p className="text-[15px] font-bold text-slate-900 dark:text-neutral-100 leading-none truncate">
                   {customerName || "Unknown"}
                 </p>
-                <p className="text-[11.5px] text-slate-400 font-mono mt-0.5 leading-none">
+                <p className="text-[11.5px] text-slate-400 dark:text-neutral-500 font-mono mt-0.5 leading-none">
                   {customerPhone}
                 </p>
               </div>
@@ -1485,7 +1485,7 @@ export function CustomerTimelineDrawer({
                     className={`flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold rounded-xl border transition-all shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-white disabled:hover:text-slate-600 disabled:hover:border-slate-200 ${
                       showCallLinker || !!editFormData.relatedCallId
                         ? "bg-[#008f68]/10 text-[#008f68] border-[#008f68]/50 hover:bg-[#008f68]/20 hover:border-[#008f68]/70"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-[#008f68] hover:border-[#008f68]/40"
+                        : "bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-[#008f68] hover:border-[#008f68]/40"
                     }`}
                   >
                     <Link2 className="w-3.5 h-3.5" />
@@ -1580,18 +1580,18 @@ export function CustomerTimelineDrawer({
                 return (
                   <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
                     {/* — Badges group — */}
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                       <Hash className="w-3 h-3 text-slate-400" />
                       Call ID #{selectedCall.id}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                       <Clock className="w-3 h-3 text-slate-400" />
                       {fmtDateTime(
                         selectedCall.callDate || selectedCall.createdAt,
                       )}
                     </span>
                     {durationSec != null && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                         <Mic className="w-3 h-3 text-slate-400" />
                         {fmtTime(durationSec)}
                       </span>
@@ -1644,7 +1644,7 @@ export function CustomerTimelineDrawer({
           {/* ══ BODY ════════════════════════════════════════════════════════════ */}
           <div className="flex-1 overflow-hidden min-h-0 flex">
             {/* ── MAIN AREA (~70%) ─────────────────────────────────────────────── */}
-            <main className="flex-1 overflow-hidden flex flex-col min-h-0 border-t border-slate-100 bg-slate-50/80">
+            <main className="flex-1 overflow-hidden flex flex-col min-h-0 border-t border-slate-100 dark:border-neutral-800 bg-slate-50/80 dark:bg-neutral-800/30">
               <div
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
@@ -1663,7 +1663,7 @@ export function CustomerTimelineDrawer({
                     {/* ── Active ticket warning — full-width banner ── */}
                     {canEdit && activeTicketWarning && (
                       <div
-                        className={`w-full flex flex-row items-center justify-between px-5 py-3 bg-white rounded-2xl border border-amber-300 shadow-sm ${
+                        className={`w-full flex flex-row items-center justify-between px-5 py-3 bg-white dark:bg-neutral-900 rounded-2xl border border-amber-300 dark:border-amber-800/50 shadow-sm ${
                           isClosingTicketWarning
                             ? "animate-out fade-out slide-out-to-top-2 duration-200"
                             : "animate-in fade-in slide-in-from-top-2 duration-200"
@@ -1681,7 +1681,7 @@ export function CustomerTimelineDrawer({
                             </span>
                           </div>
                           {/* Main message */}
-                          <p className="text-[12px] font-semibold text-slate-800">
+                          <p className="text-[12px] font-semibold text-slate-800 dark:text-neutral-200">
                             This customer has {activeTicketWarning.count}{" "}
                             {activeTicketWarning.count === 1
                               ? "active ticket"
@@ -1711,7 +1711,7 @@ export function CustomerTimelineDrawer({
                           <button
                             type="button"
                             onClick={() => setIsClosingTicketWarning(true)}
-                            className="px-3 py-2 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors whitespace-nowrap"
+                            className="px-3 py-2 text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 rounded-lg transition-colors whitespace-nowrap"
                           >
                             Cancel
                           </button>
@@ -1768,12 +1768,12 @@ export function CustomerTimelineDrawer({
 
                     {/* ── Call Linker (inline panel) ── */}
                     {canEdit && showCallLinker && (
-                      <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-slate-100">
+                      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-slate-100 dark:border-neutral-800">
                           <div className="w-6 h-6 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
                             <Link2 className="w-3.5 h-3.5 text-[#008f68]" />
                           </div>
-                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex-1">
+                          <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider flex-1">
                             Link Related Call
                           </span>
                           <button
@@ -1782,7 +1782,7 @@ export function CustomerTimelineDrawer({
                               setShowCallLinker(false);
                               setSelectedLinkCall(null);
                             }}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-700 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 transition-colors"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -1859,7 +1859,7 @@ export function CustomerTimelineDrawer({
                           )}
                         </div>
                         {selectedLinkCall && (
-                          <div className="px-4 py-3 border-t border-slate-100 space-y-2">
+                          <div className="px-4 py-3 border-t border-slate-100 dark:border-neutral-800 space-y-2">
                             <div className="flex items-center justify-between">
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 Import from linked call
@@ -1920,14 +1920,14 @@ export function CustomerTimelineDrawer({
                                   className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10.5px] font-semibold border transition-colors ${
                                     importChecklist[key]
                                       ? "bg-[#008f68]/8 border-[#008f68]/30 text-[#008f68]"
-                                      : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                      : "bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:border-slate-300 dark:hover:border-neutral-600"
                                   }`}
                                 >
                                   <div
                                     className={`w-3 h-3 rounded flex items-center justify-center border transition-colors ${
                                       importChecklist[key]
                                         ? "bg-[#008f68] border-[#008f68]"
-                                        : "bg-white border-slate-300"
+                                        : "bg-white dark:bg-neutral-800 border-slate-300 dark:border-neutral-600"
                                     }`}
                                   >
                                     {importChecklist[key] && (
@@ -1953,7 +1953,7 @@ export function CustomerTimelineDrawer({
                                   setShowCallLinker(false);
                                   setSelectedLinkCall(null);
                                 }}
-                                className="h-8 px-4 flex items-center justify-center text-[12px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-[0.98]"
+                                className="h-8 px-4 flex items-center justify-center text-[12px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 rounded-xl transition-all active:scale-[0.98]"
                               >
                                 Cancel
                               </button>
@@ -1965,7 +1965,7 @@ export function CustomerTimelineDrawer({
 
                     {/* Linked Call Card — shown when relatedCallId is set and linker closed */}
                     {editFormData.relatedCallId && !showCallLinker && (
-                      <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                         <div className="w-8 h-8 rounded-xl bg-[#008f68]/10 flex items-center justify-center shrink-0">
                           <Link2 className="w-4 h-4 text-[#008f68]" />
                         </div>
@@ -1983,7 +1983,7 @@ export function CustomerTimelineDrawer({
                             type="button"
                             onClick={handleOpenCallLinker}
                             disabled={!canLinkCalls}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-700 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                             title={
                               !canLinkCalls
                                 ? linkCallsDisabledReason
@@ -2006,12 +2006,12 @@ export function CustomerTimelineDrawer({
                     )}
 
                     {/* ── Combined Call Details & Properties card ── */}
-                    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-                      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50">
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100">
+                    <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                      <div className="flex items-center gap-2 px-3.5 py-2 border-b border-slate-50 dark:border-neutral-800">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-neutral-800">
                           <Hash className="w-3 h-3 text-slate-500" />
                         </div>
-                        <span className="text-[12px] font-bold text-slate-700">
+                        <span className="text-[12px] font-bold text-slate-700 dark:text-neutral-300">
                           Call Details &amp; Properties
                         </span>
                       </div>
@@ -2191,7 +2191,7 @@ export function CustomerTimelineDrawer({
                                   className={`h-8 text-[10px] font-semibold rounded-lg border transition-all leading-tight px-1 ${
                                     isActive
                                       ? "shadow-sm"
-                                      : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                      : "bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:border-slate-300 dark:hover:border-neutral-600 hover:bg-slate-50 dark:hover:bg-neutral-800"
                                   }`}
                                   style={
                                     isActive
@@ -2345,12 +2345,12 @@ export function CustomerTimelineDrawer({
 
                     {/* ── Recording card ── */}
                     {!readOnly && (
-                    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                    <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                         <div className="w-6 h-6 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
                           <Mic className="w-3 h-3 text-[#008f68]" />
                         </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex-1">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider flex-1">
                           {audioSectionLabel}
                         </span>
                         {durationSec != null && (
@@ -2445,7 +2445,7 @@ export function CustomerTimelineDrawer({
 
                               <div className="flex-1">
                                 <div
-                                  className="h-2 bg-slate-100 rounded-full overflow-hidden cursor-pointer mb-1.5"
+                                  className="h-2 bg-slate-100 dark:bg-neutral-700 rounded-full overflow-hidden cursor-pointer mb-1.5"
                                   onClick={(e) => {
                                     const rect = (
                                       e.currentTarget as HTMLDivElement
@@ -2476,7 +2476,7 @@ export function CustomerTimelineDrawer({
                                 href={audioOpenUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-700 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 transition-colors"
                                 title="Open in browser"
                               >
                                 <ExternalLink className="w-4 h-4" />
@@ -2485,8 +2485,8 @@ export function CustomerTimelineDrawer({
                           </div>
                         )
                       ) : (
-                        <div className="mx-5 mb-5 flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
-                          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <div className="mx-5 mb-5 flex items-center gap-3 bg-slate-50 dark:bg-neutral-800/50 border border-slate-100 dark:border-neutral-700 rounded-xl px-4 py-3">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
                             <Mic className="w-4 h-4 text-slate-300" />
                           </div>
                           <div>
@@ -2533,7 +2533,7 @@ export function CustomerTimelineDrawer({
                     )}
 
                     {/* ── Internal Note card ── */}
-                    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                    <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                         <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
                           <StickyNote className="w-3 h-3 text-amber-500" />
@@ -2554,7 +2554,7 @@ export function CustomerTimelineDrawer({
                             })
                           }
                           placeholder="Add a note about this call…"
-                          className="w-full field-sizing-content text-[13px] text-slate-800 placeholder:text-slate-300 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
+                          className="w-full field-sizing-content text-[13px] text-slate-800 dark:text-neutral-200 placeholder:text-slate-300 dark:placeholder:text-neutral-600 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
                         />
                       </div>
                       <div className="px-4 pb-2.5 flex justify-end">
@@ -2565,7 +2565,7 @@ export function CustomerTimelineDrawer({
                     </section>
 
                     {/* ── Attachments ── */}
-                    <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                    <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       {/* Header */}
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                         <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
@@ -2576,7 +2576,7 @@ export function CustomerTimelineDrawer({
                         </span>
                         {attachmentFiles.length + savedAttachments.length >
                           0 && (
-                          <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
+                          <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-slate-100 dark:bg-neutral-800 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
                             {attachmentFiles.length + savedAttachments.length}
                           </span>
                         )}
@@ -2627,7 +2627,7 @@ export function CustomerTimelineDrawer({
                             htmlFor="file-upload"
                             className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 bg-linear-to-r from-slate-50/90 to-sky-50/30 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
                           >
-                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white shadow-sm border border-slate-100/80 shrink-0">
+                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white dark:bg-neutral-800 shadow-sm border border-slate-100/80 dark:border-neutral-700 shrink-0">
                               <CloudUpload className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors duration-150" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -2650,7 +2650,7 @@ export function CustomerTimelineDrawer({
 
                         {/* ── Archivos pendientes (no guardados aún) ── */}
                         {attachmentFiles.length > 0 && (
-                          <div className="rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                          <div className="rounded-xl border border-slate-100 dark:border-neutral-700 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-700/80">
                             {attachmentFiles.map((file, idx) => {
                               const ext =
                                 file.name.split(".").pop()?.toUpperCase() ||
@@ -2668,7 +2668,7 @@ export function CustomerTimelineDrawer({
                               return (
                                 <div
                                   key={idx}
-                                  className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                                  className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                   <span
                                     className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.25 py-0.75 uppercase shrink-0 ${badge}`}
@@ -2718,7 +2718,7 @@ export function CustomerTimelineDrawer({
 
                         {/* ── Archivos guardados en S3 ── */}
                         {savedAttachments.length > 0 && (
-                          <div className="rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                          <div className="rounded-xl border border-slate-100 dark:border-neutral-700 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-700/80">
                             {savedAttachments.map((url, idx) => {
                               const raw = url.split("/").pop() || "file";
                               // Limpia prefijo timestamp: 1776878402962-874305298-filename.pdf
@@ -2749,7 +2749,7 @@ export function CustomerTimelineDrawer({
                               return (
                                 <div
                                   key={idx}
-                                  className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                                  className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                   <span
                                     className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.25 py-0.75 uppercase shrink-0 ${badge}`}
@@ -2804,7 +2804,7 @@ export function CustomerTimelineDrawer({
 
               {/* ── Sticky Save Changes footer ── */}
               {selectedCall && canEdit && (
-                <div className="shrink-0 px-5 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
+                <div className="shrink-0 px-5 py-3 border-t border-slate-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm">
                   <button
                     type="button"
                     onClick={() => onUpdate()}
@@ -2823,8 +2823,8 @@ export function CustomerTimelineDrawer({
             </main>
 
             {/* ── ASIDE: Call History (~30%) ────────────────────────────────────── */}
-            <aside className="hidden sm:flex w-72 xl:w-80 shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden border-t border-slate-100">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+            <aside className="hidden sm:flex w-72 xl:w-80 shrink-0 flex-col border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden border-t border-slate-100 dark:border-neutral-800">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-neutral-800">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -2898,14 +2898,14 @@ export function CustomerTimelineDrawer({
           if (!open) setDeleteConfirmUrl(null);
         }}
       >
-        <AlertDialogContent className="max-w-sm rounded-2xl border border-slate-100 shadow-xl p-0 overflow-hidden">
+        <AlertDialogContent className="max-w-sm rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-xl p-0 overflow-hidden">
           <div className="bg-linear-to-br from-red-50 to-rose-50/60 px-6 pt-6 pb-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
                 <Trash2 className="w-4 h-4 text-red-500" />
               </div>
               <AlertDialogHeader className="p-0 space-y-0">
-                <AlertDialogTitle className="text-[15px] font-semibold text-slate-800 leading-tight">
+                <AlertDialogTitle className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-tight">
                   Delete attachment
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-[12px] text-slate-500 mt-0.5">
@@ -2915,7 +2915,7 @@ export function CustomerTimelineDrawer({
               </AlertDialogHeader>
             </div>
             {deleteConfirmUrl && (
-              <div className="flex items-center gap-2 bg-white/80 border border-slate-100 rounded-lg px-3 py-2 mt-1">
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-neutral-800/80 border border-slate-100 dark:border-neutral-700 rounded-lg px-3 py-2 mt-1">
                 <Paperclip className="w-3 h-3 text-slate-400 shrink-0" />
                 <span className="text-[11px] text-slate-600 truncate font-medium">
                   {(deleteConfirmUrl.split("/").pop() || "").replace(
@@ -2926,10 +2926,10 @@ export function CustomerTimelineDrawer({
               </div>
             )}
           </div>
-          <AlertDialogFooter className="flex gap-2 px-6 py-4 bg-white border-t border-slate-100">
+          <AlertDialogFooter className="flex gap-2 px-6 py-4 bg-white dark:bg-neutral-900 border-t border-slate-100 dark:border-neutral-800">
             <AlertDialogCancel
               onClick={() => setDeleteConfirmUrl(null)}
-              className="flex-1 h-9 rounded-xl border border-slate-200 bg-white text-slate-600 text-[13px] font-medium hover:bg-slate-50 transition-colors"
+              className="flex-1 h-9 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
             >
               Cancel
             </AlertDialogCancel>

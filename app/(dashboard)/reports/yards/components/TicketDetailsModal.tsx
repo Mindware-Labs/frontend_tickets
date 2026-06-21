@@ -80,12 +80,12 @@ export function TicketDetailsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[560px] w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 flex flex-col"
+        className="max-w-[560px] w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#f4f5f7] p-0 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 flex flex-col"
       >
-        <div className="relative shrink-0 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-950">
+        <div className="relative shrink-0 border-b border-slate-100 bg-white dark:border-neutral-800 dark:bg-neutral-950">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 via-indigo-500 to-[#008f68]" />
           <DialogHeader className="space-y-0 px-5 py-4 pr-12 text-left sm:px-6">
-            <DialogTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+            <DialogTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 ring-1 ring-sky-200/70 dark:bg-sky-500/10 dark:text-sky-400">
                 <TicketIcon className="size-4" />
               </span>
@@ -97,10 +97,10 @@ export function TicketDetailsModal({
           </DialogHeader>
         </div>
 
-        <ScrollArea className="scrollbar-app max-h-[60vh] overflow-y-auto bg-[#f4f5f7] dark:bg-slate-950 p-4 sm:p-5">
+        <ScrollArea className="scrollbar-app max-h-[60vh] overflow-y-auto bg-[#f4f5f7] dark:bg-neutral-950 p-4 sm:p-5">
           <div className="space-y-4">
             {/* Status & Priority Row */}
-            <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900/60">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-slate-500">Priority:</span>
                 <InsightPriorityPill priority={ticket.priority} />
@@ -112,8 +112,8 @@ export function TicketDetailsModal({
             </div>
 
             {/* Metadata Info Panel */}
-            <div className="rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 space-y-3">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/60 space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                 General Information
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -178,8 +178,8 @@ export function TicketDetailsModal({
             </div>
 
             {/* Issue Description */}
-            <div className="rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60 space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/60 space-y-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                 Issue Description
               </h4>
               <InsightIssueBlock
@@ -190,7 +190,7 @@ export function TicketDetailsModal({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-5 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+        <DialogFooter className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-5 py-3 dark:border-neutral-800 dark:bg-neutral-900/60">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
               asChild

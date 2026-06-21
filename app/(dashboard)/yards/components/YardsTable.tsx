@@ -72,7 +72,7 @@ function StatusPill({ active }: { active: boolean }) {
       Active
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/15 dark:text-slate-400 dark:border-slate-500/30">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-500/15 dark:text-neutral-400 dark:border-neutral-500/30">
       <span className="w-[6px] h-[6px] rounded-full bg-slate-400 shrink-0" />
       Inactive
     </span>
@@ -81,7 +81,7 @@ function StatusPill({ active }: { active: boolean }) {
 
 function ActivitiesBadge({ count }: { count: number }) {
   return (
-    <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+    <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold border border-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700">
       {count}
     </span>
   );
@@ -282,11 +282,11 @@ export function YardsTable({
       {/* Mobile: stacked cards */}
       <div className="lg:hidden">
         {loading ? (
-          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-slate-800 dark:bg-card">
+          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-neutral-800 dark:bg-card">
             <EntityLoadingSpinner kind="yards" size="sm" />
           </div>
         ) : isEmpty ? (
-          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-slate-800 dark:bg-card">
+          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-neutral-800 dark:bg-card">
             No yards found.
           </div>
         ) : (

@@ -92,7 +92,7 @@ export function EntityLoadingSpinner({
     >
       <div className={cn("relative shrink-0", SPINNER_SIZE[size])}>
         <div
-          className="absolute inset-0 rounded-full border-2 border-slate-200/90 dark:border-slate-700/80 entity-loading-ring-outer"
+          className="absolute inset-0 rounded-full border-2 border-slate-200/90 dark:border-neutral-700/80 entity-loading-ring-outer"
           aria-hidden
         />
         <div
@@ -113,13 +113,13 @@ export function EntityLoadingSpinner({
       </div>
 
       <div className="space-y-1">
-        <p className="text-[13px] font-semibold tracking-tight text-slate-700 dark:text-slate-200">
+        <p className="text-[13px] font-semibold tracking-tight text-slate-700 dark:text-neutral-200">
           {displayLabel}
           <span className="entity-loading-ellipsis" aria-hidden>
             …
           </span>
         </p>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="text-[11px] text-slate-500 dark:text-neutral-400">
           Please wait a moment
         </p>
       </div>

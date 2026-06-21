@@ -215,11 +215,11 @@ export function LandlordsTable({
       {/* Mobile: stacked cards */}
       <div className="lg:hidden">
         {loading ? (
-          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-slate-800 dark:bg-card">
+          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-neutral-800 dark:bg-card">
             <EntityLoadingSpinner kind="landlords" size="sm" />
           </div>
         ) : isEmpty ? (
-          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-slate-800 dark:bg-card">
+          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-neutral-800 dark:bg-card">
             No landlords found.
           </div>
         ) : (

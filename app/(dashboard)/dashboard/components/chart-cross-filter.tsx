@@ -35,7 +35,7 @@ export function crossFilterRowClass(isActive: boolean) {
     "cursor-pointer transition-colors",
     isActive
       ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20 dark:border-emerald-500/30 dark:bg-emerald-500/10"
-      : "hover:border-slate-200 hover:bg-slate-50/80 dark:hover:bg-slate-900/60",
+      : "hover:border-slate-200 hover:bg-slate-50/80 dark:hover:bg-neutral-900/60",
   );
 }
 

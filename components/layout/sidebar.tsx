@@ -198,6 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const normalizedRole = role?.toString().toLowerCase();
   const isAgent = normalizedRole === "agent";
   const isDev = normalizedRole === "dev";
+  const dashboardHref = isAgent ? "/agent-dashboard" : "/dashboard";
 
   const visibleSections = useMemo(
     () =>
@@ -269,10 +270,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     "bg-[#f0faf5] font-semibold text-[#008f68] shadow-[0_1px_2px_rgba(0,143,104,0.08)] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20";
 
   const itemIdle =
-    "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100";
+    "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-100";
 
   const sectionLabel =
-    "mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500";
+    "mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500";
 
   const wrapCollapsed = (label: string, node: React.ReactElement) =>
     isCollapsed ? (
@@ -348,7 +349,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <li key={item.title}>
         {wrapCollapsed(item.title, button)}
         {!isCollapsed && isOpen && item.children && (
-          <ul className="mt-0.5 space-y-0.5 border-l border-slate-100 pl-1.5 ml-3 dark:border-slate-800">
+          <ul className="mt-0.5 space-y-0.5 border-l border-slate-100 pl-1.5 ml-3 dark:border-neutral-800">
             {item.children.map((child) => renderNavItem(child, true))}
           </ul>
         )}
@@ -361,8 +362,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       collapsible="icon"
       className={cn(
         "border-r border-slate-200/80 bg-[#f4f5f7] transition-colors duration-200",
-        "dark:border-slate-800 dark:bg-slate-950",
-        "[&_[data-slot=sidebar-inner]]:bg-[#f4f5f7] dark:[&_[data-slot=sidebar-inner]]:bg-slate-950",
+        "dark:border-neutral-800 dark:bg-neutral-950",
+        "[&_[data-slot=sidebar-inner]]:bg-[#f4f5f7] dark:[&_[data-slot=sidebar-inner]]:bg-neutral-950",
       )}
       {...props}
     >
@@ -370,7 +371,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <header
           className={cn(
             "flex shrink-0 items-center rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200",
-            "dark:border-slate-800 dark:bg-slate-950",
+            "dark:border-neutral-800 dark:bg-neutral-950",
             isCollapsed
               ? "h-auto flex-col justify-center gap-0 px-0 py-2"
               : "h-[3.25rem] justify-between gap-2 px-2.5",
@@ -378,17 +379,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         >
           {!isCollapsed && (
             <Link
-              href="/dashboard"
+              href={dashboardHref}
               className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25"
             >
               <CenterQuestMark size={26} />
-              <span
-                className="hidden size-7 shrink-0 items-center justify-center rounded-lg bg-[#008f68] text-[11px] font-bold text-white dark:inline-flex"
-                aria-hidden
-              >
-                CQ
-              </span>
-              <span className="truncate text-[14px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              <span className="truncate text-[14px] font-bold tracking-tight text-slate-900 dark:text-neutral-100">
                 Center Quest
               </span>
             </Link>
@@ -396,14 +391,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
           {isCollapsed && (
             <Link
-              href="/dashboard"
+              href={dashboardHref}
               className="flex items-center justify-center rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25"
               title="Center Quest"
             >
-              <CenterQuestMark size={24} />
-              <span className="hidden size-7 items-center justify-center rounded-lg bg-[#008f68] text-[10px] font-bold text-white dark:inline-flex">
-                CQ
-              </span>
+              <CenterQuestMark size={26} />
             </Link>
           )}
 
@@ -412,7 +404,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             onClick={toggleSidebar}
             className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors",
-              "hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+              "hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
             )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -427,7 +419,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         <div className="scrollbar-app min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pb-1">
           {isCollapsed ? (
-            <section className="rounded-xl border border-slate-200/80 bg-white px-1 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
+            <section className="rounded-xl border border-slate-200/80 bg-white px-1 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
               <ul className="flex flex-col items-center space-y-0.5">
                 {visibleSections.flatMap((section) =>
                   section.items.map((item) =>
@@ -442,7 +434,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             visibleSections.map((section) => (
               <section
                 key={section.title}
-                className="rounded-xl border border-slate-200/80 bg-white px-2 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950"
+                className="rounded-xl border border-slate-200/80 bg-white px-2 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950"
               >
                 <p className={sectionLabel}>{section.title}</p>
                 <ul className="space-y-0.5">

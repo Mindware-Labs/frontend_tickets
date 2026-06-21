@@ -105,10 +105,10 @@ export function TicketStatusToggle({
               readOnly && isActive && "cursor-default",
               isActive
                 ? "shadow-sm"
-                : "bg-white border-slate-200 text-slate-500",
+                : "bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-500 dark:text-neutral-400",
               !readOnly &&
                 !isActive &&
-                "hover:border-slate-300 hover:bg-slate-50",
+                "hover:border-slate-300 dark:hover:border-neutral-600 hover:bg-slate-50 dark:hover:bg-neutral-800",
             )}
             style={
               isActive

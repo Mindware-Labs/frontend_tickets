@@ -23,14 +23,14 @@ export function AgentWorkLists({ data }: AgentWorkListsProps) {
       <section className={dashboardPanelClass}>
         <div className={cn(dashboardPanelHeaderClass, "items-center")}>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
               <Ticket className="size-4" aria-hidden />
             </span>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                 Assigned
               </p>
-              <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
                 Recent tickets
               </h2>
             </div>
@@ -55,7 +55,7 @@ export function AgentWorkLists({ data }: AgentWorkListsProps) {
             <tbody>
               {data.recentTickets.length ? (
                 data.recentTickets.map((ticket) => (
-                  <tr key={ticket.id} className="border-t border-slate-100 dark:border-slate-800">
+                  <tr key={ticket.id} className="border-t border-slate-100 dark:border-neutral-800">
                     <td className={cn(dashboardTableCellStrongClass, "pl-3")}>
                       <div className="min-w-0">
                         <p className="truncate">#{ticket.id} · {ticket.clientName}</p>
@@ -89,14 +89,14 @@ export function AgentWorkLists({ data }: AgentWorkListsProps) {
       <section className={dashboardPanelClass}>
         <div className={cn(dashboardPanelHeaderClass, "items-center")}>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-sky-50 text-sky-700 ring-1 ring-sky-200">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
               <ClipboardList className="size-4" aria-hidden />
             </span>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                 Logged
               </p>
-              <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
                 Manual records
               </h2>
             </div>
@@ -121,7 +121,7 @@ export function AgentWorkLists({ data }: AgentWorkListsProps) {
             <tbody>
               {(data.recentManualRecords || []).length ? (
                 data.recentManualRecords!.map((record) => (
-                  <tr key={record.id} className="border-t border-slate-100 dark:border-slate-800">
+                  <tr key={record.id} className="border-t border-slate-100 dark:border-neutral-800">
                     <td className={cn(dashboardTableCellStrongClass, "pl-3")}>
                       <p className="truncate">{record.customer?.name || record.customer?.phone || `Record #${record.id}`}</p>
                     </td>

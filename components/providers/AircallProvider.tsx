@@ -641,7 +641,7 @@ function AircallDock({
               fullscreen `/aircall` view, otherwise a compact dock bar. */}
           <div
             className={cn(
-              "relative flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950",
+              "relative flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-950",
               movedToContainer ? "px-4 py-2.5 sm:px-5" : "px-3 py-2",
             )}
           >
@@ -657,10 +657,10 @@ function AircallDock({
                 <Phone className="size-3.5" aria-hidden strokeWidth={2.25} />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                   {agent ? "Signed in as" : "Aircall softphone"}
                 </p>
-                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-neutral-100">
                   {agent
                     ? `${agent.firstName} ${agent.lastName}`.trim() ||
                       agent.email
@@ -691,7 +691,7 @@ function AircallDock({
                 </span>
               )}
               {status === "loading" && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
                   <span className="size-1.5 animate-pulse rounded-full bg-slate-400" />
                   Loading
                 </span>
@@ -705,14 +705,14 @@ function AircallDock({
 
               <div
                 className={cn(
-                  "ml-1 flex items-center gap-0.5 rounded-md border border-slate-200/60 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80",
+                  "ml-1 flex items-center gap-0.5 rounded-md border border-slate-200/60 bg-slate-100/80 p-0.5 dark:border-neutral-800 dark:bg-neutral-900/80",
                   movedToContainer && "hidden",
                 )}
               >
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
                   onClick={(e) => {
                     stopDockDismissPropagation(e);
                     onClose();
@@ -724,7 +724,7 @@ function AircallDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  className="h-7 w-7 rounded text-slate-500 hover:bg-white hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
                   onClick={(e) => {
                     stopDockDismissPropagation(e);
                     onClose();
@@ -743,11 +743,11 @@ function AircallDock({
               the iframe area, not over the header pill/buttons. */}
           <div className="relative flex-1 min-h-0">
             {status === "loading" && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[#f4f5f7]/85 backdrop-blur-sm dark:bg-slate-950/80">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[#f4f5f7]/85 backdrop-blur-sm dark:bg-neutral-950/80">
                 <span className="flex size-9 items-center justify-center rounded-xl bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30">
                   <Phone className="size-4 animate-pulse" aria-hidden />
                 </span>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-neutral-400">
                   Loading Aircall…
                 </p>
               </div>

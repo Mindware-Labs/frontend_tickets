@@ -75,12 +75,12 @@ export function YardsToolbar({
           >
             <Layers className={cn(
               "h-3.5 w-3.5 shrink-0",
-              filters.type !== "all" ? "text-[#008f68] dark:text-[#5bebb8]" : "text-slate-400 dark:text-slate-500",
+              filters.type !== "all" ? "text-[#008f68] dark:text-[#5bebb8]" : "text-slate-400 dark:text-neutral-500",
             )} />
             <SelectValue placeholder="All types" />
             <ChevronDown className={cn(
               "h-3 w-3 shrink-0",
-              filters.type !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-slate-500",
+              filters.type !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-neutral-500",
             )} />
           </SelectTrigger>
           <SelectContent className={filterSelectContentClassName}>
@@ -102,12 +102,12 @@ export function YardsToolbar({
           >
             <CircleDot className={cn(
               "h-3.5 w-3.5 shrink-0",
-              filters.status !== "all" ? "text-[#008f68] dark:text-[#5bebb8]" : "text-slate-400 dark:text-slate-500",
+              filters.status !== "all" ? "text-[#008f68] dark:text-[#5bebb8]" : "text-slate-400 dark:text-neutral-500",
             )} />
             <SelectValue placeholder="All statuses" />
             <ChevronDown className={cn(
               "h-3 w-3 shrink-0",
-              filters.status !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-slate-500",
+              filters.status !== "all" ? "text-[#008f68]/60 dark:text-[#5bebb8]/60" : "text-slate-400 dark:text-neutral-500",
             )} />
           </SelectTrigger>
           <SelectContent className={filterSelectContentClassName}>
@@ -122,7 +122,7 @@ export function YardsToolbar({
           <button
             type="button"
             onClick={onClearFilters}
-            className="cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-slate-500 dark:hover:text-slate-300 ml-1"
+            className="cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-neutral-500 dark:hover:text-neutral-300 ml-1"
           >
             Clear all
           </button>

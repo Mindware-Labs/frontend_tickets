@@ -77,7 +77,7 @@ export function InsightSummaryBadge({
         ? "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-300"
         : tone === "warning"
           ? "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-300"
-          : "border-slate-200/80 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200";
+          : "border-slate-200/80 bg-slate-50 text-slate-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200";
 
   return (
     <div
@@ -122,7 +122,7 @@ export function InsightKpiStrip({
         toneClass,
       )}
     >
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
         {label}
       </p>
       <p
@@ -151,7 +151,7 @@ export function InsightMetaRow({
       <span className="shrink-0 text-slate-500">{label}</span>
       <span
         className={cn(
-          "min-w-0 text-right font-medium text-slate-800 dark:text-slate-100",
+          "min-w-0 text-right font-medium text-slate-800 dark:text-neutral-100",
           mono && "font-mono text-[10px]",
         )}
       >
@@ -218,11 +218,11 @@ export function InsightRecordPanel({
   return (
     <div
       className={cn(
-        "rounded-lg border border-slate-200/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/40",
+        "rounded-lg border border-slate-200/80 bg-slate-50/50 dark:border-neutral-800 dark:bg-neutral-900/40",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 px-2.5 py-1.5 dark:border-slate-800">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 px-2.5 py-1.5 dark:border-neutral-800">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
           {title}
         </p>
@@ -243,14 +243,14 @@ export function InsightIssueBlock({
   const trimmed = text?.trim();
   if (!trimmed) {
     return (
-      <p className="rounded-md border border-dashed border-slate-200/80 bg-white/60 px-2 py-2 text-[11px] italic text-slate-400 dark:border-slate-700 dark:bg-slate-950/50">
+      <p className="rounded-md border border-dashed border-slate-200/80 bg-white/60 px-2 py-2 text-[11px] italic text-slate-400 dark:border-neutral-700 dark:bg-neutral-950/50">
         {emptyLabel}
       </p>
     );
   }
 
   return (
-    <p className="max-h-28 overflow-y-auto rounded-md border border-slate-200/80 bg-white px-2 py-1.5 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 scrollbar-app dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+    <p className="max-h-28 overflow-y-auto rounded-md border border-slate-200/80 bg-white px-2 py-1.5 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700 scrollbar-app dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200">
       {trimmed}
     </p>
   );
@@ -267,13 +267,13 @@ export function InsightEmptyState({
 }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-16 text-center">
-      <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
+      <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-neutral-950 dark:ring-neutral-800">
         <Icon className="size-10 text-slate-400" aria-hidden />
       </div>
-      <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+      <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
         {title}
       </h3>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
         {description}
       </p>
     </div>
@@ -322,7 +322,7 @@ export function InsightExpandableDetails({
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 w-full rounded-lg border-slate-200/80 bg-white text-[11px] font-semibold text-[#008f68] shadow-none hover:border-[#008f68]/30 hover:bg-[#f0faf5] dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+          className="h-8 w-full rounded-lg border-slate-200/80 bg-white text-[11px] font-semibold text-[#008f68] shadow-none hover:border-[#008f68]/30 hover:bg-[#f0faf5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
           aria-expanded={open}
         >
           {open ? "Hide details" : "View details"}
@@ -342,7 +342,7 @@ export function InsightExpandableDetails({
 }
 
 export const insightCardClass =
-  "flex w-full flex-col self-start overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[box-shadow] duration-200 dark:border-slate-800 dark:bg-slate-950";
+  "flex w-full flex-col self-start overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[box-shadow] duration-200 dark:border-neutral-800 dark:bg-neutral-950";
 
 export const insightCardExpandedClass =
   "shadow-[0_4px_14px_rgba(0,143,104,0.12)] ring-1 ring-[#008f68]/20 dark:shadow-[0_4px_14px_rgba(0,0,0,0.35)]";

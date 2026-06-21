@@ -190,7 +190,7 @@ export function CampaignsToolbar({
           <button
             type="button"
             onClick={onClearFilters}
-            className="ml-1 cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline"
+            className="ml-1 cursor-pointer text-[12px] text-slate-400 underline-offset-4 transition-colors hover:text-slate-700 hover:underline dark:text-neutral-500 dark:hover:text-neutral-200"
           >
             Clear filters
           </button>

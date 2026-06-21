@@ -132,7 +132,7 @@ export function getDirectionIcon(direction: string) {
   }
   if (d === "voicemail") {
     return (
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-50 dark:bg-slate-500/10">
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-50 dark:bg-neutral-500/10">
         <PhoneIncoming className="h-[13px] w-[13px] text-slate-500" />
       </span>
     );

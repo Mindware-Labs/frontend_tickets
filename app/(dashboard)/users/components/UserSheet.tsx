@@ -44,7 +44,7 @@ interface UserSheetProps {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-neutral-400">
       {children}
     </p>
   );
@@ -107,7 +107,7 @@ export function UserSheet({
         className={cn(
           "flex h-dvh w-full max-w-[520px] flex-col gap-0 overflow-hidden p-0 sm:w-[min(520px,calc(100vw-2rem))]",
           "border-l border-slate-200/80 bg-slate-50 text-slate-900",
-          "shadow-2xl shadow-slate-900/15 antialiased dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          "shadow-2xl shadow-slate-900/15 antialiased dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
         )}
       >
         {!data ? (
@@ -127,10 +127,10 @@ export function UserSheet({
               <SheetDescription>Team member profile and access.</SheetDescription>
             </SheetHeader>
 
-            <div className="relative shrink-0 border-b border-slate-200/70 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <div className="relative shrink-0 border-b border-slate-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-950">
               <SheetClose
                 aria-label="Close user details"
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
@@ -144,11 +144,11 @@ export function UserSheet({
                   />
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                         #{data.id}
                       </span>
                       {loading ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-neutral-800 dark:text-neutral-400">
                           <RefreshCw className="h-3 w-3 animate-spin" />
                           Refreshing
                         </span>
@@ -157,7 +157,7 @@ export function UserSheet({
                     <h2 className="mt-2 text-[22px] font-bold leading-tight text-slate-950 dark:text-white">
                       {fullName}
                     </h2>
-                    <p className="mt-1 truncate text-[13px] font-medium text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 truncate text-[13px] font-medium text-slate-500 dark:text-neutral-400">
                       {data.email}
                     </p>
                   </div>
@@ -169,7 +169,7 @@ export function UserSheet({
                       "rounded-xl border px-3.5 py-2.5 shadow-sm",
                       data.isActive
                         ? "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-                        : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900",
+                        : "border-slate-200 bg-slate-50 text-slate-700 dark:border-neutral-700 dark:bg-neutral-900",
                     )}
                   >
                     <p className="text-[10px] font-bold uppercase tracking-[0.12em] opacity-70">
@@ -211,13 +211,13 @@ export function UserSheet({
               <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
                 <div>
                   <SectionLabel>Contact</SectionLabel>
-                  <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                  <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
                         <Mail className="h-4 w-4" strokeWidth={2} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-neutral-500">
                           Email
                         </p>
                         <a
@@ -233,16 +233,16 @@ export function UserSheet({
 
                 <div>
                   <SectionLabel>Activity</SectionLabel>
-                  <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                  <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68]">
                         <Clock className="h-4 w-4" strokeWidth={2} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-neutral-500">
                           Last login
                         </p>
-                        <p className="mt-0.5 text-[13px] font-medium text-slate-800 dark:text-slate-100">
+                        <p className="mt-0.5 text-[13px] font-medium text-slate-800 dark:text-neutral-100">
                           {formatLastLogin(data.lastLogin)}
                         </p>
                       </div>
@@ -258,7 +258,7 @@ export function UserSheet({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
+            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {onEdit ? (
                   <button
@@ -267,7 +267,7 @@ export function UserSheet({
                       onOpenChange(false);
                       onEdit(data);
                     }}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200"
                   >
                     <Pencil className="h-4 w-4" strokeWidth={2.2} />
                     Edit
@@ -282,7 +282,7 @@ export function UserSheet({
                     className={cn(
                       "flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-[13px] font-semibold transition-all active:scale-[0.98]",
                       data.isActive
-                        ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                        ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200"
                         : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200",
                     )}
                   >

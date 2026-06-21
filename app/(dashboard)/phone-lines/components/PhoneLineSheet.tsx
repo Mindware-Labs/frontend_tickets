@@ -47,7 +47,7 @@ function hasText(value?: string | null): value is string {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-neutral-400">
       {children}
     </p>
   );
@@ -60,7 +60,7 @@ function StatusTile({ active }: { active: boolean }) {
         "flex min-h-[54px] min-w-0 flex-1 items-center gap-3 rounded-xl border px-3.5 py-2.5 shadow-sm",
         active
           ? "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-          : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          : "border-slate-200 bg-slate-50 text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200",
       )}
     >
       <span
@@ -95,18 +95,18 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="min-w-0 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex items-center gap-2 text-slate-400">
         <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
         <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em]">
           {label}
         </p>
       </div>
-      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-slate-50">
+      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-neutral-50">
         {value}
       </p>
       {helper ? (
-        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-neutral-400">
           {helper}
         </p>
       ) : null}
@@ -133,12 +133,12 @@ function CopyButton({
       aria-label={label}
       title={label}
       className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-slate-950",
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-neutral-950",
         disabled
-          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-slate-800 dark:text-slate-700"
+          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-neutral-800 dark:text-neutral-700"
           : copied
             ? "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
-            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-800 dark:text-slate-500 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200",
+            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-neutral-800 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
       )}
     >
       {copied ? (
@@ -178,17 +178,17 @@ function DetailRow({
 }) {
   return (
     <div className="flex min-h-[58px] items-center gap-3 py-1.5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
         <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 py-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-neutral-500">
           {label}
         </p>
         <div
           className={cn(
-            "min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-slate-100",
-            muted && "italic text-slate-400 dark:text-slate-500",
+            "min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-neutral-100",
+            muted && "italic text-slate-400 dark:text-neutral-500",
           )}
         >
           {value}
@@ -231,7 +231,7 @@ function DialButton({
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35",
           disabled
-            ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600"
+            ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600"
             : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#e2fae9] dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300",
         )}
       >
@@ -248,7 +248,7 @@ function DialButton({
       className={cn(
         "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 text-[13px] font-semibold transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35",
         disabled
-          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600"
+          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600"
           : "border-[#008f68] bg-[#008f68] text-white shadow-sm shadow-emerald-900/10 hover:bg-[#007a5a]",
       )}
     >
@@ -270,7 +270,7 @@ function SheetAction({
   onClick?: () => void;
 }) {
   const className =
-    "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900";
+    "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:border-neutral-700 dark:hover:bg-neutral-900";
 
   const content = (
     <>
@@ -374,7 +374,7 @@ export function PhoneLineSheet({
         className={cn(
           "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-visible p-0 sm:w-[min(560px,calc(100vw-2rem))]",
           "border-l border-slate-200/80 bg-slate-50 text-slate-900",
-          "shadow-2xl shadow-slate-900/15 antialiased dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          "shadow-2xl shadow-slate-900/15 antialiased dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
         )}
       >
         {!data ? (
@@ -385,13 +385,13 @@ export function PhoneLineSheet({
             </SheetHeader>
             <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-center">
               <div>
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
                   <Phone className="h-6 w-6" strokeWidth={1.7} />
                 </div>
-                <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-neutral-50">
                   No line selected
                 </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
                   Pick a line from the table to view its details.
                 </p>
               </div>
@@ -406,10 +406,10 @@ export function PhoneLineSheet({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="relative shrink-0 overflow-visible bg-white dark:bg-slate-950">
+            <div className="relative shrink-0 overflow-visible bg-white dark:bg-neutral-950">
               <SheetClose
                 aria-label="Close phone line details"
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
@@ -422,11 +422,11 @@ export function PhoneLineSheet({
 
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                         #{data.id}
                       </span>
                       {loading ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                           <RefreshCw className="h-3 w-3 animate-spin" />
                           Refreshing
                         </span>
@@ -438,11 +438,11 @@ export function PhoneLineSheet({
                     </h2>
 
                     {hasText(data.label) ? (
-                      <p className="mt-1 min-w-0 text-[13px] font-medium text-slate-500 wrap-anywhere dark:text-slate-400">
+                      <p className="mt-1 min-w-0 text-[13px] font-medium text-slate-500 wrap-anywhere dark:text-neutral-400">
                         {data.label.trim()}
                       </p>
                     ) : (
-                      <p className="mt-1 text-[13px] italic text-slate-400 dark:text-slate-500">
+                      <p className="mt-1 text-[13px] italic text-slate-400 dark:text-neutral-500">
                         No label assigned
                       </p>
                     )}
@@ -461,13 +461,13 @@ export function PhoneLineSheet({
               </div>
             </div>
 
-            <div className="relative z-30 h-0 shrink-0 overflow-visible border-t border-slate-200/70 dark:border-slate-800" />
+            <div className="relative z-30 h-0 shrink-0 overflow-visible border-t border-slate-200/70 dark:border-neutral-800" />
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
                 <div>
                   <SectionLabel>Line details</SectionLabel>
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                     <DetailRow
                       icon={Phone}
                       label="Phone number"
@@ -523,7 +523,7 @@ export function PhoneLineSheet({
 
                 <div>
                   <SectionLabel>Timeline</SectionLabel>
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                     <DetailRow
                       icon={Clock}
                       label="Created"
@@ -546,7 +546,7 @@ export function PhoneLineSheet({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
+            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6">
               <div
                 className={cn(
                   "grid gap-2",

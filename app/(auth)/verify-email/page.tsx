@@ -18,6 +18,16 @@ const PAGE_CSS = `
   }
   .ve-btn:hover  { background: #007a5a !important; box-shadow: 0 8px 24px -6px rgba(0,122,90,.40) !important; }
   .ve-btn:active { background: #065f4a !important; }
+
+  .ve-card {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.10);
+  }
+  .ve-divider { background: #f1f5f9; }
+  .ve-title { color: #0f172a; }
+  .ve-message { color: #64748b; }
+  .ve-hint { color: #94a3b8; }
+  .ve-fallback { background: #f4f5f7; }
 `;
 
 const cardStyle: React.CSSProperties = {
@@ -25,8 +35,6 @@ const cardStyle: React.CSSProperties = {
   zIndex: 10,
   width: "100%",
   maxWidth: 420,
-  background: "#ffffff",
-  border: "1px solid rgba(15,23,42,0.10)",
   borderRadius: 16,
   padding: "32px 28px 28px",
   boxShadow: "0 1px 3px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.08)",
@@ -151,12 +159,12 @@ function VerifyEmailContent() {
 
         {/* Title + message */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3 }}>
+          <h2 className="ve-title" style={{ margin: 0, fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>
             {status === "loading" && "Verifying your email…"}
             {status === "success" && "Email verified!"}
             {status === "error"   && "Verification failed"}
           </h2>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748b", lineHeight: 1.55 }}>
+          <p className="ve-message" style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>
             {status === "loading" && !message
               ? "Please wait while we verify your email address…"
               : message}
@@ -164,12 +172,12 @@ function VerifyEmailContent() {
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "#f1f5f9", width: "100%" }} />
+        <div className="ve-divider" style={{ height: 1, width: "100%" }} />
 
         {/* Actions */}
         {status === "success" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-            <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
+            <p className="ve-hint" style={{ margin: 0, fontSize: 12 }}>
               Redirecting to sign in in 3 seconds…
             </p>
             <button onClick={() => router.push("/login")} className="ve-btn" style={btnStyle}>
@@ -185,7 +193,7 @@ function VerifyEmailContent() {
               <span>Back to sign in</span>
               <ArrowRight size={13} />
             </button>
-            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>
+            <p className="ve-hint" style={{ margin: 0, fontSize: 11 }}>
               Need help? Contact support.
             </p>
           </div>
@@ -199,7 +207,7 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: "100vh", background: "#f4f5f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ve-fallback" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <style>{`@keyframes auth-spin{to{transform:rotate(360deg)}}`}</style>
           <Loader2 size={24} style={{ color: "#008f68", animation: "auth-spin 1s linear infinite" }} />
         </div>

@@ -37,7 +37,7 @@ function StatusPill({ active }: { active: boolean }) {
         "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold",
         active
           ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-          : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+          : "border-slate-200 bg-slate-100 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
       )}
     >
       <span
@@ -73,7 +73,7 @@ function StatTile({
           ? "border-red-100 bg-red-50/60 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
           : tone === "warning"
             ? "border-amber-100 bg-amber-50/70 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-            : "border-slate-100 bg-slate-50/70 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200";
+            : "border-slate-100 bg-slate-50/70 text-slate-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200";
 
   return (
     <div className={cn("min-w-0 rounded-lg border px-2.5 py-2", toneClass)}>
@@ -114,7 +114,7 @@ function MetaItem({
           {label}
         </p>
         <p
-          className="mt-0.5 truncate text-[12px] font-semibold text-slate-800 dark:text-slate-100"
+          className="mt-0.5 truncate text-[12px] font-semibold text-slate-800 dark:text-neutral-100"
           title={value}
         >
           {value}
@@ -221,20 +221,20 @@ export function CampaignCard({
         "group relative flex min-h-[350px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-all duration-200",
         "hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.10)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/30 focus-visible:ring-offset-2",
-        "dark:border-slate-800 dark:bg-slate-950",
+        "dark:border-neutral-800 dark:bg-neutral-950",
       )}
     >
       <div className="h-1 bg-gradient-to-r from-[#008f68] via-emerald-400 to-transparent" />
 
       <div className="flex flex-1 flex-col p-3.5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-500 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
             <Megaphone className="h-4 w-4" strokeWidth={2} />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex h-5 items-center rounded-full bg-slate-50 px-2 font-mono text-[9px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
+              <span className="inline-flex h-5 items-center rounded-full bg-slate-50 px-2 font-mono text-[9px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:ring-neutral-700">
                 #{campaign.id}
               </span>
               <span
@@ -250,7 +250,7 @@ export function CampaignCard({
             </div>
 
             <h3
-              className="mt-1.5 line-clamp-2 text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-50"
+              className="mt-1.5 line-clamp-2 text-[15px] font-bold leading-tight text-slate-900 dark:text-neutral-50"
               title={campaign.nombre}
             >
               {campaign.nombre}
@@ -258,7 +258,7 @@ export function CampaignCard({
           </div>
         </div>
 
-        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900/70">
+        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 dark:border-neutral-800 dark:bg-neutral-900/70">
           <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <MetaItem
               icon={MapPin}
@@ -304,17 +304,17 @@ export function CampaignCard({
         </div>
 
         {outcome ? (
-          <div className="mt-3 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
+          <div className="mt-3 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 Classification
               </p>
-              <p className="text-[11px] font-semibold text-slate-500">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400">
                 {classifiedCount}/{totalActivities} covered
               </p>
             </div>
 
-            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-800">
               <div
                 className="h-full shrink-0 bg-[#008f68]"
                 style={{ width: `${positiveWidth}%` }}
@@ -348,7 +348,7 @@ export function CampaignCard({
             </div>
           </div>
         ) : (
-          <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-[11px] font-medium leading-4 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-[11px] font-medium leading-4 text-slate-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
             General campaign activity is grouped by yard and line for operational
             reporting.
           </div>
@@ -356,7 +356,7 @@ export function CampaignCard({
       </div>
 
       <div
-        className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/70"
+        className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3.5 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/70"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
@@ -386,7 +386,7 @@ export function CampaignCard({
                 title="Edit campaign"
                 aria-label="Edit campaign"
                 onClick={() => onEdit(campaign)}
-                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-950 dark:hover:text-slate-100"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-neutral-950 dark:hover:text-neutral-100"
               >
                 <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
@@ -399,7 +399,7 @@ export function CampaignCard({
                 title="Archive campaign"
                 aria-label="Archive campaign"
                 onClick={() => onDelete(campaign)}
-                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-red-600 dark:hover:bg-slate-950"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-red-600 dark:hover:bg-neutral-950"
               >
                 <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
@@ -412,7 +412,7 @@ export function CampaignCard({
                 title="Restore campaign"
                 aria-label="Restore campaign"
                 onClick={() => onRestore(campaign)}
-                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-[#008f68] dark:hover:bg-slate-950"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-white hover:text-[#008f68] dark:hover:bg-neutral-950"
               >
                 <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
               </Button>
@@ -434,14 +434,14 @@ function MiniLegend({
   value: number;
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900">
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5 dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex min-w-0 items-center gap-1">
         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", color)} />
         <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">
           {label}
         </p>
       </div>
-      <p className="mt-0.5 text-sm font-bold leading-none text-slate-900 tabular-nums dark:text-slate-50">
+      <p className="mt-0.5 text-sm font-bold leading-none text-slate-900 tabular-nums dark:text-neutral-50">
         {value}
       </p>
     </div>

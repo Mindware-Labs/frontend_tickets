@@ -31,6 +31,20 @@ const PAGE_CSS = `
 
   .lu-link { color: #008f68; text-decoration: none; font-weight: 600; position: relative; transition: color .15s; }
   .lu-link:hover { color: #007a5a; }
+
+  .lu-card {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.10);
+  }
+  .lu-divider { background: #f1f5f9; }
+  .lu-heading { color: #0f172a; }
+  .lu-success-overlay { background: rgba(255,255,255,.96); }
+  .lu-success-title { color: #0f172a; }
+  .lu-success-sub { color: #64748b; }
+  .lu-field-label { color: #64748b; }
+  .lu-countdown-label { color: #64748b; }
+  .lu-countdown-val { color: #0f172a; }
+  .lu-fallback { background: #f4f5f7; }
 `;
 
 /* Shared card shell — DS §5.2 appPanelClass */
@@ -39,8 +53,6 @@ const cardStyle: React.CSSProperties = {
   zIndex: 10,
   width: "100%",
   maxWidth: 420,
-  background: "#ffffff",
-  border: "1px solid rgba(15,23,42,0.10)",
   borderRadius: 16,
   padding: "28px 28px 24px",
   boxShadow: "0 1px 3px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.08)",
@@ -81,10 +93,10 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
   return (
     <label
       htmlFor={htmlFor}
+      className="lu-field-label"
       style={{
         fontSize: 11,
         fontWeight: 600,
-        color: "#64748b",
         letterSpacing: ".06em",
         textTransform: "uppercase",
       }}
@@ -192,13 +204,12 @@ function LoginForm() {
         {/* Success overlay */}
         {success && (
           <div
-            className="lu-success"
+            className="lu-success lu-success-overlay"
             style={{
               position: "absolute",
               inset: 0,
               borderRadius: 16,
               zIndex: 20,
-              background: "rgba(255,255,255,.96)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -221,10 +232,10 @@ function LoginForm() {
               <CheckCircle2 size={24} style={{ color: "#008f68" }} />
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+              <p className="lu-success-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
                 Signed in successfully
               </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>
+              <p className="lu-success-sub" style={{ margin: "4px 0 0", fontSize: 12 }}>
                 Redirecting to dashboard…
               </p>
             </div>
@@ -233,13 +244,13 @@ function LoginForm() {
 
         {/* Heading */}
         <div style={{ textAlign: "center", marginBottom: 2 }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3 }}>
+          <h2 className="lu-heading" style={{ margin: 0, fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>
             Welcome back
           </h2>
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "#f1f5f9", margin: "-4px 0 0" }} />
+        <div className="lu-divider" style={{ height: 1, margin: "-4px 0 0" }} />
 
         {/* Email */}
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -374,9 +385,9 @@ function LoginForm() {
                 <>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: 12 }}>Too many failed attempts</p>
                   {rateLimitCountdown > 0 && (
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "#64748b" }}>
+                    <p className="lu-countdown-label" style={{ margin: "2px 0 0", fontSize: 11 }}>
                       Try again in{" "}
-                      <strong style={{ color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
+                      <strong className="lu-countdown-val" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {rateLimitCountdown}s
                       </strong>
                     </p>
@@ -432,7 +443,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: "100vh", background: "#f4f5f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="lu-fallback" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <style>{`@keyframes auth-spin{to{transform:rotate(360deg)}}`}</style>
           <Loader2 size={24} style={{ color: "#008f68", animation: "auth-spin 1s linear infinite" }} />
         </div>

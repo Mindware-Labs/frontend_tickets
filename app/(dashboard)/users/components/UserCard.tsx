@@ -85,25 +85,25 @@ function DetailTile({
         "flex min-h-[58px] min-w-0 items-center gap-2.5 rounded-xl border px-3 py-2.5",
         accent
           ? "border-[#008f68]/15 bg-[#f0faf5]/70 dark:border-emerald-500/25 dark:bg-emerald-500/10"
-          : "border-slate-200/70 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/50",
+          : "border-slate-200/70 bg-slate-50/80 dark:border-neutral-800 dark:bg-neutral-900/50",
       )}
     >
       <div
         className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-lg border bg-white shadow-sm dark:bg-slate-950",
+          "flex size-8 shrink-0 items-center justify-center rounded-lg border bg-white shadow-sm dark:bg-neutral-950",
           accent
             ? "border-[#008f68]/15 text-[#008f68] dark:border-emerald-500/25 dark:text-emerald-300"
-            : "border-slate-200/80 text-slate-400 dark:border-slate-700",
+            : "border-slate-200/80 text-slate-400 dark:border-neutral-700",
         )}
       >
         <Icon className="size-3.5" strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
           {label}
         </p>
         <p
-          className="mt-0.5 truncate text-xs font-semibold text-slate-700 dark:text-slate-200"
+          className="mt-0.5 truncate text-xs font-semibold text-slate-700 dark:text-neutral-200"
           title={value}
         >
           {value}
@@ -136,7 +136,7 @@ export function UserCard({
       className={cn(
         "group relative flex min-h-[268px] flex-col overflow-hidden rounded-2xl border text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all duration-200",
         user.isActive
-          ? "border-slate-200/80 bg-white hover:-translate-y-0.5 hover:border-[#008f68]/35 hover:shadow-[0_12px_32px_rgba(0,111,80,0.12)] dark:border-slate-800 dark:bg-slate-950 dark:hover:border-emerald-500/30"
+          ? "border-slate-200/80 bg-white hover:-translate-y-0.5 hover:border-[#008f68]/35 hover:shadow-[0_12px_32px_rgba(0,111,80,0.12)] dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-emerald-500/30"
           : "border-red-200 bg-red-50/40 hover:-translate-y-0.5 hover:border-red-300 hover:shadow-[0_12px_32px_rgba(220,38,38,0.10)] dark:border-red-900/50 dark:bg-red-950/20 dark:hover:border-red-700/50",
       )}
     >
@@ -163,19 +163,19 @@ export function UserCard({
                 <p className={cn(
                   "text-[10px] font-semibold uppercase tracking-widest",
                   user.isActive
-                    ? "text-slate-400 dark:text-slate-500"
+                    ? "text-slate-400 dark:text-neutral-500"
                     : "text-red-400 dark:text-red-500",
                 )}>
                   {user.isActive ? "Team member" : "Access blocked"}
                 </p>
                 <h3
-                  className="mt-1 truncate text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-50"
+                  className="mt-1 truncate text-[15px] font-bold leading-tight text-slate-900 dark:text-neutral-50"
                   title={fullName}
                 >
                   {fullName}
                 </h3>
               </div>
-              <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                 #{user.id}
               </span>
             </div>
@@ -200,11 +200,11 @@ export function UserCard({
         className={cn(
           "flex items-center justify-between gap-2 border-t px-3.5 py-2.5",
           user.isActive
-            ? "border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/40"
+            ? "border-slate-100 bg-slate-50/80 dark:border-neutral-800 dark:bg-neutral-900/40"
             : "border-red-100 bg-red-50/60 dark:border-red-900/30 dark:bg-red-950/30",
         )}
       >
-        <span className="truncate text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        <span className="truncate text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
           Actions
         </span>
         <div className="flex items-center justify-end gap-1">
@@ -225,7 +225,7 @@ export function UserCard({
             className={cn(
               "flex size-8 items-center justify-center rounded-lg border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
               user.isActive
-                ? "text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700 dark:hover:border-slate-700 dark:hover:bg-slate-800"
+                ? "text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
                 : "text-emerald-600 hover:border-emerald-100 hover:bg-emerald-50 dark:hover:border-emerald-500/20 dark:hover:bg-emerald-500/10",
             )}
           >

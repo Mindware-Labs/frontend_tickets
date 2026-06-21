@@ -2,6 +2,43 @@
 
 import React, { useState } from "react";
 
+const AUTH_INPUT_CSS = `
+  .auth-input-wrap {
+    background: #f8fafc;
+    color: #0f172a;
+  }
+  .auth-input-wrap.is-focus {
+    background: #ffffff;
+  }
+  .auth-input-wrap.is-disabled {
+    background: rgba(248,250,252,.5);
+  }
+  .auth-input-wrap input {
+    color: #0f172a;
+  }
+  .auth-input-wrap input:-webkit-autofill,
+  .auth-input-wrap input:-webkit-autofill:hover,
+  .auth-input-wrap input:-webkit-autofill:focus,
+  .auth-input-wrap input:-webkit-autofill:active {
+    -webkit-text-fill-color: #0f172a;
+    caret-color: #0f172a;
+    background-color: transparent !important;
+    box-shadow: 0 0 0 1000px #f8fafc inset !important;
+    transition: background-color 999999s ease-out;
+  }
+  .auth-input-wrap.is-focus input:-webkit-autofill,
+  .auth-input-wrap.is-focus input:-webkit-autofill:hover,
+  .auth-input-wrap.is-focus input:-webkit-autofill:focus,
+  .auth-input-wrap.is-focus input:-webkit-autofill:active {
+    -webkit-text-fill-color: #0f172a;
+    caret-color: #0f172a;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+  }
+  .auth-input-wrap input::placeholder {
+    color: #94a3b8;
+  }
+`;
+
 export function AuthInput({
   id,
   type = "text",
@@ -52,13 +89,19 @@ export function AuthInput({
       : "#94a3b8";
 
   return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: AUTH_INPUT_CSS }} />
     <div
+      className={[
+        "auth-input-wrap",
+        focus ? "is-focus" : "",
+        disabled ? "is-disabled" : "",
+      ].filter(Boolean).join(" ")}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
         height: 36, /* h-9 */
-        background: disabled ? "rgba(248,250,252,.5)" : focus ? "#ffffff" : "#f8fafc",
         border: `1.5px solid ${borderColor}`,
         boxShadow,
         borderRadius: 8, /* rounded-lg */
@@ -99,12 +142,12 @@ export function AuthInput({
           background: "transparent",
           fontFamily: "inherit",
           fontSize: 13,
-          color: "#0f172a",
           height: "100%",
           cursor: disabled ? "not-allowed" : "text",
         }}
       />
       {trailing}
     </div>
+    </>
   );
 }

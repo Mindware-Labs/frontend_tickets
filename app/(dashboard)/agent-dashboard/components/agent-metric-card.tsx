@@ -12,7 +12,7 @@ const TONES = {
   sky:
     "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300",
   slate:
-    "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+    "border-slate-200 bg-slate-50 text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300",
 } as const;
 
 type AgentMetricCardProps = {
@@ -49,13 +49,13 @@ export function AgentMetricCard({
         <Icon className="size-4" aria-hidden strokeWidth={2.25} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        <span className="block text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
           {label}
         </span>
-        <span className="block text-xl font-bold leading-tight text-slate-900 dark:text-slate-100 tabular-nums">
+        <span className="block text-xl font-bold leading-tight text-slate-900 dark:text-neutral-100 tabular-nums">
           {typeof value === "number" ? value.toLocaleString() : value}
         </span>
-        <span className="block truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        <span className="block truncate text-[11px] font-medium text-slate-500 dark:text-neutral-400">
           {detail}
         </span>
       </span>

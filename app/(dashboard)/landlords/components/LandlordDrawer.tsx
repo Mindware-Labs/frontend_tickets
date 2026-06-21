@@ -89,12 +89,12 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Contact</p>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-700">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-200">
                   <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                   <span className="text-sm font-medium font-mono">{landlord.phone || "—"}</span>
                 </div>
                 {landlord.phone && (
-                  <button onClick={handleCopyPhone} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                  <button onClick={handleCopyPhone} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors">
                     {copiedPhone
                       ? <Check className="h-3.5 w-3.5 text-green-600" />
                       : <Copy className="h-3.5 w-3.5 text-slate-400" />}
@@ -103,12 +103,12 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-700">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-200">
                   <Mail className="h-4 w-4 text-slate-400 shrink-0" />
                   <span className="text-sm font-medium truncate">{landlord.email || "—"}</span>
                 </div>
                 {landlord.email && (
-                  <button onClick={handleCopyEmail} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                  <button onClick={handleCopyEmail} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors">
                     {copiedEmail
                       ? <Check className="h-3.5 w-3.5 text-green-600" />
                       : <Copy className="h-3.5 w-3.5 text-slate-400" />}
@@ -121,15 +121,15 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 text-center">
+              <div className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 text-center dark:bg-neutral-900 dark:border-neutral-700">
                 <Building className="h-4 w-4 text-slate-400 mx-auto mb-1" />
-                <p className="text-[15px] font-semibold text-slate-900 leading-none">{linkedYards.length}</p>
-                <p className="text-[10px] text-slate-500 mt-1">Yards</p>
+                <p className="text-[15px] font-semibold text-slate-900 leading-none dark:text-neutral-100">{linkedYards.length}</p>
+                <p className="text-[10px] text-slate-500 mt-1 dark:text-neutral-400">Yards</p>
               </div>
-              <div className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 text-center">
+              <div className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 text-center dark:bg-neutral-900 dark:border-neutral-700">
                 <FileText className="h-4 w-4 text-slate-400 mx-auto mb-1" />
-                <p className="text-[15px] font-semibold text-slate-900 leading-none">#{landlord.id}</p>
-                <p className="text-[10px] text-slate-500 mt-1">Landlord ID</p>
+                <p className="text-[15px] font-semibold text-slate-900 leading-none dark:text-neutral-100">#{landlord.id}</p>
+                <p className="text-[10px] text-slate-500 mt-1 dark:text-neutral-400">Landlord ID</p>
               </div>
             </div>
 
@@ -150,13 +150,13 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
                       key={yard.id}
                       href={yard.id ? `/yards?yardId=${yard.id}` : "/yards"}
                       onClick={() => onOpenChange(false)}
-                      className="group flex items-center gap-3 p-3 rounded-lg border border-slate-200/60 bg-slate-50 hover:border-[#008f68]/40 hover:bg-[#f0fdf8] transition-colors"
+                      className="group flex items-center gap-3 p-3 rounded-lg border border-slate-200/60 bg-slate-50 hover:border-[#008f68]/40 hover:bg-[#f0fdf8] transition-colors dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-[#008f68]/40 dark:hover:bg-[#008f68]/10"
                     >
                       <div className="h-8 w-8 rounded-md bg-[#e2fae9] flex items-center justify-center shrink-0">
                         <Building className="h-4 w-4 text-[#008f68]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate leading-none text-slate-800">
+                        <p className="text-sm font-medium truncate leading-none text-slate-800 dark:text-neutral-100">
                           {yard.name}
                         </p>
                         {yard.commonName && (

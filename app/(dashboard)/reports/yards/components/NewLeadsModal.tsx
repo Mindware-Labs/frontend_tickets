@@ -143,28 +143,28 @@ export function NewLeadsModal({
         <SheetContent
           side={side}
           className={cn(
-            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950",
             sheetWidthClass,
           )}
         >
-          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-950">
             <InsightSheetAccent />
             <SheetHeader className={insightSheetHeaderClass}>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1 pr-1">
-                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
                       <UserPlus className="size-3.5" aria-hidden />
                     </span>
                     New Lead Customers
                   </SheetTitle>
-                  <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <SheetDescription className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
                     Customers with{" "}
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    <span className="font-semibold text-slate-800 dark:text-neutral-100">
                       new lead
                     </span>{" "}
                     calls in{" "}
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    <span className="font-semibold text-slate-800 dark:text-neutral-100">
                       {yardName}
                     </span>
                   </SheetDescription>
@@ -254,11 +254,11 @@ export function NewLeadsModal({
                           "hover:border-[#008f68]/35",
                         )}
                       >
-                        <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-slate-800">
+                        <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-neutral-800">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <p
-                                className="truncate text-[13px] font-bold tracking-tight text-slate-900 dark:text-slate-100"
+                                className="truncate text-[13px] font-bold tracking-tight text-slate-900 dark:text-neutral-100"
                                 title={displayName}
                               >
                                 {displayName}
@@ -285,7 +285,7 @@ export function NewLeadsModal({
                               tone="sky"
                             />
                           </div>
-                          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-neutral-300">
                             <Phone className="size-3.5 shrink-0 text-slate-400" />
                             <span className="truncate font-medium">
                               {lead.phone
@@ -300,7 +300,7 @@ export function NewLeadsModal({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-8 w-full rounded-lg border-slate-200/80 bg-white text-[11px] font-semibold text-[#008f68] shadow-none hover:border-[#008f68]/30 hover:bg-[#f0faf5] dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400 dark:hover:bg-emerald-950/30 flex items-center justify-between"
+                            className="h-8 w-full rounded-lg border-slate-200/80 bg-white text-[11px] font-semibold text-[#008f68] shadow-none hover:border-[#008f68]/30 hover:bg-[#f0faf5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-emerald-400 dark:hover:bg-emerald-950/30 flex items-center justify-between"
                             onClick={() => {
                               setSelectedLead(lead);
                               setShowLeadModal(true);
@@ -318,7 +318,7 @@ export function NewLeadsModal({
                           </Button>
                         </div>
 
-                        <div className="mt-auto flex gap-2 border-t border-slate-100 p-2.5 dark:border-slate-800">
+                        <div className="mt-auto flex gap-2 border-t border-slate-100 p-2.5 dark:border-neutral-800">
                           <Button
                             asChild
                             variant="outline"
@@ -350,7 +350,7 @@ export function NewLeadsModal({
             </div>
           </ScrollArea>
 
-          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-slate-500">
                 Ranked by lead call volume · expand a card to see calls and tickets

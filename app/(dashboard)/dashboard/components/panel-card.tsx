@@ -61,7 +61,7 @@ export function PanelCard({
           {Icon ? (
             <div
               className={cn(
-                "flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
+                "flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-300",
                 centered && "size-7",
               )}
             >
@@ -77,7 +77,7 @@ export function PanelCard({
           <div className={cn("min-w-0 flex-1", centered && "flex-1-none")}>
             <h3
               className={cn(
-                "text-[12px] font-bold leading-tight text-slate-800 dark:text-slate-100",
+                "text-[12px] font-bold leading-tight text-slate-800 dark:text-neutral-100",
                 centered && "text-sm",
               )}
             >
@@ -93,7 +93,7 @@ export function PanelCard({
                 {subtitle ? (
                   <p
                     className={cn(
-                      "min-w-0 flex-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400",
+                      "min-w-0 flex-1 text-[11px] leading-snug text-slate-500 dark:text-neutral-400",
                       centered && "text-center",
                       !subtitleAction && "line-clamp-2",
                     )}

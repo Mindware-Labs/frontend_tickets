@@ -13,8 +13,8 @@ export function DashboardEmptyState({
     <div
       className={
         compact
-          ? "flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-4 text-center dark:border-slate-700 dark:bg-slate-900/40"
-          : "flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900/40"
+          ? "flex h-full min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-4 text-center dark:border-neutral-700 dark:bg-neutral-900/40"
+          : "flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center dark:border-neutral-700 dark:bg-neutral-900/40"
       }
     >
       <BarChart3

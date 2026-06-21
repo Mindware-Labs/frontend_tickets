@@ -112,21 +112,21 @@ function StatCard({
 }) {
   const toneClass = {
     neutral:
-      "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200",
+      "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200",
     danger:
-      "border-rose-200 bg-white text-rose-700 hover:border-rose-300 dark:border-rose-500/30 dark:bg-slate-950 dark:text-rose-300",
+      "border-rose-200 bg-white text-rose-700 hover:border-rose-300 dark:border-rose-500/30 dark:bg-neutral-950 dark:text-rose-300",
     warning:
-      "border-amber-200 bg-white text-amber-700 hover:border-amber-300 dark:border-amber-500/30 dark:bg-slate-950 dark:text-amber-300",
+      "border-amber-200 bg-white text-amber-700 hover:border-amber-300 dark:border-amber-500/30 dark:bg-neutral-950 dark:text-amber-300",
     success:
-      "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 dark:border-emerald-500/30 dark:bg-slate-950 dark:text-emerald-300",
+      "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 dark:border-emerald-500/30 dark:bg-neutral-950 dark:text-emerald-300",
     info:
-      "border-sky-200 bg-white text-sky-700 hover:border-sky-300 dark:border-sky-500/30 dark:bg-slate-950 dark:text-sky-300",
+      "border-sky-200 bg-white text-sky-700 hover:border-sky-300 dark:border-sky-500/30 dark:bg-neutral-950 dark:text-sky-300",
     brand:
-      "border-[#008f68]/25 bg-white text-[#006b4f] hover:border-[#008f68]/40 dark:border-emerald-500/30 dark:bg-slate-950 dark:text-emerald-300",
+      "border-[#008f68]/25 bg-white text-[#006b4f] hover:border-[#008f68]/40 dark:border-emerald-500/30 dark:bg-neutral-950 dark:text-emerald-300",
   }[tone];
 
   const iconClass = {
-    neutral: "bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400",
+    neutral: "bg-slate-100 text-slate-500 dark:bg-neutral-900 dark:text-neutral-400",
     danger: "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
     warning:
       "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300",
@@ -142,7 +142,7 @@ function StatCard({
       onClick={onClick}
       className={cn(
         "group flex min-h-[78px] min-w-0 items-start gap-2.5 rounded-xl border px-2.5 py-2 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors",
-        onClick ? "cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-900/70" : "cursor-default",
+        onClick ? "cursor-pointer hover:bg-slate-50/80 dark:hover:bg-neutral-900/70" : "cursor-default",
         toneClass,
         active && "border-[#008f68]/45 bg-[#f0faf5] ring-2 ring-[#008f68]/15 dark:bg-emerald-500/10",
       )}
@@ -160,11 +160,11 @@ function StatCard({
         <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
           {label}
         </span>
-        <span className="mt-0.5 truncate text-xl font-bold leading-tight tabular-nums text-slate-900 dark:text-slate-100">
+        <span className="mt-0.5 truncate text-xl font-bold leading-tight tabular-nums text-slate-900 dark:text-neutral-100">
           {value}
         </span>
         {sub && (
-          <span className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          <span className="truncate text-[11px] font-medium text-slate-500 dark:text-neutral-400">
             {sub}
           </span>
         )}

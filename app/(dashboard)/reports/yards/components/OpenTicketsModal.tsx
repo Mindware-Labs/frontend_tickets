@@ -137,10 +137,10 @@ export function OpenTicketsModal({
 
     return (
       <article key={ticket.id} className={insightCardClass}>
-        <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-slate-800">
+        <div className="border-b border-slate-100/80 px-3 py-2.5 dark:border-neutral-800">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="flex items-center gap-1.5 text-[13px] font-bold text-slate-900 dark:text-slate-100">
+              <p className="flex items-center gap-1.5 text-[13px] font-bold text-slate-900 dark:text-neutral-100">
                 <TicketIcon className="size-3.5 text-sky-600" />
                 Ticket #{ticket.id}
               </p>
@@ -155,7 +155,7 @@ export function OpenTicketsModal({
           </div>
         </div>
         <div className="space-y-2 p-2.5">
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2 dark:border-neutral-800 dark:bg-neutral-900/40">
             <InsightMetaRow
               label="Customer"
               value={
@@ -214,7 +214,7 @@ export function OpenTicketsModal({
             />
           </InsightRecordPanel>
         </div>
-        <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-slate-800">
+        <div className="mt-auto border-t border-slate-100 p-2.5 dark:border-neutral-800">
           <Button
             type="button"
             onClick={() => handleOpenTicket(ticket)}
@@ -233,16 +233,16 @@ export function OpenTicketsModal({
         <SheetContent
           side={side}
           className={cn(
-            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950",
+            "flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950",
             sheetWidthClass,
           )}
         >
-          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-950">
             <InsightSheetAccent />
             <SheetHeader className={insightSheetHeaderClass}>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1 pr-1">
-                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                  <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-200/70 dark:bg-sky-500/10 dark:text-sky-400">
                       <ClipboardList className="size-3.5" />
                     </span>
@@ -250,7 +250,7 @@ export function OpenTicketsModal({
                   </SheetTitle>
                   <SheetDescription className="mt-1 text-xs text-slate-500">
                     Active tickets still needing work in{" "}
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    <span className="font-semibold text-slate-800 dark:text-neutral-100">
                       {yardName}
                     </span>
                   </SheetDescription>
@@ -316,7 +316,7 @@ export function OpenTicketsModal({
             </div>
           </ScrollArea>
 
-          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-slate-500">
                 Sorted by priority, then oldest open first

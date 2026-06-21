@@ -39,7 +39,7 @@ export function ExecutiveCallIntentTopDriver({
       <p className="text-[9px] font-semibold uppercase tracking-wide text-[#008f68] dark:text-emerald-400">
         Top driver
       </p>
-      <p className="max-w-[200px] truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100 sm:max-w-[280px]">
+      <p className="max-w-[200px] truncate text-[11px] font-semibold text-slate-800 dark:text-neutral-100 sm:max-w-[280px]">
         {topReason}
       </p>
     </div>
@@ -71,7 +71,7 @@ export function ExecutiveCallIntentPanel({
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+      <p className="text-[10px] text-slate-500 dark:text-neutral-400">
         Period · {mix.periodLabel}
       </p>
 
@@ -82,8 +82,8 @@ export function ExecutiveCallIntentPanel({
         />
       ) : (
         <>
-          <p className="text-[11px] text-slate-600 dark:text-slate-300">
-            <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+          <p className="text-[11px] text-slate-600 dark:text-neutral-300">
+            <span className="font-semibold tabular-nums text-slate-800 dark:text-neutral-100">
               {mix.totalClassified}
             </span>{" "}
             calls tagged with a reason (payment status, registration, move-out, etc.).
@@ -159,7 +159,7 @@ export function ExecutiveCallIntentPanel({
                 key={row.reason}
                 className={`${crossFilterRowClass(
                   isFilterActive("callReason", row.reason),
-                )} flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-900/50`}
+                )} flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-1.5 dark:border-neutral-800 dark:bg-neutral-900/50`}
                 onClick={() => toggleFilter("callReason", row.reason)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -178,7 +178,7 @@ export function ExecutiveCallIntentPanel({
                   }}
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-[11px] font-medium text-slate-800 dark:text-slate-100">
+                  <p className="truncate text-[11px] font-medium text-slate-800 dark:text-neutral-100">
                     {row.reason}
                   </p>
                   <p className="text-[10px] tabular-nums text-slate-500">

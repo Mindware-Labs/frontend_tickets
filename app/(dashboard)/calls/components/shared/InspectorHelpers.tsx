@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 export function InspLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
+    <p className="text-[11px] text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1 font-semibold">
       {children}
     </p>
   );
@@ -43,8 +43,8 @@ export function InspectorReadonlyValue({
   return (
     <div
       className={cn(
-        "flex min-h-7 items-center rounded-lg bg-slate-50 px-2.5 text-xs",
-        muted ? "font-normal text-slate-400" : "font-medium text-slate-700",
+        "flex min-h-7 items-center rounded-lg bg-slate-50 dark:bg-neutral-800 px-2.5 text-xs",
+        muted ? "font-normal text-slate-400 dark:text-neutral-500" : "font-medium text-slate-700 dark:text-neutral-200",
         className,
       )}
       title={value}
@@ -72,7 +72,7 @@ export function InspectorSelect({
       value={value || "none"}
       onValueChange={(v) => onChange(v === "none" ? "" : v)}
     >
-      <SelectTrigger className="h-7 text-xs bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
+      <SelectTrigger className="h-7 text-xs bg-slate-50 dark:bg-neutral-800 border-transparent hover:border-slate-300 dark:hover:border-neutral-600 focus:bg-white dark:focus:bg-neutral-700 focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className={cn("max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-button]:hidden", contentClassName)}>{children}</SelectContent>
@@ -106,13 +106,13 @@ export function InspectorCombobox({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="h-7 w-full flex items-center justify-between px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg transition-colors"
+          className="h-7 w-full flex items-center justify-between px-2.5 text-xs bg-slate-50 dark:bg-neutral-800 border border-transparent hover:border-slate-300 dark:hover:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg transition-colors"
         >
           <span
             className={cn(
               "truncate",
               selected
-                ? "text-slate-800 font-medium"
+                ? "text-slate-800 dark:text-neutral-200 font-medium"
                 : "text-slate-400 font-normal",
             )}
           >
@@ -122,7 +122,7 @@ export function InspectorCombobox({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-52 p-0 shadow-xl border-slate-200"
+        className="w-52 p-0 shadow-xl border-slate-200 dark:border-neutral-700"
         align="start"
       >
         <Command>

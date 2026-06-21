@@ -143,7 +143,7 @@ export function NotificationBell() {
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span
-              className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white tabular-nums ring-2 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] dark:ring-slate-900"
+              className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white tabular-nums ring-2 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] dark:ring-neutral-900"
               aria-hidden
             >
               {badgeLabel}
@@ -155,10 +155,10 @@ export function NotificationBell() {
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[min(400px,calc(100vw-12px))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-[0_18px_40px_-20px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-950"
+        className="w-[min(400px,calc(100vw-12px))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-[0_18px_40px_-20px_rgba(15,23,42,0.45)] dark:border-neutral-800 dark:bg-neutral-950"
       >
         {/* ── Header — accent bar + section label + title ── */}
-        <div className="relative border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <div className="relative border-b border-slate-100 px-4 py-3 dark:border-neutral-800">
           <span
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
             aria-hidden
@@ -173,12 +173,12 @@ export function NotificationBell() {
                 <Bell className="size-3.5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                   {unreadCount > 0
                     ? `${unreadCount} unread`
                     : "Inbox"}
                 </p>
-                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+                <p className="truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-neutral-100">
                   Notifications
                 </p>
               </div>
@@ -187,7 +187,7 @@ export function NotificationBell() {
               <button
                 type="button"
                 onClick={() => markAllRead()}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-slate-600 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-slate-600 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
               >
                 <CheckCheck className="size-3.5" aria-hidden />
                 Mark all
@@ -199,17 +199,17 @@ export function NotificationBell() {
         {/* ── List ── */}
         <ScrollArea className="max-h-[min(460px,60svh)]">
           {listLoading ? (
-            <div className="divide-y divide-slate-50 dark:divide-slate-800/80">
+            <div className="divide-y divide-slate-50 dark:divide-neutral-800/80">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className="flex items-start gap-3 px-4 py-3 animate-pulse"
                 >
-                  <div className="mt-0.5 size-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800" />
+                  <div className="mt-0.5 size-9 shrink-0 rounded-lg bg-slate-100 dark:bg-neutral-800" />
                   <div className="flex-1 space-y-2 pt-1">
-                    <div className="h-2 w-2/3 rounded-full bg-slate-100 dark:bg-slate-800" />
-                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
-                    <div className="h-2 w-1/3 rounded-full bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-2 w-2/3 rounded-full bg-slate-100 dark:bg-neutral-800" />
+                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-neutral-800" />
+                    <div className="h-2 w-1/3 rounded-full bg-slate-100 dark:bg-neutral-800" />
                   </div>
                 </div>
               ))}
@@ -220,16 +220,16 @@ export function NotificationBell() {
                 <BellOff className="size-5" aria-hidden />
               </div>
               <div className="space-y-1">
-                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">
+                <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
                   All caught up
                 </p>
-                <p className="text-[11.5px] text-slate-500 dark:text-slate-400">
+                <p className="text-[11.5px] text-slate-500 dark:text-neutral-400">
                   No new notifications right now
                 </p>
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50 py-0.5 dark:divide-slate-800/70">
+            <div className="divide-y divide-slate-50 py-0.5 dark:divide-neutral-800/70">
               {notifications.map((notif) => {
                 const cfg = typeConfig[notif.type] ?? FALLBACK_TONE;
                 const Icon = cfg.icon;
@@ -246,8 +246,8 @@ export function NotificationBell() {
                       }
                     }}
                     className={cn(
-                      "group relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:bg-slate-50 dark:hover:bg-slate-900/50 dark:focus-visible:bg-slate-900/50",
-                      !notif.read && "bg-slate-50/60 dark:bg-slate-900/30",
+                      "group relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:bg-slate-50 dark:hover:bg-neutral-900/50 dark:focus-visible:bg-slate-900/50",
+                      !notif.read && "bg-slate-50/60 dark:bg-neutral-900/30",
                     )}
                   >
                     {/* Unread accent rail */}
@@ -274,7 +274,7 @@ export function NotificationBell() {
                       {!notif.read && (
                         <span
                           className={cn(
-                            "absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-white dark:ring-slate-950",
+                            "absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-white dark:ring-neutral-950",
                             cfg.accent,
                           )}
                         />
@@ -295,13 +295,13 @@ export function NotificationBell() {
                       </div>
                       <p
                         className={cn(
-                          "text-[12.5px] leading-snug text-slate-700 dark:text-slate-200",
-                          !notif.read && "font-semibold text-slate-900 dark:text-slate-100",
+                          "text-[12.5px] leading-snug text-slate-700 dark:text-neutral-200",
+                          !notif.read && "font-semibold text-slate-900 dark:text-neutral-100",
                         )}
                       >
                         {notif.message}
                       </p>
-                      <p className="mt-1 text-[10.5px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <p className="mt-1 text-[10.5px] font-medium uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                         {formatDistanceToNow(new Date(notif.createdAt), {
                           addSuffix: true,
                         })}
@@ -323,7 +323,7 @@ export function NotificationBell() {
                           <button
                             type="button"
                             onClick={(event) => handleMarkRead(event, notif)}
-                            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10.5px] font-semibold text-slate-500 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10.5px] font-semibold text-slate-500 transition-colors hover:border-[#008f68]/25 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
                           >
                             Mark read
                           </button>
@@ -332,7 +332,7 @@ export function NotificationBell() {
                     </div>
 
                     <ArrowRight
-                      className="mt-2.5 size-3.5 shrink-0 translate-x-0 text-slate-300 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 dark:text-slate-600"
+                      className="mt-2.5 size-3.5 shrink-0 translate-x-0 text-slate-300 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 dark:text-neutral-600"
                       aria-hidden
                     />
                   </div>
@@ -344,8 +344,8 @@ export function NotificationBell() {
 
         {/* ── Footer ── */}
         {!listLoading && notifications.length > 0 && (
-          <div className="flex items-center justify-center border-t border-slate-100 bg-slate-50/40 px-4 py-2 dark:border-slate-800 dark:bg-slate-900/30">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          <div className="flex items-center justify-center border-t border-slate-100 bg-slate-50/40 px-4 py-2 dark:border-neutral-800 dark:bg-neutral-900/30">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
               Showing latest {notifications.length}
             </span>
           </div>

@@ -49,15 +49,15 @@ export function TicketSheetActivitySection({
   return (
     <section
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
+        "flex min-h-0 flex-col overflow-hidden bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-2 px-3.5 py-2 border-b border-slate-50">
+      <div className="flex shrink-0 items-center gap-2 px-3.5 py-2 border-b border-slate-50 dark:border-neutral-800">
         <div className="w-5 h-5 rounded-md bg-violet-50 flex items-center justify-center shrink-0">
           <Activity className="w-3 h-3 text-violet-500" />
         </div>
-        <span className="text-[12px] font-bold text-slate-700 leading-tight">
+        <span className="text-[12px] font-bold text-slate-700 dark:text-neutral-200 leading-tight">
           Activity
         </span>
         {isLoading ? (
@@ -96,11 +96,11 @@ export function TicketSheetActivitySection({
               {statusHistory.map((row) => (
                 <li
                   key={row.id}
-                  className="text-[11px] text-slate-600 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5"
+                  className="text-[11px] text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800/50 border border-slate-100 dark:border-neutral-700 rounded-lg px-2.5 py-1.5"
                 >
-                  <span className="font-medium text-slate-800">{row.from}</span>
+                  <span className="font-medium text-slate-800 dark:text-neutral-200">{row.from}</span>
                   <span className="text-slate-400 mx-1">→</span>
-                  <span className="font-medium text-slate-800">{row.to}</span>
+                  <span className="font-medium text-slate-800 dark:text-neutral-200">{row.to}</span>
                   <span className="text-slate-400">
                     {" "}
                     · {row.author}

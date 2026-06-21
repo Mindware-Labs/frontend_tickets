@@ -158,14 +158,14 @@ export function AsyncCustomerCombobox({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-7 w-full items-center justify-between rounded-lg border border-transparent bg-slate-50 px-2.5 text-left text-xs transition-colors hover:border-slate-300 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
+          className="flex h-7 w-full items-center justify-between rounded-lg border border-transparent bg-slate-50 dark:bg-neutral-800 px-2.5 text-left text-xs transition-colors hover:border-slate-300 dark:hover:border-neutral-600 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
         >
           <span
             className={cn(
               "truncate",
               visibleSelected
-                ? "font-medium text-slate-800"
-                : "font-normal text-slate-400",
+                ? "font-medium text-slate-800 dark:text-neutral-200"
+                : "font-normal text-slate-400 dark:text-neutral-500",
             )}
           >
             {customerLabel(visibleSelected) || normalizedPlaceholder}
@@ -173,9 +173,9 @@ export function AsyncCustomerCombobox({
           <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 text-slate-400" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 shadow-xl" align="start">
+      <PopoverContent className="w-80 p-0 shadow-xl dark:bg-neutral-900 dark:border-neutral-700" align="start">
         <div className="flex flex-col">
-          <div className="border-b px-3 py-2">
+          <div className="border-b dark:border-neutral-700 px-3 py-2">
             <Input
               placeholder={normalizedSearchPlaceholder}
               value={search}
@@ -186,16 +186,16 @@ export function AsyncCustomerCombobox({
           </div>
           <div className="max-h-52 overflow-y-auto p-1">
             {!trimmedSearch ? (
-              <div className="py-4 text-center text-xs text-slate-400">
+              <div className="py-4 text-center text-xs text-slate-400 dark:text-neutral-500">
                 Type to search customers.
               </div>
             ) : showLoading ? (
-              <div className="flex items-center justify-center gap-2 px-3 py-4 text-xs text-slate-400">
+              <div className="flex items-center justify-center gap-2 px-3 py-4 text-xs text-slate-400 dark:text-neutral-500">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Searching customers...
               </div>
             ) : filteredOptions.length === 0 ? (
-              <div className="py-4 text-center text-xs text-slate-400">
+              <div className="py-4 text-center text-xs text-slate-400 dark:text-neutral-500">
                 No customer found.
               </div>
             ) : (
@@ -208,8 +208,8 @@ export function AsyncCustomerCombobox({
                     role="option"
                     aria-selected={isSelected}
                     className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-xs hover:bg-slate-100",
-                      isSelected && "bg-slate-100",
+                      "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-xs hover:bg-slate-100 dark:hover:bg-neutral-700",
+                      isSelected && "bg-slate-100 dark:bg-neutral-700",
                     )}
                     onClick={() => {
                       setSelected(customer);
@@ -225,11 +225,11 @@ export function AsyncCustomerCombobox({
                       )}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">
+                      <p className="truncate text-xs font-medium dark:text-neutral-200">
                         {customer.name}
                       </p>
                       {customer.phone ? (
-                        <p className="truncate text-[11px] text-slate-400">
+                        <p className="truncate text-[11px] text-slate-400 dark:text-neutral-500">
                           {customer.phone}
                         </p>
                       ) : null}

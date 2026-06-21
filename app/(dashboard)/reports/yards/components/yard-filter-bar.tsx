@@ -74,7 +74,7 @@ export function YardInlineActiveFilters() {
       <button
         type="button"
         onClick={clearFilters}
-        className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+        className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-neutral-400 dark:hover:text-neutral-200"
       >
         Clear all
       </button>
@@ -96,14 +96,14 @@ export function YardFilterTrigger({ className }: { className?: string }) {
             "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm transition-colors",
             active
               ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
-              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300",
             className,
           )}
         >
           <Filter className="size-3.5" aria-hidden />
           <span>Filters</span>
           {active ? (
-            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#008f68]">
+            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#008f68] dark:bg-neutral-900">
               {count}
             </span>
           ) : null}

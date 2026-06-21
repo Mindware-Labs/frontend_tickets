@@ -77,8 +77,8 @@ export function CampaignReportSetupEmptyState({ mode, onConfigure, startDate, en
 
   const badgeLabel = isInvalid ? "Invalid range" : "Setup required";
   const badgeClass = isInvalid
-    ? "border-amber-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-500/30 dark:bg-slate-950 dark:text-amber-300"
-    : "border-emerald-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-slate-950 dark:text-emerald-300";
+    ? "border-amber-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-500/30 dark:bg-neutral-950 dark:text-amber-300"
+    : "border-emerald-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-neutral-950 dark:text-emerald-300";
   const ctaBarClass = isInvalid
     ? "border-amber-100 bg-amber-50/60 dark:border-amber-500/25 dark:bg-amber-500/10"
     : "border-emerald-100 bg-emerald-50/60 dark:border-emerald-500/25 dark:bg-emerald-500/10";
@@ -91,7 +91,7 @@ export function CampaignReportSetupEmptyState({ mode, onConfigure, startDate, en
 
   return (
     <div className={cn("min-h-[420px]", dashboardCanvasClass)}>
-      <Empty className="min-h-[388px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950 md:p-8">
+      <Empty className="min-h-[388px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950 md:p-8">
         <EmptyHeader className="max-w-xl gap-2">
           <EmptyMedia variant="icon" className={mediaClass}>
             {mediaIcon}
@@ -101,11 +101,11 @@ export function CampaignReportSetupEmptyState({ mode, onConfigure, startDate, en
             Campaign report setup
           </p>
 
-          <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+          <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
             {title}
           </EmptyTitle>
 
-          <EmptyDescription className="max-w-md text-xs leading-5 text-slate-600 dark:text-slate-400">
+          <EmptyDescription className="max-w-md text-xs leading-5 text-slate-600 dark:text-neutral-400">
             {description}
           </EmptyDescription>
         </EmptyHeader>
@@ -117,14 +117,14 @@ export function CampaignReportSetupEmptyState({ mode, onConfigure, startDate, en
               return (
                 <div
                   key={item.label}
-                  className="flex min-h-16 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left dark:border-slate-800 dark:bg-slate-900/40"
+                  className="flex min-h-16 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left dark:border-neutral-800 dark:bg-neutral-900/40"
                 >
                   <Icon className={tileIconClass} aria-hidden />
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                       {item.label}
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-neutral-200">
                       {item.value}
                     </p>
                   </div>

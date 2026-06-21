@@ -173,7 +173,7 @@ export default function EditCustomerPage() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50/40 dark:bg-background">
-        <div className="flex items-center gap-2 text-slate-500">
+        <div className="flex items-center gap-2 text-slate-500 dark:text-neutral-400">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading customer data...</span>
         </div>
@@ -199,11 +199,11 @@ export default function EditCustomerPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+            <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-neutral-50 leading-tight">
               Edit Customer
             </h2>
           </div>
-          <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-0.5 ml-10">
+          <p className="text-[13px] text-slate-400 dark:text-neutral-500 mt-0.5 ml-10">
             {today} · Editing {customer.name || "Unknown"}
           </p>
         </div>
@@ -341,12 +341,12 @@ export default function EditCustomerPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-slate-500">Customer ID</span>
+                <span className="text-[13px] text-slate-500 dark:text-neutral-400">Customer ID</span>
                 <span className="font-mono text-[13px] font-medium">#{customer.id}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-slate-500">Created</span>
+                <span className="text-[13px] text-slate-500 dark:text-neutral-400">Created</span>
                 <span className="text-[13px]">
                   {customer.createdAt
                     ? new Date(customer.createdAt).toLocaleDateString("en-US", {
@@ -359,7 +359,7 @@ export default function EditCustomerPage() {
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-slate-500">Total Tickets</span>
+                <span className="text-[13px] text-slate-500 dark:text-neutral-400">Total Tickets</span>
                 <Badge variant="secondary" className="text-[12px]">
                   {customer.ticketCount || 0}
                 </Badge>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -212,12 +212,12 @@ export function CallFiltersBar({
             {activeChips.map((chip) => (
               <span
                 key={chip.key}
-                className="inline-flex items-center gap-1 h-7.5 rounded-full border border-border bg-slate-50 dark:bg-slate-800 px-3 text-[12.5px]"
+                className="inline-flex items-center gap-1 h-7.5 rounded-full border border-border bg-slate-50 dark:bg-neutral-800 px-3 text-[12.5px]"
               >
                 <span className="font-normal text-muted-foreground">
                   {chip.label}:
                 </span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
+                <span className="font-medium text-slate-700 dark:text-neutral-200">
                   {chip.value}
                 </span>
               </span>
@@ -225,7 +225,7 @@ export function CallFiltersBar({
             <button
               type="button"
               onClick={clearAll}
-              className="cursor-pointer text-[12.5px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+              className="cursor-pointer text-[12.5px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline dark:text-neutral-400 dark:hover:text-neutral-200"
             >
               Clear all
             </button>
@@ -271,7 +271,7 @@ export function CallFiltersBar({
                         className={
                           isActive
                             ? "h-8 rounded-lg border border-[#008f68]/35 bg-[#e6f5f0] px-2 text-[10px] font-semibold leading-tight text-[#008f68] shadow-sm transition-colors"
-                            : "h-8 rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold leading-tight text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                            : "h-8 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 text-[10px] font-semibold leading-tight text-slate-500 dark:text-neutral-400 transition-colors hover:border-slate-300 dark:hover:border-neutral-600 hover:bg-slate-50 dark:hover:bg-neutral-800"
                         }
                       >
                         {option.label}

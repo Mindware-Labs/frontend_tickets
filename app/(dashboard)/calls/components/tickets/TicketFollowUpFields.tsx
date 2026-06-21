@@ -6,7 +6,7 @@ import { InspectorSelect } from "../shared/InspectorHelpers";
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
       {children}
     </p>
   );
@@ -33,11 +33,11 @@ export function TicketFollowUpFields({
   selectContentClassName,
 }: TicketFollowUpFieldsProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 shadow-sm sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 p-3 shadow-sm sm:grid-cols-2">
       <div className="min-w-0">
         <div className="mb-1.5 flex h-4 min-w-0 items-center gap-1.5">
           <FieldLabel>Follow-up Date</FieldLabel>
-          <span className="ml-auto shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-wide text-[#008f68]">
+          <span className="ml-auto shrink-0 rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-wide text-[#008f68] dark:text-emerald-400">
             Follow-up
           </span>
         </div>

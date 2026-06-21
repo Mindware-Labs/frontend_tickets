@@ -71,13 +71,13 @@ export function DashboardHeader({
         className={cn(
           "flex min-h-[56px] flex-col gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-2 shadow-sm",
           "md:flex-row md:items-center md:justify-between md:gap-4",
-          "dark:border-slate-800 dark:bg-slate-950",
+          "dark:border-neutral-800 dark:bg-neutral-950",
         )}
       >
         {/* Left: symmetric tabs + inline active filters */}
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 md:gap-4">
           <div
-            className="flex w-full min-w-[280px] rounded-lg bg-slate-100 p-1 sm:w-auto sm:min-w-[320px] dark:bg-slate-900/80"
+            className="flex w-full min-w-[280px] rounded-lg bg-slate-100 p-1 sm:w-auto sm:min-w-[320px] dark:bg-neutral-900/80"
             role="tablist"
             aria-label="Dashboard views"
           >
@@ -94,8 +94,8 @@ export function DashboardHeader({
                   className={cn(
                     "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150",
                     isActive
-                      ? "bg-white font-semibold text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
-                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
+                      ? "bg-white font-semibold text-[#008f68] shadow-sm dark:bg-neutral-950 dark:text-emerald-400"
+                      : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200",
                   )}
                 >
                   <Icon
@@ -129,7 +129,7 @@ export function DashboardHeader({
           <button
             type="button"
             onClick={() => setIsPeriodModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300 cursor-pointer"
           >
             <Calendar className="size-3.5 text-slate-400" />
             <span>Period: <span className="font-semibold text-[#008f68] dark:text-emerald-400">{activePeriodLabel}</span></span>
@@ -137,7 +137,7 @@ export function DashboardHeader({
 
           <div className="flex items-center gap-2 text-slate-400">
             {lastUpdated ? (
-              <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              <span className="rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
                 {lastUpdated}
               </span>
             ) : null}

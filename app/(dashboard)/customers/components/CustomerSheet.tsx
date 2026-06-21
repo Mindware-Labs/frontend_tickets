@@ -65,7 +65,7 @@ function formatShortDate(value?: string | null) {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+    <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
       {children}
     </p>
   );
@@ -90,12 +90,12 @@ function CopyButton({
       aria-label={label}
       title={label}
       className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-slate-950",
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-neutral-950",
         disabled
-          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-slate-800 dark:text-slate-700"
+          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-neutral-800 dark:text-neutral-700"
           : copied
             ? "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
-            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-800 dark:text-slate-500 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200",
+            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-neutral-800 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
       )}
     >
       {copied ? (
@@ -108,7 +108,7 @@ function CopyButton({
 }
 
 const ROW_ICON_CLASS =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500";
 
 function DetailRow({
   icon: Icon,
@@ -139,10 +139,10 @@ function DetailRow({
           multiline ? "gap-1.5" : "gap-0.5",
         )}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
           {label}
         </p>
-        <div className="min-w-0 text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-100">
+        <div className="min-w-0 text-xs font-medium leading-relaxed text-slate-700 dark:text-neutral-100">
           {value}
         </div>
       </div>
@@ -165,18 +165,18 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-900/50">
-      <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
+    <div className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2 transition-colors hover:bg-slate-50/70 dark:hover:bg-neutral-900/50">
+      <div className="flex items-center gap-1 text-slate-400 dark:text-neutral-500">
         <Icon className="h-3 w-3 shrink-0 text-[#008f68]" strokeWidth={2.4} />
         <p className="truncate text-[9px] font-bold uppercase tracking-wide">
           {label}
         </p>
       </div>
-      <p className="truncate text-[17px] font-bold leading-none tabular-nums text-slate-900 dark:text-slate-50">
+      <p className="truncate text-[17px] font-bold leading-none tabular-nums text-slate-900 dark:text-neutral-50">
         {value}
       </p>
       {helper ? (
-        <p className="truncate text-[10px] font-medium text-slate-400 dark:text-slate-500">
+        <p className="truncate text-[10px] font-medium text-slate-400 dark:text-neutral-500">
           {helper}
         </p>
       ) : null}
@@ -205,17 +205,17 @@ function SheetAction({
     "flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border px-2 text-[11px] font-semibold transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 sm:text-[12px]",
     actionClassName,
     disabled &&
-      "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-900",
+      "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900",
     !disabled &&
       primary &&
       "border-[#008f68] bg-[#008f68] text-white shadow-sm hover:bg-[#007a5a]",
     !disabled &&
       danger &&
-      "border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-slate-950 dark:hover:bg-red-950/30",
+      "border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-neutral-950 dark:hover:bg-red-950/30",
     !disabled &&
       !primary &&
       !danger &&
-      "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900",
+      "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900",
   );
 
   const content = (
@@ -393,7 +393,7 @@ export function CustomerSheet({
         className={cn(
           "flex h-dvh flex-row gap-0 overflow-hidden p-0",
           "border-l border-slate-200/80 bg-[#f4f5f7] text-slate-900 antialiased",
-          "shadow-2xl shadow-slate-900/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          "shadow-2xl shadow-slate-900/15 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
           timelineOpen
             ? "w-[min(1280px,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]"
             : "w-full max-w-[560px] sm:w-[min(560px,calc(100vw-2rem))]",
@@ -445,11 +445,11 @@ export function CustomerSheet({
               </SheetHeader>
 
               <div className="relative flex h-full min-h-0 flex-col">
-                <div className="relative shrink-0 overflow-hidden border-b border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+                <div className="relative shrink-0 overflow-hidden border-b border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
                   <div className="h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent" />
                   <SheetClose
                     aria-label="Close customer details"
-                    className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                    className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
                   >
                     <X className="h-5 w-5" strokeWidth={2} />
                   </SheetClose>
@@ -460,7 +460,7 @@ export function CustomerSheet({
                         <Users className="h-5 w-5" strokeWidth={2} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                        <span className="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                           #{data.id}
                         </span>
                         {loading ? (
@@ -477,7 +477,7 @@ export function CustomerSheet({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-4 divide-x divide-slate-100 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="mt-3 grid grid-cols-4 divide-x divide-slate-100 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                       <MetricTile
                         icon={Phone}
                         label="Calls"
@@ -522,7 +522,7 @@ export function CustomerSheet({
                       <span className="min-w-0 flex-1 text-[12px] font-semibold text-[#008f68]">
                         Activity timeline
                       </span>
-                      <span className="rounded-md border border-white/80 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#008f68] shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                      <span className="rounded-md border border-white/80 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#008f68] shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                         {timelineCount}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />
@@ -534,7 +534,7 @@ export function CustomerSheet({
                   <div className="space-y-4 px-4 py-3 pb-4 sm:px-5">
                     <div>
                       <SectionLabel>Customer details</SectionLabel>
-                      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                         <DetailRow
                           icon={Phone}
                           label="Phone"
@@ -583,7 +583,7 @@ export function CustomerSheet({
                                 {data.campaigns.map((camp) => (
                                   <span
                                     key={camp.id}
-                                    className="inline-flex max-w-full rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                                    className="inline-flex max-w-full rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
                                   >
                                     {camp.nombre}
                                   </span>
@@ -610,7 +610,7 @@ export function CustomerSheet({
                   </div>
                 </div>
 
-                <div className="shrink-0 border-t border-slate-200/80 bg-white/90 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/90">
+                <div className="shrink-0 border-t border-slate-200/80 bg-white/90 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/90">
                   <div className="flex flex-wrap gap-2">
                     <SheetAction
                       icon={PhoneCall}

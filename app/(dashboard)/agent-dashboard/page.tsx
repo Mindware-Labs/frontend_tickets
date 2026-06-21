@@ -90,10 +90,10 @@ export default function AgentDashboardPage() {
   if (!data) {
     return (
       <div className={cn(dashboardPanelClass, "mx-auto max-w-xl px-5 py-8 text-center")}>
-        <span className="mx-auto inline-flex size-11 items-center justify-center rounded-xl bg-rose-50 text-rose-700 ring-1 ring-rose-200">
+        <span className="mx-auto inline-flex size-11 items-center justify-center rounded-xl bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
           <AlertCircle className="size-5" aria-hidden />
         </span>
-        <h1 className="mt-3 text-lg font-bold text-slate-900 dark:text-slate-100">
+        <h1 className="mt-3 text-lg font-bold text-slate-900 dark:text-neutral-100">
           Agent dashboard unavailable
         </h1>
         <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500">
@@ -130,7 +130,7 @@ export default function AgentDashboardPage() {
             </span>
             <div className="min-w-0">
               <p className={dashboardSectionLabelClass}>Agent workspace</p>
-              <h1 className="truncate text-[18px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              <h1 className="truncate text-[18px] font-bold tracking-tight text-slate-900 dark:text-neutral-100">
                 {greeting}, {currentUser?.name || "Agent"}
               </h1>
               <p className="mt-0.5 text-[12px] font-medium text-slate-500">
@@ -142,7 +142,7 @@ export default function AgentDashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
               Updated {formatTime(data.generatedAt)}
             </span>
           </div>
@@ -157,7 +157,7 @@ export default function AgentDashboardPage() {
           <p className={dashboardSectionLabelClass}>Completion</p>
           <div className="mt-2 flex items-center justify-between gap-3">
             <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+              <p className="text-2xl font-bold text-slate-900 dark:text-neutral-100 tabular-nums">
                 {kpis.completionRate}%
               </p>
               <p className="text-[11px] font-medium text-slate-500">Manual record close rate</p>
@@ -169,7 +169,7 @@ export default function AgentDashboardPage() {
           <p className={dashboardSectionLabelClass}>Resolution</p>
           <div className="mt-2 flex items-center justify-between gap-3">
             <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+              <p className="text-2xl font-bold text-slate-900 dark:text-neutral-100 tabular-nums">
                 {kpis.resolutionRate}%
               </p>
               <p className="text-[11px] font-medium text-slate-500">Ticket resolution rate</p>
@@ -181,7 +181,7 @@ export default function AgentDashboardPage() {
           <p className={dashboardSectionLabelClass}>Average call</p>
           <div className="mt-2 flex items-center justify-between gap-3">
             <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+              <p className="text-2xl font-bold text-slate-900 dark:text-neutral-100 tabular-nums">
                 {formatDuration(kpis.avgDurationSec)}
               </p>
               <p className="text-[11px] font-medium text-slate-500">{kpis.missedCalls} missed calls</p>
@@ -200,16 +200,16 @@ export default function AgentDashboardPage() {
 function AgentDashboardSkeleton() {
   return (
     <div className={dashboardShellClass}>
-      <div className={cn(dashboardPanelClass, "h-[92px] animate-pulse bg-white")} />
+      <div className={cn(dashboardPanelClass, "h-[92px] animate-pulse bg-white dark:bg-neutral-800")} />
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className={cn(dashboardPanelClass, "h-[74px] animate-pulse bg-white")} />
+          <div key={index} className={cn(dashboardPanelClass, "h-[74px] animate-pulse bg-white dark:bg-neutral-800")} />
         ))}
       </div>
-      <div className={cn(dashboardPanelClass, "h-[130px] animate-pulse bg-white")} />
+      <div className={cn(dashboardPanelClass, "h-[130px] animate-pulse bg-white dark:bg-neutral-800")} />
       <div className="grid gap-2 xl:grid-cols-2">
-        <div className={cn(dashboardPanelClass, "h-[270px] animate-pulse bg-white")} />
-        <div className={cn(dashboardPanelClass, "h-[270px] animate-pulse bg-white")} />
+        <div className={cn(dashboardPanelClass, "h-[270px] animate-pulse bg-white dark:bg-neutral-800")} />
+        <div className={cn(dashboardPanelClass, "h-[270px] animate-pulse bg-white dark:bg-neutral-800")} />
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ export function YardReportSetupEmptyState({
 }: YardReportSetupEmptyStateProps) {
   return (
     <div className={cn("min-h-[420px]", dashboardCanvasClass)}>
-      <Empty className="min-h-[388px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950 md:p-8">
+      <Empty className="min-h-[388px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950 md:p-8">
         <EmptyHeader className="max-w-xl gap-2">
           <EmptyMedia
             variant="icon"
@@ -60,11 +60,11 @@ export function YardReportSetupEmptyState({
             Yard report setup
           </p>
 
-          <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+          <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
             Configure report to view yards
           </EmptyTitle>
 
-          <EmptyDescription className="max-w-md text-xs leading-5 text-slate-600 dark:text-slate-400">
+          <EmptyDescription className="max-w-md text-xs leading-5 text-slate-600 dark:text-neutral-400">
             Select a date range to load all-yard cards. Add a specific yard
             when you need the detailed dashboard and exports.
           </EmptyDescription>
@@ -78,7 +78,7 @@ export function YardReportSetupEmptyState({
               return (
                 <div
                   key={item.label}
-                  className="flex min-h-16 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left dark:border-slate-800 dark:bg-slate-900/40"
+                  className="flex min-h-16 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left dark:border-neutral-800 dark:bg-neutral-900/40"
                 >
                   <Icon
                     className="size-3.5 shrink-0 text-[#008f68] dark:text-emerald-300"
@@ -88,7 +88,7 @@ export function YardReportSetupEmptyState({
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                       {item.label}
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    <p className="mt-0.5 text-xs font-medium text-slate-700 dark:text-neutral-200">
                       {item.value}
                     </p>
                   </div>
@@ -100,7 +100,7 @@ export function YardReportSetupEmptyState({
           <div className="flex w-full flex-col items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5 sm:flex-row dark:border-emerald-500/25 dark:bg-emerald-500/10">
             <Badge
               variant="outline"
-              className="border-emerald-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-slate-950 dark:text-emerald-300"
+              className="border-emerald-200 bg-white/80 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-neutral-950 dark:text-emerald-300"
             >
               Setup required
             </Badge>

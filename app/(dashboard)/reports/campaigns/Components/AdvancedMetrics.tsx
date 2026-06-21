@@ -243,11 +243,11 @@ export function FunnelChart({
               className={cn(
                 "w-full space-y-0.5 rounded-lg border px-1.5 py-1 text-left transition",
                 isActive
-                  ? cn(tone.border, "bg-slate-50 dark:bg-slate-900/60")
+                  ? cn(tone.border, "bg-slate-50 dark:bg-neutral-900/60")
                   : "border-transparent",
                 isDimmed && "opacity-50",
                 isClickable
-                  ? "cursor-pointer hover:border-slate-200 hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/40"
+                  ? "cursor-pointer hover:border-slate-200 hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/40"
                   : "cursor-default",
               )}
             >
@@ -262,7 +262,7 @@ export function FunnelChart({
                   >
                     {idx + 1}
                   </span>
-                  <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-800 dark:text-neutral-200">
                     {stage.label}
                   </span>
                   <span className="hidden text-[10px] text-slate-400 sm:inline">
@@ -275,7 +275,7 @@ export function FunnelChart({
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-baseline gap-1.5">
-                  <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                  <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-neutral-100">
                     {stage.value.toLocaleString()}
                   </span>
                   {!isFirst ? (
@@ -289,7 +289,7 @@ export function FunnelChart({
                   )}
                 </div>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-800">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -309,7 +309,7 @@ export function FunnelChart({
             </button>
           );
         })}
-        <div className="mt-1 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+        <div className="mt-1 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 dark:border-neutral-800">
           <FunnelStat
             label="Overall conversion"
             value={`${funnel.convertedPct}%`}
@@ -345,10 +345,10 @@ function FunnelStat({
       className={cn(
         "rounded-lg border px-2.5 py-1.5",
         t.border,
-        "bg-slate-50/50 dark:bg-slate-900/40",
+        "bg-slate-50/50 dark:bg-neutral-900/40",
       )}
     >
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
         {label}
       </p>
       <p
@@ -496,7 +496,7 @@ export function TouchpointsHistogram({
           <EmptyChart label="No touchpoint data in range" />
         )}
         {hasData && efficiencyDelta !== 0 ? (
-          <p className="rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+          <p className="rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
             {efficiencyDelta < 0 ? (
               <>
                 <Zap className="mr-1 inline size-2.5 text-emerald-500" />
@@ -538,7 +538,7 @@ function MiniStat({
       className={cn(
         "rounded-lg border px-2 py-1.5",
         t.border,
-        "bg-white dark:bg-slate-950",
+        "bg-white dark:bg-neutral-950",
       )}
     >
       <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
@@ -600,17 +600,17 @@ export function TimeMetricsCard({
           return (
             <div
               key={item.label}
-              className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/40"
+              className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-2 dark:border-neutral-800 dark:bg-neutral-900/40"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-950">
+                  <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-white shadow-sm dark:bg-neutral-950">
                     <Icon
                       className="size-3 text-slate-500"
                       aria-hidden
                     />
                   </span>
-                  <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                  <p className="text-[11px] font-semibold text-slate-700 dark:text-neutral-200">
                     {item.label}
                   </p>
                 </div>
@@ -641,13 +641,13 @@ function TimeStat({
   bold?: boolean;
 }) {
   return (
-    <div className="rounded-md bg-white px-2 py-1.5 dark:bg-slate-950">
+    <div className="rounded-md bg-white px-2 py-1.5 dark:bg-neutral-950">
       <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
         {label}
       </p>
       <p
         className={cn(
-          "mt-0.5 text-xs tabular-nums leading-none text-slate-900 dark:text-slate-100",
+          "mt-0.5 text-xs tabular-nums leading-none text-slate-900 dark:text-neutral-100",
           bold ? "font-bold" : "font-semibold",
         )}
       >
@@ -816,7 +816,7 @@ function HeatmapCellComponent({
     return (
       <div
         className={cn(
-          "h-3.5 rounded-sm bg-slate-100 dark:bg-slate-900",
+          "h-3.5 rounded-sm bg-slate-100 dark:bg-neutral-900",
           isDimmed && "opacity-40",
         )}
         title={baseTitle}
@@ -897,7 +897,7 @@ function formatHour(h: number): string {
 
 function EmptyChart({ label }: { label: string }) {
   return (
-    <div className="flex h-[140px] flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center dark:border-slate-800 dark:bg-slate-900/40">
+    <div className="flex h-[140px] flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center dark:border-neutral-800 dark:bg-neutral-900/40">
       <ChevronRight className="size-4 text-slate-300" aria-hidden />
       <p className="text-[11px] text-slate-400">{label}</p>
     </div>

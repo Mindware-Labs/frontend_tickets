@@ -3,10 +3,10 @@ import { BackButton } from '@/components/layout/back-button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f4f5f7] dark:bg-neutral-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Card principal */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-900">
           {/* Línea de acento superior */}
           <div className="h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent" />
 
@@ -27,7 +27,7 @@ export default function NotFound() {
             </div>
 
             {/* Título */}
-            <h1 className="mb-2 text-[15px] font-bold tracking-[-0.02em] text-slate-900">
+            <h1 className="mb-2 text-[15px] font-bold tracking-[-0.02em] text-slate-900 dark:text-neutral-100">
               Page not found
             </h1>
 
@@ -50,7 +50,7 @@ export default function NotFound() {
           </div>
 
           {/* Footer de la card */}
-          <div className="border-t border-slate-100 bg-slate-50/80 px-8 py-3 text-center">
+          <div className="border-t border-slate-100 bg-slate-50/80 px-8 py-3 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Center Quest &nbsp;·&nbsp; Mindware Labs
             </p>

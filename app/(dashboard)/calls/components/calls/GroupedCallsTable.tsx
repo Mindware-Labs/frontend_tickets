@@ -92,8 +92,8 @@ const DIRECTION_CONFIG: Record<
   voicemail: {
     label: "Voicemail",
     iconColor: "text-slate-500",
-    textColor: "text-slate-600 dark:text-slate-400",
-    bgColor: "bg-slate-50 dark:bg-slate-500/10",
+    textColor: "text-slate-600 dark:text-neutral-400",
+    bgColor: "bg-slate-50 dark:bg-neutral-500/10",
     Icon: PhoneIncoming,
   },
 };
@@ -287,7 +287,7 @@ export function GroupedCallsTable({
   return (
     <div className="flex-1 flex flex-col gap-1">
       {isFocusMode ? (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] px-3 py-2 text-[12px] text-slate-700">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#008f68]/25 bg-[#f0faf5] dark:bg-emerald-500/10 px-3 py-2 text-[12px] text-slate-700 dark:text-neutral-200">
           <p className="min-w-0 flex-1 leading-snug">
             Showing call{" "}
             <span className="font-mono font-bold text-[#008f68]">
@@ -302,7 +302,7 @@ export function GroupedCallsTable({
               size="sm"
               variant="outline"
               onClick={onClearFocus}
-              className="h-7 shrink-0 border-[#008f68]/30 bg-white px-2.5 text-[11px] font-semibold text-[#008f68] hover:bg-[#e8f8f1]"
+              className="h-7 shrink-0 border-[#008f68]/30 bg-white dark:bg-neutral-900 px-2.5 text-[11px] font-semibold text-[#008f68] hover:bg-[#e8f8f1] dark:hover:bg-emerald-500/10"
             >
               <X className="mr-1 h-3 w-3" />
               Clear
@@ -416,7 +416,7 @@ export function GroupedCallsTable({
               <col className="w-[9%]" />
               <col className="w-[8%]" />
             </colgroup>
-            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
@@ -515,7 +515,7 @@ export function GroupedCallsTable({
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
-                                className="rounded-full text-[10px] font-bold"
+                                className="rounded-full text-[10px] font-bold dark:!text-white"
                                 style={{
                                   background: "transparent",
                                   border: "1px solid #d1d5db",
@@ -550,12 +550,12 @@ export function GroupedCallsTable({
                                 ) : null}
                               </div>
                               <p
-                                className="truncate font-mono text-[10px] text-slate-500"
+                                className="truncate font-mono text-[10px] text-slate-500 dark:text-neutral-400"
                                 title={group.customerPhone}
                               >
                                 {group.customerPhone || "—"}
                               </p>
-                              <p className="truncate text-[10px] text-slate-400">
+                              <p className="truncate text-[10px] text-slate-400 dark:text-neutral-500">
                                 {dateLabel}
                               </p>
                             </div>
@@ -575,7 +575,7 @@ export function GroupedCallsTable({
                             className={`inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors ${
                               expandedKey === group.key
                                 ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
-                                : "border-slate-200 bg-slate-100 text-slate-600 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]"
+                                : "border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]"
                             }`}
                             aria-label="Toggle call timeline"
                             title="View call timeline"
@@ -589,7 +589,7 @@ export function GroupedCallsTable({
 
                         {/* Line */}
                         <TableCell
-                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] font-medium text-slate-600"
+                          className="max-w-0 px-2 py-1.5 align-middle text-[11px] font-medium text-slate-600 dark:text-neutral-300"
                           title={
                             (t as any).phoneLine?.label ||
                             (t as any).phoneLine?.phoneNumber ||
@@ -637,7 +637,7 @@ export function GroupedCallsTable({
 
                         {/* Agent */}
                         <TableCell
-                          className="max-w-0 pl-2 pr-3 py-1.5 align-middle text-[11px] text-slate-600"
+                          className="max-w-0 pl-2 pr-3 py-1.5 align-middle text-[11px] text-slate-600 dark:text-neutral-300"
                           title={(t as any).agent?.name}
                         >
                           <span className="block truncate font-medium">
@@ -648,7 +648,7 @@ export function GroupedCallsTable({
                       {expandedKey === group.key && (
                         <TableRow
                           key={`${group.key}-timeline`}
-                          className="bg-slate-50/50 hover:bg-slate-50/50 border-b relative"
+                          className="bg-slate-50/50 dark:bg-neutral-800/20 hover:bg-slate-50/50 dark:hover:bg-neutral-800/20 border-b relative"
                         >
                           <TableCell
                             colSpan={9}

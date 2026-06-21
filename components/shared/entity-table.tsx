@@ -19,18 +19,18 @@ import { cn } from "@/lib/utils";
 
 /** Sticky header wrapper (applied to <TableHeader>). */
 export const entityTableHeaderClass =
-  "sticky top-0 z-10 border-b border-slate-200/80 bg-slate-50/95 backdrop-blur supports-[backdrop-filter]:bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/85";
+  "sticky top-0 z-10 border-b border-slate-200/80 bg-slate-50/95 backdrop-blur supports-[backdrop-filter]:bg-slate-50/80 dark:border-neutral-800 dark:bg-neutral-900/85";
 
 /** Header row — no hover, no bottom border (the header wrapper owns it). */
 export const entityTableHeaderRowClass = "border-none hover:bg-transparent";
 
 /** Header cell (applied to <TableHead>). */
 export const entityTableHeadClass =
-  "h-9 px-3 text-left align-middle text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap";
+  "h-9 px-3 text-left align-middle text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400 whitespace-nowrap";
 
 /** Body cell (applied to <TableCell>). Keep cells at text-xs per design system. */
 export const entityTableCellClass =
-  "px-3 py-2.5 align-middle text-xs text-slate-600 dark:text-slate-300";
+  "px-3 py-2.5 align-middle text-xs text-slate-600 dark:text-neutral-300";
 
 /** Fixed-width actions column (icon buttons per row). */
 export const entityTableActionsHeadClass = cn(
@@ -45,7 +45,7 @@ export const entityTableActionsCellClass = cn(
 /** Zebra + teal-hover body row. Pass the row index and whether it is clickable. */
 export function entityTableRowClass(index: number, clickable?: boolean) {
   return cn(
-    "group border-b border-slate-100 transition-colors duration-150 hover:bg-[#f0faf5]/70 dark:border-slate-800 dark:hover:bg-muted/50",
+    "group border-b border-slate-100 transition-colors duration-150 hover:bg-[#f0faf5]/70 dark:border-neutral-800 dark:hover:bg-muted/50",
     index % 2 === 1
       ? "bg-slate-50/50 dark:bg-muted/20"
       : "bg-white dark:bg-card",
@@ -97,7 +97,7 @@ export function EntityMobileCard({
           : undefined
       }
       className={cn(
-        "rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors dark:border-slate-800 dark:bg-card",
+        "rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors dark:border-neutral-800 dark:bg-card",
         onClick &&
           "cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0faf5]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 active:bg-[#f0faf5]/70 dark:hover:bg-muted/40",
         className,
@@ -162,7 +162,7 @@ export function EntityMobileField({
       <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
         {label}
       </div>
-      <div className="min-w-0 text-xs text-slate-600 dark:text-slate-300">
+      <div className="min-w-0 text-xs text-slate-600 dark:text-neutral-300">
         {children}
       </div>
     </div>
@@ -180,7 +180,7 @@ export function EntityMobileCardBody({
   return (
     <div
       className={cn(
-        "mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-slate-100 pt-3 dark:border-slate-800",
+        "mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-slate-100 pt-3 dark:border-neutral-800",
         className,
       )}
     >

@@ -110,7 +110,7 @@ function EntryTypeFilter({
       role="tablist"
       aria-label="Activity type"
     >
-      <div className="flex w-full flex-wrap justify-center gap-1 rounded-lg border border-slate-200/70 bg-slate-100/90 p-1 dark:border-slate-800 dark:bg-slate-900/70">
+      <div className="flex w-full flex-wrap justify-center gap-1 rounded-lg border border-slate-200/70 bg-slate-100/90 p-1 dark:border-neutral-800 dark:bg-neutral-900/70">
         {ENTRY_TYPE_OPTIONS.map((option) => {
           const active = value === option.value;
           return (
@@ -124,7 +124,7 @@ function EntryTypeFilter({
                 "min-h-8 min-w-[4rem] flex-1 rounded-md px-3 py-1.5 text-center text-[12px] font-semibold leading-tight transition-all sm:min-w-[5rem]",
                 active
                   ? "bg-[#008f68] text-white shadow-sm"
-                  : "text-slate-500 hover:bg-white/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
+                  : "text-slate-500 hover:bg-white/80 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white",
               )}
             >
               {option.label}
@@ -335,7 +335,7 @@ export function CustomerTimelineToolbar({
   );
 
   const filtersBox = (
-    <div className="flex flex-col gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2 dark:border-slate-800 dark:bg-slate-950/40">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2 dark:border-neutral-800 dark:bg-neutral-950/40">
       <div className="flex flex-col items-center gap-1.5">
         <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
           Show
@@ -362,7 +362,7 @@ export function CustomerTimelineToolbar({
 
   if (isPanel) {
     return (
-      <div className="shrink-0 border-b border-slate-200/60 bg-white/90 px-3 py-2 sm:px-4 dark:border-slate-800 dark:bg-slate-900/40">
+      <div className="shrink-0 border-b border-slate-200/60 bg-white/90 px-3 py-2 sm:px-4 dark:border-neutral-800 dark:bg-neutral-900/40">
         {filtersBox}
       </div>
     );
@@ -372,7 +372,7 @@ export function CustomerTimelineToolbar({
     <div className="mb-4 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 text-[13px] text-slate-500">
-          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-neutral-300">
             {loading && total === 0 ? "…" : total}
           </span>{" "}
           events
@@ -385,7 +385,7 @@ export function CustomerTimelineToolbar({
           onClick={onRefresh}
           disabled={loading}
           aria-label="Refresh timeline"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
           <RefreshCw
             className={cn("h-4 w-4", loading && "animate-spin")}
@@ -465,7 +465,7 @@ function CallTimelineTiming({ entry }: { entry: TimelineEntry }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {answered ? (
-        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
           <span className="text-[9px] uppercase tracking-[0.08em] opacity-60">
             Answered
           </span>
@@ -473,7 +473,7 @@ function CallTimelineTiming({ entry }: { entry: TimelineEntry }) {
         </span>
       ) : null}
       {ringing ? (
-        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
           <span className="text-[9px] uppercase tracking-[0.08em] opacity-60">
             Ringing
           </span>
@@ -542,7 +542,7 @@ function ticketStatusBadge(status?: string) {
   if (key === "PENDING_FOLLOWUP")
     return "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
   if (key === "RESOLVED" || key === "CLOSED")
-    return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+    return "bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300";
   return "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300";
 }
 
@@ -553,7 +553,7 @@ function ticketPriorityBadge(priority?: string) {
   if (key === "HIGH")
     return "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300";
   if (key === "LOW")
-    return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+    return "bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300";
   return "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300";
 }
 
@@ -570,7 +570,7 @@ function TimelineInlineLine({ line }: { line?: string | null }) {
   return (
     <>
       <span className="select-none text-gray-300">·</span>
-      <span className="text-xs text-slate-500 dark:text-slate-400">{line.trim()}</span>
+      <span className="text-xs text-slate-500 dark:text-neutral-400">{line.trim()}</span>
     </>
   );
 }
@@ -627,7 +627,7 @@ function DetailPills({ items }: { items: DetailItem[] }) {
                   ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
                   : item.tone === "red"
                     ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-                    : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300",
+                    : "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300",
           )}
           title={`${item.label}: ${item.value}`}
         >
@@ -661,7 +661,7 @@ function NotePreview({
         "rounded-lg border px-2.5 py-2",
         tone === "amber"
           ? "border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100"
-          : "border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200",
+          : "border-slate-200 bg-slate-50/80 text-slate-700 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-200",
       )}
     >
       <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
@@ -691,7 +691,7 @@ function TimelineAction({
       className={cn(
         "inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-[12px] font-bold transition-colors",
         muted
-          ? "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+          ? "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-neutral-800 dark:text-neutral-300"
           : "bg-[#e8f8f1] text-[#008f68] hover:bg-[#d8f4e8] dark:bg-emerald-950/40 dark:text-emerald-300",
       )}
     >
@@ -898,7 +898,7 @@ export function CustomerTimeline({
             type="button"
             variant="outline"
             size="sm"
-            className="mt-3 bg-white"
+            className="mt-3 bg-white dark:bg-neutral-900"
             onClick={() => loadTimeline()}
           >
             Retry
@@ -911,7 +911,7 @@ export function CustomerTimeline({
           {!expanded ? (
             <div
               className={cn(
-                "absolute top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700",
+                "absolute top-0 bottom-0 w-px bg-slate-200 dark:bg-neutral-700",
                 isCompact ? "left-[5px]" : "left-[9px]",
               )}
             />
@@ -932,9 +932,9 @@ export function CustomerTimeline({
               const duration = formatDuration(entry.duration);
               const agentName = entry.agentName || entry.assignedAgentName;
               const entryShell = isPanelEmbed
-                ? "group rounded-xl border border-slate-200/70 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300/90 hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700"
+                ? "group rounded-xl border border-slate-200/70 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300/90 hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)] dark:border-neutral-800 dark:bg-neutral-900/50 dark:hover:border-neutral-700"
                 : expanded
-                  ? "rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/40"
+                  ? "rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/40"
                   : cn("relative", isCompact ? "pl-5" : "pl-7");
 
               if (entry.type === "call") {
@@ -951,9 +951,9 @@ export function CustomerTimeline({
                       <div className="flex items-start gap-2.5">
                         <span
                           className={cn(
-                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-slate-950",
+                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-neutral-950",
                             isPanelEmbed
-                              ? "h-8 w-8 border-slate-100"
+                              ? "h-8 w-8 border-slate-100 dark:border-neutral-800"
                               : "h-9 w-9 border-2",
                             meta.ring,
                           )}
@@ -981,7 +981,7 @@ export function CustomerTimeline({
                                 {entry.disposition ? (
                                   <Badge
                                     variant="secondary"
-                                    className="h-5 rounded-md bg-slate-100 px-1.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                    className="h-5 rounded-md bg-slate-100 px-1.5 text-[10px] font-bold text-slate-700 dark:bg-neutral-800 dark:text-neutral-200"
                                   >
                                     {formatLabel(entry.disposition)}
                                   </Badge>
@@ -989,7 +989,7 @@ export function CustomerTimeline({
                                 {entry.callStatus ? (
                                   <Badge
                                     variant="secondary"
-                                    className="h-5 rounded-md bg-white px-1.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-800"
+                                    className="h-5 rounded-md bg-white px-1.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200 dark:bg-neutral-950 dark:ring-neutral-800"
                                   >
                                     {formatLabel(entry.callStatus)}
                                   </Badge>
@@ -1001,7 +1001,7 @@ export function CustomerTimeline({
                               </p>
                             </div>
                             {duration ? (
-                              <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] font-bold tabular-nums text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                              <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] font-bold tabular-nums text-slate-600 ring-1 ring-slate-200 dark:bg-neutral-900 dark:ring-neutral-800">
                                 {duration}
                               </span>
                             ) : null}
@@ -1059,7 +1059,7 @@ export function CustomerTimeline({
                       <>
                         <span
                           className={cn(
-                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 bg-white dark:bg-neutral-950",
                             isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                             meta.ring,
                           )}
@@ -1087,7 +1087,7 @@ export function CustomerTimeline({
                           {entry.disposition ? (
                             <>
                               <span className="select-none text-gray-300">·</span>
-                              <span className="text-xs text-slate-600">
+                              <span className="text-xs text-slate-600 dark:text-neutral-300">
                                 {formatLabel(entry.disposition)}
                               </span>
                             </>
@@ -1100,7 +1100,7 @@ export function CustomerTimeline({
                           {agentName ? (
                             <>
                               <span className="select-none text-gray-300">·</span>
-                              <span className="text-xs text-gray-700 dark:text-slate-300">
+                              <span className="text-xs text-gray-700 dark:text-neutral-300">
                                 {agentName}
                               </span>
                             </>
@@ -1113,7 +1113,7 @@ export function CustomerTimeline({
                           </p>
                         ) : null}
                         {entry.callNotes ? (
-                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-neutral-400">
                             {entry.callNotes}
                           </p>
                         ) : null}
@@ -1150,7 +1150,7 @@ export function CustomerTimeline({
                       <div className="flex items-start gap-2.5">
                         <span
                           className={cn(
-                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-slate-950",
+                            "flex shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-neutral-950",
                             isPanelEmbed ? "h-8 w-8" : "h-9 w-9 border-2",
                             ring,
                           )}
@@ -1281,7 +1281,7 @@ export function CustomerTimeline({
                       <>
                     <span
                       className={cn(
-                        "absolute left-0 top-1 flex items-center justify-center rounded-full border-2 bg-white dark:bg-slate-950",
+                        "absolute left-0 top-1 flex items-center justify-center rounded-full border-2 bg-white dark:bg-neutral-950",
                         isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                         ring,
                       )}
@@ -1347,7 +1347,7 @@ export function CustomerTimeline({
                       ) : null}
                     </div>
                     {entrySummaryText(entry) ? (
-                      <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                      <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-neutral-400">
                         {entrySummaryText(entry)}
                       </p>
                     ) : null}
@@ -1444,7 +1444,7 @@ export function CustomerTimeline({
                       <>
                         <span
                           className={cn(
-                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-400 bg-white dark:bg-slate-950",
+                            "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-400 bg-white dark:bg-neutral-950",
                             isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                           )}
                         >
@@ -1465,7 +1465,7 @@ export function CustomerTimeline({
                           {entry.disposition ? (
                             <>
                               <span className="select-none text-gray-300">·</span>
-                              <span className="text-xs text-slate-600">
+                              <span className="text-xs text-slate-600 dark:text-neutral-300">
                                 {formatLabel(entry.disposition)}
                               </span>
                             </>
@@ -1473,7 +1473,7 @@ export function CustomerTimeline({
                           <TimelineInlineLine line={lineLabel} />
                         </div>
                         {entry.manualRecordNotes ? (
-                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                          <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-600 dark:text-neutral-400">
                             {entry.manualRecordNotes}
                           </p>
                         ) : null}
@@ -1517,7 +1517,7 @@ export function CustomerTimeline({
                               Audit note
                             </span>
                             {entry.noteAuthor ? (
-                              <span className="text-[12px] font-semibold text-slate-600">
+                              <span className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300">
                                 {entry.noteAuthor}
                               </span>
                             ) : null}
@@ -1540,7 +1540,7 @@ export function CustomerTimeline({
                       <>
                     <span
                       className={cn(
-                        "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-slate-950",
+                        "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-neutral-950",
                         isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                       )}
                     >
@@ -1561,14 +1561,14 @@ export function CustomerTimeline({
                       {entry.noteAuthor ? (
                         <>
                           <span className="text-gray-300">·</span>
-                          <span className="text-xs text-slate-600">
+                          <span className="text-xs text-slate-600 dark:text-neutral-300">
                             {entry.noteAuthor}
                           </span>
                         </>
                       ) : null}
                     </div>
                     {entry.noteContent ? (
-                      <p className="mt-1 line-clamp-3 text-xs leading-snug text-gray-600 dark:text-slate-400">
+                      <p className="mt-1 line-clamp-3 text-xs leading-snug text-gray-600 dark:text-neutral-400">
                         {entry.noteContent}
                       </p>
                     ) : null}
@@ -1583,7 +1583,7 @@ export function CustomerTimeline({
                 <li key={entry.id} className={entryShell}>
                   {expanded ? (
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-white dark:bg-slate-950">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-white dark:bg-neutral-950">
                         <MessageSquare className="h-5 w-5 text-violet-600" />
                       </span>
                       <div>
@@ -1594,7 +1594,7 @@ export function CustomerTimeline({
                             : "SMS sent"}
                         </p>
                         {entry.smsBody ? (
-                          <p className="mt-2 text-[14px] text-slate-600">
+                          <p className="mt-2 text-[14px] text-slate-600 dark:text-neutral-300">
                             {entry.smsBody}
                           </p>
                         ) : null}
@@ -1604,7 +1604,7 @@ export function CustomerTimeline({
                     <>
                   <span
                     className={cn(
-                      "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-500 bg-white dark:bg-slate-950",
+                      "absolute left-0 top-0.5 flex items-center justify-center rounded-full border-2 border-violet-500 bg-white dark:bg-neutral-950",
                       isCompact ? "h-3 w-3" : "h-[18px] w-[18px]",
                     )}
                   >

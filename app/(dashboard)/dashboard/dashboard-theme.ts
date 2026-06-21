@@ -52,10 +52,10 @@ export const toneClasses: Record<
     chart: "#4f46e5",
   },
   slate: {
-    icon: "text-slate-700 dark:text-slate-300",
-    iconWrap: "bg-slate-100 dark:bg-slate-900",
-    border: "border-slate-200 dark:border-slate-800",
-    text: "text-slate-700 dark:text-slate-300",
+    icon: "text-slate-700 dark:text-neutral-300",
+    iconWrap: "bg-slate-100 dark:bg-neutral-900",
+    border: "border-slate-200 dark:border-neutral-800",
+    text: "text-slate-700 dark:text-neutral-300",
     bg: "bg-slate-500",
     chart: "#64748b",
   },
@@ -88,18 +88,18 @@ export const CHART_ANIMATION_DURATION = 650;
 
 /** Matches entity-form scroll body — soft canvas behind dashboard panels. */
 export const dashboardCanvasClass =
-  "rounded-xl bg-[#f4f5f7] p-2 dark:bg-slate-900/50";
+  "rounded-xl bg-[#f4f5f7] p-2 dark:bg-neutral-900/50";
 
 export const dashboardPanelClass =
-  "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950";
+  "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950";
 
 export const dashboardPanelHeaderClass =
-  "flex shrink-0 items-start justify-between gap-2 border-b border-slate-100 px-3.5 py-2 dark:border-slate-800";
+  "flex shrink-0 items-start justify-between gap-2 border-b border-slate-100 px-3.5 py-2 dark:border-neutral-800";
 
 export const dashboardPanelBodyClass = "min-h-0 flex-1 px-3 py-2.5";
 
 export const dashboardChartSurfaceClass =
-  "rounded-xl border border-slate-200/70 bg-slate-50/50 p-1.5 dark:border-slate-800/80 dark:bg-slate-900/40";
+  "rounded-xl border border-slate-200/70 bg-slate-50/50 p-1.5 dark:border-neutral-800/80 dark:bg-neutral-900/40";
 
 export const dashboardSectionLabelClass =
   "text-[10px] font-semibold uppercase tracking-widest text-slate-400";
@@ -121,8 +121,8 @@ export const dashboardPairedRowClass =
 export const dashboardTableHeadClass =
   "py-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400";
 export const dashboardTableCellClass =
-  "py-2 pr-3 text-xs text-slate-600 dark:text-slate-300";
+  "py-2 pr-3 text-xs text-slate-600 dark:text-neutral-300";
 export const dashboardTableCellStrongClass =
-  "py-2 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-100";
+  "py-2 pr-3 text-xs font-semibold text-slate-800 dark:text-neutral-100";
 export const dashboardListItemClass =
-  "rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950";
+  "rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950";

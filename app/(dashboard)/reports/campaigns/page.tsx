@@ -830,7 +830,7 @@ function CampaignReportHeader({
             aria-hidden
           />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-neutral-100">
               {title}
             </p>
             <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
@@ -873,7 +873,7 @@ function CampaignReportHeader({
                   <button
                     type="button"
                     onClick={onClearFilters}
-                    className="inline-flex h-6 items-center rounded-md px-1.5 text-[10px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    className="inline-flex h-6 items-center rounded-md px-1.5 text-[10px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                     title="Clear all filters"
                   >
                     Clear all
@@ -902,7 +902,7 @@ function CampaignReportHeader({
           />
         ) : null}
 
-        <div className="flex w-full flex-wrap items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 sm:w-auto dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="flex w-full flex-wrap items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 sm:w-auto dark:border-neutral-800 dark:bg-neutral-900/80">
           <button
             type="button"
             onClick={onOpenFilters}
@@ -910,7 +910,7 @@ function CampaignReportHeader({
               "flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm transition-colors",
               hasDateRange
                 ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
-                : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
             )}
           >
             <Filter className="size-3.5" aria-hidden />
@@ -924,7 +924,7 @@ function CampaignReportHeader({
                 disabled={isExportingPdf}
                 aria-busy={isExportingPdf}
                 className={cn(
-                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
                   isExportingPdf && "cursor-not-allowed opacity-70",
                 )}
               >
@@ -941,7 +941,7 @@ function CampaignReportHeader({
                 disabled={isExportingExcel}
                 aria-busy={isExportingExcel}
                 className={cn(
-                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                  "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
                   isExportingExcel && "cursor-not-allowed opacity-70",
                 )}
               >
@@ -1166,10 +1166,10 @@ function ModulePanel({
       type="button"
       onClick={() => onToggle("module", filterValue)}
       className={cn(
-        "flex min-h-[76px] items-center gap-3 rounded-2xl border bg-white px-3 py-2 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors dark:bg-slate-950",
+        "flex min-h-[76px] items-center gap-3 rounded-2xl border bg-white px-3 py-2 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors dark:bg-neutral-950",
         active
           ? "border-emerald-300 ring-2 ring-emerald-100 dark:ring-emerald-500/20"
-          : "border-slate-200/80 hover:border-slate-300 dark:border-slate-800",
+          : "border-slate-200/80 hover:border-slate-300 dark:border-neutral-800",
       )}
     >
       <span
@@ -1184,10 +1184,10 @@ function ModulePanel({
         <span className="block text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           {title}
         </span>
-        <span className="mt-0.5 block text-xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
+        <span className="mt-0.5 block text-xl font-bold tabular-nums text-slate-900 dark:text-neutral-100">
           {value}
         </span>
-        <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="block truncate text-[11px] text-slate-500 dark:text-neutral-400">
           {detail}
         </span>
       </span>
@@ -1319,7 +1319,7 @@ function RecordsTab({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={`Search ${moduleLabel.toLowerCase()}...`}
-              className="h-9 rounded-lg border-transparent bg-slate-50 pl-8 pr-3 text-xs shadow-none focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900"
+              className="h-9 rounded-lg border-transparent bg-slate-50 pl-8 pr-3 text-xs shadow-none focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900"
             />
           </div>
         }
@@ -1393,7 +1393,7 @@ function RecordsTab({
                   />
                 ))
               ) : (
-                <span className="flex h-8 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/70 px-2 text-xs font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-950/60">
+                <span className="flex h-8 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/70 px-2 text-xs font-medium text-slate-400 dark:border-neutral-700 dark:bg-neutral-950/60">
                   No agents
                 </span>
               )}
@@ -1403,7 +1403,7 @@ function RecordsTab({
       </PanelCard>
 
       {searchedRecords.length === 0 ? (
-        <div className="rounded-2xl bg-white px-3 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:bg-slate-950">
+        <div className="rounded-2xl bg-white px-3 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:bg-neutral-950">
           <DashboardEmptyState
             message="No records match the selected filters."
             compact
@@ -1414,18 +1414,18 @@ function RecordsTab({
           {groupedRecords.map((group) => (
             <section
               key={group.option}
-              className="border-b border-slate-100 last:border-b-0 dark:border-slate-800"
+              className="border-b border-slate-100 last:border-b-0 dark:border-neutral-800"
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/95 px-3 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/95 px-3 py-2 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
                 <div className="min-w-0">
-                  <h3 className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <h3 className="truncate text-xs font-bold text-slate-800 dark:text-neutral-100">
                     {group.option}
                   </h3>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                     Campaign option
                   </p>
                 </div>
-                <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300">
                   {group.items.length}
                 </span>
               </div>
@@ -1496,7 +1496,7 @@ function RecordsTable({
   ];
 
   return (
-    <table className="w-full min-w-[1450px] table-fixed border-collapse bg-white text-sm dark:bg-slate-950">
+    <table className="w-full min-w-[1450px] table-fixed border-collapse bg-white text-sm dark:bg-neutral-950">
       <colgroup>
         <col className="w-[70px]" />
         <col className="w-[16%]" />
@@ -1509,7 +1509,7 @@ function RecordsTable({
         <col className="w-[16%]" />
         <col className="w-[8%]" />
       </colgroup>
-      <thead className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
+      <thead className="border-b border-slate-200 bg-slate-50/80 dark:border-neutral-800 dark:bg-neutral-900/80">
         <tr>
           {headers.map((header, index) => (
             <th
@@ -1525,7 +1525,7 @@ function RecordsTable({
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      <tbody className="divide-y divide-slate-100 dark:divide-neutral-800">
         {records.map((record) => (
           <RecordRows
             key={record.id}
@@ -1564,7 +1564,7 @@ function TicketLikeRecordsTable({
   ];
 
   return (
-    <table className="w-full min-w-[1450px] table-fixed border-collapse bg-white text-sm dark:bg-slate-950">
+    <table className="w-full min-w-[1450px] table-fixed border-collapse bg-white text-sm dark:bg-neutral-950">
       <colgroup>
         {includeLine ? (
           <>
@@ -1593,7 +1593,7 @@ function TicketLikeRecordsTable({
           </>
         )}
       </colgroup>
-      <thead className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
+      <thead className="border-b border-slate-200 bg-slate-50/80 dark:border-neutral-800 dark:bg-neutral-900/80">
         <tr>
           {headers.map((header, index) => (
             <th
@@ -1609,7 +1609,7 @@ function TicketLikeRecordsTable({
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      <tbody className="divide-y divide-slate-100 dark:divide-neutral-800">
         {records.map((record, index) => {
           const ticketIndex = record.ticket
             ? record.customer.tickets.findIndex(
@@ -1652,16 +1652,16 @@ function TicketLikeRecordsTable({
           return (
             <tr
               key={record.id}
-              className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-[#f8fbfa] dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900/70"
+              className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-[#f8fbfa] dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900/70"
               onClick={() => onSelect(record)}
             >
               <td className="px-3 py-3 pl-4 align-middle">
-                <span className="inline-flex h-7 min-w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-100/80 px-2 text-xs font-semibold tabular-nums text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <span className="inline-flex h-7 min-w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-100/80 px-2 text-xs font-semibold tabular-nums text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
                   #{row.id || "N/A"}
                 </span>
               </td>
               <td className="px-3 py-3 align-middle">
-                <div className="max-w-full truncate font-bold text-slate-900 dark:text-slate-100">
+                <div className="max-w-full truncate font-bold text-slate-900 dark:text-neutral-100">
                   {record.customer.name || "Unknown customer"}
                 </div>
                 <div className="mt-0.5 max-w-full truncate text-[11px] font-medium text-slate-400">
@@ -1681,14 +1681,14 @@ function TicketLikeRecordsTable({
               </td>
               <td className="px-3 py-3 align-middle">
                 <span
-                  className="block truncate text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  className="block truncate text-xs font-semibold text-slate-600 dark:text-neutral-300"
                   title={row.type}
                 >
                   {row.type}
                 </span>
               </td>
               <td className="px-3 py-3 align-middle">
-                <span className="inline-flex max-w-full items-center gap-1.5 truncate font-medium text-slate-500 dark:text-slate-400">
+                <span className="inline-flex max-w-full items-center gap-1.5 truncate font-medium text-slate-500 dark:text-neutral-400">
                   <User
                     className="size-3.5 shrink-0 text-slate-300"
                     aria-hidden
@@ -1698,7 +1698,7 @@ function TicketLikeRecordsTable({
               </td>
               <td className="px-3 py-3 align-middle">
                 <span
-                  className="block truncate text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  className="block truncate text-xs font-semibold text-slate-600 dark:text-neutral-300"
                   title={row.yard}
                 >
                   {row.yard}
@@ -1707,7 +1707,7 @@ function TicketLikeRecordsTable({
               {includeLine ? (
                 <td className="px-3 py-3 align-middle">
                   <span
-                    className="block truncate text-xs font-semibold text-slate-600 dark:text-slate-300"
+                    className="block truncate text-xs font-semibold text-slate-600 dark:text-neutral-300"
                     title={row.line}
                   >
                     {row.line}
@@ -1892,8 +1892,8 @@ function RecordTableRow({
   return (
     <tr
       className={cn(
-        "cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-[#f8fbfa] dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900/70",
-        child && "bg-slate-50/70 dark:bg-slate-900/40",
+        "cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-[#f8fbfa] dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900/70",
+        child && "bg-slate-50/70 dark:bg-neutral-900/40",
       )}
       onClick={onSelect}
     >
@@ -1902,20 +1902,20 @@ function RecordTableRow({
           className={cn(
             "inline-flex h-7 min-w-11 items-center justify-center rounded-full border px-2 text-xs font-semibold tabular-nums",
             child
-              ? "border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-950"
-              : "border-slate-200 bg-slate-100/80 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+              ? "border-slate-200 bg-white text-slate-400 dark:border-neutral-700 dark:bg-neutral-950"
+              : "border-slate-200 bg-slate-100/80 text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300",
           )}
         >
           {idLabel}
         </span>
       </td>
       <td className="px-3 py-3 align-middle">
-        <div className="max-w-[210px] truncate font-bold text-slate-900 dark:text-slate-100">
+        <div className="max-w-[210px] truncate font-bold text-slate-900 dark:text-neutral-100">
           {customerName}
         </div>
       </td>
       <td className="px-3 py-3 align-middle">
-        <span className="inline-flex max-w-[190px] items-center gap-1.5 truncate font-medium text-slate-500 dark:text-slate-400">
+        <span className="inline-flex max-w-[190px] items-center gap-1.5 truncate font-medium text-slate-500 dark:text-neutral-400">
           <Phone className="size-3.5 shrink-0 text-slate-300" aria-hidden />
           <span className="truncate">{contact}</span>
         </span>
@@ -1936,7 +1936,7 @@ function RecordTableRow({
         </div>
       </td>
       <td className="px-3 py-3 align-middle">
-        <span className="inline-flex max-w-[180px] items-center gap-1.5 truncate font-medium text-slate-500 dark:text-slate-400">
+        <span className="inline-flex max-w-[180px] items-center gap-1.5 truncate font-medium text-slate-500 dark:text-neutral-400">
           <User className="size-3.5 shrink-0 text-slate-300" aria-hidden />
           <span className="truncate">{owner}</span>
         </span>
@@ -1953,7 +1953,7 @@ function RecordTableRow({
         </div>
       </td>
       <td className="px-3 py-3 align-middle">
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-slate-500 dark:text-slate-400">
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-slate-500 dark:text-neutral-400">
           <CalendarDays className="size-3.5 text-slate-400" aria-hidden />
           {formatDateTime(date)}
         </span>
@@ -2015,7 +2015,7 @@ function DirectionBadge({
     ? "border-emerald-200 bg-emerald-50 text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
     : isOutbound
       ? "border-orange-200 bg-orange-50 text-orange-600 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300"
-      : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300";
+      : "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300";
 
   return (
     <span
@@ -2034,7 +2034,7 @@ function DirectionBadge({
 
 function SoftPill({ label }: { label: string }) {
   return (
-    <span className="inline-flex h-7 max-w-[160px] items-center rounded-full border border-slate-200 bg-slate-100/70 px-2.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+    <span className="inline-flex h-7 max-w-[160px] items-center rounded-full border border-slate-200 bg-slate-100/70 px-2.5 text-xs font-medium text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200">
       <span className="truncate">{normalizeLabel(label)}</span>
     </span>
   );
@@ -2060,7 +2060,7 @@ function CallsBadge({
       "cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0faf5] hover:text-[#008f68]",
     highlighted
       ? "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300"
-      : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+      : "border-slate-200 bg-white text-slate-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300",
   );
 
   if (onClick) {
@@ -2123,9 +2123,9 @@ function RecordDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[680px] dark:border-slate-800 dark:bg-slate-950"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[680px] dark:border-neutral-800 dark:bg-neutral-950"
       >
-        <SheetHeader className="relative border-b border-slate-200/80 bg-white px-4 py-4 pr-14 dark:border-slate-800 dark:bg-slate-950">
+        <SheetHeader className="relative border-b border-slate-200/80 bg-white px-4 py-4 pr-14 dark:border-neutral-800 dark:bg-neutral-950">
           <span
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
             aria-hidden
@@ -2136,7 +2136,7 @@ function RecordDetailSheet({
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <SheetTitle className="min-w-0 truncate text-[16px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                <SheetTitle className="min-w-0 truncate text-[16px] font-bold tracking-tight text-slate-900 dark:text-neutral-100">
                   {record?.title || "Record detail"}
                 </SheetTitle>
                 {record ? (
@@ -2280,13 +2280,13 @@ function RecordDetailSheet({
                 row.tickets.map((ticket) => (
                   <div
                     key={ticket.ticketId}
-                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900"
+                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                      <p className="truncate text-xs font-bold text-slate-800 dark:text-neutral-100">
                         {ticket.ticketLabel || `Ticket #${ticket.ticketId}`}
                       </p>
-                      <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                      <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300">
                         {normalizeLabel(ticket.status)}
                       </span>
                     </div>
@@ -2295,7 +2295,7 @@ function RecordDetailSheet({
                       {normalizeLabel(ticket.agentName)} -{" "}
                       {formatDate(ticket.createdAt)}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-neutral-300">
                       {ticket.issueSnippet || "No issue detail."}
                     </p>
                   </div>
@@ -2314,10 +2314,10 @@ function RecordDetailSheet({
                 row.manualRecords.map((record) => (
                   <div
                     key={record.id}
-                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900"
+                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                      <p className="truncate text-xs font-bold text-slate-800 dark:text-neutral-100">
                         {normalizeLabel(record.disposition)}
                       </p>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -2327,7 +2327,7 @@ function RecordDetailSheet({
                     <p className="mt-1 text-[11px] text-slate-500">
                       {normalizeLabel(record.campaignOption)}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-neutral-300">
                       {record.notes || "No notes."}
                     </p>
                   </div>
@@ -2360,7 +2360,7 @@ function FilterPill({
         "inline-grid h-7 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-lg border px-2 text-xs font-medium leading-none transition-colors",
         active
           ? "border-emerald-200 bg-emerald-50 text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300",
       )}
       title={label}
     >
@@ -2370,7 +2370,7 @@ function FilterPill({
           "flex h-3.5 min-w-3.5 items-center justify-center rounded px-1 text-[10px] font-bold leading-none tabular-nums",
           active
             ? "bg-white/80 text-[#008f68] dark:bg-emerald-500/20"
-            : "bg-slate-100 text-slate-500 dark:bg-slate-800",
+            : "bg-slate-100 text-slate-500 dark:bg-neutral-800",
         )}
       >
         {count}
@@ -2387,7 +2387,7 @@ function FilterGroup({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-rows-[auto_1fr] gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50/60 px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] dark:border-slate-800 dark:bg-slate-900/40">
+    <div className="grid grid-rows-[auto_1fr] gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50/60 px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] dark:border-neutral-800 dark:bg-neutral-900/40">
       <span className="flex h-4 items-center text-[10px] font-semibold uppercase tracking-widest text-slate-400">
         {label}
       </span>
@@ -2411,10 +2411,10 @@ function RecordCallsBlock({
         calls.map((call) => (
           <div
             key={call.callId}
-            className="rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900"
           >
             <div className="flex items-center justify-between gap-3">
-              <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-neutral-100">
                 {normalizeLabel(call.direction)} -{" "}
                 {normalizeLabel(call.disposition)}
               </p>
@@ -2428,7 +2428,7 @@ function RecordCallsBlock({
               {normalizeLabel(call.line)}
             </p>
             {call.notes ? (
-              <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+              <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-neutral-300">
                 {call.notes}
               </p>
             ) : null}
@@ -2481,15 +2481,15 @@ function CallDetailsBlock({
           return (
             <div
               key={key}
-              className="overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 dark:border-slate-800 dark:bg-slate-900"
+              className="overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 dark:border-neutral-800 dark:bg-neutral-900"
             >
               <button
                 type="button"
                 onClick={() => toggle(key)}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-white/70 dark:hover:bg-slate-950/40"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-white/70 dark:hover:bg-neutral-950/40"
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold text-slate-900 dark:text-slate-100">
+                  <span className="block truncate text-xs font-bold text-slate-900 dark:text-neutral-100">
                     {call.callId ? `Call #${call.callId}` : `Call ${index + 1}`}{" "}
                     - {normalizeLabel(call.direction)}
                   </span>
@@ -2498,7 +2498,7 @@ function CallDetailsBlock({
                     {formatDate(call.createdAt)}
                   </span>
                 </span>
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300">
                   {expanded ? (
                     <ChevronUp className="size-3.5" aria-hidden />
                   ) : (
@@ -2508,7 +2508,7 @@ function CallDetailsBlock({
               </button>
 
               {expanded ? (
-                <div className="space-y-2 border-t border-slate-200/80 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950">
+                <div className="space-y-2 border-t border-slate-200/80 bg-white px-3 py-3 dark:border-neutral-800 dark:bg-neutral-950">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <DetailLine
                       label="Call"
@@ -2616,7 +2616,7 @@ function SheetChip({
           ? "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
           : tone === "blue"
             ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
-            : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+            : "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300",
       )}
       title={label}
     >
@@ -2627,12 +2627,12 @@ function SheetChip({
 
 function DetailStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
         {label}
       </p>
       <p
-        className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-slate-100"
+        className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-neutral-100"
         title={value}
       >
         {value}
@@ -2649,7 +2649,7 @@ function DetailBlock({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+    <section className="space-y-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex items-center gap-2">
         <span className="h-4 w-0.5 rounded-full bg-[#008f68]" aria-hidden />
         <h3 className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -2663,10 +2663,10 @@ function DetailBlock({
 
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-8 items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-1.5 text-xs dark:border-slate-800 dark:bg-slate-900/60">
+    <div className="flex min-h-8 items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900/60">
       <span className="font-medium text-slate-500">{label}</span>
       <span
-        className="max-w-[62%] truncate text-right font-bold text-slate-900 dark:text-slate-100"
+        className="max-w-[62%] truncate text-right font-bold text-slate-900 dark:text-neutral-100"
         title={value}
       >
         {value}

@@ -118,7 +118,7 @@ export function PhoneLineFormModal({
         </div>
 
         <EntityFormSectionHeading>Status</EntityFormSectionHeading>
-        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/50">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Active

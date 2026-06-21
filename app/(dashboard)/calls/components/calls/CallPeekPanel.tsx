@@ -177,14 +177,14 @@ function MetricTile({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 min-w-0">
+    <div className="rounded-lg border border-slate-100 dark:border-neutral-700 bg-slate-50/80 dark:bg-neutral-800/50 px-2.5 py-2 min-w-0">
       <p className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
         <Icon className="w-2.5 h-2.5 shrink-0" />
         {label}
       </p>
       <p
         className={cn(
-          "text-[12px] font-semibold text-slate-800 mt-1 leading-tight truncate",
+          "text-[12px] font-semibold text-slate-800 dark:text-neutral-200 mt-1 leading-tight truncate",
           mono && "font-mono tabular-nums",
         )}
         title={value}
@@ -207,8 +207,8 @@ function DetailRow({
   if (!value || value === "—") return null;
   const strValue = typeof value === "string" ? value : undefined;
   return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-slate-100/90 last:border-0">
-      <div className="w-6 h-6 rounded-md bg-white border border-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+    <div className="flex items-start gap-2.5 py-2 border-b border-slate-100/90 dark:border-neutral-700 last:border-0">
+      <div className="w-6 h-6 rounded-md bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700 flex items-center justify-center shrink-0 mt-0.5">
         <Icon className="w-3 h-3 text-slate-400" />
       </div>
       <div className="flex-1 min-w-0">
@@ -216,7 +216,7 @@ function DetailRow({
           {label}
         </p>
         <p
-          className="text-[12px] font-medium text-slate-800 mt-0.5 leading-snug wrap-break-word"
+          className="text-[12px] font-medium text-slate-800 dark:text-neutral-200 mt-0.5 leading-snug wrap-break-word"
           title={strValue}
         >
           {value}
@@ -239,8 +239,8 @@ function DetailSection({
   if (!items || (Array.isArray(items) && items.length === 0)) return null;
 
   return (
-    <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-      <div className="px-3 py-1.5 bg-slate-50/90 border-b border-slate-100">
+    <section className="rounded-xl border border-slate-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
+      <div className="px-3 py-1.5 bg-slate-50/90 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-700">
         <h3 className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
           {title}
         </h3>
@@ -254,7 +254,7 @@ function SkeletonBlock(props: React.HTMLAttributes<HTMLDivElement>) {
   const { className, ...rest } = props;
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-slate-100", className)}
+      className={cn("animate-pulse rounded-md bg-slate-100 dark:bg-neutral-800", className)}
       {...rest}
     />
   );
@@ -399,9 +399,9 @@ export function CallPeekPanel({
   const mobileClasses = cn(
     "fixed bottom-0 left-0 right-0 z-50 flex flex-col",
     "pointer-events-auto",
-    "bg-white rounded-t-2xl",
+    "bg-white dark:bg-neutral-900 rounded-t-2xl",
     "shadow-[0_-8px_32px_-4px_rgba(0,0,0,0.14)]",
-    "border border-slate-200/80",
+    "border border-slate-200/80 dark:border-neutral-700",
     "max-h-[85vh]",
     "transition-all duration-300 ease-out",
     visible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0",
@@ -409,7 +409,7 @@ export function CallPeekPanel({
 
   const desktopClasses = cn(
     "fixed z-[65] pointer-events-auto flex flex-col",
-    "bg-[#f8f9fb] rounded-2xl border border-slate-200/80",
+    "bg-[#f8f9fb] dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-700",
     "shadow-[0_20px_40px_-8px_rgba(0,0,0,0.14),0_8px_16px_-6px_rgba(0,0,0,0.08)]",
     !aircallOnLeft && "w-[min(400px,calc(100vw-2rem))]",
     aircallOnLeft && "min-w-[280px] max-w-[400px]",
@@ -462,7 +462,7 @@ export function CallPeekPanel({
 
         {/* Header */}
         <div
-          className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200/80 bg-white rounded-t-2xl"
+          className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-t-2xl"
           style={{
             boxShadow: `inset 3px 0 0 0 ${dirColor}`,
           }}
@@ -475,10 +475,10 @@ export function CallPeekPanel({
               <DirIcon className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-bold text-slate-900 leading-tight truncate">
+              <p className="text-[13px] font-bold text-slate-900 dark:text-neutral-100 leading-tight truncate">
                 {isLoading ? "Loading…" : `Call #${call?.id}`}
               </p>
-              <p className="text-[11px] text-slate-500 tabular-nums leading-tight mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-neutral-400 tabular-nums leading-tight mt-0.5">
                 {isLoading ? "—" : dateLabel}
               </p>
             </div>
@@ -487,14 +487,14 @@ export function CallPeekPanel({
             type="button"
             aria-label="Close preview"
             onClick={onClose}
-            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {isLoading && (
-          <div className="overflow-y-auto px-4 py-4 space-y-3 bg-white">
+          <div className="overflow-y-auto px-4 py-4 space-y-3 bg-white dark:bg-neutral-900">
             <div className="flex gap-1.5 flex-wrap">
               <SkeletonBlock className="h-5 w-14 rounded-md" />
               <SkeletonBlock className="h-5 w-16 rounded-md" />
@@ -519,7 +519,7 @@ export function CallPeekPanel({
             style={{ scrollbarWidth: "thin" }}
           >
             {/* Status strip */}
-            <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-slate-100 bg-white">
+            <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-slate-100 dark:border-neutral-700 bg-white dark:bg-neutral-900">
               <PeekBadge color={dirColor} bg={`${dirColor}18`} icon={DirIcon}>
                 {dirLabel}
               </PeekBadge>
@@ -598,11 +598,11 @@ export function CallPeekPanel({
             )}
 
             {notes && (
-              <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+              <section className="rounded-xl border border-slate-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setNotesExpanded((p) => !p)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/90 border-b border-slate-100 hover:bg-slate-100/80 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/90 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-700 hover:bg-slate-100/80 dark:hover:bg-neutral-700 transition-colors"
                 >
                   <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
                     Notes
@@ -615,7 +615,7 @@ export function CallPeekPanel({
                 </button>
                 {notesExpanded && (
                   <div className="px-3 py-2.5">
-                    <p className="text-[13.5px] text-slate-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                    <p className="text-[13.5px] text-slate-600 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap wrap-break-word">
                       {notes}
                     </p>
                   </div>
@@ -624,8 +624,8 @@ export function CallPeekPanel({
             )}
 
             {attachments.length > 0 && (
-              <section className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-                <div className="px-3 py-1.5 bg-slate-50/90 border-b border-slate-100">
+              <section className="rounded-xl border border-slate-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
+                <div className="px-3 py-1.5 bg-slate-50/90 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-700">
                   <h3 className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
                     Attachments ({attachments.length})
                   </h3>
@@ -638,11 +638,11 @@ export function CallPeekPanel({
                     return (
                       <div
                         key={url}
-                        className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-2"
+                        className="flex items-center gap-2 rounded-lg border border-slate-100 dark:border-neutral-700 bg-slate-50/60 dark:bg-neutral-800/50 px-2.5 py-2"
                       >
                         <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span
-                          className="flex-1 text-[11px] font-medium text-slate-600 truncate"
+                          className="flex-1 text-[11px] font-medium text-slate-600 dark:text-neutral-300 truncate"
                           title={filename}
                         >
                           {filename}
@@ -678,7 +678,7 @@ export function CallPeekPanel({
         )}
 
         {!isLoading && call && (
-          <div className="shrink-0 px-3 py-3 border-t border-slate-200/80 bg-white rounded-b-2xl">
+          <div className="shrink-0 px-3 py-3 border-t border-slate-200/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-b-2xl">
             {onLink ? (
               <button
                 type="button"
@@ -689,7 +689,7 @@ export function CallPeekPanel({
                 Link to current call
               </button>
             ) : (
-              <p className="text-[11px] text-slate-400 text-center py-1">
+              <p className="text-[11px] text-slate-400 dark:text-neutral-500 text-center py-1">
                 Read-only preview
               </p>
             )}

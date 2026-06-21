@@ -172,10 +172,10 @@ function RecordsEmptyState({
       <div className="mb-4 rounded-xl bg-[#f0faf5] p-4 text-[#008f68] ring-8 ring-[#f0faf5]/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/5">
         <Icon className="size-10 opacity-80" aria-hidden />
       </div>
-      <p className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+      <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
         {title}
       </p>
-      <p className="mt-1 max-w-[320px] text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-1 max-w-[320px] text-xs leading-5 text-slate-500 dark:text-neutral-400">
         {description}
       </p>
     </div>
@@ -592,14 +592,14 @@ export function YardRecordsModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="flex h-[90dvh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[min(96vw,1400px)] dark:border-slate-800 dark:bg-slate-950"
+          className="flex h-[90dvh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[min(96vw,1400px)] dark:border-neutral-800 dark:bg-neutral-950"
         >
-          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="relative shrink-0 border-b border-slate-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-950">
             <div
               className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
               aria-hidden
             />
-            <DialogClose className="absolute right-3 top-3 z-30 flex size-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008f68]/25 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200">
+            <DialogClose className="absolute right-3 top-3 z-30 flex size-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008f68]/25 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-200">
               <X className="size-4" aria-hidden />
               <span className="sr-only">Close</span>
             </DialogClose>
@@ -611,12 +611,12 @@ export function YardRecordsModal({
                     <ClipboardList className="size-3.5" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <DialogTitle className="text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                    <DialogTitle className="text-[15px] font-semibold leading-tight text-slate-900 dark:text-neutral-100">
                       Record Directory
                     </DialogTitle>
-                    <DialogDescription className="mt-0.5 truncate text-xs leading-4 text-slate-500 dark:text-slate-400">
+                    <DialogDescription className="mt-0.5 truncate text-xs leading-4 text-slate-500 dark:text-neutral-400">
                       Unified calls, tickets, and manual records for{" "}
-                      <span className="font-semibold text-slate-800 dark:text-slate-100">
+                      <span className="font-semibold text-slate-800 dark:text-neutral-100">
                         {yardName}
                       </span>
                     </DialogDescription>
@@ -631,7 +631,7 @@ export function YardRecordsModal({
                       value={`${counts.linkedTickets} tickets on calls`}
                     />
                   ) : null}
-                  <span className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 text-[11px] font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                  <span className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 text-[11px] font-semibold text-slate-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
                     <Layers className="size-3.5 text-slate-400" aria-hidden />
                     {recordTabs.length} types
                   </span>
@@ -646,7 +646,7 @@ export function YardRecordsModal({
                     tone={loading ? "loading" : error ? "muted" : "ready"}
                   />
                   {lastLoadedAt ? (
-                    <span className="inline-flex h-7 items-center rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 font-mono text-[11px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    <span className="inline-flex h-7 items-center rounded-lg border border-slate-200/70 bg-slate-100 px-2.5 font-mono text-[11px] font-medium text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
                       {lastLoadedAt}
                     </span>
                   ) : null}
@@ -654,7 +654,7 @@ export function YardRecordsModal({
               </div>
             </DialogHeader>
 
-            <div className="flex flex-col gap-2 border-t border-slate-200/80 bg-[#f4f5f7] px-4 py-2 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+            <div className="flex flex-col gap-2 border-t border-slate-200/80 bg-[#f4f5f7] px-4 py-2 dark:border-neutral-800 dark:bg-neutral-950 sm:px-5">
               {/* Row 1 — Search + Segmented tabs */}
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                 <div
@@ -673,12 +673,12 @@ export function YardRecordsModal({
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                     placeholder="Search by customer, phone, ID, agent..."
-                    className="h-8 rounded-lg border-slate-200/80 bg-white pl-8 pr-8 text-xs shadow-sm hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                    className="h-8 rounded-lg border-slate-200/80 bg-white pl-8 pr-8 text-xs shadow-sm hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
                   />
                   {search ? (
                     <button
                       type="button"
-                      className="absolute right-1 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="absolute right-1 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-neutral-800"
                       aria-label="Clear search"
                       onClick={() => setSearch("")}
                     >
@@ -688,11 +688,11 @@ export function YardRecordsModal({
                 </div>
                 <div className="relative min-w-0 lg:flex-1">
                   <div
-                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#f4f5f7] to-transparent dark:from-slate-950"
+                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#f4f5f7] to-transparent dark:from-neutral-950"
                     aria-hidden
                   />
                   <div
-                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#f4f5f7] to-transparent dark:from-slate-950"
+                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[#f4f5f7] to-transparent dark:from-neutral-950"
                     aria-hidden
                   />
                   <ScrollArea className="w-full" type="scroll">
@@ -734,7 +734,7 @@ export function YardRecordsModal({
                     {inheritedActive.map(([key, value]) => (
                       <span
                         key={key}
-                        className="inline-flex items-center gap-1 rounded-full border border-[#008f68]/30 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#006b4f] shadow-[0_1px_1px_rgba(15,23,42,0.04)] dark:border-emerald-400/35 dark:bg-slate-950/40 dark:text-emerald-300"
+                        className="inline-flex items-center gap-1 rounded-full border border-[#008f68]/30 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#006b4f] shadow-[0_1px_1px_rgba(15,23,42,0.04)] dark:border-emerald-400/35 dark:bg-neutral-950/40 dark:text-emerald-300"
                       >
                         <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#008f68]/70 dark:text-emerald-300/80">
                           {yardFilterLabel(key)}
@@ -756,7 +756,7 @@ export function YardRecordsModal({
                     onClick={() =>
                       setAppliedYardFilters(emptyYardDashboardFilters())
                     }
-                    className="ml-auto inline-flex items-center gap-1 rounded-md border border-[#008f68]/25 bg-white/80 px-2 py-0.5 text-[10.5px] font-semibold text-[#006b4f] transition-colors hover:bg-[#f0faf5] dark:border-emerald-400/25 dark:bg-slate-950/40 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                    className="ml-auto inline-flex items-center gap-1 rounded-md border border-[#008f68]/25 bg-white/80 px-2 py-0.5 text-[10.5px] font-semibold text-[#006b4f] transition-colors hover:bg-[#f0faf5] dark:border-emerald-400/25 dark:bg-neutral-950/40 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
                   >
                     Drop yard filters
                   </button>
@@ -764,9 +764,9 @@ export function YardRecordsModal({
               ) : null}
 
               {/* Row 2 — Filters toolbar (filters expand to fill the row) */}
-              <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:gap-2">
+              <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-slate-200/70 bg-white/80 px-2 py-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-neutral-800 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:gap-2">
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 pl-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <span className="inline-flex items-center gap-1.5 pl-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
                     <SlidersHorizontal
                       className="size-3.5 text-slate-400"
                       aria-hidden
@@ -774,7 +774,7 @@ export function YardRecordsModal({
                     Filters
                   </span>
                   <span
-                    className="hidden h-4 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block"
+                    className="hidden h-4 w-px bg-slate-200 dark:bg-neutral-700 sm:inline-block"
                     aria-hidden
                   />
                 </div>
@@ -838,7 +838,7 @@ export function YardRecordsModal({
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1 transition-colors",
                       totalActiveFilters > 0
                         ? "bg-[#f0faf5] text-[#008f68] ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-400/30"
-                        : "bg-slate-50 text-slate-400 ring-slate-200/70 dark:bg-slate-800/60 dark:text-slate-500 dark:ring-slate-700",
+                        : "bg-slate-50 text-slate-400 ring-slate-200/70 dark:bg-neutral-800/60 dark:text-neutral-500 dark:ring-neutral-700",
                     )}
                   >
                     <span
@@ -846,7 +846,7 @@ export function YardRecordsModal({
                         "size-1.5 rounded-full",
                         totalActiveFilters > 0
                           ? "bg-[#008f68] dark:bg-emerald-400"
-                          : "bg-slate-300 dark:bg-slate-600",
+                          : "bg-slate-300 dark:bg-neutral-600",
                       )}
                     />
                     {totalActiveFilters > 0
@@ -857,7 +857,7 @@ export function YardRecordsModal({
                     <button
                       type="button"
                       onClick={clearRecordFilters}
-                      className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-1 text-[11px] font-medium text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-1 text-[11px] font-medium text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
                     >
                       <X className="size-3" aria-hidden />
                       Clear all
@@ -868,7 +868,7 @@ export function YardRecordsModal({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 px-3 py-3 dark:bg-slate-950 sm:px-4">
+          <div className="min-h-0 flex-1 px-3 py-3 dark:bg-neutral-950 sm:px-4">
             <div
               className={cn(
                 dashboardPanelClass,
@@ -881,7 +881,7 @@ export function YardRecordsModal({
                     className={cn(
                       "flex min-h-[360px] items-center justify-center py-10",
                       "bg-gradient-to-b from-[#f0faf5]/50 via-white to-white",
-                      "dark:from-[#008f68]/5 dark:via-slate-950 dark:to-slate-950",
+                      "dark:from-[#008f68]/5 dark:via-neutral-950 dark:to-neutral-950",
                     )}
                   >
                     <EntityLoadingSpinner
@@ -895,10 +895,10 @@ export function YardRecordsModal({
                     <div className="mb-4 rounded-xl bg-rose-50 p-4 text-rose-600 ring-8 ring-rose-50/80 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/5">
                       <XCircle className="size-10" aria-hidden />
                     </div>
-                    <p className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                    <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                       Records could not be loaded
                     </p>
-                    <p className="mt-1 max-w-[360px] text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 max-w-[360px] text-xs text-slate-500 dark:text-neutral-400">
                       {error}
                     </p>
                     <Button
@@ -939,28 +939,28 @@ export function YardRecordsModal({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 sm:px-5">
+          <DialogFooter className="shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950 sm:px-5">
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
+                <span className="font-semibold text-slate-800 dark:text-neutral-100">
                   {visibleTotal}
                 </span>{" "}
                 record{total === 1 ? "" : "s"} in{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-800 dark:text-neutral-100">
                   {activeTabLabel}
                 </span>
                 {search || activeFilterCount > 0
                   ? " matching current filters"
                   : null}
-                <span className="mx-1.5 text-slate-300 dark:text-slate-700">
+                <span className="mx-1.5 text-slate-300 dark:text-neutral-700">
                   |
                 </span>
                 Page{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-800 dark:text-neutral-100">
                   {page}
                 </span>{" "}
                 of{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-800 dark:text-neutral-100">
                   {Math.max(totalPages, 1)}
                 </span>
               </p>
@@ -969,7 +969,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm dark:border-slate-800 dark:bg-slate-950"
+                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
                   disabled={loading || page <= 1}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
@@ -979,7 +979,7 @@ export function YardRecordsModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm dark:border-slate-800 dark:bg-slate-950"
+                  className="h-8 rounded-lg border-slate-200 bg-white text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
                   disabled={loading || page >= Math.max(totalPages, 1)}
                   onClick={() =>
                     setPage((current) =>
@@ -1009,9 +1009,9 @@ export function YardRecordsModal({
           if (!nextOpen) setDetail(null);
         }}
       >
-        <DialogContent className="max-h-[82dvh] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-[min(92vw,560px)] dark:border-slate-800 dark:bg-slate-950">
-          <DialogHeader className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-800">
-            <DialogTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+        <DialogContent className="max-h-[82dvh] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-[min(92vw,560px)] dark:border-neutral-800 dark:bg-neutral-950">
+          <DialogHeader className="border-b border-slate-200/80 px-4 py-3 dark:border-neutral-800">
+            <DialogTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
               <FileText className="size-4 text-[#008f68] dark:text-emerald-400" />
               Record detail
             </DialogTitle>
@@ -1019,22 +1019,22 @@ export function YardRecordsModal({
               {detail?.title}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[58dvh] bg-[#f4f5f7] scrollbar-app dark:bg-slate-950">
+          <ScrollArea className="max-h-[58dvh] bg-[#f4f5f7] scrollbar-app dark:bg-neutral-950">
             <div className="p-3">
               {detail?.body?.trim() ? (
-                <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
-                  <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-700 dark:text-slate-300">
+                <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
+                  <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-700 dark:text-neutral-300">
                     {detail.body.trim()}
                   </p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/80 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/80">
+                <div className="rounded-xl border border-dashed border-slate-200/80 bg-white/80 px-4 py-6 text-center text-xs text-slate-500 dark:border-neutral-800 dark:bg-neutral-950/80">
                   No detail available for this record.
                 </div>
               )}
             </div>
           </ScrollArea>
-          <DialogFooter className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+          <DialogFooter className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/40">
             <Button
               type="button"
               size="sm"

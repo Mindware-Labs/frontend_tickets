@@ -35,6 +35,20 @@ const PAGE_CSS = `
 
   .fp-link { color: #008f68; text-decoration: none; font-weight: 600; transition: color .15s; }
   .fp-link:hover { color: #007a5a; }
+
+  .fp-card {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.10);
+  }
+  .fp-divider { background: #f1f5f9; }
+  .fp-step-title { color: #0f172a; }
+  .fp-step-sub { color: #64748b; }
+  .fp-field-label { color: #64748b; }
+  .fp-helper { color: #64748b; }
+  .fp-helper-em { color: #0f172a; }
+  .fp-done-title { color: #0f172a; }
+  .fp-done-sub { color: #64748b; }
+  .fp-dot-inactive { background: #e2e8f0; }
 `;
 
 const cardStyle: React.CSSProperties = {
@@ -42,8 +56,6 @@ const cardStyle: React.CSSProperties = {
   zIndex: 10,
   width: "100%",
   maxWidth: 420,
-  background: "#ffffff",
-  border: "1px solid rgba(15,23,42,0.10)",
   borderRadius: 16,
   padding: "24px 28px 24px",
   boxShadow: "0 1px 3px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.08)",
@@ -78,10 +90,10 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
   return (
     <label
       htmlFor={htmlFor}
+      className="fp-field-label"
       style={{
         fontSize: 11,
         fontWeight: 600,
-        color: "#64748b",
         letterSpacing: ".06em",
         textTransform: "uppercase",
       }}
@@ -271,34 +283,39 @@ export default function ForgotPasswordPage() {
               <StepIcon size={14} style={{ color: "#008f68" }} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a", letterSpacing: -0.2 }}>
+              <h2 className="fp-step-title" style={{ margin: 0, fontSize: 15, fontWeight: 700, letterSpacing: -0.2 }}>
                 {meta.title}
               </h2>
-              <p style={{ margin: 0, fontSize: 11, color: "#64748b", marginTop: 1 }}>{meta.sub}</p>
+              <p className="fp-step-sub" style={{ margin: 0, fontSize: 11, marginTop: 1 }}>{meta.sub}</p>
             </div>
           </div>
           {/* Step dots */}
           <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-            {STEPS.filter((s) => s !== "done").map((s) => (
-              <div
-                key={s}
-                style={{
-                  height: 4,
-                  borderRadius: 99,
-                  transition: "all .25s ease",
-                  width: s === step ? 16 : 4,
-                  background: s === step
-                    ? "#008f68"
-                    : STEPS.indexOf(s) < STEPS.indexOf(step)
-                      ? "rgba(0,143,104,.35)"
-                      : "#e2e8f0",
-                }}
-              />
-            ))}
+            {STEPS.filter((s) => s !== "done").map((s) => {
+              const isActive = s === step;
+              const isPast   = STEPS.indexOf(s) < STEPS.indexOf(step);
+              return (
+                <div
+                  key={s}
+                  className={!isActive && !isPast ? "fp-dot-inactive" : undefined}
+                  style={{
+                    height: 4,
+                    borderRadius: 99,
+                    transition: "all .25s ease",
+                    width: isActive ? 16 : 4,
+                    background: isActive
+                      ? "#008f68"
+                      : isPast
+                        ? "rgba(0,143,104,.35)"
+                        : undefined,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
 
-        <div style={{ height: 1, background: "#f1f5f9" }} />
+        <div className="fp-divider" style={{ height: 1 }} />
 
         {/* ── STEP: request ── */}
         {step === "request" && (
@@ -329,9 +346,9 @@ export default function ForgotPasswordPage() {
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: 12 }}>Too many attempts</p>
                   {rateLimitCountdown > 0 && (
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "#64748b" }}>
+                    <p className="fp-helper" style={{ margin: "2px 0 0", fontSize: 11 }}>
                       Try again in{" "}
-                      <strong style={{ color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>{rateLimitCountdown}s</strong>
+                      <strong className="fp-helper-em" style={{ fontVariantNumeric: "tabular-nums" }}>{rateLimitCountdown}s</strong>
                     </p>
                   )}
                 </div>
@@ -347,7 +364,7 @@ export default function ForgotPasswordPage() {
                 : <><span>Send Code</span><ArrowRight size={13} /></>}
             </button>
 
-            <p style={{ textAlign: "center", fontSize: 12, color: "#64748b", margin: 0 }}>
+            <p className="fp-helper" style={{ textAlign: "center", fontSize: 12, margin: 0 }}>
               Remembered it?{" "}
               <Link href="/login" className="fp-link">Sign in</Link>
             </p>
@@ -358,9 +375,9 @@ export default function ForgotPasswordPage() {
         {step === "code" && (
           <form key="code" className="fp-step" onSubmit={handleVerifyCode}
             style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-            <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
+            <p className="fp-helper" style={{ margin: 0, fontSize: 12 }}>
               Code sent to{" "}
-              <strong style={{ color: "#0f172a", fontWeight: 600 }}>{email}</strong>
+              <strong className="fp-helper-em" style={{ fontWeight: 600 }}>{email}</strong>
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -390,9 +407,9 @@ export default function ForgotPasswordPage() {
 
             <div style={{ textAlign: "center" }}>
               {resendTimer > 0 ? (
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>
+                <p className="fp-helper" style={{ fontSize: 12, margin: 0 }}>
                   Resend in{" "}
-                  <strong style={{ color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
+                  <strong className="fp-helper-em" style={{ fontVariantNumeric: "tabular-nums" }}>
                     {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2, "0")}
                   </strong>
                 </p>
@@ -478,8 +495,8 @@ export default function ForgotPasswordPage() {
               <CheckCircle2 size={26} style={{ color: "#008f68" }} />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>Password updated!</p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>Redirecting you to sign in…</p>
+              <p className="fp-done-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Password updated!</p>
+              <p className="fp-done-sub" style={{ margin: "4px 0 0", fontSize: 12 }}>Redirecting you to sign in…</p>
             </div>
             <button type="button" onClick={() => router.push("/login")} className="fp-btn"
               style={btnBaseStyle(false)}>

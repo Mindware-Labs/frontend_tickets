@@ -33,14 +33,14 @@ export function UsersGrid({
 
   if (totalFiltered === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center dark:border-neutral-800 dark:bg-neutral-950">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-[#f0faf5] text-[#008f68]">
           <Users className="h-6 w-6" strokeWidth={1.75} />
         </div>
-        <h3 className="mt-4 text-[17px] font-bold text-slate-900 dark:text-slate-50">
+        <h3 className="mt-4 text-[17px] font-bold text-slate-900 dark:text-neutral-50">
           No users found
         </h3>
-        <p className="mt-1 max-w-sm text-[13px] text-slate-500 dark:text-slate-400">
+        <p className="mt-1 max-w-sm text-[13px] text-slate-500 dark:text-neutral-400">
           {search
             ? "Try a different search term or clear filters."
             : "Add your first team member to get started."}

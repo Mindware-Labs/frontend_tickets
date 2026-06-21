@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is([data-dark-mode-disabled] *));
+@custom-variant dark (&:is(.dark *));
 
 
 :root {
@@ -62,7 +62,64 @@
   --chart-5: 0 84% 60%;
 
   color-scheme: light;
+}
 
+.dark {
+  --background: 0 0% 7%;
+  --foreground: 0 0% 96%;
+
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 96%;
+
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 96%;
+
+  --primary: 160 70% 42%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 0 0% 14%;
+  --secondary-foreground: 0 0% 90%;
+
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 62%;
+
+  --accent: 0 0% 14%;
+  --accent-foreground: 0 0% 90%;
+
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 160 70% 42%;
+
+  --success: 160 70% 42%;
+  --warning: 38 92% 55%;
+  --info: 200 80% 55%;
+
+  --sidebar-background: 0 0% 7%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 160 70% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 13%;
+  --sidebar-accent-foreground: 160 60% 55%;
+  --sidebar-border: 0 0% 18%;
+  --sidebar-ring: 160 70% 42%;
+
+  --chart-1: 160 70% 42%;
+  --chart-2: 142 60% 50%;
+  --chart-3: 38 85% 55%;
+  --chart-4: 200 75% 55%;
+  --chart-5: 0 72% 60%;
+
+  color-scheme: dark;
+
+  --scrollbar-thumb: color-mix(in srgb, #94a3b8 20%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, #008f68 45%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, #008f68 65%, transparent);
+}
+
+:root {
   /* Minimal scrollbars — Rig Hut teal accent */
   --scrollbar-size: 5px;
   --scrollbar-thumb: color-mix(in srgb, #64748b 32%, transparent);
@@ -137,7 +194,6 @@
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1.25;
-    color: #1a1a1a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -150,7 +206,7 @@
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.2;
-    color: #1a1a1a;
+    color: hsl(var(--foreground));
   }
 
   h1 { font-weight: 800; }

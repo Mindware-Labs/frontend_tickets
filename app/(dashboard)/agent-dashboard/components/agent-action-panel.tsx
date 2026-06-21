@@ -27,8 +27,8 @@ export function AgentActionPanel({ data }: AgentActionPanelProps) {
             className={cn(
               "inline-flex size-8 items-center justify-center rounded-lg border",
               isClear
-                ? "border-[#008f68]/20 bg-[#f0faf5] text-[#006b4f]"
-                : "border-rose-200 bg-rose-50 text-rose-700",
+                ? "border-[#008f68]/20 bg-[#f0faf5] text-[#006b4f] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300",
             )}
           >
             {isClear ? (
@@ -41,7 +41,7 @@ export function AgentActionPanel({ data }: AgentActionPanelProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Shift focus
             </p>
-            <h2 className="truncate text-[14px] font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="truncate text-[14px] font-bold text-slate-900 dark:text-neutral-100">
               {isClear ? "No urgent follow-up" : `${pending} items need attention`}
             </h2>
           </div>
@@ -92,7 +92,7 @@ function ActionCount({
         tone === "amber" &&
           "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
         tone === "slate" &&
-          "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+          "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300",
       )}
     >
       <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">

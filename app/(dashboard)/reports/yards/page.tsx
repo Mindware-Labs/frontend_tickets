@@ -897,8 +897,8 @@ export default function YardReportsPage() {
             )}
           </div>
         ) : !hasDateRange ? (
-          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-slate-950">
-            <Empty className="min-h-0 w-full max-w-[400px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] md:p-5 dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-[#f4f5f7] p-3 dark:bg-neutral-950">
+            <Empty className="min-h-0 w-full max-w-[400px] flex-none gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] md:p-5 dark:border-neutral-800 dark:bg-neutral-950">
               <EmptyHeader className="max-w-[320px] gap-2">
                 <EmptyMedia
                   variant="icon"
@@ -909,10 +909,10 @@ export default function YardReportsPage() {
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                   Yard report setup
                 </span>
-                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                   Select a date range
                 </EmptyTitle>
-                <EmptyDescription className="max-w-[300px] text-xs leading-5 text-slate-500 dark:text-slate-400">
+                <EmptyDescription className="max-w-[300px] text-xs leading-5 text-slate-500 dark:text-neutral-400">
                   Choose a start date and end date in Configure Report to load
                   the yard dashboard.
                 </EmptyDescription>

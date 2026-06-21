@@ -461,10 +461,10 @@ export default function CustomersPage() {
     <div className="h-screen flex flex-col px-4 pt-2 pb-4 gap-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between w-full pt-2 pb-5 px-0.5 gap-3 border-b border-border">
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-neutral-50 leading-tight">
             Customer Management
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
             {today} · Manage contacts, campaigns, and activity
           </p>
         </div>

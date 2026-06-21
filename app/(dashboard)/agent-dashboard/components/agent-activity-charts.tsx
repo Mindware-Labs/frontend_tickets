@@ -40,7 +40,7 @@ export function AgentActivityCharts({ data }: AgentActivityChartsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Last 7 days
             </p>
-            <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
               Call activity
             </h2>
           </div>
@@ -77,7 +77,7 @@ export function AgentActivityCharts({ data }: AgentActivityChartsProps) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Tickets
             </p>
-            <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
               Top campaigns
             </h2>
           </div>

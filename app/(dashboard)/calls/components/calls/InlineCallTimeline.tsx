@@ -137,19 +137,19 @@ export function InlineCallTimeline({
   };
 
   return (
-    <div className="mx-2 mb-2 rounded-xl border border-slate-200/80 bg-[#f8f9fb] shadow-sm">
+    <div className="mx-2 mb-2 rounded-xl border border-slate-200/80 dark:border-neutral-700 bg-[#f8f9fb] dark:bg-neutral-900 shadow-sm">
       {/* Summary strip */}
-      <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border-b border-slate-100 rounded-t-xl overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white dark:bg-neutral-900 border-b border-slate-100 dark:border-neutral-700 rounded-t-xl overflow-hidden">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-[#008f68]/10 flex items-center justify-center shrink-0">
             <UserRound className="w-4 h-4 text-[#008f68]" />
           </div>
           <div className="min-w-0">
-            <p className="text-[12px] font-semibold text-slate-800 truncate">
+            <p className="text-[12px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
               {group.customerName || "Unknown"}
             </p>
             {hasPhone && (
-              <p className="text-[10.5px] font-mono text-slate-500 truncate tabular-nums">
+              <p className="text-[10.5px] font-mono text-slate-500 dark:text-neutral-400 truncate tabular-nums">
                 {group.customerPhone}
               </p>
             )}
@@ -173,12 +173,12 @@ export function InlineCallTimeline({
         {/* Header */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-widest">
               Call timeline · {sortedCalls.length}{" "}
               {sortedCalls.length === 1 ? "event" : "events"}
             </p>
             {lastEventAgo && (
-              <p className="text-[10.5px] text-slate-400 mt-0.5">
+              <p className="text-[10.5px] text-slate-400 dark:text-neutral-500 mt-0.5">
                 Last activity {lastEventAgo}
               </p>
             )}
@@ -186,8 +186,8 @@ export function InlineCallTimeline({
         </div>
 
         {/* Timeline */}
-        <div className="relative rounded-lg border border-slate-100 bg-white px-3 py-2.5">
-          <div className="absolute top-3 bottom-3 left-[1.15rem] w-px bg-slate-200" />
+        <div className="relative rounded-lg border border-slate-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2.5">
+          <div className="absolute top-3 bottom-3 left-[1.15rem] w-px bg-slate-200 dark:bg-neutral-700" />
           <ol className="space-y-2.5">
             {sortedCalls.map((call, index) => {
               const meta = directionMeta(call.direction);
@@ -212,12 +212,12 @@ export function InlineCallTimeline({
                   key={call.id}
                   className={cn(
                     "relative pl-8 min-w-0",
-                    isLatest && "rounded-md px-2 py-1 bg-slate-50/80",
+                    isLatest && "rounded-md px-2 py-1 bg-slate-50/80 dark:bg-neutral-800/50",
                   )}
                 >
                   <span
                     className={cn(
-                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border-2",
+                      "absolute left-0 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border-2",
                       meta.ring,
                     )}
                   >
@@ -231,7 +231,7 @@ export function InlineCallTimeline({
                     "min-w-0 space-y-0.5",
                     isLatest && "ml-6"
                   )}>
-                    <p className="text-[10.5px] text-slate-500 tabular-nums whitespace-nowrap">
+                    <p className="text-[10.5px] text-slate-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                       {dateLabel}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
@@ -242,16 +242,16 @@ export function InlineCallTimeline({
                         {meta.label}
                       </span>
                       {call.duration != null && call.duration > 0 && (
-                        <span className="text-[10.5px] font-mono text-slate-400 tabular-nums shrink-0">
+                        <span className="text-[10.5px] font-mono text-slate-400 dark:text-neutral-500 tabular-nums shrink-0">
                           {duration}
                         </span>
                       )}
                       {agentName && (
                         <>
-                          <span className="text-slate-300 select-none shrink-0">
+                          <span className="text-slate-300 dark:text-neutral-600 select-none shrink-0">
                             ·
                           </span>
-                          <span className="text-[10.5px] text-slate-600 truncate max-w-[10rem]">
+                          <span className="text-[10.5px] text-slate-600 dark:text-neutral-300 truncate max-w-[10rem]">
                             {agentName}
                           </span>
                         </>
@@ -276,7 +276,7 @@ export function InlineCallTimeline({
                   )}
 
                   {notes && (
-                    <p className="mt-1 text-[12.5px] text-slate-500 leading-snug whitespace-pre-wrap wrap-break-word border-l-2 border-slate-200 pl-2">
+                    <p className="mt-1 text-[12.5px] text-slate-500 dark:text-neutral-400 leading-snug whitespace-pre-wrap wrap-break-word border-l-2 border-slate-200 dark:border-neutral-700 pl-2">
                       {notes}
                     </p>
                   )}
@@ -310,7 +310,7 @@ export function InlineCallTimeline({
               type="button"
               size="sm"
               variant="outline"
-              className="h-8 px-3.5 text-[12px] font-semibold rounded-lg border-slate-200 text-[#008f68] hover:bg-[#008f68]/8 hover:border-[#008f68]/40"
+              className="h-8 px-3.5 text-[12px] font-semibold rounded-lg border-slate-200 dark:border-neutral-700 text-[#008f68] hover:bg-[#008f68]/8 hover:border-[#008f68]/40"
               onClick={() => onOpenTimeline(group)}
             >
               <History className="h-3.5 w-3.5 mr-1.5" />

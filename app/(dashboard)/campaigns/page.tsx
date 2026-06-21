@@ -444,10 +444,10 @@ export default function CampaignsPage() {
     <div className="flex h-screen flex-col gap-0 px-4 pb-4 pt-2">
       <div className="flex w-full flex-col justify-between gap-3 border-b border-border px-0.5 pb-5 pt-2 md:flex-row md:items-center">
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-50">
+          <h2 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-neutral-50">
             Campaigns
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
             {today} · Track initiatives, yards, and ticket performance
           </p>
         </div>

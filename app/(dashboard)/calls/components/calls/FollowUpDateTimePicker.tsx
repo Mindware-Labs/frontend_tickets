@@ -128,7 +128,7 @@ export function FollowUpDateTimePicker({
           type="button"
           disabled={disabled}
           className={cn(
-            "flex h-9 w-full items-center gap-2.5 rounded-lg border border-slate-200/80 bg-white px-3 text-left text-[13px] transition-all hover:border-[#008f68]/40 focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:border-emerald-500/40 dark:focus:ring-emerald-500/20",
+            "flex h-9 w-full items-center gap-2.5 rounded-lg border border-slate-200/80 bg-white px-3 text-left text-[13px] transition-all hover:border-[#008f68]/40 focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-emerald-500/40 dark:focus:ring-emerald-500/20",
             disabled && "cursor-not-allowed opacity-60",
             className,
           )}
@@ -137,7 +137,7 @@ export function FollowUpDateTimePicker({
           <span
             className={cn(
               "truncate",
-              displayLabel ? "font-medium text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-500",
+              displayLabel ? "font-medium text-slate-900 dark:text-neutral-100" : "text-slate-400 dark:text-neutral-500",
             )}
           >
             {displayLabel || placeholder}
@@ -152,7 +152,7 @@ export function FollowUpDateTimePicker({
         avoidCollisions
         collisionPadding={16}
         className={cn(
-          "w-[min(calc(100vw-2rem),20rem)] overflow-hidden rounded-xl border border-slate-200/90 bg-white p-0 shadow-xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100",
+          "w-[min(calc(100vw-2rem),20rem)] overflow-hidden rounded-xl border border-slate-200/90 bg-white p-0 shadow-xl dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100",
           popoverClassName,
         )}
       >
@@ -174,35 +174,35 @@ export function FollowUpDateTimePicker({
               month: "flex w-full flex-col gap-2",
               nav: "absolute inset-x-0 top-0 flex h-8 items-center justify-between",
               button_previous:
-                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-450 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400/50 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
               button_next:
-                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-450 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                "size-8 rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400/50 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
               month_caption:
-                "flex h-8 w-full items-center justify-center px-10 text-[13px] font-semibold text-slate-700 dark:text-slate-205",
+                "flex h-8 w-full items-center justify-center px-10 text-[13px] font-semibold text-slate-700 dark:text-neutral-200/50",
               caption_label: "select-none text-[13px] font-semibold leading-none",
               month_grid: "w-full table-fixed border-separate border-spacing-0",
               weekdays: "grid w-full grid-cols-7",
               week: "mt-1 grid w-full grid-cols-7",
               weekday:
-                "flex h-6 items-center justify-center p-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500",
+                "flex h-6 items-center justify-center p-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500",
               week_number: "hidden",
               week_number_header: "hidden",
               day: "flex size-8 items-center justify-center p-0 text-center group/day select-none",
               day_button:
-                "mx-auto flex size-8! min-w-8! items-center justify-center rounded-lg text-[13px] font-medium leading-none text-slate-800 transition-colors hover:bg-slate-100 hover:text-slate-955 data-[selected-single=true]:bg-[#e2f5ef] data-[selected-single=true]:text-slate-955 data-[selected-single=true]:shadow-none group-data-[focused=true]/day:ring-2 group-data-[focused=true]/day:ring-[#008f68]/20 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white dark:data-[selected-single=true]:bg-emerald-950 dark:data-[selected-single=true]:text-emerald-350 dark:group-data-[focused=true]/day:ring-emerald-500/30",
-              today: "rounded-lg bg-transparent text-slate-900 dark:text-slate-100 font-semibold ring-1 ring-slate-200 dark:ring-slate-800",
+                "mx-auto flex size-8! min-w-8! items-center justify-center rounded-lg text-[13px] font-medium leading-none text-slate-800 transition-colors hover:bg-slate-100 hover:text-slate-955 data-[selected-single=true]:bg-[#e2f5ef] data-[selected-single=true]:text-slate-955 data-[selected-single=true]:shadow-none group-data-[focused=true]/day:ring-2 group-data-[focused=true]/day:ring-[#008f68]/20 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white dark:data-[selected-single=true]:bg-emerald-950 dark:data-[selected-single=true]:text-emerald-350 dark:group-data-[focused=true]/day:ring-emerald-500/30",
+              today: "rounded-lg bg-transparent text-slate-900 dark:text-neutral-100 font-semibold ring-1 ring-slate-200 dark:ring-neutral-800",
               outside:
-                "text-slate-300 aria-selected:text-slate-300 dark:text-slate-650",
-              disabled: "text-slate-200 dark:text-slate-800 opacity-70",
+                "text-slate-300 aria-selected:text-slate-300 dark:text-neutral-600/50",
+              disabled: "text-slate-200 dark:text-neutral-800 opacity-70",
             }}
           />
         </div>
 
-        <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2.5 dark:border-slate-800/80 dark:bg-slate-900/40">
-          <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-slate-200/70 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-950">
+        <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2.5 dark:border-neutral-800/80 dark:bg-neutral-900/40">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-slate-200/70 bg-white px-2.5 py-2 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex min-w-0 items-center gap-1.5">
               <Clock
-                className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
+                className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-neutral-500"
                 aria-hidden
               />
               <input
@@ -214,10 +214,10 @@ export function FollowUpDateTimePicker({
                 onChange={(e) =>
                   setHourInput(e.target.value.replace(/\D/g, "").slice(0, 2))
                 }
-                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-emerald-500 dark:focus:bg-slate-950 dark:focus:ring-emerald-500/20"
+                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-500 dark:focus:bg-neutral-950 dark:focus:ring-emerald-500/20"
                 aria-label="Hour"
               />
-              <span className="text-[12px] font-bold text-slate-400 dark:text-slate-650">:</span>
+              <span className="text-[12px] font-bold text-slate-400 dark:text-neutral-600/50">:</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -227,11 +227,11 @@ export function FollowUpDateTimePicker({
                 onChange={(e) =>
                   setMinuteInput(e.target.value.replace(/\D/g, "").slice(0, 2))
                 }
-                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-emerald-500 dark:focus:bg-slate-950 dark:focus:ring-emerald-500/20"
+                className="h-7 w-9 rounded-md border border-slate-200 bg-slate-50 text-center text-[12px] font-semibold tabular-nums text-slate-800 focus:border-[#008f68] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#008f68]/30 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-emerald-500 dark:focus:bg-neutral-950 dark:focus:ring-emerald-500/20"
                 aria-label="Minute"
               />
             </div>
-            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
               {(["AM", "PM"] as const).map((period) => {
                 const active = period === "PM" ? isPM : !isPM;
                 return (
@@ -243,7 +243,7 @@ export function FollowUpDateTimePicker({
                       "h-6 min-w-8 rounded px-2 text-[10px] font-bold transition-colors",
                       active
                         ? "bg-[#008f68] text-white shadow-sm dark:bg-emerald-600"
-                        : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+                        : "text-slate-500 hover:text-slate-700 dark:text-neutral-400 dark:hover:text-neutral-200",
                     )}
                   >
                     {period}
@@ -253,11 +253,11 @@ export function FollowUpDateTimePicker({
             </div>
           </div>
 
-          <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-slate-200/70 pt-2.5 dark:border-slate-800/80">
+          <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-slate-200/70 pt-2.5 dark:border-neutral-800/80">
             <button
               type="button"
               onClick={handleClear}
-              className="h-7 rounded-md px-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-white hover:text-rose-600 dark:text-slate-400 dark:hover:bg-slate-850 dark:hover:text-rose-400"
+              className="h-7 rounded-md px-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-white hover:text-rose-600 dark:text-neutral-400 dark:hover:bg-neutral-800/50 dark:hover:text-rose-400"
             >
               Clear
             </button>

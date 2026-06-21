@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, CircleUser, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronDown, CircleUser, LogOut, Moon, ShieldCheck, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { useTheme } from "next-themes";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -118,10 +119,26 @@ function getUserInitials(name: string) {
 }
 
 export default function Topbar() {
+  "use no memo";
   const pathname = usePathname();
   const { isMobile } = useSidebar();
 
   const pageMeta = useMemo(() => resolvePageMeta(pathname), [pathname]);
+
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const isDark = mounted
+    ? resolvedTheme === "dark" || document.documentElement.classList.contains("dark")
+    : false;
+
+  const toggleTheme = () => {
+    const next = isDark ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+  };
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -231,6 +248,24 @@ export default function Topbar() {
 
             <NotificationBell />
 
+            {mounted && (
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={toggleTheme}
+                className={cn(
+                  topbarIconBtnClass,
+                  "flex items-center justify-center",
+                )}
+              >
+                {isDark ? (
+                  <Sun className="size-4 transition-colors" aria-hidden />
+                ) : (
+                  <Moon className="size-4 transition-colors" aria-hidden />
+                )}
+              </button>
+            )}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -246,7 +281,7 @@ export default function Topbar() {
                   >
                     {userInitials}
                   </div>
-                  <span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-slate-700 sm:block dark:text-slate-200">
+                  <span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-slate-700 sm:block dark:text-neutral-200">
                     {currentUser.name}
                   </span>
                   <ChevronDown
@@ -293,7 +328,7 @@ export default function Topbar() {
                 </div>
 
                 <div className="p-2">
-                  <DropdownMenuLabel className="px-2 pb-1 pt-0 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  <DropdownMenuLabel className="px-2 pb-1 pt-0 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                     Account
                   </DropdownMenuLabel>
 
@@ -306,21 +341,21 @@ export default function Topbar() {
                         href="/profile"
                         className="flex items-center gap-2.5"
                       >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-colors group-focus/menuitem:bg-white group-focus/menuitem:text-[#008f68] dark:bg-slate-800 dark:text-slate-300">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-colors group-focus/menuitem:bg-white group-focus/menuitem:text-[#008f68] dark:bg-neutral-800 dark:text-neutral-300">
                           <CircleUser className="size-3.5" />
                         </span>
                         <span className="min-w-0">
                           <span className="block font-semibold leading-tight">
                             Profile
                           </span>
-                          <span className="block truncate text-[11px] font-medium leading-tight text-slate-400 group-focus/menuitem:text-[#008f68]/70 dark:text-slate-500">
+                          <span className="block truncate text-[11px] font-medium leading-tight text-slate-400 group-focus/menuitem:text-[#008f68]/70 dark:text-neutral-500">
                             Personal details and settings
                           </span>
                         </span>
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
+                    <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-neutral-800" />
 
                     <DropdownMenuItem
                       className="cursor-pointer rounded-lg px-2.5 py-2.5 text-[13px] text-rose-600 focus:bg-rose-50 focus:text-rose-700 dark:focus:bg-rose-950/40 dark:focus:text-rose-400"
@@ -347,32 +382,32 @@ export default function Topbar() {
       </header>
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
+        <AlertDialogContent className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl sm:max-w-md dark:border-neutral-800 dark:bg-neutral-950">
           <span className={topbarAccentLineClass} aria-hidden />
 
-          <AlertDialogHeader className="border-b border-slate-100 px-4 py-3.5 text-left dark:border-slate-800">
+          <AlertDialogHeader className="border-b border-slate-100 px-4 py-3.5 text-left dark:border-neutral-800">
             <div className="flex items-center gap-3">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
                 <LogOut className="size-4" aria-hidden />
               </span>
               <div className="min-w-0">
                 <p className={topbarSectionLabelClass}>Account session</p>
-                <AlertDialogTitle className="mt-0.5 text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                <AlertDialogTitle className="mt-0.5 text-[15px] font-semibold leading-tight text-slate-900 dark:text-neutral-100">
                   Sign out
                 </AlertDialogTitle>
               </div>
             </div>
 
-            <AlertDialogDescription className="pl-14 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+            <AlertDialogDescription className="pl-14 text-[13px] leading-5 text-slate-500 dark:text-neutral-400">
               Your current browser session will end and you will return to the
               login screen.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="gap-2 bg-slate-50/70 px-4 py-3 sm:gap-2 dark:bg-slate-900/40">
+          <AlertDialogFooter className="gap-2 bg-slate-50/70 px-4 py-3 sm:gap-2 dark:bg-neutral-900/40">
             <AlertDialogCancel
               disabled={isLoggingOut}
-              className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-[#008f68]/25 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-[#008f68]/25 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
             >
               Cancel
             </AlertDialogCancel>

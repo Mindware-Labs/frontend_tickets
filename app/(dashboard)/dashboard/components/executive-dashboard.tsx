@@ -176,7 +176,7 @@ export function ExecutiveDashboard() {
             <div className="overflow-x-auto px-3 py-2">
               <table className="w-full min-w-[560px] text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <tr className="border-b border-slate-100 dark:border-neutral-800">
                     <th className={dashboardTableHeadClass}>Yard</th>
                     <th className={dashboardTableHeadClass}>Open</th>
                     <th className={dashboardTableHeadClass}>Overdue</th>
@@ -189,7 +189,7 @@ export function ExecutiveDashboard() {
                     <tr
                       key={`${yard.yard}-${yard.line}`}
                       className={cn(
-                        "border-b border-slate-50 last:border-b-0 dark:border-slate-800/80",
+                        "border-b border-slate-50 last:border-b-0 dark:border-neutral-800/80",
                         crossFilterRowClass(isFilterActive("yard", yard.yard)),
                       )}
                       onClick={() => toggleFilter("yard", yard.yard)}
@@ -259,7 +259,7 @@ export function ExecutiveDashboard() {
                           key={`${row.day}-${hourKey}`}
                           type="button"
                           className={cn(
-                            "flex h-7 items-center justify-center rounded-md text-[10px] font-semibold text-slate-900 transition ring-offset-1 hover:ring-2 hover:ring-[#008f68]/30 dark:text-slate-100",
+                            "flex h-7 items-center justify-center rounded-md text-[10px] font-semibold text-slate-900 transition ring-offset-1 hover:ring-2 hover:ring-[#008f68]/30 dark:text-neutral-100",
                             isHeatmapSlotActive(row.day, hourKey) &&
                               "ring-2 ring-[#008f68]/50",
                           )}

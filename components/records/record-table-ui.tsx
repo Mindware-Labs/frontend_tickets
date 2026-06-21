@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { formatLabel } from "./record-formatters";
 
 export const recordTableHeadClass =
-  "py-2 pr-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400";
+  "py-2 pr-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500";
 
 export const recordTableCellClass = "py-1.5 pr-2 align-middle";
 
@@ -34,7 +34,7 @@ export function getRecordStatusClass(status?: string | null) {
   if (normalized === "OVERDUE") {
     return "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300";
   }
-  return "border-slate-200/80 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400";
+  return "border-slate-200/80 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400";
 }
 
 export function getRecordPriorityClass(priority?: string | null) {
@@ -46,14 +46,14 @@ export function getRecordPriorityClass(priority?: string | null) {
     return "border-orange-200/80 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-300";
   }
   if (normalized === "LOW") {
-    return "border-slate-200/80 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400";
+    return "border-slate-200/80 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400";
   }
-  return "border-slate-200/80 bg-slate-50/80 text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400";
+  return "border-slate-200/80 bg-slate-50/80 text-slate-500 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-400";
 }
 
 export function RecordIdChip({ id }: { id: number | string }) {
   return (
-    <span className="inline-flex h-5 min-w-[34px] items-center justify-center rounded-md bg-slate-100/90 px-1.5 font-mono text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
+    <span className="inline-flex h-5 min-w-[34px] items-center justify-center rounded-md bg-slate-100/90 px-1.5 font-mono text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:ring-neutral-700">
       #{id}
     </span>
   );
@@ -88,7 +88,7 @@ export function RecordStatusBadge({
 
 export function RecordPriorityBadge({ priority }: { priority?: string | null }) {
   if (!priority) {
-    return <span className="text-[11px] text-slate-400">—</span>;
+    return <span className="text-[11px] text-slate-400 dark:text-neutral-500">—</span>;
   }
 
   return (
@@ -109,7 +109,7 @@ export function RecordDispositionPill({
   value?: string | null;
 }) {
   return (
-    <span className="inline-flex max-w-[140px] truncate rounded-full bg-slate-100/90 px-2 py-0.5 text-[10px] font-medium text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
+    <span className="inline-flex max-w-[140px] truncate rounded-full bg-slate-100/90 px-2 py-0.5 text-[10px] font-medium text-slate-700 ring-1 ring-slate-200/80 dark:bg-neutral-900 dark:text-neutral-300 dark:ring-neutral-700">
       {formatLabel(value)}
     </span>
   );
@@ -124,7 +124,7 @@ export function RecordDirectionLabel({
 }) {
   if (manual) {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-200">
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-neutral-200">
         <ArrowRight className="size-3 text-amber-500" aria-hidden />
         Manual entry
       </span>
@@ -133,7 +133,7 @@ export function RecordDirectionLabel({
 
   const normalized = (direction || "").toUpperCase();
   if (!normalized) {
-    return <span className="text-[11px] text-slate-400">—</span>;
+    return <span className="text-[11px] text-slate-400 dark:text-neutral-500">—</span>;
   }
 
   const inbound =
@@ -147,7 +147,7 @@ export function RecordDirectionLabel({
         "inline-flex items-center gap-1 text-[11px] font-medium",
         inbound && "text-emerald-600 dark:text-emerald-400",
         outbound && "text-amber-600 dark:text-amber-400",
-        !inbound && !outbound && "text-slate-600 dark:text-slate-300",
+        !inbound && !outbound && "text-slate-600 dark:text-neutral-300",
       )}
     >
       <ArrowRight

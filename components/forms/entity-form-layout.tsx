@@ -14,33 +14,33 @@ import {
 import { cn } from "@/lib/utils";
 
 export const entityFormDialogContentClass =
-  "max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950";
+  "max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-neutral-800 dark:bg-neutral-950";
 
 export const entityFormScrollBodyClass =
-  "scrollbar-app max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5";
+  "scrollbar-app max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 dark:bg-neutral-950";
 
 export const entityFormInputClassName = cn(
   "h-9 w-full rounded-lg border border-transparent bg-slate-50 px-2.5 text-xs text-slate-900 shadow-none transition-colors",
   "placeholder:text-slate-400",
   "hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20",
-  "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+  "dark:bg-neutral-900/80 dark:text-neutral-100 dark:placeholder:text-neutral-500",
 );
 
 export const entityFormTextareaClassName = cn(
   "min-h-[88px] w-full resize-none rounded-lg border border-transparent bg-slate-50 px-2.5 py-2 text-xs text-slate-900 shadow-none transition-colors",
   "placeholder:text-slate-400",
   "hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20",
-  "dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500",
+  "dark:bg-neutral-900/80 dark:text-neutral-100 dark:placeholder:text-neutral-500",
 );
 
 export const entityFormSelectTriggerClassName = cn(
   "h-9 w-full justify-between rounded-lg border border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-900 shadow-none transition-colors",
   "hover:border-slate-300 focus:border-[#008f68] focus:bg-white focus:ring-2 focus:ring-[#008f68]/20",
-  "dark:bg-slate-900/80 dark:text-slate-100",
+  "dark:bg-neutral-900/80 dark:text-neutral-100",
 );
 
 export const entityFormSelectContentClassName =
-  "rounded-lg border-slate-200 dark:border-slate-700";
+  "rounded-lg border-slate-200 dark:border-neutral-700";
 
 export function entityFormInputErrorClass(hasError?: boolean) {
   return hasError
@@ -126,15 +126,15 @@ export function EntityFormCard({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950",
+        "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950",
         className,
       )}
     >
-      <div className="flex items-center gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-slate-800">
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800">
-          <Icon className="h-3 w-3 text-slate-600 dark:text-slate-300" />
+      <div className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2 dark:border-neutral-800">
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-neutral-800">
+          <Icon className="h-3 w-3 text-slate-600 dark:text-neutral-300" />
         </div>
-        <span className="text-[12px] font-bold leading-tight text-slate-700 dark:text-slate-200">
+        <span className="text-[12px] font-bold leading-tight text-slate-700 dark:text-neutral-200">
           {title}
         </span>
       </div>
@@ -185,21 +185,21 @@ export function EntityFormDialogShell({
       <DialogContent
         className={cn(entityFormDialogContentClass, maxWidthClass)}
       >
-        <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800">
+        <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-neutral-800">
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68] dark:border-slate-700 dark:bg-slate-900",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68] dark:border-neutral-700 dark:bg-neutral-900",
                 iconClassName,
               )}
             >
               <Icon className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-slate-50">
+              <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-neutral-50">
                 {title}
               </DialogTitle>
-              <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+              <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-neutral-400">
                 {description}
               </DialogDescription>
             </div>
@@ -238,13 +238,13 @@ export function EntityFormDialogFooter({
   cancelDisabled = false,
 }: EntityFormDialogFooterProps) {
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
+    <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-neutral-800 dark:bg-neutral-900/60">
       <Button
         type="button"
         variant="outline"
         onClick={onCancel}
         disabled={isSubmitting || cancelDisabled}
-        className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+        className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
       >
         Cancel
       </Button>
@@ -255,7 +255,7 @@ export function EntityFormDialogFooter({
             variant="outline"
             onClick={onReset}
             disabled={isSubmitting}
-            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:text-slate-600 dark:border-slate-700 dark:bg-slate-950"
+            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:text-slate-600 dark:border-neutral-700 dark:bg-neutral-950"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             {resetLabel}
@@ -269,7 +269,7 @@ export function EntityFormDialogFooter({
             "h-11 rounded-lg px-6 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
             submitVariant === "create" || submitVariant === "edit"
               ? "bg-[#008f68] hover:bg-[#007a5a]"
-              : "bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white",
+              : "bg-slate-700 hover:bg-slate-800 dark:bg-neutral-200 dark:text-neutral-950 dark:hover:bg-white",
           )}
         >
           {isSubmitting ? (

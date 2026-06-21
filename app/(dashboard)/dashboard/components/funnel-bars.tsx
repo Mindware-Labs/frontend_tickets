@@ -24,14 +24,14 @@ export function FunnelBars({
       {!hasActivity ? (
         <div
           className={cn(
-            "flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-3 py-6 text-center dark:border-slate-700 dark:bg-slate-900/40",
+            "flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-3 py-6 text-center dark:border-neutral-700 dark:bg-neutral-900/40",
             compact && "min-h-[120px]",
           )}
         >
-          <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+          <p className="text-[11px] font-medium text-slate-600 dark:text-neutral-300">
             No options in this period
           </p>
-          <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-[10px] text-slate-500 dark:text-neutral-400">
             Nothing recorded for {title} campaigns yet.
           </p>
         </div>
@@ -45,15 +45,15 @@ export function FunnelBars({
         {(compact ? visible : data).map((item) => (
           <div key={item.stage} className="space-y-1">
             <div className="flex items-center justify-between gap-2 text-[11px]">
-              <span className="truncate text-slate-500 dark:text-slate-400">
+              <span className="truncate text-slate-500 dark:text-neutral-400">
                 {item.stage}
               </span>
-              <span className="shrink-0 font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+              <span className="shrink-0 font-semibold tabular-nums text-slate-800 dark:text-neutral-100">
                 {item.value.toLocaleString()}
                 {item.value > 0 ? ` (${item.pct}%)` : ""}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-neutral-800">
               <div
                 className={cn("h-1.5 rounded-full", toneClass.bg)}
                 style={{ width: `${item.value > 0 ? item.pct : 0}%` }}

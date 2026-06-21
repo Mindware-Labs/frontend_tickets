@@ -191,8 +191,8 @@ export function LandlordFormModal({
           required
           error={validationErrors.yardIds}
         >
-          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 shadow-sm dark:border-slate-800">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 shadow-sm dark:border-neutral-800">
+            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-neutral-800">
               <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               <Input
                 value={yardSearch}
@@ -223,7 +223,7 @@ export function LandlordFormModal({
                           "flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors",
                           checked
                             ? "border-[#008f68]/20 bg-[#f0faf5]"
-                            : "border-transparent hover:bg-white dark:hover:bg-slate-900",
+                            : "border-transparent hover:bg-white dark:hover:bg-neutral-900",
                         )}
                       >
                         <Checkbox
@@ -239,7 +239,7 @@ export function LandlordFormModal({
                           className="data-[state=checked]:border-[#008f68] data-[state=checked]:bg-[#008f68]"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+                          <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-neutral-100">
                             {yard.name}
                           </p>
                           {yard.commonName ? (

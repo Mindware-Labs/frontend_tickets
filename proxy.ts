@@ -57,7 +57,10 @@ export function proxy(request: NextRequest) {
         const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
         const payloadString = atob(padded);
         const payload = JSON.parse(payloadString);
-        role = payload?.role || null;
+        role =
+          typeof payload?.role === "string"
+            ? payload.role.toLowerCase()
+            : null;
 
         if (payload?.exp && Date.now() >= payload.exp * 1000) {
           tokenExpired = true;
@@ -106,6 +109,10 @@ export function proxy(request: NextRequest) {
 
   if (pathname === "/" && !authToken) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (pathname.startsWith("/dashboard") && role === "agent") {
+    return NextResponse.redirect(new URL("/agent-dashboard", request.url));
   }
 
   if (pathname.startsWith("/dashboard") && !isPrivilegedRole(role)) {

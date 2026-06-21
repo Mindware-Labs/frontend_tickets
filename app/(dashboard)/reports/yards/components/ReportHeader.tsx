@@ -69,7 +69,7 @@ export function ReportHeader({
               />
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-neutral-100">
                 {hasYardDetail ? selectedYard?.name : "All yards"}
               </p>
               <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
@@ -94,8 +94,8 @@ export function ReportHeader({
 
         </div>
 
-        <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between md:w-auto md:border-t-0 md:pt-0 md:justify-end">
-          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between md:w-auto md:border-t-0 md:pt-0 md:justify-end dark:border-neutral-800">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 dark:border-neutral-800 dark:bg-neutral-900/80">
             {showCrossFilters ? <YardFilterTrigger /> : null}
             <button
               type="button"
@@ -104,7 +104,7 @@ export function ReportHeader({
                 "flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm transition-colors",
                 filtersConfigured || hasDateRange
                   ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
-                  : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                  : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
               )}
             >
               <Filter className="size-3.5" aria-hidden />
@@ -115,7 +115,7 @@ export function ReportHeader({
               <button
                 type="button"
                 onClick={onViewAllTickets}
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300"
               >
                 <ClipboardList className="size-3.5" aria-hidden />
                 <span>Records</span>
@@ -130,7 +130,7 @@ export function ReportHeader({
                   disabled={isExportingPdf}
                   aria-busy={isExportingPdf}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
                     isExportingPdf && "cursor-not-allowed opacity-70",
                   )}
                 >
@@ -147,7 +147,7 @@ export function ReportHeader({
                   disabled={isExportingExcel}
                   aria-busy={isExportingExcel}
                   className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300",
+                    "flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300",
                     isExportingExcel && "cursor-not-allowed opacity-70",
                   )}
                 >

@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   Inbox,
-  Loader2,
   Megaphone,
   Pencil,
   Phone,
@@ -49,6 +48,7 @@ const SECTIONS = [
     icon: Phone,
     color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-50 dark:bg-sky-950/40",
+    border: "border-sky-200 dark:border-sky-800/50",
   },
   {
     key: "ticketTypes" as const,
@@ -59,6 +59,7 @@ const SECTIONS = [
     icon: TicketIcon,
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/40",
+    border: "border-violet-200 dark:border-violet-800/50",
   },
   {
     key: "campaignTypes" as const,
@@ -69,6 +70,7 @@ const SECTIONS = [
     icon: Megaphone,
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-800/50",
   },
 ] as const;
 
@@ -325,12 +327,12 @@ export function SettingsClient() {
       <div className="mb-4 flex items-center gap-2.5">
         <span className="h-7 w-0.5 shrink-0 rounded-full bg-[#008f68]" aria-hidden />
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-            Workspace
-          </p>
-          <h1 className="text-[15px] font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-50">
+          <h1 className="text-[15px] font-bold tracking-[-0.02em] text-slate-900 dark:text-neutral-50">
             Configuration
           </h1>
+          <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+            Manage dynamic options used across calls, tickets, and campaigns
+          </p>
         </div>
       </div>
 
@@ -341,6 +343,9 @@ export function SettingsClient() {
           const isActive = activeSection === tile.key;
           const { total, active } = stats[tile.key];
           const inactive = total - active;
+          const activeCount = active;
+          const inactiveCount = inactive;
+          const pct = total > 0 ? Math.round((active / total) * 100) : 0;
           return (
             <button
               key={tile.key}
@@ -348,16 +353,92 @@ export function SettingsClient() {
               onClick={() => selectSection(tile.key)}
               aria-pressed={isActive}
               className={cn(
-                "flex items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
-                isActive
-                  ? "border-[#008f68]/35 bg-[#f0faf5] ring-1 ring-[#008f68]/15 dark:border-emerald-500/30 dark:bg-emerald-950/20"
-                  : "border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700",
+                "group relative flex flex-col overflow-hidden rounded-2xl border text-left transition-all duration-200",
+                active
+                  ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20 dark:border-emerald-700/40 dark:bg-emerald-950/20"
+                  : "border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:border-neutral-800 dark:bg-neutral-950",
               )}
             >
               <span
                 className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                  isActive ? "bg-[#008f68]/10" : tile.bg,
+                  "h-0.5 w-full transition-all",
+                  active
+                    ? "bg-gradient-to-r from-transparent via-[#008f68]/60 to-transparent"
+                    : "bg-gradient-to-r from-transparent via-slate-200/60 to-transparent group-hover:via-slate-300/60",
+                )}
+              />
+
+              <div className="flex flex-col gap-4 p-5">
+                {/* Icon + KPI count */}
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
+                      active
+                        ? "border-[#008f68]/20 bg-[#008f68]/10"
+                        : section.bg + " " + section.border,
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", active ? "text-[#008f68]" : section.color)} />
+                  </div>
+
+                  <div className="text-right">
+                    <p
+                      className={cn(
+                        "text-2xl font-bold tabular-nums leading-none",
+                        active ? "text-[#008f68]" : "text-slate-800 dark:text-neutral-100",
+                      )}
+                    >
+                      {total}
+                    </p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
+                      total
+                    </p>
+                  </div>
+                </div>
+
+                {/* Title + description */}
+                <div>
+                  <p
+                    className={cn(
+                      "text-[13px] font-semibold leading-tight",
+                      active ? "text-[#008f68]" : "text-slate-800 dark:text-neutral-100",
+                    )}
+                  >
+                    {section.label}
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-neutral-400">
+                    {section.description}
+                  </p>
+                </div>
+
+                {/* Active / inactive breakdown */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-semibold text-[#008f68]">
+                      {activeCount} active
+                    </span>
+                    {inactiveCount > 0 && (
+                      <span className="text-slate-400">{inactiveCount} inactive</span>
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-800">
+                    <div
+                      className="h-full rounded-full bg-[#008f68] transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer CTA */}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 border-t px-5 py-2.5 text-[11px] font-medium transition-colors",
+                  active
+                    ? "border-[#008f68]/15 text-[#008f68]"
+                    : "border-slate-100 text-slate-400 group-hover:text-slate-600 dark:border-neutral-800",
                 )}
               >
                 <Icon
@@ -366,36 +447,7 @@ export function SettingsClient() {
                     isActive ? "text-[#008f68] dark:text-emerald-300" : tile.color,
                   )}
                 />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[9px] font-semibold uppercase tracking-widest text-slate-400">
-                  {tile.label}
-                </span>
-                <span className="flex items-baseline gap-1.5">
-                  {loading ? (
-                    <Loader2 className="mt-1 size-3.5 animate-spin text-slate-300" aria-hidden />
-                  ) : (
-                    <>
-                      <span className="text-lg font-bold leading-none tabular-nums text-slate-900 dark:text-slate-100">
-                        {total}
-                      </span>
-                      <span className="truncate text-[10px] font-medium text-slate-400">
-                        <span className="font-semibold text-[#008f68] dark:text-emerald-300">
-                          {active} active
-                        </span>
-                        {inactive > 0 ? ` · ${inactive} off` : ""}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </span>
-              <ChevronRight
-                className={cn(
-                  "size-3.5 shrink-0 transition-transform",
-                  isActive ? "rotate-90 text-[#008f68] dark:text-emerald-300" : "text-slate-300",
-                )}
-                aria-hidden
-              />
+              </div>
             </button>
           );
         })}
@@ -456,214 +508,147 @@ export function SettingsClient() {
           </div>
         </div>
 
-        {/* Section heading */}
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-3.5 py-2 dark:border-slate-800 dark:bg-slate-900/40">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-              {section.label}
-            </p>
-            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-              {section.description}
-            </p>
-          </div>
-          {!loading ? (
-            <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-              {activeSection === "dispositions"
-                ? filteredDispositions.length
-                : activeSection === "ticketTypes"
-                  ? filteredTicketTypes.length
-                  : filteredCampaignTypes.length}{" "}
-              shown
-            </span>
-          ) : null}
-        </div>
+        <div className="flex flex-col gap-2">
+          {campaignTypes.length === 0 && (
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
+              <p className="py-8 text-center text-xs italic text-slate-400">
+                No campaign types configured
+              </p>
+            </div>
+          )}
 
-        {/* Body */}
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-14 text-xs font-medium text-slate-400">
-            <Loader2 className="size-4 animate-spin text-[#008f68]" aria-hidden />
-            Loading configuration...
-          </div>
-        ) : (
-          <div key={activeSection} className="animate-in fade-in duration-200">
-            {activeSection === "dispositions" && (
-              <ConfigList
-                items={filteredDispositions}
-                searching={normalizedQuery.length > 0}
-                onEdit={(item) => setEditTarget({ kind: "disposition", item })}
-                onDelete={(item) => setDeleteTarget({ kind: "disposition", item })}
-                onToggle={handleToggleDisposition}
-              />
-            )}
+          {campaignTypes.map((type) => {
+            const expanded = expandedTypes.has(type.id);
+            return (
+              <div
+                key={type.id}
+                className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950"
+              >
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-3.5 py-2 transition-colors",
+                    expanded
+                      ? "bg-[#f0faf5]/60 dark:bg-emerald-950/10"
+                      : "hover:bg-[#f0faf5]/40 dark:hover:bg-slate-900/60",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(type.id)}
+                    aria-expanded={expanded}
+                    aria-label={`Toggle options for ${type.label}`}
+                    className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
+                  >
+                    {expanded ? (
+                      <ChevronDown className="size-3.5" />
+                    ) : (
+                      <ChevronRight className="size-3.5" />
+                    )}
+                  </button>
 
-            {activeSection === "ticketTypes" && (
-              <ConfigList
-                items={filteredTicketTypes}
-                searching={normalizedQuery.length > 0}
-                onEdit={(item) => setEditTarget({ kind: "ticketType", item })}
-                onDelete={(item) => setDeleteTarget({ kind: "ticketType", item })}
-                onToggle={handleToggleTicketType}
-              />
-            )}
+                  <span
+                    className={cn(
+                      "flex-1 text-[13px] font-semibold",
+                      type.isActive
+                        ? "text-slate-800 dark:text-neutral-100"
+                        : "text-slate-400 line-through",
+                    )}
+                  >
+                    {type.label}
+                  </span>
 
-            {activeSection === "campaignTypes" &&
-              (filteredCampaignTypes.length === 0 ? (
-                <EmptyState searching={normalizedQuery.length > 0} />
-              ) : (
-                <div>
-                  {filteredCampaignTypes.map((type) => {
-                    const expanded = expandedTypes.has(type.id);
-                    const activeOptions = type.options.filter((o) => o.isActive).length;
-                    return (
-                      <div
-                        key={type.id}
-                        className="border-t border-slate-100 first:border-t-0 dark:border-slate-800"
-                      >
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 px-3.5 py-2 transition-colors",
-                            expanded
-                              ? "bg-[#f0faf5]/60 dark:bg-emerald-950/10"
-                              : "hover:bg-[#f0faf5]/40 dark:hover:bg-slate-900/60",
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(type.id)}
-                            aria-expanded={expanded}
-                            aria-label={`Toggle options for ${type.label}`}
-                            className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
-                          >
-                            {expanded ? (
-                              <ChevronDown className="size-3.5" />
-                            ) : (
-                              <ChevronRight className="size-3.5" />
-                            )}
-                          </button>
+                  <StatusPill active={type.isActive} />
 
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(type.id)}
-                            className="min-w-0 flex-1 text-left"
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <ToggleBtn
+                      active={type.isActive}
+                      onClick={() => handleToggleCampaignType(type)}
+                    />
+                    <ActionBtn
+                      icon={Pencil}
+                      label="Edit"
+                      onClick={() => setEditTarget({ kind: "campaignType", item: type })}
+                    />
+                    <ActionBtn
+                      icon={Trash2}
+                      label="Delete"
+                      onClick={() => setDeleteTarget({ kind: "campaignType", item: type })}
+                      danger
+                    />
+                  </div>
+                </div>
+
+                {expanded && (
+                  <div className="border-t border-slate-100 bg-[#f4f5f7] px-3.5 pb-3 pt-2.5 dark:border-neutral-800 dark:bg-neutral-900/60">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                        Options for {type.label}
+                      </p>
+                      <TealButton
+                        onClick={() =>
+                          setEditTarget({ kind: "campaignOption", campaignTypeId: type.id })
+                        }
+                        label="Add option"
+                        small
+                      />
+                    </div>
+
+                    {type.options.length === 0 ? (
+                      <p className="py-2 text-[11px] italic text-slate-400">No options yet</p>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {type.options.map((opt) => (
+                          <div
+                            key={opt.id}
+                            className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950"
                           >
                             <span
                               className={cn(
-                                "block truncate text-[12px] font-semibold",
-                                type.isActive
-                                  ? "text-slate-800 dark:text-slate-100"
+                                "flex-1 text-[12px] font-medium",
+                                opt.isActive
+                                  ? "text-slate-700 dark:text-neutral-200"
                                   : "text-slate-400 line-through",
                               )}
                             >
-                              {type.label}
+                              {opt.label}
                             </span>
-                            <span className="block text-[10px] text-slate-400 tabular-nums">
-                              {type.options.length} option
-                              {type.options.length === 1 ? "" : "s"}
-                              {type.options.length > 0 ? ` · ${activeOptions} active` : ""}
-                            </span>
-                          </button>
-
-                          <code className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:block dark:bg-slate-800">
-                            {type.value}
-                          </code>
-                          <StatusPill active={type.isActive} />
-                          <div className="flex shrink-0 items-center gap-0.5">
-                            <ToggleBtn
-                              active={type.isActive}
-                              onClick={() => handleToggleCampaignType(type)}
-                            />
-                            <ActionBtn
-                              icon={Pencil}
-                              label="Edit"
-                              onClick={() => setEditTarget({ kind: "campaignType", item: type })}
-                            />
-                            <ActionBtn
-                              icon={Trash2}
-                              label="Delete"
-                              onClick={() => setDeleteTarget({ kind: "campaignType", item: type })}
-                              danger
-                            />
-                          </div>
-                        </div>
-
-                        {expanded && (
-                          <div className="border-t border-slate-100 bg-[#f4f5f7] px-3.5 pb-3 pt-2.5 animate-in fade-in slide-in-from-top-1 duration-200 dark:border-slate-800 dark:bg-slate-900/60">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                                Options for {type.label}
-                              </p>
-                              <TealButton
+                            <StatusPill active={opt.isActive} />
+                            <div className="flex shrink-0 items-center gap-0.5">
+                              <ToggleBtn
+                                active={opt.isActive}
+                                onClick={() => handleToggleCampaignOption(opt)}
+                              />
+                              <ActionBtn
+                                icon={Pencil}
+                                label="Edit"
                                 onClick={() =>
-                                  setEditTarget({ kind: "campaignOption", campaignTypeId: type.id })
+                                  setEditTarget({
+                                    kind: "campaignOption",
+                                    campaignTypeId: type.id,
+                                    item: opt,
+                                  })
                                 }
-                                label="Add option"
-                                small
+                              />
+                              <ActionBtn
+                                icon={Trash2}
+                                label="Delete"
+                                onClick={() =>
+                                  setDeleteTarget({ kind: "campaignOption", item: opt })
+                                }
+                                danger
                               />
                             </div>
-
-                            {type.options.length === 0 ? (
-                              <p className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-center text-[11px] font-medium text-slate-400 dark:border-slate-700">
-                                No options yet — add the first outcome for this type.
-                              </p>
-                            ) : (
-                              <div className="flex flex-col gap-1">
-                                {type.options.map((opt) => (
-                                  <div
-                                    key={opt.id}
-                                    className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950"
-                                  >
-                                    <span
-                                      className={cn(
-                                        "min-w-0 flex-1 truncate text-[12px] font-medium",
-                                        opt.isActive
-                                          ? "text-slate-700 dark:text-slate-200"
-                                          : "text-slate-400 line-through",
-                                      )}
-                                    >
-                                      {opt.label}
-                                    </span>
-                                    <code className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:block dark:bg-slate-800">
-                                      {opt.value}
-                                    </code>
-                                    <StatusPill active={opt.isActive} />
-                                    <div className="flex shrink-0 items-center gap-0.5">
-                                      <ToggleBtn
-                                        active={opt.isActive}
-                                        onClick={() => handleToggleCampaignOption(opt)}
-                                      />
-                                      <ActionBtn
-                                        icon={Pencil}
-                                        label="Edit"
-                                        onClick={() =>
-                                          setEditTarget({
-                                            kind: "campaignOption",
-                                            campaignTypeId: type.id,
-                                            item: opt,
-                                          })
-                                        }
-                                      />
-                                      <ActionBtn
-                                        icon={Trash2}
-                                        label="Delete"
-                                        onClick={() =>
-                                          setDeleteTarget({ kind: "campaignOption", item: opt })
-                                        }
-                                        danger
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
-          </div>
-        )}
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
       </section>
 
       {/* Modals */}
@@ -741,28 +726,35 @@ function ConfigList<
         <span className="w-[88px] text-right">Actions</span>
       </div>
 
-      {items.map((item) => (
-        <div
-          key={item.id}
-          className="flex items-center gap-2.5 border-t border-slate-100 px-3.5 py-2 transition-colors first:border-t-0 hover:bg-[#f0faf5]/40 dark:border-slate-800 dark:hover:bg-slate-900/60"
-        >
-          <span
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
+        {items.length === 0 && (
+          <p className="py-8 text-center text-xs italic text-slate-400">
+            No items configured
+          </p>
+        )}
+        {items.map((item, idx) => (
+          <div
+            key={item.id}
             className={cn(
-              "min-w-0 flex-1 truncate text-[12px] font-medium",
-              item.isActive
-                ? "text-slate-800 dark:text-slate-100"
-                : "text-slate-400 line-through",
+              "flex items-center gap-2.5 px-3.5 py-2.5",
+              idx !== 0 && "border-t border-slate-100 dark:border-neutral-800",
             )}
             title={item.label}
           >
-            {item.label}
-          </span>
+            <span
+              className={cn(
+                "flex-1 text-[12px] font-medium",
+                item.isActive
+                  ? "text-slate-800 dark:text-neutral-100"
+                  : "text-slate-400 line-through",
+              )}
+            >
+              {item.label}
+            </span>
 
-          <span className="hidden w-28 sm:block">
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 dark:bg-slate-800">
+            <span className="hidden w-28 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:block dark:bg-neutral-800">
               {item.value}
-            </code>
-          </span>
+            </span>
 
           <span className="flex w-[60px] justify-center">
             <StatusPill active={item.isActive} />
@@ -775,6 +767,7 @@ function ConfigList<
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
@@ -803,8 +796,8 @@ function StatusPill({ active }: { active: boolean }) {
       className={cn(
         "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider",
         active
-          ? "border-emerald-200 bg-[#f0faf5] text-[#008f68] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-          : "border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800",
+          ? "bg-[#e2fae9] text-[#008f68]"
+          : "bg-slate-100 text-slate-400 dark:bg-neutral-800 dark:text-neutral-300",
       )}
     >
       <span
@@ -831,7 +824,7 @@ function ToggleBtn({ active, onClick }: { active: boolean; onClick: () => void }
         "flex h-5 w-9 shrink-0 items-center rounded-full border px-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
         active
           ? "border-[#008f68]/30 bg-[#008f68]"
-          : "border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800",
+          : "border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800",
       )}
     >
       <span
@@ -864,8 +857,8 @@ function ActionBtn({
       className={cn(
         "rounded-md p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
         danger
-          ? "text-slate-300 hover:bg-red-50 hover:text-red-500 dark:text-slate-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-          : "text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800",
+          ? "text-slate-300 hover:bg-red-50 hover:text-red-500 dark:text-neutral-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+          : "text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-neutral-800",
       )}
     >
       <Icon className="size-3.5" />

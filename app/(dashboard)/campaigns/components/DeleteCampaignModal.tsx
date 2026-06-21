@@ -33,18 +33,18 @@ export function DeleteCampaignModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[480px] dark:border-slate-800 dark:bg-slate-950"
+        className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[480px] dark:border-neutral-800 dark:bg-neutral-950"
       >
-        <DialogHeader className="border-b border-slate-100 px-5 py-5 sm:px-6 dark:border-slate-800">
+        <DialogHeader className="border-b border-slate-100 px-5 py-5 sm:px-6 dark:border-neutral-800">
           <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-amber-100 bg-amber-50 text-amber-600 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-400">
               <Archive className="h-5 w-5" strokeWidth={2.25} />
             </div>
             <div className="flex-1 space-y-1.5 pt-0.5 text-left">
-              <DialogTitle className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <DialogTitle className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-neutral-50">
                 Archive campaign
               </DialogTitle>
-              <DialogDescription className="text-[13.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+              <DialogDescription className="text-[13.5px] leading-relaxed text-slate-500 dark:text-neutral-400">
                 The campaign will be hidden from all lists. Historical data is preserved.
               </DialogDescription>
             </div>
@@ -52,32 +52,32 @@ export function DeleteCampaignModal({
         </DialogHeader>
 
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-3.5 dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-3.5 dark:border-neutral-800 dark:bg-neutral-900/50">
             <CampaignMark className="h-10 w-10" iconClassName="h-5 w-5" />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
                 Campaign to archive
               </p>
-              <p className="mt-1 text-[14px] font-semibold leading-snug text-slate-900 dark:text-slate-100">
+              <p className="mt-1 text-[14px] font-semibold leading-snug text-slate-900 dark:text-neutral-100">
                 {displayName}
               </p>
             </div>
           </div>
 
-          <p className="text-justify text-[13px] leading-relaxed text-slate-600 dark:text-slate-400">
+          <p className="text-justify text-[13px] leading-relaxed text-slate-600 dark:text-neutral-400">
             This campaign will no longer appear in lists or selectors. All
             linked calls and reporting data remain intact and accessible through
             reports.
           </p>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6 dark:border-neutral-800 dark:bg-neutral-900/60">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
-            className="h-10 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+            className="h-10 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-neutral-800 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
           >
             Cancel
           </Button>

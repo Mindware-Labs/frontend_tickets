@@ -151,12 +151,12 @@ const TICKET_STATUS_STYLES: Record<string, string> = {
   PENDING_FOLLOWUP: "border-amber-200 bg-amber-50 text-amber-700",
   OVERDUE: "border-rose-200 bg-rose-50 text-rose-700",
   RESOLVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  CLOSED: "border-slate-200 bg-slate-50 text-slate-500",
-  COMPLETED: "border-slate-200 bg-slate-50 text-slate-500",
+  CLOSED: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
+  COMPLETED: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
-  LOW: "border-slate-200 bg-slate-50 text-slate-500",
+  LOW: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
   MEDIUM: "border-sky-200 bg-sky-50 text-sky-700",
   HIGH: "border-amber-200 bg-amber-50 text-amber-700",
   URGENT: "border-rose-200 bg-rose-50 text-rose-700",
@@ -275,7 +275,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         e.stopPropagation();
         void navigator.clipboard?.writeText(value).then(() => setCopied(true));
       }}
-      className="flex size-4 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
+      className="flex size-4 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
     >
       {copied ? (
         <Check className="size-2.5 text-[#008f68]" />
@@ -313,7 +313,7 @@ function PanelHeader({
     <div
       onPointerDown={draggable ? onPointerDown : undefined}
       className={cn(
-        "relative flex shrink-0 items-start gap-2.5 border-b border-slate-200/80 bg-white px-3 py-2.5 pr-8 dark:border-slate-800 dark:bg-slate-950",
+        "relative flex shrink-0 items-start gap-2.5 border-b border-slate-200/80 bg-white px-3 py-2.5 pr-8 dark:border-neutral-800 dark:bg-neutral-950",
         draggable && "cursor-grab touch-none select-none active:cursor-grabbing",
       )}
     >
@@ -325,7 +325,7 @@ function PanelHeader({
       {/* drag affordance — centered grip handle */}
       {draggable ? (
         <GripHorizontal
-          className="pointer-events-none absolute left-1/2 top-0.5 size-3.5 -translate-x-1/2 text-slate-300 dark:text-slate-600"
+          className="pointer-events-none absolute left-1/2 top-0.5 size-3.5 -translate-x-1/2 text-slate-300 dark:text-neutral-600"
           aria-hidden
         />
       ) : null}
@@ -346,10 +346,10 @@ function PanelHeader({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
             {dirMeta.label}
           </span>
-          <span className="text-slate-300">·</span>
+          <span className="text-slate-300 dark:text-neutral-600">·</span>
           <span
             className={cn(
               "inline-flex items-center gap-1 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wider",
@@ -360,10 +360,10 @@ function PanelHeader({
             {stateMeta.label}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+        <p className="mt-0.5 truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-neutral-100">
           {customer?.name ?? "Unknown caller"}
         </p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400">
+        <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-neutral-400">
           <Phone className="size-2.5 shrink-0" />
           <span className="truncate font-medium">
             {customer ? formatPhone(customer.phone) : "Unknown number"}
@@ -373,7 +373,7 @@ function PanelHeader({
           ) : null}
           {call.lineLabel ? (
             <>
-              <span className="text-slate-300">·</span>
+              <span className="text-slate-300 dark:text-neutral-600">·</span>
               <span className="truncate">{call.lineLabel}</span>
             </>
           ) : null}
@@ -385,7 +385,7 @@ function PanelHeader({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         >
           <X className="size-4" />
         </button>
@@ -405,7 +405,7 @@ function StatPill({
   tone?: "slate" | "emerald" | "amber" | "rose";
 }) {
   const tones: Record<typeof tone, string> = {
-    slate: "border-slate-200 bg-slate-50 text-slate-600",
+    slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
     amber: "border-amber-200 bg-amber-50 text-amber-700",
     rose: "border-rose-200 bg-rose-50 text-rose-700",
@@ -472,7 +472,7 @@ function MetaChips({
   const chips: ReactNode[] = [];
   if (agent) {
     chips.push(
-      <span key="a" className="inline-flex min-w-0 items-center gap-1 text-slate-600 dark:text-slate-300">
+      <span key="a" className="inline-flex min-w-0 items-center gap-1 text-slate-600 dark:text-neutral-300">
         <User2 className="size-2.5 shrink-0 text-slate-400" />
         <span className="truncate">{agent}</span>
       </span>,
@@ -520,7 +520,7 @@ function NotePreview({ note }: { note?: string }) {
 
 // ── activity rows ───────────────────────────────────────────────────────
 const ROW_CARD =
-  "flex items-start gap-2 rounded-lg border border-slate-100 bg-white px-2 py-1.5 transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5]/40 dark:border-slate-800 dark:bg-slate-950";
+  "flex items-start gap-2 rounded-lg border border-slate-100 bg-white px-2 py-1.5 transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5]/40 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-[#008f68]/30";
 
 function callIcon(direction: CallRecord["direction"]) {
   return direction === "INBOUND"
@@ -583,7 +583,7 @@ function CallRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100">
+          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-neutral-100">
             {item.direction === "MISSED"
               ? "Missed call"
               : (titleCase(item.disposition) ?? "Call")}
@@ -661,7 +661,7 @@ function TicketActivityRow({
         className={cn(
           "flex size-6 shrink-0 items-center justify-center rounded-md",
           isLegacy
-            ? "bg-slate-100 text-slate-500"
+            ? "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
             : "bg-[#f0faf5] text-[#008f68]",
         )}
       >
@@ -673,8 +673,8 @@ function TicketActivityRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100">
-            {isLegacy ? item.legacyId : `Ticket #${item.id}`}
+          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-neutral-100">
+            {isLegacy ? item.legacyId : `#${item.id} · ${item.title}`}
           </p>
           <MiniTag className={statusClass}>
             {item.status.replace(/_/g, " ")}
@@ -687,7 +687,7 @@ function TicketActivityRow({
             </MiniTag>
           ) : null}
           {!isLegacy && item.ticketType ? (
-            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
               {item.ticketType}
             </MiniTag>
           ) : null}
@@ -711,11 +711,11 @@ function ManualRow({ item }: { item: ManualRecordEntry }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100">
+          <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-slate-800 dark:text-neutral-100">
             {item.title}
           </p>
           {item.recordType ? (
-            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
               {item.recordType}
             </MiniTag>
           ) : null}
@@ -755,7 +755,7 @@ function EmptyState({
   message: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-3 py-6 text-center dark:border-slate-800 dark:bg-slate-900/40">
+    <div className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-3 py-6 text-center dark:border-neutral-800 dark:bg-neutral-900/40">
       <Icon className="size-4 text-slate-400" />
       <p className="text-[10.5px] font-medium text-slate-500">{message}</p>
     </div>
@@ -837,7 +837,7 @@ function ActivityTab({
   return (
     <div className="space-y-2">
       {/* Filter chips — distributed equally across the row */}
-      <div className="flex w-full items-stretch gap-0.5 rounded-md border border-slate-200/80 bg-slate-100 p-0.5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex w-full items-stretch gap-0.5 rounded-md border border-slate-200/80 bg-slate-100 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
         {filters.map((f) => {
           const active = filter === f.key;
           return (
@@ -848,7 +848,7 @@ function ActivityTab({
               className={cn(
                 "flex h-6 min-w-0 flex-1 items-center justify-center gap-1 rounded px-1 text-[10px] font-semibold transition-colors",
                 active
-                  ? "bg-white text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
+                  ? "bg-white text-[#008f68] shadow-sm dark:bg-neutral-950 dark:text-emerald-400"
                   : "text-slate-500 hover:text-slate-800",
               )}
             >
@@ -857,8 +857,8 @@ function ActivityTab({
                 className={cn(
                   "rounded px-1 text-[9px] font-bold tabular-nums",
                   active
-                    ? "bg-[#f0faf5] text-[#006b4f]"
-                    : "bg-slate-200/80 text-slate-500",
+                    ? "bg-[#f0faf5] text-[#006b4f] dark:bg-emerald-950/40 dark:text-emerald-300"
+                    : "bg-slate-200/80 text-slate-500 dark:bg-neutral-700 dark:text-neutral-400",
                 )}
               >
                 {f.count}
@@ -891,31 +891,31 @@ function ActivityTab({
           </div>
 
           {totalPages > 1 ? (
-            <div className="flex items-center justify-between rounded-md border border-slate-200/80 bg-white px-2 py-1 dark:border-slate-800 dark:bg-slate-950">
-              <span className="text-[9.5px] font-semibold tabular-nums text-slate-500">
+            <div className="flex items-center justify-between rounded-md border border-slate-200/80 bg-white px-2 py-1 dark:border-neutral-800 dark:bg-neutral-950">
+              <span className="text-[9.5px] font-semibold tabular-nums text-slate-500 dark:text-neutral-400">
                 {start + 1}–{showingTo}
-                <span className="text-slate-300"> / </span>
-                <span className="text-slate-700">{visible.length}</span>
+                <span className="text-slate-300 dark:text-neutral-600"> / </span>
+                <span className="text-slate-700 dark:text-neutral-200">{visible.length}</span>
               </span>
               <div className="flex items-center gap-0.5">
                 <button
                   type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="flex h-5 w-5 items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-5 w-5 items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="size-3" />
                 </button>
-                <span className="px-1 text-[9.5px] font-bold tabular-nums text-slate-700">
+                <span className="px-1 text-[9.5px] font-bold tabular-nums text-slate-700 dark:text-neutral-200">
                   {page}
-                  <span className="font-medium text-slate-400">/{totalPages}</span>
+                  <span className="font-medium text-slate-400 dark:text-neutral-500">/{totalPages}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="flex h-5 w-5 items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-5 w-5 items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                   aria-label="Next page"
                 >
                   <ChevronRight className="size-3" />
@@ -945,14 +945,14 @@ function NotesTab({ customer }: { customer: CustomerProfile }) {
         <article
           key={n.id}
           className={cn(
-            "rounded-lg border bg-white px-2 py-1.5 dark:bg-slate-950",
+            "rounded-lg border bg-white px-2 py-1.5 dark:bg-neutral-950",
             n.isPinned
               ? "border-amber-200 bg-amber-50/40 dark:border-amber-900/50"
-              : "border-slate-100 dark:border-slate-800",
+              : "border-slate-100 dark:border-neutral-800",
           )}
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-700 dark:text-neutral-200">
               {n.isPinned ? (
                 <Pin className="size-2.5 text-amber-500" />
               ) : (
@@ -964,7 +964,7 @@ function NotesTab({ customer }: { customer: CustomerProfile }) {
               {formatShortDate(n.createdAt)} · {formatRelative(n.createdAt)}
             </span>
           </div>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-700 dark:text-neutral-300">
             {n.content}
           </p>
         </article>
@@ -977,11 +977,11 @@ function NotesTab({ customer }: { customer: CustomerProfile }) {
 function InfoTab({ customer }: { customer: CustomerProfile }) {
   return (
     <div className="space-y-2">
-      <dl className="grid grid-cols-[64px_1fr] items-center gap-x-2 gap-y-1.5 rounded-lg border border-slate-100 bg-white px-2.5 py-2 text-[11px] dark:border-slate-800 dark:bg-slate-950">
+      <dl className="grid grid-cols-[64px_1fr] items-center gap-x-2 gap-y-1.5 rounded-lg border border-slate-100 bg-white px-2.5 py-2 text-[11px] dark:border-neutral-800 dark:bg-neutral-950">
         <dt className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
           Phone
         </dt>
-        <dd className="flex items-center gap-1.5 truncate font-medium text-slate-800 dark:text-slate-200">
+        <dd className="flex items-center gap-1.5 truncate font-medium text-slate-800 dark:text-neutral-200">
           <span className="truncate">{formatPhone(customer.phone)}</span>
           {customer.phone ? (
             <CopyButton value={customer.phone} label="phone number" />
@@ -993,7 +993,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
             <dt className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
               Email
             </dt>
-            <dd className="flex items-center gap-1.5 truncate text-slate-700 dark:text-slate-300">
+            <dd className="flex items-center gap-1.5 truncate text-slate-700 dark:text-neutral-300">
               <Mail className="size-2.5 shrink-0 text-slate-400" />
               <span className="truncate">{customer.email}</span>
               <CopyButton value={customer.email} label="email" />
@@ -1006,7 +1006,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
             <dt className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
               Location
             </dt>
-            <dd className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <dd className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300">
               <MapPin className="size-2.5 shrink-0 text-slate-400" />
               {[customer.city, customer.state].filter(Boolean).join(", ")}
             </dd>
@@ -1018,7 +1018,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
             <dt className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
               Last
             </dt>
-            <dd className="text-slate-700 dark:text-slate-300">
+            <dd className="text-slate-700 dark:text-neutral-300">
               {formatShortDate(customer.stats.lastContactAt)}
               <span className="text-slate-400">
                 {" "}
@@ -1031,7 +1031,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
         <dt className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
           Since
         </dt>
-        <dd className="text-slate-700 dark:text-slate-300">
+        <dd className="text-slate-700 dark:text-neutral-300">
           {formatShortDate(customer.customerSince)}
           <span className="text-slate-400">
             {" "}
@@ -1041,7 +1041,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
       </dl>
 
       <div className="grid grid-cols-1 gap-2">
-        <section className="rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-950">
+        <section className="rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-neutral-800 dark:bg-neutral-950">
           <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
             Yards ({customer.yards.length})
           </p>
@@ -1052,7 +1052,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
               customer.yards.map((y) => (
                 <span
                   key={y.id}
-                  className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-[1px] text-[10px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-[1px] text-[10px] font-semibold text-slate-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                 >
                   <Building2 className="size-2.5" />
                   {y.commonName ?? y.name}
@@ -1062,7 +1062,7 @@ function InfoTab({ customer }: { customer: CustomerProfile }) {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-950">
+        <section className="rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-neutral-800 dark:bg-neutral-950">
           <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
             Campaigns ({customer.campaigns.length})
           </p>
@@ -1105,7 +1105,7 @@ function DetailRow({
         <Icon className="size-2.5 shrink-0" />
         {label}
       </dt>
-      <dd className={cn("min-w-0 break-words text-[11px] font-medium text-slate-700 dark:text-slate-300", valueClass)}>
+      <dd className={cn("min-w-0 break-words text-[11px] font-medium text-slate-700 dark:text-neutral-300", valueClass)}>
         {value}
       </dd>
     </div>
@@ -1155,7 +1155,7 @@ function CallDetailModal({
         ...(dragging ? { transition: "none" } : null),
       }}
       className={cn(
-        "fixed z-[70] flex max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950",
+        "fixed z-[70] flex max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)] dark:border-neutral-800 dark:bg-neutral-950",
         anchor ? "" : "bottom-6 left-6",
         dragging && "shadow-[0_20px_50px_rgba(15,23,42,0.28)]",
       )}
@@ -1163,14 +1163,14 @@ function CallDetailModal({
       {/* header — drag handle */}
       <div
         onPointerDown={beginDrag}
-        className="relative flex cursor-grab touch-none select-none items-center gap-2.5 border-b border-slate-200/80 bg-white px-3.5 py-3 pr-10 active:cursor-grabbing dark:border-slate-800 dark:bg-slate-950"
+        className="relative flex cursor-grab touch-none select-none items-center gap-2.5 border-b border-slate-200/80 bg-white px-3.5 py-3 pr-10 active:cursor-grabbing dark:border-neutral-800 dark:bg-neutral-950"
       >
         <span
           className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
           aria-hidden
         />
         <GripHorizontal
-          className="pointer-events-none absolute left-1/2 top-0.5 size-3.5 -translate-x-1/2 text-slate-300 dark:text-slate-600"
+          className="pointer-events-none absolute left-1/2 top-0.5 size-3.5 -translate-x-1/2 text-slate-300 dark:text-neutral-600"
           aria-hidden
         />
           <span
@@ -1185,7 +1185,7 @@ function CallDetailModal({
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Call details
             </p>
-            <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+            <p className="truncate text-[14px] font-bold leading-tight text-slate-900 dark:text-neutral-100">
               {call.direction === "MISSED"
                 ? "Missed call"
                 : (titleCase(call.disposition) ?? `${dirMeta.label} call`)}
@@ -1195,14 +1195,14 @@ function CallDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Close call details"
-            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             <X className="size-4" />
           </button>
         </div>
 
         {/* body */}
-        <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-3 dark:bg-slate-900/40">
+        <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-3 dark:bg-neutral-900/40">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
@@ -1219,13 +1219,13 @@ function CallDetailModal({
               </MiniTag>
             ) : null}
             {call.id ? (
-              <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+              <MiniTag className="border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
                 #{call.id}
               </MiniTag>
             ) : null}
           </div>
 
-          <dl className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+          <dl className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
             <DetailRow
               icon={CalendarClock}
               label="When"
@@ -1241,7 +1241,7 @@ function CallDetailModal({
               icon={User2}
               label="Agent"
               value={call.agentName ?? "Unassigned"}
-              valueClass="text-slate-700 dark:text-slate-200"
+              valueClass="text-slate-700 dark:text-neutral-200"
             />
             <DetailRow
               icon={Building2}
@@ -1282,12 +1282,12 @@ function CallDetailModal({
             </section>
           ) : null}
 
-          <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
+          <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-950">
             <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
               <FileText className="size-2.5" />
               Notes
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+            <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-700 dark:text-neutral-300">
               {call.notes?.trim() || (
                 <span className="italic text-slate-400">
                   No notes recorded for this call.
@@ -1694,7 +1694,7 @@ export function IncomingCallModal({
           ? "max-h-[760px]"
           : "max-h-[min(760px,calc(100vh-3rem))]",
         "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)]",
-        "dark:border-slate-800 dark:bg-slate-950",
+        "dark:border-neutral-800 dark:bg-neutral-950",
         dragging && "shadow-[0_20px_50px_rgba(15,23,42,0.28)]",
       )}
     >
@@ -1708,7 +1708,7 @@ export function IncomingCallModal({
       />
 
       {/* Body */}
-      <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] px-2.5 py-2 dark:bg-slate-900/40">
+      <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] px-2.5 py-2 dark:bg-neutral-900/40">
         {customer ? (
           <div className="space-y-2">
             {/* Pinned note callout (compact) */}
@@ -1750,7 +1750,7 @@ export function IncomingCallModal({
 
             {/* Tabs */}
             <Tabs defaultValue="activity" className="w-full">
-              <TabsList className="flex h-7 w-full justify-start gap-0.5 rounded-md border border-slate-200/80 bg-slate-100 p-0.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <TabsList className="flex h-7 w-full justify-start gap-0.5 rounded-md border border-slate-200/80 bg-slate-100 p-0.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
                 {[
                   { value: "activity", label: "Activity", icon: History },
                   { value: "info", label: "Info", icon: User2 },
@@ -1761,8 +1761,8 @@ export function IncomingCallModal({
                     value={t.value}
                     className={cn(
                       "h-6 flex-1 rounded px-2 text-[10px] font-semibold text-slate-500 transition-colors",
-                      "data-[state=active]:bg-white data-[state=active]:text-[#008f68] data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-950 dark:data-[state=active]:text-emerald-400",
-                      "hover:text-slate-800",
+                      "data-[state=active]:bg-white data-[state=active]:text-[#008f68] data-[state=active]:shadow-sm dark:data-[state=active]:bg-neutral-950 dark:data-[state=active]:text-emerald-400",
+                      "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200",
                     )}
                   >
                     <t.icon className="mr-1 size-2.5" />
@@ -1803,13 +1803,13 @@ export function IncomingCallModal({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 px-3 py-8 text-center">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400">
               <PhoneIncoming className="size-4" />
             </span>
-            <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+            <p className="text-[12px] font-semibold text-slate-800 dark:text-neutral-100">
               Unknown caller
             </p>
-            <p className="max-w-[260px] text-[10.5px] leading-relaxed text-slate-500">
+            <p className="max-w-[260px] text-[10.5px] leading-relaxed text-slate-500 dark:text-neutral-400">
               No customer profile matches this number. Answer the call and
               create a contact afterwards.
             </p>

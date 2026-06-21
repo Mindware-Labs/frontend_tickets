@@ -254,7 +254,7 @@ export function CustomersTable({
                         />
                       </TableCell>
 
-                      <TableCell className={cn(entityTableCellClass, "text-right font-mono font-semibold text-slate-700 dark:text-slate-200")}>
+                      <TableCell className={cn(entityTableCellClass, "text-right font-mono font-semibold text-slate-700 dark:text-neutral-200")}>
                         {customer.callCount ?? customer.totalCalls ?? 0}
                       </TableCell>
 
@@ -304,11 +304,11 @@ export function CustomersTable({
       {/* Mobile: stacked cards */}
       <div className="lg:hidden">
         {loading ? (
-          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-slate-800 dark:bg-card">
+          <div className="flex items-center justify-center rounded-xl border border-slate-200/80 bg-white py-10 dark:border-neutral-800 dark:bg-card">
             <EntityLoadingSpinner kind="customers" size="sm" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-slate-800 dark:bg-card">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-neutral-800 dark:bg-card">
             <span>{error}</span>
             {onRetry ? (
               <Button variant="outline" size="sm" onClick={onRetry}>
@@ -317,7 +317,7 @@ export function CustomersTable({
             ) : null}
           </div>
         ) : isEmpty ? (
-          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-slate-800 dark:bg-card">
+          <div className="rounded-xl border border-slate-200/80 bg-white py-10 text-center text-sm text-muted-foreground dark:border-neutral-800 dark:bg-card">
             No customers found.
           </div>
         ) : (
@@ -346,7 +346,7 @@ export function CustomersTable({
                   />
                   <EntityMobileCardBody>
                     <EntityMobileField label="Calls">
-                      <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">
+                      <span className="font-mono font-semibold text-slate-700 dark:text-neutral-200">
                         {customer.callCount ?? customer.totalCalls ?? 0}
                       </span>
                     </EntityMobileField>

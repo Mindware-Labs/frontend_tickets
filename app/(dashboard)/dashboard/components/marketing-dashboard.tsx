@@ -274,20 +274,20 @@ export function MarketingDashboard() {
                         type="button"
                         onClick={() => toggleFilter("disposition", item.name)}
                         className={cn(
-                          "flex w-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-left dark:border-slate-800 dark:bg-slate-900/50",
+                          "flex w-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-left dark:border-neutral-800 dark:bg-neutral-900/50",
                           crossFilterRowClass(
                             isFilterActive("disposition", item.name),
                           ),
                         )}
                       >
-                        <span className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-slate-800 dark:text-slate-100">
+                        <span className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-slate-800 dark:text-neutral-100">
                           <span
                             className="size-2.5 shrink-0 rounded-sm"
                             style={{ backgroundColor: item.color }}
                           />
                           <span className="truncate">{item.name}</span>
                         </span>
-                        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-600 dark:text-slate-300">
+                        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-600 dark:text-neutral-300">
                           {item.value}
                           {dispositionTotal > 0
                             ? ` (${Math.round((item.value / dispositionTotal) * 100)}%)`
@@ -310,8 +310,8 @@ export function MarketingDashboard() {
           ) : (
             <div className="max-h-[200px] overflow-auto">
               <table className="w-full text-left">
-                <thead className="sticky top-0 bg-white dark:bg-slate-950">
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                <thead className="sticky top-0 bg-white dark:bg-neutral-950">
+                  <tr className="border-b border-slate-100 dark:border-neutral-800">
                     <th className={dashboardTableHeadClass}>Campaign</th>
                     <th className={dashboardTableHeadClass}>Measure</th>
                   </tr>
@@ -321,7 +321,7 @@ export function MarketingDashboard() {
                     <tr
                       key={row.campaign}
                       className={cn(
-                        "border-b border-slate-50 last:border-b-0 dark:border-slate-800/80",
+                        "border-b border-slate-50 last:border-b-0 dark:border-neutral-800/80",
                         crossFilterRowClass(
                           isFilterActive("campaign", row.campaign),
                         ),

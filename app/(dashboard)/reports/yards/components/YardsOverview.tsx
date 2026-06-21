@@ -40,8 +40,8 @@ export function YardsOverview({
 
   if (yardsStats.length === 0) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-slate-50 p-6 dark:bg-slate-900/20 animate-in zoom-in-95 duration-300">
-        <Empty className="min-h-[350px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-6 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950 max-w-md w-full">
+      <div className="flex min-h-[420px] items-center justify-center rounded-2xl bg-slate-50 p-6 dark:bg-neutral-900/20 animate-in zoom-in-95 duration-300">
+        <Empty className="min-h-[350px] gap-4 rounded-2xl border border-solid border-slate-200/80 bg-white px-6 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950 max-w-md w-full">
           <EmptyHeader className="gap-2">
             <EmptyMedia
               variant="icon"
@@ -54,11 +54,11 @@ export function YardsOverview({
               No yards found
             </span>
 
-            <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+            <EmptyTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
               No yard statistics available
             </EmptyTitle>
 
-            <EmptyDescription className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+            <EmptyDescription className="text-xs leading-5 text-slate-600 dark:text-neutral-400">
               No statistics were found for any yard in the selected period. Try adjusting the date range or selecting another yard in the report configuration.
             </EmptyDescription>
           </EmptyHeader>

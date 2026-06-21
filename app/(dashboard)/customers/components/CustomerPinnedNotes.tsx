@@ -96,14 +96,14 @@ export function CustomerPinnedNotes({
   };
 
   const notesCardShell =
-    "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950";
+    "overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950";
 
   return (
     <div className="space-y-2.5">
       <div
         className={cn(
           notesCardShell,
-          "border-amber-200/70 bg-gradient-to-b from-amber-50/80 to-white dark:border-amber-900/40 dark:from-amber-950/25 dark:to-slate-950",
+          "border-amber-200/70 bg-gradient-to-b from-amber-50/80 to-white dark:border-amber-900/40 dark:from-amber-950/25 dark:to-neutral-950",
         )}
       >
         <div className="flex items-center justify-between gap-2 border-b border-amber-100/80 px-3.5 py-2 dark:border-amber-900/30">
@@ -137,7 +137,7 @@ export function CustomerPinnedNotes({
               onChange={(e) => setPinnedDraft(e.target.value)}
               rows={3}
               placeholder="VIP, payment plan, callback…"
-              className="min-h-0 resize-none rounded-xl border-amber-200/80 bg-white text-[13px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/25 dark:border-amber-900/50 dark:bg-slate-900"
+              className="min-h-0 resize-none rounded-xl border-amber-200/80 bg-white text-[13px] shadow-none focus-visible:border-[#008f68]/40 focus-visible:ring-[#008f68]/25 dark:border-amber-900/50 dark:bg-neutral-900"
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setPinnedDraft(pinned?.content ?? "");
@@ -179,8 +179,8 @@ export function CustomerPinnedNotes({
               className={cn(
                 "text-[13px] leading-relaxed",
                 hasPinned
-                  ? "font-medium text-slate-900 dark:text-slate-50"
-                  : "italic text-slate-500",
+                  ? "font-medium text-slate-900 dark:text-neutral-50"
+                  : "italic text-slate-500 dark:text-neutral-400",
               )}
             >
               {hasPinned
@@ -198,11 +198,11 @@ export function CustomerPinnedNotes({
       </div>
 
       <div className={notesCardShell}>
-        <div className="flex items-center gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-slate-800">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-900">
-            <StickyNote className="h-3 w-3 text-slate-500" strokeWidth={2} />
+        <div className="flex items-center gap-2 border-b border-slate-50 px-3.5 py-2 dark:border-neutral-800">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-neutral-900">
+            <StickyNote className="h-3 w-3 text-slate-500 dark:text-neutral-400" strokeWidth={2} />
           </span>
-          <span className="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+          <span className="text-[12px] font-bold text-slate-700 dark:text-neutral-200">
             Audit trail
           </span>
           <span className="rounded-full border border-[#e2fae9] bg-[#e2fae9] px-[7px] py-[1px] text-[11px] font-semibold text-[#008f68] dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">

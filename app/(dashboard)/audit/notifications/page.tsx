@@ -233,7 +233,7 @@ export default function NotificationsAuditPage() {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-dvh max-w-full overflow-x-hidden bg-[#f4f5f7] px-3 pb-8 pt-2 font-sans transition-[opacity,transform] duration-300 sm:px-4 lg:px-5 dark:bg-slate-950"
+      className="min-h-dvh max-w-full overflow-x-hidden bg-[#f4f5f7] px-3 pb-8 pt-2 font-sans transition-[opacity,transform] duration-300 sm:px-4 lg:px-5 dark:bg-neutral-950"
       style={{
         opacity: animIn ? 1 : 0,
         transform: animIn ? "none" : "translateY(4px)",

@@ -83,7 +83,7 @@ export function OverdueCallsBanner({
   return (
     <div
       role="alert"
-      className="relative mb-3 overflow-hidden rounded-2xl border border-amber-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-amber-900/50 dark:bg-slate-950"
+      className="relative mb-3 overflow-hidden rounded-2xl border border-amber-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-amber-900/50 dark:bg-neutral-950"
     >
       <div
         className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-amber-400 via-amber-500 to-orange-500"
@@ -106,11 +106,11 @@ export function OverdueCallsBanner({
                 <AlertTriangle className="h-3 w-3" />
                 Action needed
               </span>
-              <p className="truncate text-[14px] font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
+              <p className="truncate text-[14px] font-bold leading-tight tracking-tight text-slate-900 dark:text-neutral-100">
                 {label}
               </p>
             </div>
-            <p className="mt-1 truncate text-[12px] font-medium leading-5 text-slate-600 dark:text-slate-400">
+            <p className="mt-1 truncate text-[12px] font-medium leading-5 text-slate-600 dark:text-neutral-400">
               {latestMessage ??
                 "Follow-up date has passed. Review overdue callbacks and contact customers as soon as possible."}
             </p>
@@ -123,7 +123,7 @@ export function OverdueCallsBanner({
               type="button"
               size="sm"
               variant="outline"
-              className="h-8 rounded-lg border-[#008f68]/25 bg-white px-3 text-[12px] font-semibold text-[#008f68] shadow-sm shadow-slate-200/50 transition-colors hover:border-[#008f68]/40 hover:bg-[#f0faf5] hover:text-[#007a5a] dark:border-emerald-500/30 dark:bg-slate-950 dark:text-emerald-400 dark:shadow-none dark:hover:bg-emerald-500/10"
+              className="h-8 rounded-lg border-[#008f68]/25 bg-white px-3 text-[12px] font-semibold text-[#008f68] shadow-sm shadow-slate-200/50 transition-colors hover:border-[#008f68]/40 hover:bg-[#f0faf5] hover:text-[#007a5a] dark:border-emerald-500/30 dark:bg-neutral-950 dark:text-emerald-400 dark:shadow-none dark:hover:bg-emerald-500/10"
               onClick={onViewOverdue}
             >
               View overdue
@@ -133,7 +133,7 @@ export function OverdueCallsBanner({
           <button
             type="button"
             onClick={() => setDismissedCount(count)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
             aria-label="Dismiss banner"
           >
             <X className="h-4 w-4" />

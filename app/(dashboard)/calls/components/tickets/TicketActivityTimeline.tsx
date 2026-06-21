@@ -131,7 +131,7 @@ export function TicketActivityTimeline({
         return (
           <div
             key={u.id}
-            className="rounded-xl border border-slate-100 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden"
+            className="rounded-xl border border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden"
           >
             {/* Top accent line */}
             <div
@@ -142,10 +142,10 @@ export function TicketActivityTimeline({
             <div className="px-3 py-2.5 space-y-1.5">
               {/* Row 1: ID + date */}
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold text-slate-700 font-mono">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-200 font-mono">
                   #{u.id}
                 </span>
-                <span className="text-[10.5px] text-slate-400 tabular-nums">
+                <span className="text-[10.5px] text-slate-400 dark:text-neutral-500 tabular-nums">
                   {fmtShortDate(u.createdAt)}
                 </span>
               </div>
@@ -181,14 +181,14 @@ export function TicketActivityTimeline({
                     background: badge.bg,
                   }}
                 />
-                <span className="text-[11px] text-slate-600 truncate">
+                <span className="text-[11px] text-slate-600 dark:text-neutral-300 truncate">
                   {agentName}
                 </span>
               </div>
 
               {/* Row 4: note content */}
               {u.note?.trim() && (
-                <p className="text-[11.5px] text-slate-600 leading-relaxed whitespace-pre-wrap border-l-2 border-slate-200 pl-2 select-text pointer-events-auto">
+                <p className="text-[11.5px] text-slate-600 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap border-l-2 border-slate-200 dark:border-neutral-700 pl-2 select-text pointer-events-auto">
                   {u.note.trim()}
                 </p>
               )}

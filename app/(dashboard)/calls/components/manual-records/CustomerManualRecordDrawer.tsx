@@ -98,11 +98,11 @@ function RecordCard({
             "block h-3 w-3 rounded-full border-2 transition-all",
             isActive
               ? "border-[#008f68] bg-[#008f68] shadow-[0_0_0_3px_#008f6820]"
-              : "border-slate-300 bg-white",
+              : "border-slate-300 bg-white dark:bg-neutral-700",
           )}
         />
         {!isLast && (
-          <span className="absolute left-[5px] top-[14px] w-px flex-1 bg-slate-200" style={{ bottom: "-0.5rem" }} />
+          <span className="absolute left-[5px] top-[14px] w-px flex-1 bg-slate-200 dark:bg-neutral-700" style={{ bottom: "-0.5rem" }} />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -114,7 +114,7 @@ function RecordCard({
             "mb-1 w-full rounded-xl border p-2.5 text-left transition-all",
             isActive
               ? "border-[#008f68]/20 bg-[#008f68]/5 shadow-sm"
-              : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/60",
+              : "border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-slate-200 dark:hover:border-neutral-700 hover:bg-slate-50/60 dark:hover:bg-neutral-800/50",
           )}
         >
           {/* ID + date */}
@@ -122,7 +122,7 @@ function RecordCard({
             <span
               className={cn(
                 "font-mono text-[11px] font-bold",
-                isActive ? "text-[#008f68]" : "text-slate-700",
+                isActive ? "text-[#008f68]" : "text-slate-700 dark:text-neutral-200",
               )}
             >
               #{record.id}
@@ -150,7 +150,7 @@ function RecordCard({
           {(campaignName || yardName) && (
             <div className="mb-1.5 flex flex-col gap-0.5">
               {campaignName && (
-                <span className="truncate text-[9.5px] font-medium text-slate-600">
+                <span className="truncate text-[9.5px] font-medium text-slate-600 dark:text-neutral-300">
                   {campaignName}
                 </span>
               )}
@@ -166,13 +166,13 @@ function RecordCard({
           {agentName && (
             <div className="mb-1.5 flex items-center gap-0.5">
               <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-              <span className="text-[9.5px] text-slate-500">{agentName}</span>
+              <span className="text-[9.5px] text-slate-500 dark:text-neutral-400">{agentName}</span>
             </div>
           )}
 
           {/* Notes preview */}
           {noteText && (
-            <p className="line-clamp-2 border-l border-slate-200 pl-1.5 text-[9.5px] italic leading-tight text-slate-500">
+            <p className="line-clamp-2 border-l border-slate-200 dark:border-neutral-700 pl-1.5 text-[9.5px] italic leading-tight text-slate-500 dark:text-neutral-200">
               {noteText}
             </p>
           )}
@@ -183,7 +183,7 @@ function RecordCard({
           <button
             type="button"
             onClick={onPeek}
-            className="w-full flex items-center justify-center gap-1.5 mb-1.5 h-6 rounded-lg border border-slate-100 bg-slate-50 hover:bg-green-50 hover:border-[#008f68]/30 hover:text-[#008f68] text-slate-400 text-[9.5px] font-medium transition-all"
+            className="w-full flex items-center justify-center gap-1.5 mb-1.5 h-6 rounded-lg border border-slate-100 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-800 hover:bg-green-50 dark:hover:bg-neutral-700 hover:border-[#008f68]/30 hover:text-[#008f68] text-slate-400 text-[9.5px] font-medium transition-all"
           >
             <Eye className="w-3 h-3" />
             Preview
@@ -339,7 +339,7 @@ export function CustomerManualRecordDrawer({
         <SheetContent
           side="right"
           hideClose
-          className="flex w-svw flex-col gap-0 overflow-hidden border-l border-slate-200/80 bg-white p-0 sm:w-[80vw]"
+          className="flex w-svw flex-col gap-0 overflow-hidden border-l border-slate-200/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-0 sm:w-[80vw]"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             if (shouldIgnoreTicketSheetOutsideEvent(e)) e.preventDefault();
@@ -355,7 +355,7 @@ export function CustomerManualRecordDrawer({
             Manual Record — {customerName}
           </SheetTitle>
 
-          <div className="shrink-0 border-b border-slate-100 bg-white">
+          <div className="shrink-0 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             {onBackToTimeline && returnToLabel ? (
               <TimelineReturnBar
                 label={returnToLabel}
@@ -372,7 +372,7 @@ export function CustomerManualRecordDrawer({
                 {customerName.substring(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 shrink">
-                <p className="truncate text-[15px] font-bold leading-none text-slate-900">
+                <p className="truncate text-[15px] font-bold leading-none text-slate-900 dark:text-neutral-100">
                   {customerName}
                 </p>
                 <p className="mt-0.5 font-mono text-[11.5px] leading-none text-slate-400">
@@ -416,11 +416,11 @@ export function CustomerManualRecordDrawer({
 
             {selectedRecord && (
               <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2">
-                <span className="inline-flex cursor-default items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                <span className="inline-flex cursor-default items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-neutral-300">
                   <ClipboardList className="h-3 w-3 text-slate-400" />
                   Record #{selectedRecord.id}
                 </span>
-                <span className="inline-flex cursor-default items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                <span className="inline-flex cursor-default items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-neutral-300">
                   <CalendarIcon className="h-3 w-3 text-slate-400" />
                   {fmtDate(selectedRecord.createdAt)}
                 </span>
@@ -446,9 +446,9 @@ export function CustomerManualRecordDrawer({
           </div>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
-            <div className="order-last hidden w-72 shrink-0 flex-col overflow-hidden border-l border-slate-200/60 bg-white sm:flex xl:w-80">
-              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="order-last hidden w-72 shrink-0 flex-col overflow-hidden border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900 sm:flex xl:w-80">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 dark:border-neutral-800 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                   Other records
                 </p>
                 {isLoadingHistory ? (
@@ -479,9 +479,9 @@ export function CustomerManualRecordDrawer({
               </div>
             </div>
 
-            <main className="flex min-h-0 min-w-0 flex-1 flex-col border-t border-slate-100 bg-slate-50/80">
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col border-t border-slate-100 dark:border-neutral-800 bg-slate-50/80 dark:bg-neutral-800/50">
               {!selectedRecord ? (
-                <div className="flex flex-1 items-center justify-center text-slate-400">
+                <div className="flex flex-1 items-center justify-center text-slate-400 dark:text-neutral-500">
                   <div className="text-center">
                     <ClipboardList className="mx-auto mb-2 h-8 w-8 opacity-30" />
                     <p className="text-sm">Select a record to inspect</p>
@@ -511,7 +511,7 @@ export function CustomerManualRecordDrawer({
                       getAttachmentUrl={getAttachmentUrl}
                     />
                   </div>
-                  <div className="shrink-0 border-t border-slate-100 bg-white/95 px-5 py-3 backdrop-blur-sm">
+                  <div className="shrink-0 border-t border-slate-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 px-5 py-3 backdrop-blur-sm">
                     <div className="flex gap-2">
                       <button
                         type="button"

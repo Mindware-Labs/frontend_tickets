@@ -134,10 +134,10 @@ export function DashboardPeriodModal({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-slate-800 dark:bg-slate-950"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl sm:max-w-[460px] dark:border-neutral-800 dark:bg-neutral-950"
       >
-        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
-          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+        <SheetHeader className="z-10 border-b border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
+          <SheetTitle className="flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
             <span className="flex size-9 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
               <Calendar className="size-4" aria-hidden />
             </span>
@@ -154,7 +154,7 @@ export function DashboardPeriodModal({
         </SheetHeader>
 
         <div className="scrollbar-app flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
             <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
               Period presets
@@ -174,7 +174,7 @@ export function DashboardPeriodModal({
                       "group relative flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
                       isSelected
                         ? "border-[#008f68] bg-[#f0faf5]/50 shadow-[0_2px_8px_rgba(0,143,104,0.06)] dark:border-emerald-500/40 dark:bg-emerald-500/5"
-                        : "border-slate-200/60 bg-slate-50/60 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/80",
+                        : "border-slate-200/60 bg-slate-50/60 hover:border-slate-300 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/80",
                     )}
                   >
                     <div
@@ -182,7 +182,7 @@ export function DashboardPeriodModal({
                         "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                         isSelected
                           ? "bg-[#008f68] text-white dark:bg-emerald-500"
-                          : "bg-slate-100 text-slate-400 group-hover:bg-slate-200/70 dark:bg-slate-900 dark:group-hover:bg-slate-800",
+                          : "bg-slate-100 text-slate-400 group-hover:bg-slate-200/70 dark:bg-neutral-900 dark:group-hover:bg-slate-800",
                       )}
                     >
                       <Icon className="size-4" aria-hidden />
@@ -194,12 +194,12 @@ export function DashboardPeriodModal({
                           "text-xs font-semibold transition-colors",
                           isSelected
                             ? "text-[#008f68] dark:text-emerald-400"
-                            : "text-slate-800 dark:text-slate-200",
+                            : "text-slate-800 dark:text-neutral-200",
                         )}
                       >
                         {option.label}
                       </p>
-                      <p className="mt-0.5 text-[11px] leading-normal text-slate-500 dark:text-slate-400">
+                      <p className="mt-0.5 text-[11px] leading-normal text-slate-500 dark:text-neutral-400">
                         {option.description}
                       </p>
                     </div>
@@ -215,7 +215,7 @@ export function DashboardPeriodModal({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
             <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               <Calendar className="size-3.5 text-[#008f68]" aria-hidden />
               Custom range
@@ -228,7 +228,7 @@ export function DashboardPeriodModal({
                 "group relative flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
                 selectedPeriod === "custom"
                   ? "border-[#008f68] bg-[#f0faf5]/50 shadow-[0_2px_8px_rgba(0,143,104,0.06)] dark:border-emerald-500/40 dark:bg-emerald-500/5"
-                  : "border-slate-200/60 bg-slate-50/60 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/80",
+                  : "border-slate-200/60 bg-slate-50/60 hover:border-slate-300 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:border-neutral-700 dark:hover:bg-neutral-900/80",
               )}
             >
               <div
@@ -236,7 +236,7 @@ export function DashboardPeriodModal({
                   "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                   selectedPeriod === "custom"
                     ? "bg-[#008f68] text-white dark:bg-emerald-500"
-                    : "bg-slate-100 text-slate-400 group-hover:bg-slate-200/70 dark:bg-slate-900 dark:group-hover:bg-slate-800",
+                    : "bg-slate-100 text-slate-400 group-hover:bg-slate-200/70 dark:bg-neutral-900 dark:group-hover:bg-slate-800",
                 )}
               >
                 <Calendar className="size-4" aria-hidden />
@@ -247,12 +247,12 @@ export function DashboardPeriodModal({
                     "text-xs font-semibold transition-colors",
                     selectedPeriod === "custom"
                       ? "text-[#008f68] dark:text-emerald-400"
-                      : "text-slate-800 dark:text-slate-200",
+                      : "text-slate-800 dark:text-neutral-200",
                   )}
                 >
                   Custom dates
                 </p>
-                <p className="mt-0.5 text-[11px] leading-normal text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-[11px] leading-normal text-slate-500 dark:text-neutral-400">
                   Choose exact start and end dates for dashboard reporting.
                 </p>
               </div>
@@ -279,7 +279,7 @@ export function DashboardPeriodModal({
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700",
                         !localStartDate && "text-slate-500",
                       )}
                     >
@@ -295,7 +295,7 @@ export function DashboardPeriodModal({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-neutral-800"
                     align="start"
                   >
                     <div className="flex flex-col gap-2 p-2">
@@ -314,11 +314,11 @@ export function DashboardPeriodModal({
                         className="rounded-md"
                       />
                       {localStartDate && (
-                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                        <div className="border-t border-slate-200 pt-2 dark:border-neutral-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-neutral-100"
                             onClick={() => {
                               setCustomStartDate("");
                               setStartPopoverOpen(false);
@@ -349,7 +349,7 @@ export function DashboardPeriodModal({
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700",
+                        "h-9 w-full justify-start rounded-lg border-transparent bg-slate-50 px-2.5 text-left text-xs font-medium text-slate-900 shadow-none transition-colors hover:border-slate-300 hover:bg-white focus-visible:border-[#008f68] focus-visible:ring-[#008f68]/20 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-700",
                         !localEndDate && "text-slate-500",
                       )}
                     >
@@ -365,7 +365,7 @@ export function DashboardPeriodModal({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-slate-800"
+                    className="z-[60] w-auto rounded-xl border-slate-200/80 p-0 shadow-xl dark:border-neutral-800"
                     align="end"
                   >
                     <div className="flex flex-col gap-2 p-2">
@@ -384,11 +384,11 @@ export function DashboardPeriodModal({
                         className="rounded-md"
                       />
                       {localEndDate && (
-                        <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                        <div className="border-t border-slate-200 pt-2 dark:border-neutral-800">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                            className="h-8 w-full text-xs text-slate-500 hover:text-slate-900 dark:hover:text-neutral-100"
                             onClick={() => {
                               setCustomEndDate("");
                               setEndPopoverOpen(false);
@@ -419,7 +419,7 @@ export function DashboardPeriodModal({
           </div>
         </div>
 
-        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-slate-800 dark:bg-slate-950">
+        <SheetFooter className="flex-col-reverse gap-2 border-t border-slate-200/80 bg-white px-3 py-3 shadow-[0_-1px_3px_rgba(0,0,0,0.04)] sm:flex-row dark:border-neutral-800 dark:bg-neutral-950">
           <Button
             type="button"
             variant="ghost"

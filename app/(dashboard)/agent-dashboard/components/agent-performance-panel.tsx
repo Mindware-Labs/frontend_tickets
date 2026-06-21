@@ -45,16 +45,16 @@ export function AgentPerformancePanel({ data }: AgentPerformancePanelProps) {
         <div className={dashboardPanelHeaderClass}>
           <div>
             <p className={dashboardSectionLabelClass}>Activity mix</p>
-            <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
               Where your work is landing
             </h2>
           </div>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400">
             {totalActivity.toLocaleString()} total
           </span>
         </div>
         <div className={cn(dashboardPanelBodyClass, "space-y-3")}>
-          <div className="overflow-hidden rounded-full border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="overflow-hidden rounded-full border border-slate-200 bg-slate-100 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex h-4 overflow-hidden rounded-full">
               <span className="bg-[#008f68]" style={{ width: `${callPct}%` }} />
               <span className="bg-sky-500" style={{ width: `${ticketPct}%` }} />
@@ -73,7 +73,7 @@ export function AgentPerformancePanel({ data }: AgentPerformancePanelProps) {
         <div className={dashboardPanelHeaderClass}>
           <div>
             <p className={dashboardSectionLabelClass}>Quality signals</p>
-            <h2 className="text-[14px] font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
               Close-rate snapshot
             </h2>
           </div>
@@ -117,14 +117,14 @@ function MixTile({
   tone: "emerald" | "sky" | "slate";
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-950">
+    <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
             "inline-flex size-7 items-center justify-center rounded-lg",
             tone === "emerald" && "bg-[#f0faf5] text-[#008f68]",
             tone === "sky" && "bg-sky-50 text-sky-700",
-            tone === "slate" && "bg-slate-100 text-slate-600",
+            tone === "slate" && "bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300",
           )}
         >
           <Icon className="size-3.5" aria-hidden />
@@ -132,7 +132,7 @@ function MixTile({
         <span className="text-[10px] font-bold text-slate-400 tabular-nums">{pct}%</span>
       </div>
       <p className="mt-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">{label}</p>
-      <p className="text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">{value}</p>
+      <p className="text-lg font-bold text-slate-900 dark:text-neutral-100 tabular-nums">{value}</p>
     </div>
   );
 }
@@ -151,10 +151,10 @@ function QualityRow({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">{label}</span>
-        <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 tabular-nums">{value}%</span>
+        <span className="text-[11px] font-semibold text-slate-600 dark:text-neutral-300">{label}</span>
+        <span className="text-[11px] font-bold text-slate-900 dark:text-neutral-100 tabular-nums">{value}%</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-900">
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-900">
         <div
           className={cn(
             "h-full rounded-full",

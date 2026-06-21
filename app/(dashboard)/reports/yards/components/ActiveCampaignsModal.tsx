@@ -77,7 +77,7 @@ const getCampaignTypeColor = (tipo: string) => {
       return "bg-violet-100 text-violet-800 border-violet-200 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-800";
     case "OTHER":
     default:
-      return "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
+      return "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700";
   }
 };
 
@@ -369,16 +369,16 @@ export function ActiveCampaignsModal({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={side}
-        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 ${sheetWidthClass}`}
+        className={`flex h-full w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-slate-200/80 bg-[#f4f5f7] p-0 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 ${sheetWidthClass}`}
       >
-        <SheetHeader className="border-b border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-          <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+        <SheetHeader className="border-b border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950">
+          <SheetTitle className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
             <div className="flex size-8 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
               <TrendingUp className="size-3.5" />
             </div>
             Active Campaigns
           </SheetTitle>
-          <SheetDescription className="ml-10 mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <SheetDescription className="ml-10 mt-1 text-xs text-slate-500 dark:text-neutral-400">
             Showing all active campaigns for{" "}
             <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">
               {yardName}
@@ -386,7 +386,7 @@ export function ActiveCampaignsModal({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="min-h-0 flex-1 bg-[#f4f5f7] scrollbar-app dark:bg-slate-950">
+        <ScrollArea className="min-h-0 flex-1 bg-[#f4f5f7] scrollbar-app dark:bg-neutral-950">
           <div className="flex justify-center p-3 sm:p-4">
             {showLoadingState ? (
               <div className="flex w-full flex-col items-center justify-center py-16">
@@ -397,10 +397,10 @@ export function ActiveCampaignsModal({
               </div>
             ) : campaigns.length === 0 ? (
               <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
+                <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-slate-200/80 dark:bg-neutral-950 dark:ring-neutral-800">
                   <XCircle className="size-10 text-slate-400" />
                 </div>
-                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                   No active campaigns
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -416,12 +416,12 @@ export function ActiveCampaignsModal({
                   return (
                     <div
                       key={campaign.id}
-                      className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors hover:border-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                      className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors hover:border-[#008f68]/35 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100"
                     >
                       <div className="flex flex-col space-y-3 p-3">
                         <div className="flex min-h-[64px] flex-col gap-2">
                           <h3
-                            className="line-clamp-2 text-[13px] font-semibold leading-tight text-slate-900 dark:text-slate-100"
+                            className="line-clamp-2 text-[13px] font-semibold leading-tight text-slate-900 dark:text-neutral-100"
                             title={campaign.nombre}
                           >
                             {campaign.nombre}
@@ -452,7 +452,7 @@ export function ActiveCampaignsModal({
                         </div>
 
                         <div className="flex flex-col gap-4">
-                          <div className="flex min-h-9 items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+                          <div className="flex min-h-9 items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs font-medium text-slate-500 dark:border-neutral-800 dark:bg-neutral-900">
                             {campaign.duracion ? (
                               <>
                                 <Clock className="size-3.5 shrink-0 text-[#008f68]/70" />
@@ -467,10 +467,10 @@ export function ActiveCampaignsModal({
                             )}
                           </div>
 
-                          <div className="space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                          <div className="space-y-3 border-t border-slate-100 pt-3 dark:border-neutral-800">
                             <div className="flex items-center justify-between rounded-lg border border-emerald-100 bg-[#f0faf5] px-3 py-2 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                              <div className="flex items-center gap-2 text-xs font-medium text-slate-900 dark:text-slate-100">
-                                <div className="rounded-md border border-emerald-100 bg-white p-1 shadow-sm dark:border-emerald-900/30 dark:bg-slate-950">
+                              <div className="flex items-center gap-2 text-xs font-medium text-slate-900 dark:text-neutral-100">
+                                <div className="rounded-md border border-emerald-100 bg-white p-1 shadow-sm dark:border-emerald-900/30 dark:bg-neutral-950">
                                   <Users className="size-3.5 text-[#008f68]" />
                                 </div>
                                 Total Tickets
@@ -499,7 +499,7 @@ export function ActiveCampaignsModal({
                                 ))}
                               </div>
                             ) : (
-                              <div className="flex min-h-[72px] items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                              <div className="flex min-h-[72px] items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                                   Campaign Type
                                 </p>
@@ -516,7 +516,7 @@ export function ActiveCampaignsModal({
                           <Button
                             type="button"
                             variant="secondary"
-                            className="h-8 w-full rounded-lg bg-slate-100 text-xs hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
+                            className="h-8 w-full rounded-lg bg-slate-100 text-xs hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800"
                             onClick={() => handleOpenCampaignReport(campaign)}
                           >
                             Open Reports
@@ -532,7 +532,7 @@ export function ActiveCampaignsModal({
           </div>
         </ScrollArea>
 
-        <SheetFooter className="border-t border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+        <SheetFooter className="border-t border-slate-200/80 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-950">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-medium text-slate-500">
               {campaigns.length}{" "}

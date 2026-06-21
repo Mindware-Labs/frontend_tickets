@@ -287,7 +287,7 @@ export function CustomerFormModal({
                 className={entityFormInputClassName}
               />
 
-              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-100 divide-y divide-slate-50 dark:border-slate-800">
+              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-100 divide-y divide-slate-50 dark:border-neutral-800 dark:divide-neutral-800">
                 {filteredCampaigns.length === 0 ? (
                   <p className="px-3 py-3 text-center text-sm text-slate-400">
                     No campaigns found
@@ -300,7 +300,7 @@ export function CustomerFormModal({
                       <label
                         key={campaign.id}
                         className={cn(
-                          "flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                          "flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-900/50",
                           checked && "bg-[#f0fdf8] dark:bg-emerald-950/20",
                         )}
                       >
@@ -314,7 +314,7 @@ export function CustomerFormModal({
                           }}
                           className="data-[state=checked]:border-[#008f68] data-[state=checked]:bg-[#008f68]"
                         />
-                        <span className="text-sm text-slate-700 dark:text-slate-200">
+                        <span className="text-sm text-slate-700 dark:text-neutral-200">
                           {campaign.nombre}
                         </span>
                       </label>
@@ -384,7 +384,7 @@ export function CustomerFormModal({
                         }
                       }}
                       disabled={!newNote.trim()}
-                      className="h-9 border-slate-200"
+                      className="h-9 border-slate-200 dark:border-neutral-700"
                     >
                       <Plus className="mr-1 h-4 w-4" />
                       Add note
@@ -397,7 +397,7 @@ export function CustomerFormModal({
                         return (
                           <div
                             key={`${idx}-${content.slice(0, 8)}`}
-                            className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-900/40"
+                            className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm dark:border-neutral-700 dark:bg-neutral-900/40"
                           >
                             {isEditing ? (
                               <>
@@ -445,7 +445,7 @@ export function CustomerFormModal({
                               </>
                             ) : (
                               <>
-                                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-slate-200">
+                                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-snug text-slate-700 dark:text-neutral-200">
                                   {content}
                                 </p>
                                 <Button

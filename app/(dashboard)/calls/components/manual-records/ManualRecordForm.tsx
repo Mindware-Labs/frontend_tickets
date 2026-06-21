@@ -118,12 +118,12 @@ export function ManualRecordForm({
 
   return (
     <div className="space-y-2">
-      <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center gap-2 border-b border-slate-50 px-3.5 py-2">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100">
-            <ClipboardList className="h-3 w-3 text-slate-600" />
+      <section className="overflow-hidden rounded-2xl border border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        <div className="flex items-center gap-2 border-b border-slate-50 dark:border-neutral-800 px-3.5 py-2">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-neutral-800">
+            <ClipboardList className="h-3 w-3 text-slate-600 dark:text-neutral-400" />
           </div>
-          <span className="text-[12px] font-bold leading-tight text-slate-700">
+          <span className="text-[12px] font-bold leading-tight text-slate-700 dark:text-neutral-200">
             Record Details &amp; Properties
           </span>
         </div>
@@ -149,7 +149,7 @@ export function ManualRecordForm({
               <div>
                 <FieldLabel>Agent</FieldLabel>
                 <div
-                  className="flex h-7 w-full items-center rounded-lg border border-transparent bg-slate-50 px-2.5 text-xs font-medium text-slate-700"
+                  className="flex h-7 w-full items-center rounded-lg border border-transparent bg-slate-50 dark:bg-neutral-800/50 px-2.5 text-xs font-medium text-slate-700 dark:text-neutral-200"
                   title={
                     createdByName && createdByName !== "—"
                       ? createdByName
@@ -252,7 +252,7 @@ export function ManualRecordForm({
                         setForm((f) => ({ ...f, disposition: v === "none" ? "" : v }))
                       }
                     >
-                      <SelectTrigger className="h-7 bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
+                      <SelectTrigger className="h-7 bg-slate-50 dark:bg-neutral-800/50 border-transparent hover:border-slate-300 dark:hover:border-neutral-600 focus:bg-white dark:focus:bg-neutral-800 focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
                         {dispCfg ? (
                           <span
                             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold"
@@ -314,7 +314,7 @@ export function ManualRecordForm({
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           placeholder="Add notes about this record…"
-          className="w-full field-sizing-content resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
+          className="w-full field-sizing-content resize-none rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-xs leading-relaxed text-slate-800 dark:text-neutral-200 shadow-sm placeholder:text-slate-400 focus:border-[#008f68] focus:outline-none focus:ring-2 focus:ring-[#008f68]/20"
         />
       </div>
 

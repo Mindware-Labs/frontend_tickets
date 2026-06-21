@@ -35,7 +35,7 @@ export function DashboardLoadingOverlay({
     <div
       className={cn(
         "absolute inset-0 z-20 flex items-center justify-center rounded-xl",
-        "bg-[#f4f5f7]/85 backdrop-blur-[3px] dark:bg-slate-900/85",
+        "bg-[#f4f5f7]/85 backdrop-blur-[3px] dark:bg-neutral-900/85",
         "transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
         visible ? "opacity-100" : "opacity-0",
         className,
@@ -55,7 +55,7 @@ export function DashboardLoadingOverlay({
           kind="dashboard"
           size="lg"
           label="Loading dashboard charts"
-          className="rounded-2xl border border-slate-200/80 bg-white/90 px-8 py-7 shadow-sm dark:border-slate-700 dark:bg-slate-950/90"
+          className="rounded-2xl border border-slate-200/80 bg-white/90 px-8 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-950/90"
         />
       </div>
     </div>

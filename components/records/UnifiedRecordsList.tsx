@@ -55,7 +55,7 @@ const recordTypeColumnClass =
   "w-[72px] min-w-[72px] max-w-[72px] px-2 text-center";
 
 const recordIdColumnClass =
-  "w-[56px] min-w-[56px] max-w-[56px] border-r border-slate-100/80 px-2 text-center dark:border-slate-800/80";
+  "w-[56px] min-w-[56px] max-w-[56px] border-r border-slate-100/80 px-2 text-center dark:border-neutral-800/80";
 
 const recordIssueColumnClass =
   "w-[76px] min-w-[76px] max-w-[76px] px-2 text-center";
@@ -72,7 +72,7 @@ function IssueAction({
   const trimmed = detail?.trim();
   if (!trimmed || !onViewDetail) {
     return (
-      <span className="inline-flex h-7 w-full items-center justify-center text-center text-[10px] italic text-slate-400">
+      <span className="inline-flex h-7 w-full items-center justify-center text-center text-[10px] italic text-slate-400 dark:text-neutral-500">
         No detail
       </span>
     );
@@ -102,7 +102,7 @@ function CustomerCell({
   return (
     <span
       className={cn(
-        "block max-w-[200px] truncate text-[11px] font-semibold text-slate-900 dark:text-slate-100",
+        "block max-w-[200px] truncate text-[11px] font-semibold text-slate-900 dark:text-neutral-100",
         className,
       )}
       title={label}
@@ -124,8 +124,8 @@ function ContactCell({
       className={cn(
         "inline-flex max-w-[160px] items-center gap-1 truncate text-[11px]",
         muted
-          ? "text-slate-400 dark:text-slate-500"
-          : "text-slate-500 dark:text-slate-400",
+          ? "text-slate-400 dark:text-neutral-500"
+          : "text-slate-500 dark:text-neutral-400",
       )}
     >
       <Phone className="size-3 shrink-0 opacity-50" aria-hidden />
@@ -136,7 +136,7 @@ function ContactCell({
 
 function AgentCell({ name }: { name: string }) {
   return (
-    <span className="inline-flex max-w-[150px] items-center gap-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
+    <span className="inline-flex max-w-[150px] items-center gap-1 truncate text-[11px] text-slate-500 dark:text-neutral-400">
       <User className="size-3 shrink-0 opacity-60" aria-hidden />
       <span className="truncate" title={name}>
         {name}
@@ -147,7 +147,7 @@ function AgentCell({ name }: { name: string }) {
 
 function DateCell({ value }: { value?: string | null }) {
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-500 dark:text-slate-400">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-500 dark:text-neutral-400">
       <Calendar className="size-3 shrink-0 opacity-60" aria-hidden />
       {formatDate(value)}
     </span>
@@ -156,7 +156,7 @@ function DateCell({ value }: { value?: string | null }) {
 
 function CallSourceLabel({ callId }: { callId?: number | string | null }) {
   if (!callId) {
-    return <span className="text-[11px] text-slate-400">-</span>;
+    return <span className="text-[11px] text-slate-400 dark:text-neutral-500">-</span>;
   }
 
   return (
@@ -230,7 +230,7 @@ function RecordIdCell({
 
 function LinkedTicketsCountLabel({ total }: { total: number }) {
   if (total <= 0) {
-    return <span className="text-[10px] text-slate-400">—</span>;
+    return <span className="text-[10px] text-slate-400 dark:text-neutral-500">—</span>;
   }
 
   return (
@@ -257,7 +257,7 @@ function GroupCountBadge({
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-slate-600 ring-1 ring-slate-200/80 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
+      className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-slate-600 ring-1 ring-slate-200/80 transition-colors hover:bg-slate-100 dark:text-neutral-300 dark:ring-neutral-700 dark:hover:bg-neutral-800"
       onClick={onToggle}
     >
       {formatGroupTotal(total, singular, plural)}
@@ -295,7 +295,7 @@ function LinkedTicketRow({
     (ticket.status || "").toUpperCase() === "PENDING_FOLLOWUP";
 
   return (
-    <TableRow className="border-slate-100/80 bg-sky-50/35 hover:bg-sky-50/55 dark:border-slate-800 dark:bg-sky-950/20 dark:hover:bg-sky-950/30">
+    <TableRow className="border-slate-100/80 bg-sky-50/35 hover:bg-sky-50/55 dark:border-neutral-800 dark:bg-sky-950/20 dark:hover:bg-sky-950/30">
       <TableCell className={cn(recordTableCellClass, recordTypeColumnClass)}>
         <RecordTypeCell type="ticket" linked />
       </TableCell>
@@ -303,7 +303,7 @@ function LinkedTicketRow({
         <RecordIdCell id={ticket.id} />
       </TableCell>
       <TableCell className={recordTableCellClass}>
-        <CustomerCell label={customer} className="font-medium text-slate-600" />
+        <CustomerCell label={customer} className="font-medium text-slate-600 dark:text-neutral-300" />
       </TableCell>
       <TableCell className={recordTableCellClass}>
         <ContactCell phone={phone} muted />
@@ -328,7 +328,7 @@ function LinkedTicketRow({
         <AgentCell name={agent} />
       </TableCell>
       <TableCell className={recordTableCellClass}>
-        <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-700">
+        <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-neutral-950 dark:ring-neutral-700">
           {formatGroupPosition(
             ticketIndex + 1,
             totalTickets,
@@ -379,7 +379,7 @@ function RecordTableRow({
   return (
     <TableRow
       className={cn(
-        "border-slate-100/80 dark:border-slate-800",
+        "border-slate-100/80 dark:border-neutral-800",
         rowClassName,
       )}
     >
@@ -432,7 +432,7 @@ function RecordTableRow({
       </TableCell>
       <TableCell className={recordTableCellClass}>
         {groupColumnLabel ?? (
-          <span className="text-[10px] text-slate-400">—</span>
+          <span className="text-[10px] text-slate-400 dark:text-neutral-500">—</span>
         )}
       </TableCell>
       <TableCell className={recordTableCellClass}>
@@ -505,7 +505,7 @@ function SingleCallWithLinkedTickets({
         customer={customer}
         phone={phone}
         config={config}
-        rowClassName="hover:bg-slate-50/80 dark:hover:bg-slate-900/40"
+        rowClassName="hover:bg-slate-50/80 dark:hover:bg-neutral-900/40"
         groupColumnLabel={<LinkedTicketsCountLabel total={linkedTickets.length} />}
         onViewDetail={onViewDetail}
       />
@@ -594,7 +594,7 @@ function CustomerRecordGroupRows({
                 phone={phone}
                 config={config}
                 customerMuted
-                rowClassName="bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-900/35 dark:hover:bg-slate-900/50"
+                rowClassName="bg-slate-50/90 hover:bg-slate-100/90 dark:bg-neutral-900/35 dark:hover:bg-neutral-900/50"
                 groupColumnLabel={
                   record.recordType === "call" &&
                   (record.tickets?.length ?? 0) > 0 ? (
@@ -602,7 +602,7 @@ function CustomerRecordGroupRows({
                       total={record.tickets?.length ?? 0}
                     />
                   ) : (
-                    <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-700">
+                    <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-neutral-950 dark:ring-neutral-700">
                       {formatGroupPosition(
                         index + 2,
                         total,
@@ -638,9 +638,9 @@ function CustomerRecordGroupRows({
                 phone={phone}
                 config={config}
                 customerMuted
-                rowClassName="bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-900/35 dark:hover:bg-slate-900/50"
+                rowClassName="bg-slate-50/90 hover:bg-slate-100/90 dark:bg-neutral-900/35 dark:hover:bg-neutral-900/50"
                 groupColumnLabel={
-                  <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-700">
+                  <span className="inline-flex items-center rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80 dark:bg-neutral-950 dark:ring-neutral-700">
                     {formatGroupPosition(
                       originalIndex + 2,
                       total,
@@ -687,14 +687,14 @@ function SingleRecordRow({
       customer={customer}
       phone={phone}
       config={config}
-      rowClassName="hover:bg-slate-50/80 dark:hover:bg-slate-900/40"
+      rowClassName="hover:bg-slate-50/80 dark:hover:bg-neutral-900/40"
       groupColumnLabel={
         record.recordType === "ticket" && record.callId ? (
-          <span className="text-[10px] font-medium text-slate-500">
+          <span className="text-[10px] font-medium text-slate-500 dark:text-neutral-400">
             Call #{record.callId}
           </span>
         ) : (
-          <span className="text-[10px] font-medium text-slate-500">
+          <span className="text-[10px] font-medium text-slate-500 dark:text-neutral-400">
             {formatGroupTotal(1, config.unitSingular, config.unit)}
           </span>
         )
@@ -766,7 +766,7 @@ export function UnifiedRecordsList({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950",
+        "overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950",
         className,
       )}
     >
@@ -790,7 +790,7 @@ export function UnifiedRecordsList({
           <col className="w-[158px]" />
           <col className="w-[76px]" />
         </colgroup>
-        <TableHeader className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/95 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95">
+        <TableHeader className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/95 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/95">
           <TableRow className="hover:bg-transparent">
             <TableHead className={cn(recordTableHeadClass, recordTypeColumnClass)}>
               Type

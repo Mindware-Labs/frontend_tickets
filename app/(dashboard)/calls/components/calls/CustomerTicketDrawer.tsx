@@ -146,7 +146,7 @@ function TicketCard({
             "w-3 h-3 rounded-full border-2 block transition-all",
             isActive
               ? "bg-[#008f68] border-[#008f68] shadow-[0_0_0_3px_#008f6820]"
-              : "bg-white border-slate-300",
+              : "bg-white dark:bg-neutral-800 border-slate-300 dark:border-neutral-600",
           )}
         />
       </div>
@@ -160,24 +160,24 @@ function TicketCard({
             "w-full text-left mb-1 rounded-xl p-2.5 border transition-all",
             isActive
               ? "bg-[#008f68]/5 border-[#008f68]/20 shadow-sm"
-              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/60",
+              : "bg-white dark:bg-neutral-900 border-slate-100 dark:border-neutral-700 hover:border-slate-200 dark:hover:border-neutral-600 hover:bg-slate-50/60 dark:hover:bg-neutral-800/60",
           )}
         >
           <div className="flex items-center justify-between gap-1 mb-1.5">
             <span
               className={cn(
                 "text-[11px] font-bold font-mono",
-                isActive ? "text-[#008f68]" : "text-slate-700",
+                isActive ? "text-[#008f68]" : "text-slate-700 dark:text-neutral-300",
               )}
             >
               #{ticket.id}
             </span>
-            <span className="text-[9.5px] text-slate-400 tabular-nums">
+            <span className="text-[9.5px] text-slate-400 dark:text-neutral-500 tabular-nums">
               {dateLabel}
             </span>
           </div>
           {ticket.ticketType && (
-            <p className="text-[11px] text-slate-500 mb-1.5 truncate">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mb-1.5 truncate">
               {formatEnumLabel(ticket.ticketType)}
             </p>
           )}
@@ -684,7 +684,7 @@ export function CustomerTicketDrawer({
           aria-live="assertive"
           className={cn(
             "fixed z-50 flex items-center gap-3",
-            "bg-white rounded-xl border border-slate-200/80",
+            "bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/80 dark:border-neutral-700",
             "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.10),0_4px_6px_-4px_rgba(0,0,0,0.10),inset_4px_0_0_0_#ef4444]",
             "px-4 py-3 min-w-65 max-w-80",
             "transition-all duration-300 ease-out",
@@ -701,10 +701,10 @@ export function CustomerTicketDrawer({
             <AlertCircle className="w-3.5 h-3.5 text-red-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+            <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 leading-tight">
               Error
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
               {errorToastMessage ?? "Failed to save changes"}
             </p>
           </div>
@@ -712,7 +712,7 @@ export function CustomerTicketDrawer({
             type="button"
             aria-label="Dismiss notification"
             onClick={dismissErrorToast}
-            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors"
           >
             <X className="w-3 h-3" />
           </button>
@@ -726,7 +726,7 @@ export function CustomerTicketDrawer({
           aria-live="polite"
           className={cn(
             "fixed z-50 flex items-center gap-3",
-            "bg-white rounded-xl border border-slate-200/80",
+            "bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/80 dark:border-neutral-700",
             "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.10),0_4px_6px_-4px_rgba(0,0,0,0.10),inset_4px_0_0_0_#22c55e]",
             "px-4 py-3 min-w-65 max-w-80",
             "transition-all duration-300 ease-out",
@@ -743,10 +743,10 @@ export function CustomerTicketDrawer({
             <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+            <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 leading-tight">
               Saved
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
               Ticket updated successfully
             </p>
           </div>
@@ -774,7 +774,7 @@ export function CustomerTicketDrawer({
         <SheetContent
           side="right"
           hideClose
-          className="w-svw sm:w-[80vw] p-0 gap-0 flex flex-col bg-white overflow-hidden border-l border-slate-200/80"
+          className="w-svw sm:w-[80vw] p-0 gap-0 flex flex-col bg-white dark:bg-neutral-900 overflow-hidden border-l border-slate-200/80 dark:border-neutral-700"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             if (shouldIgnoreTicketSheetOutsideEvent(e)) {
@@ -799,7 +799,7 @@ export function CustomerTicketDrawer({
           </SheetTitle>
 
           {/* ── Top Bar ── */}
-          <div className="shrink-0 bg-white border-b border-slate-100">
+          <div className="shrink-0 bg-white dark:bg-neutral-900 border-b border-slate-100 dark:border-neutral-800">
             {onBackToTimeline && returnToLabel ? (
               <TimelineReturnBar
                 label={returnToLabel}
@@ -819,18 +819,18 @@ export function CustomerTicketDrawer({
               </div>
               <div className="min-w-0 shrink">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="text-[15px] font-bold text-slate-900 leading-none truncate">
+                  <p className="text-[15px] font-bold text-slate-900 dark:text-neutral-100 leading-none truncate">
                     {customerName || "Unknown"}
                   </p>
                   <button
                     type="button"
                     title="Edit contact"
-                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors shrink-0"
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
                 </div>
-                <p className="text-[11.5px] text-slate-400 font-mono mt-0.5 leading-none">
+                <p className="text-[11.5px] text-slate-400 dark:text-neutral-500 font-mono mt-0.5 leading-none">
                   {customerPhone || "—"}
                 </p>
               </div>
@@ -870,16 +870,16 @@ export function CustomerTicketDrawer({
 
             {selectedTicket && (
               <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                   <TicketIcon className="w-3 h-3 text-slate-400" />
                   Ticket #{selectedTicket.id}
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                   <CalendarIcon className="w-3 h-3 text-slate-400" />
                   {fmtDate(selectedTicket.createdAt)}
                 </span>
                 <span
-                  className="inline-flex max-w-[260px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 cursor-default"
+                  className="inline-flex max-w-[260px] items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 cursor-default"
                   title={phoneLineLabel}
                 >
                   <Link2 className="w-3 h-3 shrink-0 text-slate-400" />
@@ -918,7 +918,7 @@ export function CustomerTicketDrawer({
                   </span>
                 )}
                 {selectedTicket.ticketType && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg cursor-default">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg cursor-default">
                     <Activity className="w-3 h-3 text-slate-400" />
                     {formatEnumLabel(selectedTicket.ticketType)}
                   </span>
@@ -931,8 +931,8 @@ export function CustomerTicketDrawer({
           {/* ── 3-Column Body ── */}
           <div className="flex-1 overflow-hidden min-h-0 flex">
             {/* ═══ COL 1 (right rail): Activity + Other tickets tabs ═══ */}
-            <aside className="hidden sm:flex w-72 xl:w-80 order-last shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
-              <div className="flex shrink-0 border-b border-slate-100 bg-white">
+            <aside className="hidden sm:flex w-72 xl:w-80 order-last shrink-0 flex-col border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
+              <div className="flex shrink-0 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                 <button
                   type="button"
                   onClick={() => setRailTab("activity")}
@@ -941,7 +941,7 @@ export function CustomerTicketDrawer({
                     "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
                     railTab === "activity"
                       ? "text-violet-700 bg-violet-50/70"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800",
                   )}
                 >
                   <Activity className="w-3.5 h-3.5" />
@@ -970,7 +970,7 @@ export function CustomerTicketDrawer({
                     "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
                     railTab === "tickets"
                       ? "text-[#008f68] bg-[#f0faf5]"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800",
                   )}
                 >
                   <TicketIcon className="w-3.5 h-3.5" />
@@ -1032,7 +1032,7 @@ export function CustomerTicketDrawer({
             </aside>
 
             {/* ═══ COL 2 (flex): Hub ═══ */}
-            <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-slate-50/80 border-t border-slate-100">
+            <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-slate-50/80 dark:bg-neutral-800/50 border-t border-slate-100 dark:border-neutral-800">
               {!selectedTicket ? (
                 <div className="flex-1 flex items-center justify-center text-slate-400">
                   <div className="text-center">
@@ -1103,7 +1103,7 @@ export function CustomerTicketDrawer({
                           }))
                         }
                         placeholder="Original issue reported by the customer..."
-                        className="w-full field-sizing-content text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 leading-relaxed shadow-sm"
+                        className="w-full field-sizing-content text-xs text-slate-800 dark:text-neutral-200 placeholder:text-slate-400 dark:placeholder:text-neutral-600 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 focus:border-slate-300 dark:focus:border-neutral-600 leading-relaxed shadow-sm"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                         Official intake summary. Changes here do not modify
@@ -1160,13 +1160,13 @@ export function CustomerTicketDrawer({
                   </div>
 
                   {/* ── Attachments ── */}
-                  <section className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+                  <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                       <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                         <Paperclip className="w-3 h-3 text-blue-500" />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider">
                         Attachments
                       </span>
                       {pendingFiles.length +
@@ -1223,7 +1223,7 @@ export function CustomerTicketDrawer({
                           htmlFor="ticket-file-upload"
                           className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 bg-linear-to-r from-slate-50/90 to-sky-50/30 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
                         >
-                          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white shadow-sm border border-slate-100/80 shrink-0">
+                          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white dark:bg-neutral-800 shadow-sm border border-slate-100/80 dark:border-neutral-700 shrink-0">
                             <CloudUpload className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors duration-150" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1262,7 +1262,7 @@ export function CustomerTicketDrawer({
                             return (
                               <div
                                 key={i}
-                                className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                                className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800 transition-colors"
                               >
                                 <span
                                   className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.5 py-0.5 uppercase shrink-0 ${badge}`}
@@ -1346,7 +1346,7 @@ export function CustomerTicketDrawer({
                                 return (
                                   <div
                                     key={i}
-                                    className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                                    className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800 transition-colors"
                                   >
                                     <span
                                       className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.5 py-0.5 uppercase shrink-0 ${badge}`}
@@ -1355,7 +1355,7 @@ export function CustomerTicketDrawer({
                                     </span>
                                     <div className="flex-1 min-w-0">
                                       <p
-                                        className="text-[11.5px] font-medium text-slate-700 truncate leading-tight"
+                                        className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-300 truncate leading-tight"
                                         title={filename}
                                       >
                                         {filename}
@@ -1383,7 +1383,7 @@ export function CustomerTicketDrawer({
                 </div>
               )}
               {selectedTicket && (
-                <div className="shrink-0 px-4 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-sm">
+                <div className="shrink-0 px-4 py-3 border-t border-slate-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm">
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -1420,8 +1420,8 @@ export function CustomerTicketDrawer({
             </main>
 
             {/* ═══ COL 3 (22%): Entity Inspector ═══ */}
-            <div className="hidden w-72 shrink-0 flex-col border-l border-slate-200/60 bg-white overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 shrink-0 bg-white">
+            <div className="hidden w-72 shrink-0 flex-col border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-900">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Entity Inspector
                 </p>
@@ -1429,7 +1429,7 @@ export function CustomerTicketDrawer({
 
               <div className="flex-1 overflow-y-auto px-2.5 pb-3 pt-2.5 space-y-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                 {/* ── CARD: CLASSIFICATION ── */}
-                <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 shadow-sm">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                     Classification
                   </p>
@@ -1573,7 +1573,7 @@ export function CustomerTicketDrawer({
                 </div>
 
                 {/* ── CARD: FOLLOW-UP ── */}
-                <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 shadow-sm">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                     Follow-up
                   </p>
@@ -1587,7 +1587,7 @@ export function CustomerTicketDrawer({
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="w-full h-7 flex items-center gap-2 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 rounded-lg transition-colors text-left"
+                            className="w-full h-7 flex items-center gap-2 px-2.5 text-xs bg-slate-50 dark:bg-neutral-800 border border-transparent hover:border-slate-300 dark:hover:border-neutral-600 focus:bg-white dark:focus:bg-neutral-900 focus:ring-2 focus:ring-[#008f68]/20 rounded-lg transition-colors text-left"
                           >
                             <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span
@@ -1666,7 +1666,7 @@ export function CustomerTicketDrawer({
                 </div>
 
                 {/* ── CARD: CUSTOMER ── */}
-                <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 shadow-sm">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                     Customer
                   </p>
@@ -1685,7 +1685,7 @@ export function CustomerTicketDrawer({
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="w-full h-7 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 border border-transparent hover:border-slate-300 rounded-lg transition-colors text-left"
+                            className="w-full h-7 flex items-center justify-between gap-1 px-2.5 text-xs bg-slate-50 dark:bg-neutral-800 border border-transparent hover:border-slate-300 dark:hover:border-neutral-600 rounded-lg transition-colors text-left"
                           >
                             <span className="truncate text-slate-800 font-medium">
                               {editFormData.customerId
@@ -1763,7 +1763,7 @@ export function CustomerTicketDrawer({
                     </div>
                     <div>
                       <InspLabel>Phone</InspLabel>
-                      <div className="h-7 flex items-center px-2.5 text-xs bg-slate-50 rounded-lg text-slate-500 font-mono">
+                      <div className="h-7 flex items-center px-2.5 text-xs bg-slate-50 dark:bg-neutral-800 rounded-lg text-slate-500 dark:text-neutral-400 font-mono">
                         {customersForTicketSheet.find(
                           (c: any) =>
                             c.id.toString() === editFormData.customerId,

@@ -14,8 +14,8 @@ export default function DashboardError({
       <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/20">
         <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
       </div>
-      <h2 className="text-lg font-semibold">Something went wrong</h2>
-      <p className="max-w-md text-center text-sm text-muted-foreground">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">Something went wrong</h2>
+      <p className="max-w-md text-center text-sm text-muted-foreground dark:text-neutral-400">
         {error.message || "An unexpected error occurred."}
       </p>
       <button

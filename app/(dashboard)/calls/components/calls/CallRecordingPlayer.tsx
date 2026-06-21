@@ -127,7 +127,7 @@ export function CallRecordingPlayer({
   const recordingHref = `/api/calls/${callId}/recording`;
 
   const header = compact ? (
-    <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+    <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-neutral-800">
       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#008f68]/10">
         <Mic className="h-3 w-3 text-[#008f68]" />
       </div>
@@ -148,7 +148,7 @@ export function CallRecordingPlayer({
 
   const shellClass = cn(
     (compact || mini) &&
-      "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-950",
+      "overflow-hidden rounded-lg border border-slate-200/80 bg-white dark:border-neutral-700 dark:bg-neutral-950",
     className,
   );
   const bodyPadding = mini ? "px-2 py-1.5" : compact ? "px-3 py-2.5" : "p-0";
@@ -159,7 +159,7 @@ export function CallRecordingPlayer({
         {!mini ? header : null}
         <div
           className={cn(
-            "flex items-center gap-2 text-[11px] text-slate-500",
+            "flex items-center gap-2 text-[11px] text-slate-500 dark:text-neutral-400",
             bodyPadding,
           )}
         >
@@ -178,7 +178,7 @@ export function CallRecordingPlayer({
           {compact || mini ? (
             <div
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50",
+                "flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 dark:border-neutral-800 dark:bg-neutral-900/50",
                 mini ? "px-2 py-1.5" : "px-3 py-2",
               )}
             >
@@ -258,7 +258,7 @@ export function CallRecordingPlayer({
         <div className="min-w-0 flex-1">
           <div
             className={cn(
-              "cursor-pointer overflow-hidden rounded-full bg-slate-100",
+              "cursor-pointer overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-800",
               mini ? "mb-0.5 h-1" : "mb-1 h-1.5",
             )}
             onClick={(e) => {
@@ -296,7 +296,7 @@ export function CallRecordingPlayer({
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600",
+            "flex shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300",
             mini ? "h-7 w-7" : "h-8 w-8",
           )}
           title="Open recording"

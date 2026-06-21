@@ -1334,7 +1334,7 @@ export default function TicketsPage() {
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between w-full pt-2 pb-5 px-0.5 gap-3 border-b border-border">
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-neutral-50 leading-tight">
               {activeTab === "calls"
                 ? "Call Management"
                 : activeTab === "legacy-calls"
@@ -1343,7 +1343,7 @@ export default function TicketsPage() {
                   ? "Tickets"
                   : "Manual Records"}
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
               {activeTab === "calls"
                 ? `${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${refData.agents?.length || 14} Active Agents`
                 : activeTab === "legacy-calls"
@@ -1356,7 +1356,7 @@ export default function TicketsPage() {
 
           {/* Segmented Control (DESIGN_SYSTEM §7) */}
           <div className="w-full md:w-auto mt-1 md:mt-0">
-            <div className="flex w-full items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100 p-1 shadow-sm md:w-auto dark:border-slate-700/50 dark:bg-slate-900/80">
+            <div className="flex w-full items-center gap-0.5 rounded-lg border border-slate-200/80 dark:border-neutral-700/50 bg-slate-100 dark:bg-neutral-900/80 p-1 shadow-sm md:w-auto">
               {[
                 { value: "calls", label: "Calls", icon: Phone },
                 { value: "tickets", label: "Tickets", icon: TicketIcon },
@@ -1377,8 +1377,8 @@ export default function TicketsPage() {
                     aria-pressed={isActive}
                     className={`relative inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 md:flex-none ${
                       isActive
-                        ? "bg-white text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        ? "bg-white text-[#008f68] shadow-sm dark:bg-neutral-950 dark:text-emerald-400"
+                        : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }`}
                   >
                     <Icon
@@ -1453,7 +1453,7 @@ export default function TicketsPage() {
                               : "border-red-300 font-semibold text-red-600 hover:bg-red-50/70 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
                             : isActive
                               ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                              : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
+                              : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-neutral-800/40"
                         }`}
                       >
                         {isOverdueAlert && (
@@ -1707,7 +1707,7 @@ export default function TicketsPage() {
                 })}
               </div>
             </div>
-            <div className="mb-1 ml-2 shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
+            <div className="mb-1 ml-2 shrink-0 rounded-full border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 px-3 py-1 text-[11px] font-semibold text-slate-500 dark:text-neutral-400">
               View only
             </div>
           </div>

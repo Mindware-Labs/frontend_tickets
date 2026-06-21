@@ -51,7 +51,7 @@ export function statusTone(status?: string | null): string {
   if (normalized.includes("open")) {
     return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300";
   }
-  return "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300";
+  return "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300";
 }
 
 export function statusLabel(status?: string | null): string {

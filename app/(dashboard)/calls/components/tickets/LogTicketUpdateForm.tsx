@@ -129,7 +129,7 @@ export function LogTicketUpdateForm({
       <div>
         <label
           htmlFor={`ticket-update-note-${ticket.id}`}
-          className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block"
+          className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1 block"
         >
           Note <span className="text-red-400">*</span>
         </label>
@@ -140,12 +140,12 @@ export function LogTicketUpdateForm({
           onChange={(e) => setNote(e.target.value)}
           placeholder="What happened on this ticket?"
           autoComplete="off"
-          className="w-full min-h-[160px] text-sm text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed"
+          className="w-full min-h-[160px] text-sm text-slate-800 dark:text-neutral-200 placeholder:text-slate-400 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] leading-relaxed"
         />
       </div>
 
       <div>
-        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
           Status
         </p>
         <TicketStatusToggle

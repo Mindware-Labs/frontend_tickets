@@ -138,7 +138,7 @@ function YardRankedPanel({
   if (ranked.length === 0) {
     return (
       <PanelCard fill title={title} subtitle={subtitle} icon={icon} bodyClassName="min-h-0">
-        <p className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p className="py-6 text-center text-xs text-slate-500 dark:text-neutral-400">
           No data in this period
         </p>
       </PanelCard>
@@ -234,15 +234,15 @@ function YardRankedPanel({
                   filterKey && crossFilterRowClass(active),
                 )}
               >
-                <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-200">
-                  <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-slate-700 dark:text-neutral-200">
+                  <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-600 dark:bg-neutral-800 dark:text-neutral-300">
                     {index + 1}
                   </span>
                   <span className="min-w-0 truncate" title={row.fullLabel}>
                     {row.fullLabel}
                   </span>
                 </span>
-                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-800 dark:text-neutral-100">
                   {row.count}
                   <span className="ml-0.5 font-normal text-slate-400">
                     ({row.pct}%)

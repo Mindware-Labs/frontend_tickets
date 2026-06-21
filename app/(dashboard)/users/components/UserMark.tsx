@@ -12,7 +12,7 @@ export function UserMark({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-gradient-to-br from-[#f0faf5] to-white font-bold text-[#008f68] shadow-sm",
+        "flex shrink-0 items-center justify-center rounded-2xl border border-[#008f68]/15 bg-gradient-to-br from-[#f0faf5] to-white font-bold text-[#008f68] shadow-sm dark:border-emerald-500/25 dark:from-emerald-500/10 dark:to-neutral-900 dark:text-emerald-300",
         className,
       )}
       aria-hidden

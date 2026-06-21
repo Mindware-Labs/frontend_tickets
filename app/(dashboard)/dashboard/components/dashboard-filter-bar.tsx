@@ -71,7 +71,7 @@ function FilterChip({
       </span>
       <button
         type="button"
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-slate-800"
+        className="flex size-6 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-neutral-800"
         onClick={onRemove}
         aria-label={`Remove ${filterLabel(filterKey)} filter`}
       >
@@ -145,7 +145,7 @@ export function DashboardInlineActiveFilters() {
     >
       <div className="overflow-hidden">
         <div
-          className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50 py-1 pr-1.5 pl-2.5 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] animate-in fade-in slide-in-from-left-1 dark:border-slate-700 dark:bg-slate-900/50"
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50 py-1 pr-1.5 pl-2.5 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] animate-in fade-in slide-in-from-left-1 dark:border-neutral-700 dark:bg-neutral-900/50"
           role="region"
           aria-label="Active dashboard filters"
         >
@@ -158,7 +158,7 @@ export function DashboardInlineActiveFilters() {
 
           <button
             type="button"
-            className="shrink-0 px-1.5 py-0.5 text-[11px] font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600 dark:hover:text-slate-300"
+            className="shrink-0 px-1.5 py-0.5 text-[11px] font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600 dark:hover:text-neutral-300"
             onClick={clearFilters}
           >
             Clear
@@ -184,7 +184,7 @@ export function DashboardFilterTrigger({ className }: { className?: string }) {
             "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm transition-colors",
             active
               ? "bg-[#008f68] text-white hover:bg-[#007a5a]"
-              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300",
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300",
             className,
           )}
         >
@@ -221,7 +221,7 @@ export function FilterHelpPopover() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+          className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-neutral-300"
           aria-label="How cross-filtering works"
         >
           <Info className="size-4" />

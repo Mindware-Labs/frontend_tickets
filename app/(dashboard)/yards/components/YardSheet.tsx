@@ -103,7 +103,7 @@ function SectionLabel({
 }) {
   return (
     <div className="mb-3 flex min-h-6 items-center justify-between gap-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-neutral-400">
         {children}
       </p>
       {action}
@@ -118,7 +118,7 @@ function StatusTile({ active }: { active: boolean }) {
         "flex min-h-[54px] min-w-0 flex-1 items-center gap-3 rounded-xl border px-3.5 py-2.5 shadow-sm",
         active
           ? "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-          : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          : "border-slate-200 bg-slate-50 text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200",
       )}
     >
       <span
@@ -199,7 +199,7 @@ function DialButton({
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35",
           disabled
-            ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600"
+            ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600"
             : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#e2fae9] dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15",
         )}
       >
@@ -216,7 +216,7 @@ function DialButton({
       className={cn(
         "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 text-[13px] font-semibold transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35",
         disabled
-          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600"
+          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600"
           : "border-[#008f68] bg-[#008f68] text-white shadow-sm shadow-emerald-900/10 hover:bg-[#007a5a]",
         className,
       )}
@@ -246,12 +246,12 @@ function CopyButton({
       aria-label={label}
       title={label}
       className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-slate-950",
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-white transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:bg-neutral-950",
         disabled
-          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-slate-800 dark:text-slate-700"
+          ? "cursor-not-allowed border-slate-100 text-slate-300 dark:border-neutral-800 dark:text-neutral-700"
           : copied
             ? "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
-            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-800 dark:text-slate-500 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200",
+            : "border-slate-200/80 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-neutral-800 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
       )}
     >
       {copied ? (
@@ -274,7 +274,7 @@ function ExternalButton({
 }) {
   if (!href) {
     return (
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-700">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-700">
         <Icon className="h-4 w-4" strokeWidth={2} />
       </span>
     );
@@ -287,7 +287,7 @@ function ExternalButton({
       rel="noopener noreferrer"
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
     >
       <Icon className="h-4 w-4" strokeWidth={2} />
     </a>
@@ -295,7 +295,7 @@ function ExternalButton({
 }
 
 const ROW_ICON_CLASS =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500";
 const ACTION_SLOT_CLASS = "flex h-9 w-9 shrink-0 items-center justify-center";
 
 function RowActions({
@@ -356,13 +356,13 @@ function DetailRow({
           multiline ? "gap-1" : "gap-0.5",
         )}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-neutral-500">
           {label}
         </p>
         <div
           className={cn(
-            "min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-slate-100",
-            muted && "italic text-slate-400 dark:text-slate-500",
+            "min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-neutral-100",
+            muted && "italic text-slate-400 dark:text-neutral-500",
           )}
         >
           {value}
@@ -387,18 +387,18 @@ function MetricTile({
   helper?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="min-w-0 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex items-center gap-2 text-slate-400">
         <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
         <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em]">
           {label}
         </p>
       </div>
-      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-slate-50">
+      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-neutral-50">
         {value}
       </p>
       {helper ? (
-        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-neutral-400">
           {helper}
         </p>
       ) : null}
@@ -426,7 +426,7 @@ function SheetAction({
     actionClassName,
     primary
       ? "border-[#008f68] bg-[#008f68] text-white shadow-sm shadow-emerald-900/10 hover:bg-[#007a5a]"
-      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900",
+      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:border-neutral-700 dark:hover:bg-neutral-900",
   );
 
   const content = (
@@ -544,28 +544,28 @@ function FloatingNotesPopover({ notes }: { notes?: string | null }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="absolute left-0 top-2 z-30 flex h-11 items-center gap-2 rounded-r-full border border-l-0 border-slate-200 bg-white px-3 text-[12px] font-bold text-slate-700 shadow-lg shadow-slate-900/10 transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300 sm:-left-12 sm:h-12 sm:w-12 sm:justify-center sm:rounded-l-full sm:border-l sm:px-0"
+          className="absolute left-0 top-2 z-30 flex h-11 items-center gap-2 rounded-r-full border border-l-0 border-slate-200 bg-white px-3 text-[12px] font-bold text-slate-700 shadow-lg shadow-slate-900/10 transition-colors hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#008f68] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300 sm:-left-12 sm:h-12 sm:w-12 sm:justify-center sm:rounded-l-full sm:border-l sm:px-0"
           aria-label="Open yard notes"
           title="Notes"
         >
           <FileText className="h-4 w-4 shrink-0" strokeWidth={2} />
           <span className="sm:sr-only">Notes</span>
-          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#008f68] dark:border-slate-950" />
+          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#008f68] dark:border-neutral-950" />
         </button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
         side="left"
         sideOffset={0}
-        className="z-[60] w-[min(360px,calc(100vw-2rem))] rounded-xl border-slate-200 p-0 shadow-xl dark:border-slate-800"
+        className="z-[60] w-[min(360px,calc(100vw-2rem))] rounded-xl border-slate-200 p-0 shadow-xl dark:border-neutral-800"
       >
-        <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+        <div className="border-b border-slate-100 px-4 py-3 dark:border-neutral-800">
+          <p className="text-sm font-semibold text-slate-900 dark:text-neutral-50">
             Yard notes
           </p>
         </div>
         <div className="max-h-[320px] overflow-y-auto px-4 py-3">
-          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 [overflow-wrap:anywhere] dark:text-slate-200">
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 [overflow-wrap:anywhere] dark:text-neutral-200">
             {cleanNotes}
           </p>
         </div>
@@ -664,7 +664,7 @@ export function YardSheet({
         className={cn(
           "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-visible p-0 sm:w-[min(560px,calc(100vw-2rem))]",
           "border-l border-slate-200/80 bg-slate-50 text-slate-900",
-          "shadow-2xl shadow-slate-900/15 antialiased dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          "shadow-2xl shadow-slate-900/15 antialiased dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
         )}
       >
         {!data ? (
@@ -675,13 +675,13 @@ export function YardSheet({
             </SheetHeader>
             <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-center">
               <div>
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
                   <Building2 className="h-6 w-6" strokeWidth={1.7} />
                 </div>
-                <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-neutral-50">
                   No yard selected
                 </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
                   Pick a yard from the table to view its details.
                 </p>
               </div>
@@ -698,10 +698,10 @@ export function YardSheet({
             </SheetHeader>
             <FloatingNotesPopover notes={data.notes} />
 
-            <div className="relative shrink-0 overflow-visible bg-white dark:bg-slate-950">
+            <div className="relative shrink-0 overflow-visible bg-white dark:bg-neutral-950">
               <SheetClose
                 aria-label="Close yard details"
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
@@ -719,11 +719,11 @@ export function YardSheet({
 
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                         #{data.id}
                       </span>
                       {loading ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-neutral-900 dark:text-neutral-400">
                           <RefreshCw className="h-3 w-3 animate-spin" />
                           Refreshing
                         </span>
@@ -736,7 +736,7 @@ export function YardSheet({
 
                     {hasText(data.commonName) &&
                     data.commonName.trim() !== data.name.trim() ? (
-                      <p className="mt-1 min-w-0 text-[13px] font-medium text-slate-500 [overflow-wrap:anywhere] dark:text-slate-400">
+                      <p className="mt-1 min-w-0 text-[13px] font-medium text-slate-500 [overflow-wrap:anywhere] dark:text-neutral-400">
                         {data.commonName.trim()}
                       </p>
                     ) : null}
@@ -768,7 +768,7 @@ export function YardSheet({
 
             <div
               className={cn(
-                "relative z-30 h-0 shrink-0 overflow-visible border-t border-slate-200/70 dark:border-slate-800",
+                "relative z-30 h-0 shrink-0 overflow-visible border-t border-slate-200/70 dark:border-neutral-800",
                 returnLandlord ? "pointer-events-none" : "",
               )}
             >
@@ -796,7 +796,7 @@ export function YardSheet({
               >
                 <div>
                   <SectionLabel>Property & Contact</SectionLabel>
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                     <DetailRow
                       multiline
                       icon={MapPin}
@@ -916,7 +916,7 @@ export function YardSheet({
                 <div>
                   <SectionLabel>Landlord</SectionLabel>
                   {data.landlord ? (
-                    <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white px-4 shadow-sm dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                       <DetailRow
                         icon={User}
                         label="Name"
@@ -1013,14 +1013,14 @@ export function YardSheet({
                       />
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500">
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm dark:border-neutral-700 dark:bg-neutral-950">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-neutral-900 dark:text-neutral-500">
                         <User className="h-4 w-4" strokeWidth={2} />
                       </div>
-                      <p className="mt-3 text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                      <p className="mt-3 text-[13px] font-semibold text-slate-700 dark:text-neutral-200">
                         No landlord assigned
                       </p>
-                      <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-[12px] text-slate-500 dark:text-neutral-400">
                         Add one from the edit form when this yard has an owner
                         contact.
                       </p>
@@ -1031,7 +1031,7 @@ export function YardSheet({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
+            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6">
               <div
                 className={cn(
                   "grid gap-2",

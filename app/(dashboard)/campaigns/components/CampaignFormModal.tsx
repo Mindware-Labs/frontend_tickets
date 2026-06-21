@@ -141,11 +141,11 @@ export function CampaignFormModal({
                 className={cn(
                   "rounded-xl border p-3 text-left transition-all",
                   selected
-                    ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20"
-                    : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950",
+                    ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20 dark:bg-emerald-950/20"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-neutral-700 dark:hover:bg-neutral-900",
                 )}
               >
-                <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+                <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-neutral-100">
                   <Icon className="h-3.5 w-3.5 shrink-0 text-[#008f68]" />
                   {ct.label}
                 </span>
@@ -200,7 +200,7 @@ export function CampaignFormModal({
         </EntityFormGrid>
 
         <EntityFormSectionHeading>Status</EntityFormSectionHeading>
-        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/50">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Campaign Status

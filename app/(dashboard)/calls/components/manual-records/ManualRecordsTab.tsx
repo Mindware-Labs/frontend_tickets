@@ -540,23 +540,23 @@ export function ManualRecordsTab() {
   };
 
   const createDialogContent = (
-    <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px]">
-      <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6">
+    <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-0 shadow-2xl sm:max-w-[760px]">
+      <DialogHeader className="border-b border-slate-100 dark:border-neutral-800 px-5 py-4 pr-12 text-left sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 text-[#008f68]">
             <ClipboardList className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950">
+            <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-neutral-50">
               New Manual Record
             </DialogTitle>
-            <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500">
+            <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-neutral-400">
               Fill in the details to log a manual record.
             </DialogDescription>
           </div>
         </div>
       </DialogHeader>
-      <div className="max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200">
+      <div className="max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] dark:bg-neutral-950 px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200">
         <ManualRecordForm
           form={form}
           setForm={setForm}
@@ -570,13 +570,13 @@ export function ManualRecordsTab() {
           getAttachmentUrl={resolveAttachmentUrl}
         />
       </div>
-      <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-neutral-800 bg-slate-50/80 dark:bg-neutral-900/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <Button
           type="button"
           variant="outline"
           onClick={() => setShowCreate(false)}
           disabled={isSubmitting}
-          className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+          className="h-11 rounded-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-5 text-sm font-semibold text-slate-700 dark:text-neutral-200 shadow-sm hover:bg-slate-50 dark:hover:bg-neutral-900"
         >
           Cancel
         </Button>
@@ -586,7 +586,7 @@ export function ManualRecordsTab() {
             variant="outline"
             onClick={resetForm}
             disabled={isSubmitting}
-            className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:text-slate-600"
+            className="h-11 rounded-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-5 text-sm font-semibold text-slate-400 shadow-sm hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset
@@ -623,7 +623,7 @@ export function ManualRecordsTab() {
                   className={`-mb-px mr-2 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-[13px] transition-colors ${
                     isActive
                       ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                      : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
+                      : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-neutral-800/40"
                   }`}
                 >
                   {tab.label}
@@ -866,7 +866,7 @@ export function ManualRecordsTab() {
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
-                                className="rounded-full text-[10px] font-bold"
+                                className="rounded-full text-[10px] font-bold dark:!text-white"
                                 style={{
                                   background: "transparent",
                                   border: "1px solid #d1d5db",
@@ -934,7 +934,7 @@ export function ManualRecordsTab() {
                               "inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors",
                               expandedKey === group.key
                                 ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
-                                : "border-slate-200 bg-slate-100 text-slate-600 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]",
+                                : "border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]",
                             )}
                             aria-label="Toggle record timeline"
                             title="View record timeline"
@@ -952,7 +952,7 @@ export function ManualRecordsTab() {
                         </TableCell>
                         <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <span
-                            className="block truncate text-[11px] font-medium text-slate-700"
+                            className="block truncate text-[11px] font-medium text-slate-700 dark:text-neutral-200"
                             title={recordAgentName(r)}
                           >
                             {recordAgentName(r)}
@@ -1003,7 +1003,9 @@ export function ManualRecordsTab() {
                         >
                           <span className={cn(
                             "block truncate text-[11px]",
-                            r.notes ? "text-slate-600" : "text-slate-400",
+                            r.notes
+                              ? "text-slate-600 dark:text-neutral-100"
+                              : "text-slate-400 dark:text-neutral-500",
                           )}>
                             {r.notes || "—"}
                           </span>
@@ -1012,7 +1014,7 @@ export function ManualRecordsTab() {
                       {expandedKey === group.key && (
                         <TableRow
                           key={`${group.key}-timeline`}
-                          className="bg-slate-50/50 hover:bg-slate-50/50"
+                          className="bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-50/50 dark:hover:bg-muted/20"
                         >
                           <TableCell
                             colSpan={9}

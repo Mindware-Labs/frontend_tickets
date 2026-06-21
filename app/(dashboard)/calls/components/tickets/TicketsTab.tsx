@@ -791,7 +791,7 @@ export function TicketsTab({
                         : "border-red-300 font-semibold text-red-600 hover:bg-red-50/70 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
                       : isActive
                         ? "border-[#008f68] bg-[#f0faf5] font-semibold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400"
-                        : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-slate-800/40"
+                        : "border-transparent font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground dark:hover:bg-neutral-800/40"
                   }`}
                 >
                   {isOverdueAlert && (
@@ -1037,7 +1037,7 @@ export function TicketsTab({
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
-                                className="rounded-full text-[10px] font-bold"
+                                className="rounded-full text-[10px] font-bold dark:!text-white"
                                 style={{
                                   background: "transparent",
                                   border: "1px solid #d1d5db",
@@ -1111,7 +1111,7 @@ export function TicketsTab({
                               "inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors",
                               expandedKey === group.key
                                 ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
-                                : "border-slate-200 bg-slate-100 text-slate-600 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]",
+                                : "border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]",
                             )}
                             aria-label="Toggle ticket timeline"
                             title="View ticket timeline"
@@ -1170,7 +1170,7 @@ export function TicketsTab({
                           )}
                         </TableCell>
                         <TableCell
-                          className="max-w-0 px-2 py-0.5 align-middle text-[11px] text-slate-600"
+                          className="max-w-0 px-2 py-0.5 align-middle text-[11px] text-slate-600 dark:text-neutral-300"
                           title={agentName(t)}
                         >
                           <span className="block truncate font-medium">
@@ -1181,7 +1181,7 @@ export function TicketsTab({
                       {expandedKey === group.key && (
                         <TableRow
                           key={`${group.key}-timeline`}
-                          className="bg-slate-50/50 hover:bg-slate-50/50"
+                          className="bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-50/50 dark:hover:bg-muted/20"
                         >
                           <TableCell
                             colSpan={9}
@@ -1223,24 +1223,24 @@ export function TicketsTab({
           if (!o) resetForm();
         }}
       >
-        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950">
-          <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-slate-800">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-[760px] dark:border-neutral-800 dark:bg-neutral-950">
+          <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-12 text-left sm:px-6 dark:border-neutral-800">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68] dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-200 bg-slate-50 text-[#008f68] dark:border-neutral-700 dark:bg-neutral-900">
                 <TicketIcon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-slate-50">
+                <DialogTitle className="text-[15px] font-semibold leading-5 text-slate-950 dark:text-neutral-50">
                   New Support Ticket
                 </DialogTitle>
-                <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+                <DialogDescription className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-neutral-400">
                   Fill in the details to create a manual support ticket.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent">
+          <div className="max-h-[68dvh] overflow-y-auto bg-[#f4f5f7] dark:bg-neutral-950 px-3 py-2 sm:px-3.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-track]:bg-transparent">
             <CreateTicketForm
               form={form}
               setForm={setForm}
@@ -1254,13 +1254,13 @@ export function TicketsTab({
             />
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800 dark:bg-slate-900/60">
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-neutral-800 dark:bg-neutral-900/60">
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowCreate(false)}
               disabled={isSubmitting}
-              className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+              className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
             >
               Cancel
             </Button>
@@ -1270,7 +1270,7 @@ export function TicketsTab({
                 variant="outline"
                 onClick={resetForm}
                 disabled={isSubmitting}
-                className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:bg-white hover:text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-500 dark:hover:text-slate-300"
+                className="h-11 rounded-lg border-slate-200 bg-white px-5 text-sm font-semibold text-slate-400 shadow-sm hover:bg-white hover:text-slate-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500 dark:hover:text-neutral-300"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Reset
@@ -1432,7 +1432,7 @@ export function TicketsTab({
               {selected.attachments && selected.attachments.length > 0 && (
                 <div>
                   <span className="text-muted-foreground">Attachments</span>
-                  <div className="mt-1 rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                  <div className="mt-1 rounded-xl border border-slate-100 dark:border-neutral-800 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-700/50">
                     {selected.attachments.map((url, i) => {
                       const raw = url.split("/").pop() || "file";
                       const filename = raw.replace(/^\d+-\d+-/, "") || raw;
@@ -1450,13 +1450,13 @@ export function TicketsTab({
                       return (
                         <div
                           key={i}
-                          className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-slate-50/70 transition-colors"
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-neutral-900 hover:bg-slate-50/70 dark:hover:bg-neutral-800/70 transition-colors"
                         >
                           <span className={`text-[9px] font-bold tracking-wider rounded-[5px] px-1.5 py-0.5 uppercase shrink-0 ${badge}`}>
                             {ext.slice(0, 4)}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11.5px] font-medium text-slate-700 truncate leading-tight" title={filename}>
+                            <p className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-200 truncate leading-tight" title={filename}>
                               {filename}
                             </p>
                           </div>

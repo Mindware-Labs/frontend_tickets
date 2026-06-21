@@ -71,7 +71,7 @@ interface CampaignSheetProps {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-neutral-400">
       {children}
     </p>
   );
@@ -88,7 +88,7 @@ function StatusPill({ active }: { active: boolean }) {
       Active
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-[3px] text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-[3px] text-[11px] font-semibold text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
       <span className="h-2 w-2 shrink-0 rounded-full bg-slate-400" />
       Inactive
     </span>
@@ -112,12 +112,12 @@ function InfoLine({
     <div className={cn("flex min-w-0 items-start gap-2", className)}>
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-neutral-300">
           {label}
         </p>
         <p
           className={cn(
-            "text-sm font-medium text-slate-800 dark:text-slate-100",
+            "text-sm font-medium text-slate-800 dark:text-neutral-100",
             wrap ? "whitespace-normal break-words" : "truncate",
           )}
           title={value}
@@ -147,7 +147,7 @@ function MetricTile({
         ? "border-red-100 bg-red-50/50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
         : tone === "warning"
           ? "border-yellow-100 bg-yellow-50/50 text-yellow-700 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-200"
-          : "border-slate-100 bg-slate-50/60 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200";
+          : "border-slate-100 bg-slate-50/60 text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200";
 
   return (
     <div className={cn("min-w-0 rounded-xl border px-3 pb-3 pt-3", toneClass)}>
@@ -290,7 +290,7 @@ export function CampaignSheet({
         className={cn(
           "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-hidden p-0 sm:w-[min(560px,calc(100vw-2rem))]",
           "border-l border-slate-200/80 bg-slate-50 text-slate-900 antialiased",
-          "shadow-2xl shadow-slate-900/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          "shadow-2xl shadow-slate-900/15 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
         )}
       >
         {!data ? (
@@ -321,22 +321,22 @@ export function CampaignSheet({
               />
             ) : (
               <div className="flex h-full min-h-0 flex-col">
-            <div className="relative shrink-0 border-b border-t-4 border-slate-200/70 border-t-emerald-600 bg-white dark:border-slate-800 dark:border-t-emerald-500 dark:bg-slate-950">
+            <div className="relative shrink-0 border-b border-t-4 border-slate-200/70 border-t-emerald-600 bg-white dark:border-neutral-800 dark:border-t-emerald-500 dark:bg-neutral-950">
               <SheetClose
                 aria-label="Close campaign details"
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35"
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/35 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </SheetClose>
 
               <div className="px-5 pb-5 pt-5 sm:px-6">
                 <div className="flex items-center gap-4 pr-12">
-                  <div className="m-0 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-0 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <div className="m-0 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-0 text-slate-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
                     <Megaphone className="h-5 w-5" strokeWidth={2} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-slate-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-700">
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200/80 dark:bg-neutral-900 dark:text-neutral-400 dark:ring-neutral-700">
                         #{data.id}
                       </span>
                       <span
@@ -350,7 +350,7 @@ export function CampaignSheet({
                       </span>
                       <StatusPill active={data.isActive} />
                       {loading ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
                           <RefreshCw className="h-3 w-3 animate-spin" />
                           Refreshing
                         </span>
@@ -375,10 +375,10 @@ export function CampaignSheet({
                     >
                       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-neutral-300">
                           Yard
                         </p>
-                        <p className="whitespace-normal break-words text-sm font-medium text-slate-800 dark:text-slate-100">
+                        <p className="whitespace-normal break-words text-sm font-medium text-slate-800 dark:text-neutral-100">
                           {yardLabel}
                         </p>
                         <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
@@ -414,12 +414,12 @@ export function CampaignSheet({
               <div className="space-y-6 px-5 py-5 pb-8 sm:px-6">
                 <div>
                   <SectionLabel>Performance</SectionLabel>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <div className="flex items-end justify-between gap-3">
                       {outcome ? (
                         <>
                           <div>
-                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
                               <outcome.PositiveIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                               {outcome.positiveLabel} (Conversions)
                             </p>
@@ -429,10 +429,10 @@ export function CampaignSheet({
                           </div>
 
                           <div className="text-right">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
                               {outcome.rateLabel}
                             </p>
-                            <p className="mt-1 text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">
+                            <p className="mt-1 text-2xl font-bold leading-none text-slate-900 dark:text-neutral-50">
                               {outcomeRate}%
                             </p>
                           </div>
@@ -440,11 +440,11 @@ export function CampaignSheet({
                       ) : (
                         <>
                           <div>
-                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
                               <Megaphone className="h-3.5 w-3.5 text-slate-400" />
                               Total Leads
                             </p>
-                            <p className="mt-1 text-3xl font-bold leading-none text-slate-900 dark:text-slate-50">
+                            <p className="mt-1 text-3xl font-bold leading-none text-slate-900 dark:text-neutral-50">
                               {totalActivities}
                             </p>
                           </div>
@@ -459,7 +459,7 @@ export function CampaignSheet({
 
                     {outcome ? (
                       <>
-                        <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-neutral-800">
                           <div
                             className="h-full shrink-0 bg-emerald-600 transition-[width] duration-300"
                             style={{ width: `${classifiedWidth}%` }}
@@ -471,7 +471,7 @@ export function CampaignSheet({
                         </div>
 
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium">
-                          <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                          <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-neutral-300">
                             <span className="h-2 w-2 rounded-full bg-emerald-600" />
                             {classifiedCount} classified
                           </span>
@@ -479,8 +479,8 @@ export function CampaignSheet({
                             <span className="h-2 w-2 rounded-full bg-orange-500" />
                             {unclassifiedCount} unclassified
                           </span>
-                          <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                          <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-neutral-400">
+                            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-neutral-600" />
                             {coverageRate}% coverage
                           </span>
                         </div>
@@ -507,7 +507,7 @@ export function CampaignSheet({
                         </div>
                       </>
                     ) : (
-                      <p className="mt-3 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+                      <p className="mt-3 text-[13px] leading-5 text-slate-500 dark:text-neutral-400">
                         General campaign activity is grouped by yard and line for
                         operational reporting.
                       </p>
@@ -517,7 +517,7 @@ export function CampaignSheet({
 
                 <div className="hidden">
                   <SectionLabel>Campaign info</SectionLabel>
-                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-sm dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
                     <div className="flex gap-3 px-4 py-3.5">
                       <Tag className="mt-0.5 h-4 w-4 text-slate-400" />
                       <div>
@@ -617,9 +617,9 @@ export function CampaignSheet({
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                    <div className="rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                       <BarChart3 className="h-4 w-4 text-slate-400" />
-                      <p className="mt-2 text-[13px] text-slate-500">
+                      <p className="mt-2 text-[13px] text-slate-500 dark:text-neutral-400">
                         General campaign — track activities from the list below.
                       </p>
                     </div>
@@ -629,33 +629,33 @@ export function CampaignSheet({
                 <div>
                   <SectionLabel>Conversion Funnel</SectionLabel>
                   {outcome ? (
-                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                       {/* Step 1: Total Leads */}
-                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-neutral-900/40">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">1</span>
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400 text-[11px] font-bold">1</span>
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Leads</p>
-                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Total campaign target size</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200 truncate">Total campaign target size</p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{totalActivities}</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-neutral-100">{totalActivities}</span>
                       </div>
 
                       {/* Step 2: Contacted / Classified */}
-                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-neutral-900/40">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 text-[11px] font-bold">2</span>
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Contacted & Classified</p>
-                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Leads reached with direct outcome</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200 truncate">Leads reached with direct outcome</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
                             {coverageRate}% coverage
                           </span>
-                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{classifiedCount}</span>
+                          <span className="text-sm font-bold text-slate-800 dark:text-neutral-100">{classifiedCount}</span>
                         </div>
                       </div>
 
@@ -677,31 +677,31 @@ export function CampaignSheet({
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 space-y-3">
-                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 space-y-3">
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-neutral-900/40">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">1</span>
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400 text-[11px] font-bold">1</span>
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Leads</p>
-                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Total campaign target size</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200 truncate">Total campaign target size</p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{totalActivities}</span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-neutral-100">{totalActivities}</span>
                       </div>
                       
-                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-slate-900/40">
+                      <div className="relative flex items-center justify-between rounded-xl bg-slate-50/50 p-3 dark:bg-neutral-900/40">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold">2</span>
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400 text-[11px] font-bold">2</span>
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Campaign Status</p>
-                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">Current operational status</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200 truncate">Current operational status</p>
                           </div>
                         </div>
                         <span className={cn(
                           "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                           data.isActive 
                             ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            : "bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300"
                         )}>
                           {data.isActive ? "Active" : "Inactive"}
                         </span>
@@ -712,7 +712,7 @@ export function CampaignSheet({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6">
+            <div className="shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6">
               <div
                 className={cn(
                   "grid gap-2",
@@ -725,7 +725,7 @@ export function CampaignSheet({
                   <Link
                     href={`/reports/campaigns?campaignId=${data.id}`}
                     onClick={() => onOpenChange(false)}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-800"
                   >
                     <FileText className="h-4 w-4 shrink-0" />
                     Report
@@ -735,13 +735,13 @@ export function CampaignSheet({
                   <button
                     type="button"
                     onClick={handleOpenYard}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 transition-all hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-emerald-500/10"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 transition-all hover:border-[#008f68]/30 hover:bg-[#f0faf5] hover:text-[#006b4f] active:scale-[0.98] dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-emerald-500/10"
                   >
                     <Building2 className="h-4 w-4 shrink-0" />
                     Yard
                   </button>
                 ) : (
-                  <span className="flex min-h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 px-2 text-[11px] text-slate-400">
+                  <span className="flex min-h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 px-2 text-[11px] text-slate-400 dark:border-neutral-700">
                     No yard
                   </span>
                 )}

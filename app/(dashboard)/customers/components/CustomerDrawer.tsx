@@ -46,11 +46,11 @@ const directionIcon = (d: string) => {
 
 const statusColor = (s: string) => {
   const st = s?.toUpperCase();
-  if (st === "COMPLETED") return "bg-slate-100 text-slate-600";
+  if (st === "COMPLETED") return "bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300";
   if (st === "ACTIVE") return "bg-blue-50 text-blue-700";
   if (st === "OVERDUE") return "bg-red-50 text-red-600";
   if (st === "PENDING_FOLLOWUP") return "bg-amber-50 text-amber-700";
-  return "bg-slate-100 text-slate-500";
+  return "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400";
 };
 
 const statusLabel = (s: string) => {
@@ -155,7 +155,7 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <SheetTitle className="text-base font-semibold text-slate-900 leading-tight truncate">
+              <SheetTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100 leading-tight truncate">
                 {c.name || "Unknown Customer"}
               </SheetTitle>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -185,12 +185,12 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
             <div className="space-y-2">
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Contact</p>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-700">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-neutral-200">
                   <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                   <span className="text-sm font-medium">{c.phone || "—"}</span>
                 </div>
                 {c.phone && (
-                  <button onClick={handleCopy} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                  <button onClick={handleCopy} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors">
                     {copied
                       ? <Check className="h-3.5 w-3.5 text-green-600" />
                       : <Copy className="h-3.5 w-3.5 text-slate-400" />}
@@ -198,7 +198,7 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                 )}
               </div>
               {c.yard && (
-                <div className="flex items-center gap-2 text-slate-600">
+                <div className="flex items-center gap-2 text-slate-600 dark:text-neutral-300">
                   <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                   <span className="text-sm">{c.yard.name}</span>
                 </div>
@@ -219,10 +219,10 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                     : "—",
                 },
               ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 text-center">
+                <div key={label} className="bg-slate-50 dark:bg-neutral-800 rounded-lg border border-slate-200/60 dark:border-neutral-700 p-3 text-center">
                   <Icon className="h-4 w-4 text-slate-400 mx-auto mb-1" />
-                  <p className="text-[15px] font-semibold text-slate-900 leading-none">{value}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">{label}</p>
+                  <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100 leading-none">{value}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-neutral-400 mt-1">{label}</p>
                 </div>
               ))}
             </div>
@@ -235,7 +235,7 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Campaigns</p>
                   <div className="flex flex-wrap gap-1.5">
                     {c.campaigns.map((camp: { id: number; nombre: string }) => (
-                      <Badge key={camp.id} variant="outline" className="text-[11px] border-slate-200 text-slate-600">
+                      <Badge key={camp.id} variant="outline" className="text-[11px] border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300">
                         {camp.nombre}
                       </Badge>
                     ))}
@@ -267,12 +267,12 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                       <div
                         key={call.id}
                         onClick={() => { onOpenChange(false); router.push(`/calls?id=${call.id}`); }}
-                        className="bg-slate-50 rounded-lg border border-slate-200/60 p-3 space-y-1.5 cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0fdf8] transition-colors"
+                        className="bg-slate-50 dark:bg-neutral-800/50 rounded-lg border border-slate-200/60 dark:border-neutral-700 p-3 space-y-1.5 cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0fdf8] transition-colors"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             {directionIcon(call.direction)}
-                            <span className="text-xs font-medium text-slate-700 capitalize">
+                            <span className="text-xs font-medium text-slate-700 dark:text-neutral-200 capitalize">
                               {call.direction?.toLowerCase()}
                             </span>
                             {dur && <span className="text-[11px] text-slate-400">· {dur}</span>}
@@ -285,15 +285,15 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
-                          {disp && <span className="font-medium text-slate-600">{disp}</span>}
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500 dark:text-neutral-400">
+                          {disp && <span className="font-medium text-slate-600 dark:text-neutral-300">{disp}</span>}
                           {agentName && <span>Agent: {agentName}</span>}
                           {campaignName && <span>{campaignName}</span>}
                           {call.yard?.name && <span>{call.yard.name}</span>}
                         </div>
 
                         {call.notes && (
-                          <p className="text-[11px] text-slate-500 line-clamp-1 italic">"{call.notes}"</p>
+                          <p className="text-[11px] text-slate-500 dark:text-neutral-400 line-clamp-1 italic">"{call.notes}"</p>
                         )}
 
                         {call.followUpDueDate && (
@@ -317,8 +317,8 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Notes</p>
                   <div className="space-y-2">
                     {c.notes.map((note: { id: number; content: string; createdAt: string; createdBy?: string }) => (
-                      <div key={note.id} className="bg-slate-50 rounded-lg border border-slate-200/60 p-3">
-                        <p className="text-sm text-slate-700 leading-snug">{note.content}</p>
+                      <div key={note.id} className="bg-slate-50 dark:bg-neutral-800/50 rounded-lg border border-slate-200/60 dark:border-neutral-700 p-3">
+                        <p className="text-sm text-slate-700 dark:text-neutral-200 leading-snug">{note.content}</p>
                         <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-400">
                           <Clock className="h-3 w-3" />
                           <span>{new Date(note.createdAt).toLocaleString()}</span>

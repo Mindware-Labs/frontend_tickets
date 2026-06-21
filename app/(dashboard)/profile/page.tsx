@@ -157,10 +157,10 @@ export default function ProfilePage() {
     return (
       <div className="animate-in fade-in duration-300">
         <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3">
-          <Skeleton className="h-24 rounded-2xl bg-white dark:bg-slate-900" />
+          <Skeleton className="h-24 rounded-2xl bg-white dark:bg-neutral-900" />
           <div className="grid gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <Skeleton className="h-[360px] rounded-2xl bg-white dark:bg-slate-900" />
-            <Skeleton className="h-[360px] rounded-2xl bg-white dark:bg-slate-900" />
+            <Skeleton className="h-[360px] rounded-2xl bg-white dark:bg-neutral-900" />
+            <Skeleton className="h-[360px] rounded-2xl bg-white dark:bg-neutral-900" />
           </div>
         </div>
       </div>
@@ -176,13 +176,13 @@ export default function ProfilePage() {
             <div className="flex min-w-0 items-center gap-3">
               <span className={topbarAccentBarClass} aria-hidden />
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                   Account settings
                 </p>
-                <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">
+                <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-neutral-50">
                   Profile
                 </h1>
-                <p className="mt-0.5 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 max-w-2xl text-xs leading-5 text-slate-500 dark:text-neutral-400">
                   Keep your operator identity accurate across Center Quest.
                 </p>
               </div>
@@ -198,7 +198,7 @@ export default function ProfilePage() {
                   "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold uppercase tracking-wider",
                   hasChanges
                     ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400",
                 )}
               >
                 <CheckCircle2 className="size-3.5" />
@@ -211,20 +211,20 @@ export default function ProfilePage() {
         <div className="grid min-h-0 gap-2 lg:grid-cols-[300px_minmax(0,1fr)]">
           <aside className={cn(appPanelClass, "relative p-3")}>
             <span className={topbarAccentLineClass} aria-hidden />
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 dark:border-neutral-800 dark:bg-neutral-900/50">
               <div className="flex flex-col items-center text-center">
                 <div className="relative">
-                  <Avatar className="size-20 border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                  <Avatar className="size-20 border border-slate-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                     <AvatarImage src={profile.avatar} alt={displayName} />
                     <AvatarFallback className="bg-[#f0faf5] text-xl font-bold text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <h2 className="mt-2 max-w-full truncate text-[16px] font-bold leading-tight text-slate-950 dark:text-slate-50">
+                <h2 className="mt-2 max-w-full truncate text-[16px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
                   {displayName}
                 </h2>
-                <p className="mt-1 max-w-full truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+                <p className="mt-1 max-w-full truncate text-xs font-medium text-slate-500 dark:text-neutral-400">
                   {profile.email}
                 </p>
               </div>
@@ -251,26 +251,26 @@ export default function ProfilePage() {
 
           <section className={cn(appPanelClass, "relative flex min-w-0 flex-col")}>
             <span className={topbarAccentLineClass} aria-hidden />
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-neutral-800">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400">
                   <User className="size-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                     Personal information
                   </p>
-                  <h2 className="truncate text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+                  <h2 className="truncate text-[15px] font-bold leading-tight text-slate-900 dark:text-neutral-100">
                     Profile details
                   </h2>
                 </div>
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 bg-[#f4f5f7] p-2.5 dark:bg-slate-950">
+            <div className="min-h-0 flex-1 bg-[#f4f5f7] p-2.5 dark:bg-neutral-950">
               <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                     Identity
                   </p>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -323,8 +323,8 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:border-neutral-800 dark:bg-neutral-950">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                     Access status
                   </p>
                   <div className="mt-2 space-y-1.5">
@@ -344,8 +344,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/60">
+              <p className="text-xs font-medium text-slate-500 dark:text-neutral-400">
                 {hasChanges
                   ? "Review your changes before saving."
                   : "No pending profile changes."}
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                   variant="outline"
                   onClick={handleReset}
                   disabled={!hasChanges || saving}
-                  className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                  className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
                 >
                   <RotateCcw className="mr-1.5 size-3.5" />
                   Cancel
@@ -395,15 +395,15 @@ function ProfileFact({
   value: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-slate-800 dark:bg-slate-950">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] dark:border-neutral-800 dark:bg-neutral-950">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 dark:bg-neutral-900 dark:text-neutral-300">
         <Icon className="size-3.5" />
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
           {label}
         </p>
-        <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+        <p className="truncate text-xs font-semibold text-slate-800 dark:text-neutral-100">
           {value}
         </p>
       </div>
@@ -413,11 +413,11 @@ function ProfileFact({
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900/70">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2 dark:border-neutral-800 dark:bg-neutral-900/70">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
         {label}
       </span>
-      <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+      <span className="truncate text-xs font-semibold text-slate-800 dark:text-neutral-100">
         {value}
       </span>
     </div>

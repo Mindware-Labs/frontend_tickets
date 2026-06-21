@@ -138,15 +138,15 @@ export function UserFormModal({
             className={cn(
               "rounded-xl border p-3 text-left transition-all",
               formData.role === "agent"
-                ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20"
-                : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950",
+                ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20 dark:bg-[#008f68]/10 dark:border-[#008f68]/40"
+                : "border-slate-200 bg-white hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950",
             )}
           >
-            <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+            <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-neutral-100">
               <UserCog className="h-3.5 w-3.5 text-blue-600" />
               Agent
             </span>
-            <p className="mt-1 text-[10px] leading-snug text-slate-500">
+            <p className="mt-1 text-[10px] leading-snug text-slate-500 dark:text-neutral-400">
               Limited access to assigned work.
             </p>
           </button>
@@ -156,15 +156,15 @@ export function UserFormModal({
             className={cn(
               "rounded-xl border p-3 text-left transition-all",
               formData.role === "admin"
-                ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20"
-                : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950",
+                ? "border-[#008f68]/40 bg-[#f0faf5] ring-1 ring-[#008f68]/20 dark:bg-[#008f68]/10 dark:border-[#008f68]/40"
+                : "border-slate-200 bg-white hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950",
             )}
           >
-            <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+            <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 dark:text-neutral-100">
               <Shield className="h-3.5 w-3.5 text-violet-600" />
               Admin
             </span>
-            <p className="mt-1 text-[10px] leading-snug text-slate-500">
+            <p className="mt-1 text-[10px] leading-snug text-slate-500 dark:text-neutral-400">
               Full system control.
             </p>
           </button>
@@ -173,7 +173,7 @@ export function UserFormModal({
         {mode === "edit" ? (
           <>
             <EntityFormSectionHeading>Account</EntityFormSectionHeading>
-            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/50">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Account Active

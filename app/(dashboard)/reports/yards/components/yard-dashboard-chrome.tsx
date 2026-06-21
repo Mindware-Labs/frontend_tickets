@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils";
 export const yardDashboardToolbarClass = cn(
   "flex min-h-[56px] flex-col gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
   "md:flex-row md:items-center md:justify-between md:gap-4",
-  "dark:border-slate-800 dark:bg-slate-950",
+  "dark:border-neutral-800 dark:bg-neutral-950",
 );
 
 export const yardDashboardTabListClass =
-  "flex w-full min-w-[260px] rounded-lg border border-slate-200/80 bg-slate-100 p-1 shadow-sm sm:w-auto sm:min-w-[300px] dark:border-slate-800 dark:bg-slate-900/80";
+  "flex w-full min-w-[260px] rounded-lg border border-slate-200/80 bg-slate-100 p-1 shadow-sm sm:w-auto sm:min-w-[300px] dark:border-neutral-800 dark:bg-neutral-900/80";
 
 export function yardDashboardTabClass(isActive: boolean) {
   return cn(
     "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-all duration-150",
     isActive
-      ? "bg-white font-semibold text-[#008f68] shadow-sm dark:bg-slate-950 dark:text-emerald-400"
-      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
+      ? "bg-white font-semibold text-[#008f68] shadow-sm dark:bg-neutral-950 dark:text-emerald-400"
+      : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200",
   );
 }
 
@@ -63,7 +63,7 @@ export function YardStatusBadge({
         tone === "ready" &&
           "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
         tone === "muted" &&
-          "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400",
+          "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400",
         tone === "loading" &&
           "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
       )}
@@ -139,7 +139,7 @@ export function YardSegmentedTabs<T extends string>({
                   "rounded px-1 py-0 text-[10px] font-bold tabular-nums",
                   isActive
                     ? "bg-emerald-50 text-[#008f68] dark:bg-emerald-500/20 dark:text-emerald-300"
-                    : "bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+                    : "bg-slate-200/80 text-slate-600 dark:bg-neutral-800 dark:text-neutral-400",
                 )}
               >
                 {tab.count}
