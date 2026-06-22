@@ -6,6 +6,7 @@ const BACKEND_API_URL =
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertDialog,
@@ -315,7 +316,7 @@ function TimelineCard({
                 #{call.id}
               </span>
               {isLegacy && (
-                <span className="text-[8.5px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 border border-violet-200 px-1 py-px rounded shrink-0">
+                <span className="text-[8.5px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/25 px-1 py-px rounded shrink-0">
                   Legacy
                 </span>
               )}
@@ -329,20 +330,20 @@ function TimelineCard({
           <div className="flex items-center gap-1 flex-wrap mb-1.5">
             <span
               className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
-              style={{ color, background: color + "15" }}
+              style={chipColors(color, color + "15")}
             >
               {label}
             </span>
             <span
               className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
-              style={{ color: sc.text, background: sc.bg }}
+              style={chipColors(sc.text, sc.bg)}
             >
               {sc.label}
             </span>
             {dc && (
               <span
                 className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
-                style={{ color: dc.text, background: dc.bg }}
+                style={chipColors(dc.text, dc.bg)}
               >
                 {dc.label}
               </span>
@@ -393,13 +394,13 @@ function TimelineCard({
           {((call as any).relatedCallId || linkedFromId) && (
             <div className="flex items-center gap-1 flex-wrap mt-1.5">
               {(call as any).relatedCallId && (
-                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">
+                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-300">
                   <Link2 className="w-3 h-3 shrink-0" />
                   Linked to #{(call as any).relatedCallId}
                 </span>
               )}
               {linkedFromId && (
-                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-500">
+                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-50 dark:bg-violet-500/15 text-violet-500 dark:text-violet-300">
                   <Link2 className="w-3 h-3 shrink-0" />← from #{linkedFromId}
                 </span>
               )}
@@ -1418,7 +1419,7 @@ export function CustomerTimelineDrawer({
             <div className="flex items-center gap-3 px-4 py-2">
               {/* 1. Avatar */}
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white dark:ring-neutral-800"
                 style={{
                   background: `hsl(${(customerName?.charCodeAt(0) ?? 180) % 360} 50% 44%)`,
                 }}
@@ -1440,7 +1441,7 @@ export function CustomerTimelineDrawer({
 
               {/* Legacy read-only badge */}
               {isSelectedCallLegacy && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full shrink-0">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/25 px-2 py-0.5 rounded-full shrink-0">
                   <Eye className="w-2.5 h-2.5" />
                   Legacy · View only
                 </span>
@@ -1499,7 +1500,7 @@ export function CustomerTimelineDrawer({
                     type="button"
                     onClick={handleEscalateClick}
                     disabled={checkingTickets}
-                    className="flex items-center gap-1.5 h-8 px-3.5 bg-slate-900 hover:bg-slate-700 active:scale-95 disabled:opacity-50 text-white text-[12px] font-semibold rounded-xl transition-all shadow-sm"
+                    className="flex items-center gap-1.5 h-8 px-3.5 bg-slate-900 hover:bg-slate-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white active:scale-95 disabled:opacity-50 text-white text-[12px] font-semibold rounded-xl transition-all shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">
@@ -1673,10 +1674,10 @@ export function CustomerTimelineDrawer({
                         <div className="flex flex-col gap-1">
                           {/* Title with icon */}
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                              <AlertCircle className="w-3 h-3 text-amber-600" />
+                            <div className="w-5 h-5 rounded-lg bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center shrink-0">
+                              <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                            <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider">
                               Active Ticket Alert
                             </span>
                           </div>
@@ -2120,14 +2121,11 @@ export function CustomerTimelineDrawer({
                                   });
                                 }}
                               >
-                                <SelectTrigger className="h-7 bg-slate-50 border-transparent hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
+                                <SelectTrigger className="h-7 bg-slate-50 dark:bg-neutral-800 border-transparent hover:border-slate-300 dark:hover:border-neutral-600 focus:bg-white dark:focus:bg-neutral-900 focus:ring-2 focus:ring-[#008f68]/20 focus:border-[#008f68] rounded-lg w-full transition-colors text-xs">
                                   {dispCfg ? (
                                     <span
                                       className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold"
-                                      style={{
-                                        background: dispCfg.bg,
-                                        color: dispCfg.text,
-                                      }}
+                                      style={chipColors(dispCfg.text, dispCfg.bg)}
                                     >
                                       <span
                                         className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -2196,9 +2194,8 @@ export function CustomerTimelineDrawer({
                                   style={
                                     isActive
                                       ? {
-                                          background: cfg.bg,
-                                          color: cfg.text,
-                                          borderColor: cfg.text + "40",
+                                          ...chipColors(cfg.text, cfg.bg),
+                                          borderColor: `color-mix(in srgb, ${cfg.text} 40%, transparent)`,
                                         }
                                       : {}
                                   }
@@ -2212,11 +2209,11 @@ export function CustomerTimelineDrawer({
 
                         {/* Follow-up Date + Assignee — only visible when disposition = callback */}
                         {isCallbackDisposition && (
-                          <div className="mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/50 p-2.5">
+                          <div className="mb-3 grid grid-cols-2 gap-2.5 rounded-lg border border-amber-200/60 dark:border-amber-500/25 bg-amber-50/50 dark:bg-amber-500/10 p-2.5">
                             <div>
                               <div className="mb-1 flex items-center gap-1.5">
                                 <InspLabel>Follow-up</InspLabel>
-                                <span className="rounded bg-amber-100 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-amber-700">
+                                <span className="rounded bg-amber-100 dark:bg-amber-500/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                                   Callback
                                 </span>
                               </div>
@@ -2363,10 +2360,10 @@ export function CustomerTimelineDrawer({
                       {audioUrl ? (
                         audioError ? (
                           <div className="px-5 pb-5">
-                            <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/25 rounded-xl px-4 py-3">
                               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-semibold text-slate-700">
+                                <p className="text-[12px] font-semibold text-slate-700 dark:text-neutral-200">
                                   {audioErrorTitle}
                                 </p>
                                 <a
@@ -2407,11 +2404,12 @@ export function CustomerTimelineDrawer({
                                     width={3}
                                     height={barH}
                                     rx={1.5}
-                                    fill={
-                                      i / waveHeights.length < played
-                                        ? "#008f68"
-                                        : "#e2e8f0"
-                                    }
+                                    style={{
+                                      fill:
+                                        i / waveHeights.length < played
+                                          ? "#008f68"
+                                          : "light-dark(#e2e8f0, #404040)",
+                                    }}
                                   />
                                 );
                               })}
@@ -2535,10 +2533,10 @@ export function CustomerTimelineDrawer({
                     {/* ── Internal Note card ── */}
                     <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-                        <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                        <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
                           <StickyNote className="w-3 h-3 text-amber-500" />
                         </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider">
                           Internal Note
                         </span>
                       </div>
@@ -2568,10 +2566,10 @@ export function CustomerTimelineDrawer({
                     <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                       {/* Header */}
                       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
                           <Paperclip className="w-3 h-3 text-blue-500" />
                         </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider">
                           Attachments
                         </span>
                         {attachmentFiles.length + savedAttachments.length >
@@ -2625,7 +2623,7 @@ export function CustomerTimelineDrawer({
                           />
                           <label
                             htmlFor="file-upload"
-                            className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 bg-linear-to-r from-slate-50/90 to-sky-50/30 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
+                            className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-linear-to-r from-slate-50/90 to-sky-50/30 dark:from-neutral-800/50 dark:to-neutral-800/30 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40 dark:hover:border-blue-500/40 dark:hover:from-blue-500/10 dark:hover:to-blue-500/5"
                           >
                             <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white dark:bg-neutral-800 shadow-sm border border-slate-100/80 dark:border-neutral-700 shrink-0">
                               <CloudUpload className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors duration-150" />
@@ -2659,12 +2657,12 @@ export function CustomerTimelineDrawer({
                               const isImage = file.type.startsWith("image/");
                               const isAudio = file.type.startsWith("audio/");
                               const badge = isPdf
-                                ? "bg-red-50 text-red-500 ring-1 ring-red-100"
+                                ? "bg-red-50 text-red-500 ring-1 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/25"
                                 : isImage
-                                  ? "bg-blue-50 text-blue-500 ring-1 ring-blue-100"
+                                  ? "bg-blue-50 text-blue-500 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25"
                                   : isAudio
-                                    ? "bg-violet-50 text-violet-500 ring-1 ring-violet-100"
-                                    : "bg-slate-100 text-slate-500";
+                                    ? "bg-violet-50 text-violet-500 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25"
+                                    : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400";
                               return (
                                 <div
                                   key={idx}
@@ -2740,12 +2738,12 @@ export function CustomerTimelineDrawer({
                                   .match(/\.(mp3|wav|m4a|ogg)$/),
                               );
                               const badge = isPdf
-                                ? "bg-red-50 text-red-500 ring-1 ring-red-100"
+                                ? "bg-red-50 text-red-500 ring-1 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/25"
                                 : isImage
-                                  ? "bg-blue-50 text-blue-500 ring-1 ring-blue-100"
+                                  ? "bg-blue-50 text-blue-500 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/25"
                                   : isAudio
-                                    ? "bg-violet-50 text-violet-500 ring-1 ring-violet-100"
-                                    : "bg-slate-100 text-slate-500";
+                                    ? "bg-violet-50 text-violet-500 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/25"
+                                    : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400";
                               return (
                                 <div
                                   key={idx}

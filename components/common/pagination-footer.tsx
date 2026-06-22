@@ -29,7 +29,7 @@ interface PaginationFooterProps {
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 const navButtonClass =
-  "h-8 shrink-0 rounded-lg border border-slate-200/60 bg-white px-2.5 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5";
+  "h-8 shrink-0 rounded-lg border border-slate-200/60 bg-white px-2.5 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1.5";
 
 export function PaginationFooter({
   totalCount,
@@ -61,55 +61,48 @@ export function PaginationFooter({
   };
 
   return (
-    <div className={cn("flex flex-col gap-3 pt-2 pb-2", className)}>
-      {showStats && (
-        <p className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 text-center">
-          Showing{" "}
-          <span className="font-semibold text-slate-900 dark:text-neutral-200">
-            {start}-{end}
-          </span>{" "}
-          of {totalCount} {itemLabel}
-        </p>
+    <div
+      className={cn(
+        "flex flex-col gap-3 pt-2 pb-2 sm:flex-row sm:items-center sm:justify-between",
+        className,
       )}
-
-      {/* ── Left: stats + rows-per-page as one unified pill ── */}
-      {(showStats || onItemsPerPageChange) && (
-        <div className="flex items-center justify-center sm:justify-start">
-          <div className="flex h-8 items-stretch overflow-hidden rounded-lg border border-slate-200/60 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            {showStats && (
-              <p className="flex items-center whitespace-nowrap px-2.5 text-[12px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
-                <span className="font-semibold text-slate-900 dark:text-slate-200">
-                  {start}–{end}
-                </span>
-                <span className="ml-1">
-                  of {totalCount} {itemLabel}
-                </span>
-              </p>
-            )}
+    >
+      {/* ── Left: stats + rows-per-page ── */}
+      <div className="flex items-center justify-center gap-2 sm:justify-start">
+        {showStats && (
+          <div className="flex h-8 items-center overflow-hidden rounded-lg border border-slate-200/60 bg-white px-2.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <p className="flex items-center whitespace-nowrap text-[12px] font-medium tabular-nums text-slate-500 dark:text-neutral-400">
+              <span className="font-semibold text-slate-900 dark:text-neutral-200">
+                {start}–{end}
+              </span>
+              <span className="ml-1">
+                of {totalCount} {itemLabel}
+              </span>
+            </p>
           </div>
+        )}
 
-          {onItemsPerPageChange && (
-            <div className="flex justify-center sm:justify-start">
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value) => onItemsPerPageChange(Number(value))}
-                disabled={loading}
-              >
-                <SelectTrigger className="h-8 w-[100px] rounded-lg border border-slate-200/60 bg-white text-[12px] font-medium text-slate-600 hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-700 shadow-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 / page</SelectItem>
-                  <SelectItem value="10">10 / page</SelectItem>
-                  <SelectItem value="20">20 / page</SelectItem>
-                  <SelectItem value="50">50 / page</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        {onItemsPerPageChange && (
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => onItemsPerPageChange(Number(value))}
+            disabled={loading}
+          >
+            <SelectTrigger className="h-8 w-[100px] rounded-lg border border-slate-200/60 bg-white text-[12px] font-medium text-slate-600 hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-700 shadow-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5 / page</SelectItem>
+              <SelectItem value="10">10 / page</SelectItem>
+              <SelectItem value="20">20 / page</SelectItem>
+              <SelectItem value="50">50 / page</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
-          {/* ── Right: pager ── */}
-          <div className="flex items-center justify-center gap-1.5 sm:justify-end">
+      {/* ── Right: pager ── */}
+      <div className="flex items-center justify-center gap-1.5 sm:justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -167,10 +160,7 @@ export function PaginationFooter({
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Button>
-          </div>
-        </div>
-
-      )};
+      </div>
     </div>
   );
 }

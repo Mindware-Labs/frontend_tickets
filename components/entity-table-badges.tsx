@@ -33,8 +33,8 @@ export function TableYardBadge({
           ? "inline-flex h-auto w-fit max-w-full items-center shadow-none"
           : "inline-flex h-auto max-w-full items-center shadow-none",
         compact
-          ? "gap-0.5 rounded-full border-slate-200 px-1.5 py-0.5 text-[10.5px] font-medium leading-tight"
-          : "gap-1.5 rounded-full border-slate-200 px-2.5 py-1 text-[12px] font-semibold leading-snug",
+          ? "gap-0.5 rounded-full border-border px-1.5 py-0.5 text-[10.5px] font-medium leading-tight"
+          : "gap-1.5 rounded-full border-border px-2.5 py-1 text-[12px] font-semibold leading-snug",
         className,
       )}
       title={label}
@@ -103,12 +103,13 @@ export function TableCampaignBadge({
     <Badge
       variant="secondary"
       className={cn(
+        "border-emerald-600/15 hover:bg-emerald-500/15 dark:border-emerald-400/20 dark:hover:bg-emerald-400/15",
         compact
-          ? "inline-flex h-auto w-fit max-w-full shadow-none hover:bg-[#e2fae9]"
-          : "inline-flex h-auto max-w-full shadow-none hover:bg-[#e2fae9]",
+          ? "inline-flex h-auto w-fit max-w-full shadow-none"
+          : "inline-flex h-auto max-w-full shadow-none",
         compact
-          ? "rounded-full bg-[#e2fae9] px-1.5 py-0.5 text-[10.5px] font-medium leading-tight text-[#006d50]"
-          : "rounded-full bg-[#e2fae9] px-2.5 py-1 text-[12px] font-semibold leading-snug text-[#006d50]",
+          ? "rounded-full bg-emerald-600/10 px-1.5 py-0.5 text-[10.5px] font-medium leading-tight text-[#006d50] dark:bg-emerald-400/10 dark:text-emerald-300"
+          : "rounded-full bg-emerald-600/10 px-2.5 py-1 text-[12px] font-semibold leading-snug text-[#006d50] dark:bg-emerald-400/10 dark:text-emerald-300",
         className,
       )}
       title={label}

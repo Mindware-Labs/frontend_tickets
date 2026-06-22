@@ -5,6 +5,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import type { TicketUpdateRecord } from "../../types";
 import { formatEnumLabel } from "../../utils/call-helpers";
 import { format, isToday, isYesterday } from "date-fns";
@@ -63,7 +64,7 @@ function StatusBadge({ value }: { value: string }) {
   return (
     <span
       className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md"
-      style={{ color: cfg.color, background: cfg.bg }}
+      style={chipColors(cfg.color, cfg.bg)}
     >
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -154,7 +155,7 @@ export function TicketActivityTimeline({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span
                   className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md"
-                  style={{ color: badge.color, background: badge.bg }}
+                  style={chipColors(badge.color, badge.bg)}
                 >
                   {badge.label}
                 </span>
@@ -177,8 +178,8 @@ export function TicketActivityTimeline({
                 <span
                   className="w-2 h-2 rounded-full shrink-0 border-2"
                   style={{
-                    borderColor: badge.border,
-                    background: badge.bg,
+                    borderColor: `color-mix(in srgb, ${badge.color} 45%, transparent)`,
+                    background: chipColors(badge.color, badge.bg).background,
                   }}
                 />
                 <span className="text-[11px] text-slate-600 dark:text-neutral-300 truncate">

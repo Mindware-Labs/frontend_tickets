@@ -101,17 +101,17 @@ const STATE_META: Record<
   RINGING: {
     label: "Ringing",
     dot: "bg-emerald-500 animate-pulse",
-    chip: "border-[#008f68]/25 bg-[#f0faf5] text-[#006b4f]",
+    chip: "border-[#008f68]/25 bg-[#f0faf5] text-[#006b4f] dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300",
   },
   ACTIVE: {
     label: "On call",
     dot: "bg-sky-500",
-    chip: "border-sky-200 bg-sky-50 text-sky-700",
+    chip: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300",
   },
   ENDED: {
     label: "Ended",
     dot: "bg-slate-400",
-    chip: "border-slate-200 bg-slate-50 text-slate-600",
+    chip: "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
   },
 };
 
@@ -122,45 +122,45 @@ const DIRECTION_META: Record<
   INBOUND: {
     label: "Inbound",
     icon: PhoneIncoming,
-    iconClass: "bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15",
+    iconClass: "bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/25",
   },
   OUTBOUND: {
     label: "Outbound",
     icon: PhoneOutgoing,
-    iconClass: "bg-sky-50 text-sky-700 ring-1 ring-sky-300/40",
+    iconClass: "bg-sky-50 text-sky-700 ring-1 ring-sky-300/40 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/25",
   },
   MISSED: {
     label: "Missed",
     icon: PhoneMissed,
-    iconClass: "bg-rose-50 text-rose-700 ring-1 ring-rose-300/40",
+    iconClass: "bg-rose-50 text-rose-700 ring-1 ring-rose-300/40 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/25",
   },
   VOICEMAIL: {
     label: "Voicemail",
     icon: Voicemail,
-    iconClass: "bg-amber-50 text-amber-700 ring-1 ring-amber-300/40",
+    iconClass: "bg-amber-50 text-amber-700 ring-1 ring-amber-300/40 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/25",
   },
 };
 
 const FLAG_STYLES: Record<CustomerFlag["kind"], string> = {
-  overdue: "border-amber-200 bg-amber-50 text-amber-700",
-  do_not_call: "border-rose-200 bg-rose-50 text-rose-700",
+  overdue: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+  do_not_call: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
 };
 
 const TICKET_STATUS_STYLES: Record<string, string> = {
-  ACTIVE: "border-sky-200 bg-sky-50 text-sky-700",
-  PENDING_FOLLOWUP: "border-amber-200 bg-amber-50 text-amber-700",
-  OVERDUE: "border-rose-200 bg-rose-50 text-rose-700",
-  RESOLVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  ACTIVE: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300",
+  PENDING_FOLLOWUP: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+  OVERDUE: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+  RESOLVED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
   CLOSED: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
   COMPLETED: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
   LOW: "border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400",
-  MEDIUM: "border-sky-200 bg-sky-50 text-sky-700",
-  HIGH: "border-amber-200 bg-amber-50 text-amber-700",
-  URGENT: "border-rose-200 bg-rose-50 text-rose-700",
-  EMERGENCY: "border-rose-200 bg-rose-50 text-rose-700",
+  MEDIUM: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300",
+  HIGH: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+  URGENT: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+  EMERGENCY: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
 };
 
 // ── helpers ─────────────────────────────────────────────────────────────
@@ -406,9 +406,9 @@ function StatPill({
 }) {
   const tones: Record<typeof tone, string> = {
     slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-    rose: "border-rose-200 bg-rose-50 text-rose-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+    rose: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
   };
   return (
     <span
@@ -534,12 +534,12 @@ function callIcon(direction: CallRecord["direction"]) {
 
 function callTint(direction: CallRecord["direction"]) {
   return direction === "MISSED"
-    ? "text-rose-500 bg-rose-50"
+    ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-300"
     : direction === "OUTBOUND"
-      ? "text-sky-600 bg-sky-50"
+      ? "text-sky-600 bg-sky-50 dark:bg-sky-500/10 dark:text-sky-300"
       : direction === "VOICEMAIL"
-        ? "text-amber-600 bg-amber-50"
-        : "text-emerald-600 bg-emerald-50";
+        ? "text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300"
+        : "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-300";
 }
 
 function CallRow({
@@ -662,7 +662,7 @@ function TicketActivityRow({
           "flex size-6 shrink-0 items-center justify-center rounded-md",
           isLegacy
             ? "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
-            : "bg-[#f0faf5] text-[#008f68]",
+            : "bg-[#f0faf5] text-[#008f68] dark:bg-emerald-500/10 dark:text-emerald-400",
         )}
       >
         {isLegacy ? (
@@ -706,7 +706,7 @@ function TicketActivityRow({
 function ManualRow({ item }: { item: ManualRecordEntry }) {
   return (
     <div className={ROW_CARD}>
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
         <ClipboardList className="size-3" />
       </span>
       <div className="min-w-0 flex-1">
@@ -947,7 +947,7 @@ function NotesTab({ customer }: { customer: CustomerProfile }) {
           className={cn(
             "rounded-lg border bg-white px-2 py-1.5 dark:bg-neutral-950",
             n.isPinned
-              ? "border-amber-200 bg-amber-50/40 dark:border-amber-900/50"
+              ? "border-amber-200 bg-amber-50/40 dark:border-amber-500/25 dark:bg-amber-500/10"
               : "border-slate-100 dark:border-neutral-800",
           )}
         >
@@ -1259,7 +1259,7 @@ function CallDetailModal({
           </dl>
 
           {call.recordingUrl ? (
-            <section className="mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-slate-800 dark:bg-slate-950">
+            <section className="mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-neutral-800 dark:bg-neutral-950">
               <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-3">
                 <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-[#008f68]/10">
                   <Mic className="size-3 text-[#008f68]" />
@@ -1355,14 +1355,14 @@ function TicketDetailModal({
         ...(dragging ? { transition: "none" } : null),
       }}
       className={cn(
-        "fixed z-[70] flex max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950",
+        "fixed z-[70] flex max-h-[calc(100vh-3rem)] w-[440px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.18)] dark:border-neutral-800 dark:bg-neutral-950",
         anchor ? "" : "bottom-6 left-6",
         dragging && "shadow-[0_20px_50px_rgba(15,23,42,0.28)]",
       )}
     >
       <div
         onPointerDown={beginDrag}
-        className="relative flex cursor-grab touch-none select-none items-center gap-2.5 border-b border-slate-200/80 bg-white px-3.5 py-3 pr-10 active:cursor-grabbing dark:border-slate-800 dark:bg-slate-950"
+        className="relative flex cursor-grab touch-none select-none items-center gap-2.5 border-b border-slate-200/80 bg-white px-3.5 py-3 pr-10 active:cursor-grabbing dark:border-neutral-800 dark:bg-neutral-950"
       >
         <span
           className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#008f68]/45 to-transparent"
@@ -1376,8 +1376,8 @@ function TicketDetailModal({
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-xl",
             isLegacy
-              ? "bg-slate-100 text-slate-500"
-              : "bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15",
+              ? "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+              : "bg-[#f0faf5] text-[#008f68] ring-1 ring-[#008f68]/15 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/25",
           )}
         >
           {isLegacy ? (
@@ -1398,13 +1398,13 @@ function TicketDetailModal({
           type="button"
           onClick={onClose}
           aria-label="Close ticket details"
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-slate-800"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25 dark:hover:bg-neutral-800"
         >
           <X className="size-4" />
         </button>
       </div>
 
-      <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-3 dark:bg-slate-900/40">
+      <div className="scrollbar-app min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-3 dark:bg-neutral-900/40">
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           <MiniTag className={statusClass}>
             {ticket.status.replace(/_/g, " ")}
@@ -1415,16 +1415,16 @@ function TicketDetailModal({
             </MiniTag>
           ) : null}
           {!isLegacy && ticket.ticketType ? (
-            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+            <MiniTag className="border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
               {ticket.ticketType}
             </MiniTag>
           ) : null}
-          <MiniTag className="border-slate-200 bg-slate-50 text-slate-500">
+          <MiniTag className="border-slate-200 bg-slate-50 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
             #{ticket.id}
           </MiniTag>
         </div>
 
-        <dl className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+        <dl className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
           <DetailRow icon={Hash} label="Ticket ID" value={ticket.id} />
           {!isLegacy ? (
             <>
@@ -1522,7 +1522,7 @@ function TicketDetailModal({
         </dl>
 
         {idRows.length > 0 ? (
-          <dl className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+          <dl className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-950">
             {idRows.map((row) => (
               <DetailRow
                 key={row.label}
@@ -1534,7 +1534,7 @@ function TicketDetailModal({
           </dl>
         ) : null}
 
-        <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-950">
+        <section className="mt-2 rounded-xl border border-slate-100 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-950">
           <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400">
             <FileText className="size-2.5" />
             Issue detail

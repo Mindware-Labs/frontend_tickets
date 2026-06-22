@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useConfigurations } from "@/hooks/useConfigurations";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
+import { chipColors, chipBorder } from "@/lib/chip-colors";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Popover,
@@ -184,7 +185,7 @@ function TicketCard({
           <div className="flex flex-wrap items-center gap-1">
             <span
               className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
-              style={{ color: sp.fg, background: sp.bg }}
+              style={chipColors(sp.dot, sp.bg, sp.fg)}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -194,7 +195,7 @@ function TicketCard({
             </span>
             <span
               className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-1.5 py-0.5 rounded-md"
-              style={{ color: pp.fg, background: pp.bg }}
+              style={chipColors(pp.dot, pp.bg, pp.fg)}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -889,9 +890,8 @@ export function CustomerTicketDrawer({
                   <span
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
                     style={{
-                      color: sp.fg,
-                      background: sp.bg,
-                      borderColor: `${sp.dot}30`,
+                      ...chipColors(sp.dot, sp.bg, sp.fg),
+                      borderColor: chipBorder(sp.dot),
                     }}
                   >
                     <span
@@ -905,9 +905,8 @@ export function CustomerTicketDrawer({
                   <span
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border cursor-default"
                     style={{
-                      color: pp.fg,
-                      background: pp.bg,
-                      borderColor: `${pp.dot}30`,
+                      ...chipColors(pp.dot, pp.bg, pp.fg),
+                      borderColor: chipBorder(pp.dot),
                     }}
                   >
                     <span

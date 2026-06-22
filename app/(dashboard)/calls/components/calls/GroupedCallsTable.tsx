@@ -574,8 +574,8 @@ export function GroupedCallsTable({
                             }}
                             className={`inline-flex items-center justify-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition-colors ${
                               expandedKey === group.key
-                                ? "border-[#86efac] bg-[#dcfce7] text-[#15803d]"
-                                : "border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-[#86efac] hover:bg-[#dcfce7] hover:text-[#15803d]"
+                                ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-400/15 dark:text-emerald-300"
+                                : "border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-emerald-400/60 hover:bg-emerald-500/15 hover:text-emerald-700 dark:hover:text-emerald-300"
                             }`}
                             aria-label="Toggle call timeline"
                             title="View call timeline"

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAircall } from "@/components/providers/AircallProvider";
 import type { ManualRecord } from "../../types";
@@ -64,7 +65,7 @@ function PeekBadge({
   return (
     <span
       className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md leading-none"
-      style={{ color, background: bg }}
+      style={chipColors(color, bg)}
     >
       {children}
     </span>

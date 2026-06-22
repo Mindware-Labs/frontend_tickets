@@ -774,7 +774,7 @@ export function ManualRecordsTab() {
               <col className="w-[9%]" />
               <col className="w-[18%]" />
             </colgroup>
-            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
@@ -904,7 +904,7 @@ export function ManualRecordsTab() {
                                   </p>
                                   <button
                                     type="button"
-                                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-[#e6f5f0] disabled:opacity-40"
+                                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-[#e6f5f0] dark:hover:bg-emerald-500/10 disabled:opacity-40"
                                     style={{ color: "#008f68" }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -981,12 +981,12 @@ export function ManualRecordsTab() {
                             <span className={cn(
                               "block truncate rounded-full px-1.5 py-px text-[10px] font-semibold w-fit",
                               r.campaignOption.includes("PAID") || r.campaignOption === "REGISTERED" || r.campaignOption === "ENROLLED"
-                                ? "bg-emerald-50 text-emerald-700"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                                 : r.campaignOption.includes("NOT_") || r.campaignOption === "DISPUTE" || r.campaignOption === "CANCELED"
-                                  ? "bg-red-50 text-red-600"
+                                  ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300"
                                   : r.campaignOption === "PROMISE_TO_PAY"
-                                    ? "bg-amber-50 text-amber-700"
-                                    : "bg-slate-100 text-slate-600",
+                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300",
                             )}>
                               {formatLabel(r.campaignOption)}
                             </span>

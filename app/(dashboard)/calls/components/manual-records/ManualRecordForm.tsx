@@ -6,6 +6,7 @@ import {
   type CreateManualRecordFormData,
 } from "../../types";
 import { useConfigurations } from "@/hooks/useConfigurations";
+import { chipColors } from "@/lib/chip-colors";
 import { TicketStatusToggle } from "../tickets/TicketStatusToggle";
 import {
   InspectorSelect,
@@ -256,7 +257,7 @@ export function ManualRecordForm({
                         {dispCfg ? (
                           <span
                             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold"
-                            style={{ background: dispCfg.bg, color: dispCfg.text }}
+                            style={chipColors(dispCfg.text, dispCfg.bg)}
                           >
                             <span
                               className="w-1.5 h-1.5 rounded-full shrink-0"

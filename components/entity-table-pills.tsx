@@ -117,15 +117,23 @@ function EntityPill({
   colors: PillColors;
   bold?: boolean;
 }) {
+  // Light mode keeps the curated hex palette. Dark mode is derived from the
+  // accent (dot) color so pills stay theme-aware instead of rendering the
+  // hardcoded light-mode hexes on a dark surface. `light-dark()` resolves via
+  // the document's color-scheme (set on :root / .dark in globals.css).
+  const darkFg = `color-mix(in srgb, ${colors.dot} 72%, white)`;
+  const darkBg = `color-mix(in srgb, ${colors.dot} 18%, transparent)`;
+  const darkBorder = `color-mix(in srgb, ${colors.dot} 32%, transparent)`;
+
   return (
     <span
       className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] leading-tight ${
         bold ? "font-bold leading-none" : "font-semibold"
       }`}
       style={{
-        color: colors.fg,
-        background: colors.bg,
-        borderColor: colors.bg,
+        color: `light-dark(${colors.fg}, ${darkFg})`,
+        background: `light-dark(${colors.bg}, ${darkBg})`,
+        borderColor: `light-dark(${colors.bg}, ${darkBorder})`,
       }}
       title={label}
     >

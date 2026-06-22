@@ -7,6 +7,7 @@ import { es } from "date-fns/locale";
 import type { ManualRecord } from "../../types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 
 export interface CustomerManualRecordGroup {
   key: string;
@@ -160,7 +161,7 @@ export function InlineManualRecordTimeline({
                     <div className="mb-1.5 flex flex-wrap items-center gap-1">
                       <span
                         className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-                        style={{ color: sm.color, background: sm.bg }}
+                        style={chipColors(sm.color, sm.bg)}
                       >
                         <span
                           className="h-1.5 w-1.5 shrink-0 rounded-full"

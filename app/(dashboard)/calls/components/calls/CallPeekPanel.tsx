@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAircall } from "@/components/providers/AircallProvider";
 import type { Ticket } from "@/lib/mock-data";
@@ -157,7 +158,7 @@ function PeekBadge({
   return (
     <span
       className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md leading-none"
-      style={{ color, background: bg }}
+      style={chipColors(color, bg)}
     >
       {Icon && <Icon className="w-3 h-3 shrink-0" />}
       {children}
@@ -470,7 +471,7 @@ export function CallPeekPanel({
           <div className="flex items-center gap-2.5 min-w-0">
             <div
               className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
-              style={{ background: `${dirColor}14`, color: dirColor }}
+              style={chipColors(dirColor, `${dirColor}14`)}
             >
               <DirIcon className="w-4 h-4" />
             </div>

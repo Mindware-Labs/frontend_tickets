@@ -7,6 +7,7 @@ import {
   PhoneMissed,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { chipColors, chipBorder } from "@/lib/chip-colors";
 import type { SupportTicketRecord } from "../../types";
 
 type CallSnippet = SupportTicketRecord["call"];
@@ -50,9 +51,8 @@ export function SourceCallViaCallBadge({
         "text-[10px] font-semibold leading-none shadow-sm",
       )}
       style={{
-        color: accent.color,
-        background: accent.bg,
-        borderColor: accent.border,
+        ...chipColors(accent.color, accent.bg),
+        borderColor: chipBorder(accent.color),
       }}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}

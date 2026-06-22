@@ -270,7 +270,7 @@ export function CallFiltersBar({
                         onClick={() => setDraftKey("status", option.value)}
                         className={
                           isActive
-                            ? "h-8 rounded-lg border border-[#008f68]/35 bg-[#e6f5f0] px-2 text-[10px] font-semibold leading-tight text-[#008f68] shadow-sm transition-colors"
+                            ? "h-8 rounded-lg border border-[#008f68]/35 bg-[#e6f5f0] dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 text-[10px] font-semibold leading-tight text-[#008f68] dark:text-emerald-300 shadow-sm transition-colors"
                             : "h-8 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 text-[10px] font-semibold leading-tight text-slate-500 dark:text-neutral-400 transition-colors hover:border-slate-300 dark:hover:border-neutral-600 hover:bg-slate-50 dark:hover:bg-neutral-800"
                         }
                       >

@@ -16,6 +16,7 @@ import type { CustomerCallGroup } from "./CustomerTimelineDrawer";
 import { getTicketAssignee, getAssigneeName } from "../../utils/call-helpers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 interface InlineCallTimelineProps {
@@ -158,10 +159,7 @@ export function InlineCallTimeline({
         {latestMeta && (
           <span
             className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md"
-            style={{
-              color: latestMeta.color,
-              background: latestMeta.bg,
-            }}
+            style={chipColors(latestMeta.color, latestMeta.bg)}
           >
             <latestMeta.Icon className="w-3 h-3" />
             Latest: {latestMeta.label}

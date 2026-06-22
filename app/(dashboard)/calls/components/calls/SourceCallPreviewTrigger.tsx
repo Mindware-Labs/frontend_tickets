@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chipColors, chipBorder } from "@/lib/chip-colors";
 import {
   Phone,
   PhoneIncoming,
@@ -78,7 +79,7 @@ export function SourceCallPreviewTrigger({
       >
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: accent.bg, color: accent.color }}
+          style={chipColors(accent.color, accent.bg)}
         >
           <CallDirIcon direction={call?.direction} />
         </div>
@@ -112,9 +113,8 @@ export function SourceCallPreviewTrigger({
         <span
           className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border"
           style={{
-            color: accent.color,
-            background: accent.bg,
-            borderColor: accent.border,
+            ...chipColors(accent.color, accent.bg),
+            borderColor: chipBorder(accent.color),
           }}
         >
           <CallDirIcon direction={call?.direction} />

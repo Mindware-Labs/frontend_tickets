@@ -489,7 +489,7 @@ export default function CampaignsPage() {
                     className={cn(
                       "rounded-full border px-1.5 py-px text-[11px]",
                       isActive
-                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        ? "border-emerald-600/15 bg-emerald-600/10 font-semibold text-[#008f68] dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300"
                         : "border-border bg-muted/40 font-medium text-muted-foreground",
                     )}
                   >

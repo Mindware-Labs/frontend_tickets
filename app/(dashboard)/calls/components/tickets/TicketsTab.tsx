@@ -947,7 +947,7 @@ export function TicketsTab({
               <col className="w-[9%]" />
               <col className="w-[9%]" />
             </colgroup>
-            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 bg-slate-50 dark:bg-muted/40">
+            <TableHeader className="sticky top-0 z-10 border-y border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-muted/40">
               <TableRow className="border-none hover:bg-transparent">
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Customer
@@ -965,10 +965,10 @@ export function TicketsTab({
                   Type
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Campaign
+                  Yard
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Yard
+                  Campaign
                 </TableHead>
                 <TableHead className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   Option
@@ -1077,7 +1077,7 @@ export function TicketsTab({
                                   </p>
                                   <button
                                     type="button"
-                                    className="shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-[#e6f5f0] transition-colors disabled:opacity-40"
+                                    className="shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-[#e6f5f0] dark:hover:bg-emerald-500/10 transition-colors disabled:opacity-40"
                                     style={{ color: "#008f68" }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1137,15 +1137,15 @@ export function TicketsTab({
                           <TableTicketTypePill type={t.ticketType} />
                         </TableCell>
                         <TableCell className="max-w-0 px-2 py-0.5 align-middle">
-                          <TableCampaignBadge
-                            compact
-                            name={t.campaign?.nombre}
-                          />
-                        </TableCell>
-                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
                           <TableYardBadge
                             compact
                             name={t.yard?.commonName || t.yard?.name}
+                          />
+                        </TableCell>
+                        <TableCell className="max-w-0 px-2 py-0.5 align-middle">
+                          <TableCampaignBadge
+                            compact
+                            name={t.campaign?.nombre}
                           />
                         </TableCell>
                         <TableCell
@@ -1156,12 +1156,12 @@ export function TicketsTab({
                             <span className={cn(
                               "block truncate rounded-full px-1.5 py-px text-[10px] font-semibold w-fit",
                               t.campaignOption.includes("PAID") || t.campaignOption === "REGISTERED" || t.campaignOption === "ENROLLED"
-                                ? "bg-emerald-50 text-emerald-700"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                                 : t.campaignOption.includes("NOT_") || t.campaignOption === "DISPUTE" || t.campaignOption === "CANCELED"
-                                  ? "bg-red-50 text-red-600"
+                                  ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300"
                                   : t.campaignOption === "PROMISE_TO_PAY"
-                                    ? "bg-amber-50 text-amber-700"
-                                    : "bg-slate-100 text-slate-600",
+                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300",
                             )}>
                               {formatLabel(t.campaignOption)}
                             </span>

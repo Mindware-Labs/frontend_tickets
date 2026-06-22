@@ -47,9 +47,9 @@ const directionIcon = (d: string) => {
 const statusColor = (s: string) => {
   const st = s?.toUpperCase();
   if (st === "COMPLETED") return "bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300";
-  if (st === "ACTIVE") return "bg-blue-50 text-blue-700";
-  if (st === "OVERDUE") return "bg-red-50 text-red-600";
-  if (st === "PENDING_FOLLOWUP") return "bg-amber-50 text-amber-700";
+  if (st === "ACTIVE") return "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300";
+  if (st === "OVERDUE") return "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300";
+  if (st === "PENDING_FOLLOWUP") return "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300";
   return "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400";
 };
 
@@ -150,7 +150,7 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
         <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11 shrink-0">
-              <AvatarFallback className="bg-[#e2fae9] text-[#008f68] font-bold text-sm">
+              <AvatarFallback className="bg-emerald-600/10 text-[#008f68] font-bold text-sm dark:bg-emerald-400/10 dark:text-emerald-300">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -267,7 +267,7 @@ export function Customer360Drawer({ open, onOpenChange, customer }: Customer360D
                       <div
                         key={call.id}
                         onClick={() => { onOpenChange(false); router.push(`/calls?id=${call.id}`); }}
-                        className="bg-slate-50 dark:bg-neutral-800/50 rounded-lg border border-slate-200/60 dark:border-neutral-700 p-3 space-y-1.5 cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0fdf8] transition-colors"
+                        className="bg-slate-50 dark:bg-neutral-800/50 rounded-lg border border-slate-200/60 dark:border-neutral-700 p-3 space-y-1.5 cursor-pointer hover:border-[#008f68]/40 hover:bg-[#f0fdf8] dark:hover:bg-emerald-500/5 transition-colors"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">

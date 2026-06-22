@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chipColors, chipBorder } from "@/lib/chip-colors";
 import { SupportTicketStatus } from "../../types";
 
 export const TICKET_STATUS_COLORS: Record<
@@ -113,9 +114,8 @@ export function TicketStatusToggle({
             style={
               isActive
                 ? {
-                    background: cfg.bg,
-                    color: cfg.text,
-                    borderColor: `${cfg.text}40`,
+                    ...chipColors(cfg.text, cfg.bg),
+                    borderColor: chipBorder(cfg.text, 40),
                   }
                 : undefined
             }

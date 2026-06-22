@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAircall } from "@/components/providers/AircallProvider";
 import { cn } from "@/lib/utils";
+import { chipColors, chipBorder } from "@/lib/chip-colors";
 import type { CreateManualRecordFormData, ManualRecord } from "../../types";
 import type { CustomerManualRecordGroup } from "./InlineManualRecordTimeline";
 import { ManualRecordForm } from "./ManualRecordForm";
@@ -136,7 +137,7 @@ function RecordCard({
           <div className="mb-1.5">
             <span
               className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-semibold"
-              style={{ color: sp.fg, background: sp.bg }}
+              style={chipColors(sp.dot, sp.bg, sp.fg)}
             >
               <span
                 className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -428,9 +429,8 @@ export function CustomerManualRecordDrawer({
                   <span
                     className="inline-flex cursor-default items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold"
                     style={{
-                      color: sp.fg,
-                      background: sp.bg,
-                      borderColor: `${sp.dot}30`,
+                      ...chipColors(sp.dot, sp.bg, sp.fg),
+                      borderColor: chipBorder(sp.dot),
                     }}
                   >
                     <span

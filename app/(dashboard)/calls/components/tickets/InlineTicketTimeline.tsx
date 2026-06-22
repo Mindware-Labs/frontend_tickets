@@ -11,6 +11,7 @@ import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import type { AgentOption, SupportTicketRecord } from "../../types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { chipColors } from "@/lib/chip-colors";
 import { useAircall } from "@/components/providers/AircallProvider";
 
 export interface CustomerTicketGroup {
@@ -178,7 +179,7 @@ export function InlineTicketTimeline({
         {latestMeta && (
           <span
             className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md"
-            style={{ color: latestMeta.color, background: latestMeta.bg }}
+            style={chipColors(latestMeta.color, latestMeta.bg)}
           >
             Latest: {latestMeta.label}
           </span>
@@ -248,13 +249,13 @@ export function InlineTicketTimeline({
                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       <span
                         className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
-                        style={{ color: sm.color, background: sm.bg }}
+                        style={chipColors(sm.color, sm.bg)}
                       >
                         {sm.label}
                       </span>
                       <span
                         className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md shrink-0"
-                        style={{ color: pm.color, background: pm.bg }}
+                        style={chipColors(pm.color, pm.bg)}
                       >
                         {pm.label}
                       </span>

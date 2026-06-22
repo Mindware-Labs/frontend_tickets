@@ -65,58 +65,58 @@
 }
 
 .dark {
-  --background: 0 0% 7%;
-  --foreground: 0 0% 96%;
+  --background: 0 0% 3%;
+  --foreground: 0 0% 95%;
 
-  --card: 0 0% 9%;
-  --card-foreground: 0 0% 96%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 95%;
 
-  --popover: 0 0% 9%;
-  --popover-foreground: 0 0% 96%;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 95%;
 
-  --primary: 160 70% 42%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 0 0% 4%;
 
-  --secondary: 0 0% 14%;
-  --secondary-foreground: 0 0% 90%;
+  --secondary: 0 0% 8%;
+  --secondary-foreground: 0 0% 85%;
 
-  --muted: 0 0% 13%;
-  --muted-foreground: 0 0% 62%;
+  --muted: 0 0% 8%;
+  --muted-foreground: 220 6% 40%;
 
-  --accent: 0 0% 14%;
-  --accent-foreground: 0 0% 90%;
+  --accent: 0 0% 8%;
+  --accent-foreground: 0 0% 85%;
 
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 160 70% 42%;
+  --border: 0 0% 8%;
+  --input: 0 0% 8%;
+  --ring: 142 71% 45%;
 
-  --success: 160 70% 42%;
+  --success: 142 71% 45%;
   --warning: 38 92% 55%;
   --info: 200 80% 55%;
 
-  --sidebar-background: 0 0% 7%;
-  --sidebar-foreground: 0 0% 90%;
-  --sidebar-primary: 160 70% 42%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 13%;
-  --sidebar-accent-foreground: 160 60% 55%;
-  --sidebar-border: 0 0% 18%;
-  --sidebar-ring: 160 70% 42%;
+  --sidebar-background: 0 0% 2%;
+  --sidebar-foreground: 0 0% 85%;
+  --sidebar-primary: 142 71% 45%;
+  --sidebar-primary-foreground: 0 0% 4%;
+  --sidebar-accent: 0 0% 6%;
+  --sidebar-accent-foreground: 142 60% 50%;
+  --sidebar-border: 0 0% 7%;
+  --sidebar-ring: 142 71% 45%;
 
-  --chart-1: 160 70% 42%;
-  --chart-2: 142 60% 50%;
+  --chart-1: 142 71% 45%;
+  --chart-2: 142 60% 55%;
   --chart-3: 38 85% 55%;
   --chart-4: 200 75% 55%;
   --chart-5: 0 72% 60%;
 
   color-scheme: dark;
 
-  --scrollbar-thumb: color-mix(in srgb, #94a3b8 20%, transparent);
-  --scrollbar-thumb-hover: color-mix(in srgb, #008f68 45%, transparent);
-  --scrollbar-thumb-active: color-mix(in srgb, #008f68 65%, transparent);
+  --scrollbar-thumb: color-mix(in srgb, #94a3b8 12%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, #22c55e 40%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, #22c55e 60%, transparent);
 }
 
 :root {
