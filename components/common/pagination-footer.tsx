@@ -29,7 +29,7 @@ interface PaginationFooterProps {
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 const navButtonClass =
-  "h-8 shrink-0 rounded-lg border border-slate-200/60 bg-white px-2.5 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1.5";
+  "h-8 shrink-0 rounded-lg border border-slate-200/80 bg-white px-3 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-[#f8eeee] hover:text-[#260B0B] hover:border-[#260B0B]/20 active:bg-[#f8eeee] dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1.5 transition-colors duration-150";
 
 export function PaginationFooter({
   totalCount,
@@ -70,12 +70,12 @@ export function PaginationFooter({
       {/* ── Left: stats + rows-per-page ── */}
       <div className="flex items-center justify-center gap-2 sm:justify-start">
         {showStats && (
-          <div className="flex h-8 items-center overflow-hidden rounded-lg border border-slate-200/60 bg-white px-2.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <p className="flex items-center whitespace-nowrap text-[12px] font-medium tabular-nums text-slate-500 dark:text-neutral-400">
-              <span className="font-semibold text-slate-900 dark:text-neutral-200">
+          <div className="flex h-8 items-center overflow-hidden rounded-lg border border-slate-200/80 bg-white px-2.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <p className="flex items-center whitespace-nowrap text-[12px] tabular-nums dark:text-neutral-400">
+              <span className="font-semibold text-[#260B0B] dark:text-[#f0c7c7]">
                 {start}–{end}
               </span>
-              <span className="ml-1">
+              <span className="ml-1 font-medium text-slate-500">
                 of {totalCount} {itemLabel}
               </span>
             </p>
@@ -88,7 +88,7 @@ export function PaginationFooter({
             onValueChange={(value) => onItemsPerPageChange(Number(value))}
             disabled={loading}
           >
-            <SelectTrigger className="h-8 w-[100px] rounded-lg border border-slate-200/60 bg-white text-[12px] font-medium text-slate-600 hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-700 shadow-sm">
+            <SelectTrigger className="h-8 w-[100px] rounded-lg border border-slate-200/80 bg-white text-[12px] font-medium text-slate-600 shadow-sm hover:border-[#260B0B]/30 hover:text-[#260B0B] focus:border-[#260B0B] focus:ring-2 focus:ring-[#260B0B]/15 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-700 transition-colors duration-150">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -106,7 +106,7 @@ export function PaginationFooter({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 rounded-lg border border-slate-200/60 bg-white px-3 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1.5"
+              className={navButtonClass}
               onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
               disabled={currentPage === 1 || loading}
             >
@@ -132,7 +132,7 @@ export function PaginationFooter({
                 onPageChange={onPageChange}
                 className="min-w-max"
                 buttonClassName="h-8 w-8 rounded-lg text-[12px]"
-                ellipsisClassName="h-8 w-8 text-[12px]"
+                ellipsisClassName="h-8 w-8 text-[12px] text-slate-400"
                 stopPropagation
               />
             </div>
@@ -140,7 +140,7 @@ export function PaginationFooter({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 rounded-lg border border-slate-200/60 bg-white px-3 text-[12px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1.5"
+              className={navButtonClass}
               onClick={() =>
                 onPageChange(Math.min(currentPage + 1, safeTotalPages))
               }
