@@ -1161,7 +1161,7 @@ export function CustomerTimelineDrawer({
         const result = await res.json();
         console.log("[CustomerTimelineDrawer] File uploaded:", result);
         // Remove from pending list — it now lives in savedAttachments
-        setAttachmentFiles((prev) => prev.filter((f) => f !== file));
+        setAttachmentFiles(currentFiles);
         // Sync savedAttachments so the new file appears in the list immediately
         // and is preserved if the user subsequently deletes another attachment.
         onAttachmentsChange?.(result.attachments ?? []);
