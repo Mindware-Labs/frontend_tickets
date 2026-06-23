@@ -36,8 +36,8 @@ export function EntityAttachmentsSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
       <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-          <Paperclip className="h-3 w-3 text-blue-500" />
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
+          <Paperclip className="h-3 w-3 text-blue-500 dark:text-blue-400" />
         </div>
         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">
           Attachments
@@ -118,12 +118,12 @@ export function EntityAttachmentsSection({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[12px] leading-snug">
-                <span className="font-semibold text-emerald-600">
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   Click to upload
                 </span>
-                <span className="text-slate-400"> or drag &amp; drop</span>
+                <span className="text-slate-400 dark:text-neutral-500"> or drag &amp; drop</span>
               </p>
-              <p className="mt-0.5 text-[10px] font-normal tracking-tight text-slate-400/80">
+              <p className="mt-0.5 text-[10px] font-normal tracking-tight text-slate-400/80 dark:text-neutral-600">
                 SVG · PNG · JPG · PDF · MP3 — max 10 MB
               </p>
             </div>
@@ -164,14 +164,14 @@ export function EntityAttachmentsSection({
                     >
                       {file.name}
                     </p>
-                    <p className="text-[9.5px] tabular-nums text-slate-400">
+                    <p className="text-[9.5px] tabular-nums text-slate-400 dark:text-neutral-600">
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removePendingFile(i)}
-                    className="shrink-0 rounded-md p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                    className="shrink-0 rounded-md p-1 text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600"
                     aria-label="Remove file"
                   >
                     <X className="h-3 w-3" />

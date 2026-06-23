@@ -462,7 +462,7 @@ export default function YardsPage() {
                     className={cn(
                       "py-px px-1.5 rounded-full text-[11px] border",
                       isActive
-                        ? "bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]"
+                        ? "border-[#008f68] bg-[#008f68] font-semibold text-white"
                         : "bg-muted/40 text-muted-foreground font-medium border-border",
                     )}
                   >

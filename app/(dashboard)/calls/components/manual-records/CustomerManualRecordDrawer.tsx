@@ -365,7 +365,7 @@ export function CustomerManualRecordDrawer({
             ) : null}
             <div className="flex items-center gap-3 px-4 py-2">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[13px] font-extrabold text-white shadow-sm ring-2 ring-white"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[13px] font-extrabold text-white shadow-sm ring-2 ring-white dark:ring-neutral-800"
                 style={{
                   background: `hsl(${(customerName?.charCodeAt(0) ?? 200) % 360} 50% 44%)`,
                 }}
@@ -531,7 +531,7 @@ export function CustomerManualRecordDrawer({
                           type="button"
                           onClick={onDelete}
                           disabled={isSaving}
-                          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white py-2.5 text-[13px] font-semibold text-red-600 transition-all hover:border-red-300 hover:bg-red-50 active:scale-[0.98] disabled:opacity-50"
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 dark:border-red-500/30 bg-white dark:bg-neutral-900 py-2.5 text-[13px] font-semibold text-red-600 dark:text-red-400 transition-all hover:border-red-300 dark:hover:border-red-500/50 hover:bg-red-50 dark:hover:bg-red-500/10 active:scale-[0.98] disabled:opacity-50"
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete record

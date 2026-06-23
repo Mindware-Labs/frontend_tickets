@@ -257,7 +257,7 @@ export function CustomerFormModal({
                       <Badge
                         key={c.id}
                         variant="secondary"
-                        className="border-0 bg-[#e2fae9] pr-1 text-[11px] text-[#008f68]"
+                        className="border-0 bg-[#e2fae9] pr-1 text-[11px] text-[#008f68] dark:bg-[#008f68]/10 dark:text-emerald-400"
                       >
                         {c.nombre}
                         <button

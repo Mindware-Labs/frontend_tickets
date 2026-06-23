@@ -365,7 +365,7 @@ export default function UsersPage() {
                     className={cn(
                       "rounded-full border px-1.5 py-px text-[11px]",
                       isActive
-                        ? "border-[#e2fae9] bg-[#e2fae9] font-semibold text-[#008f68]"
+                        ? "border-[#008f68] bg-[#008f68] font-semibold text-white"
                         : "border-border bg-muted/40 font-medium text-muted-foreground",
                     )}
                   >

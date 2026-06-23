@@ -351,7 +351,7 @@ export default function LandlordsPage() {
     <div className="h-screen flex flex-col px-4 pt-2 pb-4 gap-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between w-full pt-2 pb-5 px-0.5 gap-3 border-b border-border">
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-neutral-50 leading-tight">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-neutral-200 leading-tight">
             Landlord Management
           </h2>
           <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
@@ -366,7 +366,7 @@ export default function LandlordsPage() {
           <div className="flex px-0.5">
             <div className="px-2 py-2.5 text-[13px] font-medium border-b-2 border-[#008f68] text-foreground -mb-px mr-4 flex items-center gap-2 whitespace-nowrap">
               All Landlords
-              <span className="py-px px-1.5 rounded-full text-[11px] border bg-[#e2fae9] text-[#008f68] font-semibold border-[#e2fae9]">
+              <span className="py-px px-1.5 rounded-full text-[11px] border border-[#008f68] bg-[#008f68] font-semibold text-white">
                 {totalFiltered}
               </span>
             </div>

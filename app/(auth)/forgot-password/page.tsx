@@ -58,7 +58,7 @@ const cardStyle: React.CSSProperties = {
   maxWidth: 420,
   borderRadius: 16,
   padding: "24px 28px 24px",
-  boxShadow: "0 1px 3px rgba(0,0,0,.06),0 8px 24px -8px rgba(0,0,0,.08)",
+  boxShadow: "0 0 0 1px rgba(0,143,104,0.10),0 8px 32px -8px rgba(0,0,0,.45),0 0 60px -20px rgba(0,143,104,0.10)",
   display: "flex",
   flexDirection: "column",
   gap: 14,

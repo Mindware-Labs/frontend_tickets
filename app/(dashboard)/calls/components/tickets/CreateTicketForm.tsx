@@ -126,14 +126,14 @@ export function CreateTicketForm({
 
       <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
         <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-          <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
             <Paperclip className="w-3 h-3 text-blue-500" />
           </div>
           <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-200 uppercase tracking-wider">
             Attachments
           </span>
           {pendingFiles.length > 0 && (
-            <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-slate-100 dark:bg-neutral-800 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
+            <span className="ml-auto text-[10px] font-semibold text-slate-400 dark:text-neutral-500 bg-slate-100 dark:bg-neutral-800 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
               {pendingFiles.length}
             </span>
           )}
@@ -187,12 +187,12 @@ export function CreateTicketForm({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] leading-snug">
-                  <span className="font-semibold text-emerald-600">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     Click to upload
                   </span>
-                  <span className="text-slate-400"> or drag &amp; drop</span>
+                  <span className="text-slate-400 dark:text-neutral-500"> or drag &amp; drop</span>
                 </p>
-                <p className="text-[10px] text-slate-400/80 mt-0.5 font-normal tracking-tight">
+                <p className="text-[10px] text-slate-400/80 dark:text-neutral-600 mt-0.5 font-normal tracking-tight">
                   SVG · PNG · JPG · PDF · MP3 — max 10 MB
                 </p>
               </div>
@@ -234,14 +234,14 @@ export function CreateTicketForm({
                       >
                         {file.name}
                       </p>
-                      <p className="text-[9.5px] text-slate-400 tabular-nums">
+                      <p className="text-[9.5px] text-slate-400 dark:text-neutral-600 tabular-nums">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => removePendingFile(i)}
-                      className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                      className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
                       aria-label="Remove file"
                     >
                       <X className="w-3 h-3" />

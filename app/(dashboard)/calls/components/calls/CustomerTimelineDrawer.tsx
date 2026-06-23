@@ -310,7 +310,7 @@ function TimelineCard({
               <span
                 className={cn(
                   "text-[11px] font-bold font-mono",
-                  isActive ? "text-[#008f68]" : "text-slate-700",
+                  isActive ? "text-[#008f68]" : "text-slate-700 dark:text-neutral-200",
                 )}
               >
                 #{call.id}
@@ -354,8 +354,8 @@ function TimelineCard({
           {(agentName || campaignOpt) && (
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               {agentName && (
-                <span className="text-[9.5px] text-slate-500 flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />
+                <span className="text-[9.5px] text-slate-500 dark:text-neutral-400 flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-neutral-600 inline-block" />
                   {agentName}
                 </span>
               )}
@@ -369,7 +369,7 @@ function TimelineCard({
 
           {/* Notes preview */}
           {noteText && (
-            <p className="text-[9.5px] text-slate-500 leading-tight line-clamp-2 mb-1.5 italic border-l border-slate-200 pl-1.5">
+            <p className="text-[9.5px] text-slate-500 dark:text-neutral-400 leading-tight line-clamp-2 mb-1.5 italic border-l border-slate-200 dark:border-neutral-700 pl-1.5">
               {noteText}
             </p>
           )}
@@ -1613,22 +1613,22 @@ export function CustomerTimelineDrawer({
 
                     {/* — Separator — */}
                     {techItems.length > 0 && (
-                      <span className="border-l border-slate-200 h-4 mx-1 shrink-0" />
+                      <span className="border-l border-slate-200 dark:border-neutral-700 h-4 mx-1 shrink-0" />
                     )}
 
                     {/* — Technical details group — */}
                     {techItems.map((item, i) => (
                       <span key={item.key} className="inline-flex items-center">
                         {i > 0 && (
-                          <span className="border-l border-gray-200 h-3.5 mx-2 shrink-0" />
+                          <span className="border-l border-slate-200 dark:border-neutral-700 h-3.5 mx-2 shrink-0" />
                         )}
                         <span className="flex items-center gap-1">
                           {item.icon}
-                          <span className="text-[11px] font-medium text-gray-400">
+                          <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500">
                             {item.label}:
                           </span>
                           <span
-                            className={`text-[11px] text-gray-600 ${
+                            className={`text-[11px] text-slate-600 dark:text-neutral-300 ${
                               item.mono ? "font-mono" : ""
                             }`}
                           >
@@ -2756,7 +2756,7 @@ export function CustomerTimelineDrawer({
                                   </span>
                                   <div className="flex-1 min-w-0">
                                     <p
-                                      className="text-[11.5px] font-medium text-slate-700 truncate leading-tight"
+                                      className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-300 truncate leading-tight"
                                       title={filename}
                                     >
                                       {filename}

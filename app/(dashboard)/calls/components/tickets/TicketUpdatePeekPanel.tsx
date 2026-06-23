@@ -171,8 +171,8 @@ export function TicketUpdatePeekPanel({
           ref={scrollRef}
           className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 bg-white dark:bg-neutral-900 pointer-events-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full"
         >
-          <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2">
-            <p className="text-[11px] text-violet-800 leading-relaxed">
+          <div className="rounded-xl border border-violet-100 dark:border-violet-500/20 bg-violet-50/40 dark:bg-violet-500/10 px-3 py-2">
+            <p className="text-[11px] text-violet-800 dark:text-violet-300 leading-relaxed">
               Add a note and change status or follow-up. The full history is
               visible in the ticket drawer.
             </p>

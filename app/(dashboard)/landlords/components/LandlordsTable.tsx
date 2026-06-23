@@ -158,7 +158,7 @@ export function LandlordsTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <LandlordMark className="h-8 w-8" />
                           <p
-                            className="min-w-0 flex-1 truncate text-[13px] font-bold leading-tight text-foreground"
+                            className="min-w-0 flex-1 truncate text-[13px] font-bold leading-tight text-slate-900 dark:text-neutral-200"
                             title={landlord.name}
                           >
                             {landlord.name || "Unknown"}

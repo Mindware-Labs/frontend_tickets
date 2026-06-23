@@ -515,12 +515,7 @@ export function GroupedCallsTable({
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Avatar className="h-6 w-6 shrink-0 rounded-full">
                               <AvatarFallback
-                                className="rounded-full text-[10px] font-bold dark:!text-white"
-                                style={{
-                                  background: "transparent",
-                                  border: "1px solid #d1d5db",
-                                  color: "#111827",
-                                }}
+                                className="rounded-full text-[10px] font-bold text-slate-900 dark:text-neutral-100 border border-slate-300 dark:border-neutral-600 bg-transparent"
                               >
                                 {group.customerName
                                   ? group.customerName

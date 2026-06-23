@@ -172,7 +172,7 @@ function MetricTile({
           {label}
         </p>
       </div>
-      <p className="truncate text-[17px] font-bold leading-none tabular-nums text-slate-900 dark:text-neutral-50">
+      <p className="truncate text-[17px] font-bold leading-none tabular-nums text-slate-900 dark:text-neutral-200">
         {value}
       </p>
       {helper ? (
@@ -468,7 +468,7 @@ export function CustomerSheet({
                             <RefreshCw className="h-3 w-3 animate-spin" />
                           </span>
                         ) : null}
-                        <h2 className="mt-1 text-[18px] font-bold leading-tight text-slate-900 [overflow-wrap:anywhere] dark:text-white">
+                        <h2 className="mt-1 text-[18px] font-bold leading-tight text-slate-900 [overflow-wrap:anywhere] dark:text-neutral-200">
                           {data.name || "Unknown Customer"}
                         </h2>
                         <p className="mt-0.5 text-[12px] text-slate-500">
@@ -514,15 +514,15 @@ export function CustomerSheet({
                       className={cn(
                         "mt-2.5 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008f68]/25",
                         timelineOpen
-                          ? "border-[#008f68]/30 bg-[#f0faf5] ring-2 ring-[#008f68]/15"
-                          : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/35 hover:bg-[#e8faf0]",
+                          ? "border-[#008f68]/30 bg-[#f0faf5] ring-2 ring-[#008f68]/15 dark:bg-[#008f68]/10 dark:ring-[#008f68]/20"
+                          : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/35 hover:bg-[#e8faf0] dark:bg-[#008f68]/10 dark:hover:bg-[#008f68]/15",
                       )}
                     >
                       <History className="h-4 w-4 shrink-0" strokeWidth={2} />
                       <span className="min-w-0 flex-1 text-[12px] font-semibold text-[#008f68]">
                         Activity timeline
                       </span>
-                      <span className="rounded-md border border-white/80 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#008f68] shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                      <span className="rounded-md border border-white/80 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#008f68] shadow-sm dark:border-[#008f68]/30 dark:bg-[#008f68]/10 dark:text-emerald-400">
                         {timelineCount}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />

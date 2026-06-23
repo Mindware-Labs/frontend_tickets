@@ -1,7 +1,12 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Props {
   open: boolean;
@@ -11,7 +16,13 @@ interface Props {
   onConfirm: () => void;
 }
 
-export function ConfirmDeleteModal({ open, onOpenChange, label, submitting, onConfirm }: Props) {
+export function ConfirmDeleteModal({
+  open,
+  onOpenChange,
+  label,
+  submitting,
+  onConfirm,
+}: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-sm">

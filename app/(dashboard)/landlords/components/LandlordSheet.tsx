@@ -106,8 +106,8 @@ function YardTypePill({ type }: { type?: YardOption["yardType"] }) {
 function YardStatusPill({ active }: { active?: boolean }) {
   if (active === undefined) return null;
   return active ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
       Active
     </span>
   ) : (
@@ -139,10 +139,10 @@ function LinkedYardCard({
         <YardMark className="h-10 w-10 shrink-0" iconClassName="h-5 w-5" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="min-w-0 text-[14px] font-bold leading-snug text-slate-900 wrap-anywhere group-hover:text-[#007a5a] dark:text-neutral-50">
+            <h3 className="min-w-0 text-[14px] font-bold leading-snug text-slate-900 wrap-anywhere group-hover:text-[#007a5a] dark:text-neutral-200">
               {yard.name}
             </h3>
-            <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-neutral-800 dark:text-neutral-400">
+            <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:bg-neutral-700/60 dark:text-neutral-400">
               #{yard.id}
             </span>
           </div>
@@ -176,7 +176,7 @@ function LinkedYardCard({
                 className={cn(
                   "min-w-0 truncate font-mono text-[12px] font-medium",
                   hasText(yard.contactInfo)
-                    ? "text-slate-800 dark:text-neutral-100"
+                    ? "text-slate-800 dark:text-neutral-300"
                     : "italic text-slate-400",
                 )}
               >
@@ -270,7 +270,7 @@ function DetailRow({
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-neutral-500">
           {label}
         </p>
-        <div className="min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-neutral-100">
+        <div className="min-w-0 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-neutral-300">
           {value}
         </div>
       </div>
@@ -296,7 +296,7 @@ function MetricTile({
           {label}
         </p>
       </div>
-      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-neutral-50">
+      <p className="mt-2 truncate text-[15px] font-bold text-slate-900 dark:text-neutral-200">
         {value}
       </p>
     </div>
@@ -372,7 +372,7 @@ function DialButton({
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 active:scale-95",
           disabled
             ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-600"
-            : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#e2fae9]",
+            : "border-[#008f68]/20 bg-[#f0faf5] text-[#008f68] hover:border-[#008f68]/40 hover:bg-[#e2fae9] dark:bg-[#008f68]/10 dark:hover:bg-[#008f68]/20",
         )}
       >
         <PhoneCall className="h-4 w-4" strokeWidth={2} />
@@ -513,7 +513,7 @@ export function LandlordSheet({
         hideClose
         className={cn(
           "flex h-dvh w-full max-w-[560px] flex-col gap-0 overflow-hidden p-0 sm:w-[min(560px,calc(100vw-2rem))]",
-          "border-l border-slate-200/80 bg-slate-50 text-slate-900 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
+          "border-l border-slate-200/80 bg-slate-50 text-slate-900 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200",
         )}
       >
         {!data ? (
@@ -547,7 +547,7 @@ export function LandlordSheet({
 
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-neutral-900">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:bg-neutral-800 dark:text-neutral-400">
                         #{data.id}
                       </span>
                       {loading ? (
@@ -557,7 +557,7 @@ export function LandlordSheet({
                         </span>
                       ) : null}
                     </div>
-                    <h2 className="mt-2 min-w-0 text-[22px] font-bold leading-tight text-slate-950 [overflow-wrap:anywhere] dark:text-white">
+                    <h2 className="mt-2 min-w-0 text-[22px] font-bold leading-tight text-slate-950 [overflow-wrap:anywhere] dark:text-neutral-200">
                       {data.name || "Unknown landlord"}
                     </h2>
                   </div>
@@ -588,7 +588,7 @@ export function LandlordSheet({
                       label="Phone"
                       value={
                         hasText(data.phone) ? (
-                          <p className="font-mono font-semibold text-slate-950 dark:text-neutral-50">
+                          <p className="font-mono font-semibold text-slate-950 dark:text-neutral-200">
                             {data.phone.trim()}
                           </p>
                         ) : (
@@ -669,7 +669,7 @@ export function LandlordSheet({
                   <SectionLabel
                     action={
                       linkedYards.length > 0 ? (
-                        <span className="rounded-full border border-[#bbf7d0] bg-[#e2fae9] px-2 py-0.5 text-[11px] font-semibold text-[#008f68]">
+                        <span className="rounded-full border border-[#bbf7d0] bg-[#e2fae9] px-2 py-0.5 text-[11px] font-semibold text-[#008f68] dark:border-[#008f68]/30 dark:bg-[#008f68]/10 dark:text-emerald-400">
                           {linkedYards.length}
                         </span>
                       ) : null

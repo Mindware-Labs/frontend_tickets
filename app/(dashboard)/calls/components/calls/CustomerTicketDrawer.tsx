@@ -809,7 +809,7 @@ export function CustomerTicketDrawer({
             ) : null}
             <div className="flex items-center gap-3 px-4 py-2">
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-[13px] font-extrabold text-white shrink-0 shadow-sm ring-2 ring-white dark:ring-neutral-800"
                 style={{
                   background: `hsl(${(customerName?.charCodeAt(0) ?? 200) % 360} 50% 44%)`,
                 }}
@@ -939,7 +939,7 @@ export function CustomerTicketDrawer({
                   className={cn(
                     "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
                     railTab === "activity"
-                      ? "text-violet-700 bg-violet-50/70"
+                      ? "text-violet-700 dark:text-violet-300 bg-violet-50/70 dark:bg-violet-500/10"
                       : "text-slate-500 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800",
                   )}
                 >
@@ -950,8 +950,8 @@ export function CustomerTicketDrawer({
                       className={cn(
                         "rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums leading-none",
                         railTab === "activity"
-                          ? "bg-violet-200/80 text-violet-800"
-                          : "bg-slate-100 text-slate-500",
+                          ? "bg-violet-200/80 dark:bg-violet-500/25 text-violet-800 dark:text-violet-200"
+                          : "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
                       )}
                     >
                       {ticketUpdates.length}
@@ -968,7 +968,7 @@ export function CustomerTicketDrawer({
                   className={cn(
                     "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-semibold transition-colors",
                     railTab === "tickets"
-                      ? "text-[#008f68] bg-[#f0faf5]"
+                      ? "text-[#008f68] bg-[#f0faf5] dark:bg-emerald-500/10"
                       : "text-slate-500 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800",
                   )}
                 >
@@ -978,8 +978,8 @@ export function CustomerTicketDrawer({
                     className={cn(
                       "rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums leading-none",
                       railTab === "tickets"
-                        ? "bg-[#008f68]/15 text-[#006d50]"
-                        : "bg-slate-100 text-slate-500",
+                        ? "bg-[#008f68]/15 text-[#006d50] dark:text-emerald-300"
+                        : "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
                     )}
                   >
                     {isLoadingHistory ? "…" : allTickets.length}
@@ -1085,10 +1085,10 @@ export function CustomerTicketDrawer({
                   <div className="space-y-3">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-widest">
                           Original report
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 border border-slate-200 rounded-full px-1.5 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-full px-1.5 py-0.5">
                           Editable record
                         </span>
                       </div>
@@ -1114,7 +1114,7 @@ export function CustomerTicketDrawer({
                         <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
                           Latest activity update
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600/80 uppercase tracking-wider bg-emerald-50 border border-emerald-100 rounded-full px-1.5 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-full px-1.5 py-0.5">
                           <Activity className="w-2.5 h-2.5" />
                           Activity log
                         </span>
@@ -1124,11 +1124,11 @@ export function CustomerTicketDrawer({
                         value={selectedTicket.issueDetail || ""}
                         readOnly
                         placeholder="No activity update has been recorded yet"
-                        className="w-full field-sizing-content text-xs text-slate-700 placeholder:text-slate-400 bg-emerald-50/40 border border-dashed border-emerald-200 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
+                        className="w-full field-sizing-content text-xs text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-600 bg-emerald-50/40 dark:bg-emerald-500/5 border border-dashed border-emerald-200 dark:border-emerald-500/20 rounded-lg px-3 py-2 resize-none focus:outline-none leading-relaxed cursor-default"
                       />
                       <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                         Maintained through{" "}
-                        <span className="font-semibold text-violet-700">
+                        <span className="font-semibold text-violet-700 dark:text-violet-400">
                           Log update
                         </span>
                         . This field is read-only in this section.
@@ -1162,7 +1162,7 @@ export function CustomerTicketDrawer({
                   <section className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-100 dark:border-neutral-700 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-                      <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
                         <Paperclip className="w-3 h-3 text-blue-500" />
                       </div>
                       <span className="text-[11px] font-bold text-slate-700 dark:text-neutral-300 uppercase tracking-wider">
@@ -1171,7 +1171,7 @@ export function CustomerTicketDrawer({
                       {pendingFiles.length +
                         (selectedTicket.attachments?.length ?? 0) >
                         0 && (
-                        <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
+                        <span className="ml-auto text-[10px] font-semibold text-slate-400 dark:text-neutral-500 bg-slate-100 dark:bg-neutral-800 rounded-full px-1.5 py-0.5 tabular-nums leading-none">
                           {pendingFiles.length +
                             (selectedTicket.attachments?.length ?? 0)}
                         </span>
@@ -1220,22 +1220,22 @@ export function CustomerTicketDrawer({
                         />
                         <label
                           htmlFor="ticket-file-upload"
-                          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 bg-linear-to-r from-slate-50/90 to-sky-50/30 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:from-sky-50/70 hover:to-blue-50/40"
+                          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-linear-to-r from-slate-50/90 to-sky-50/30 dark:from-neutral-800/60 dark:to-neutral-800/30 cursor-pointer transition-all duration-150 hover:border-blue-300 dark:hover:border-blue-500/50 hover:from-sky-50/70 hover:to-blue-50/40"
                         >
                           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white dark:bg-neutral-800 shadow-sm border border-slate-100/80 dark:border-neutral-700 shrink-0">
                             <CloudUpload className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors duration-150" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[12px] leading-snug">
-                              <span className="font-semibold text-emerald-600">
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                 Click to upload
                               </span>
-                              <span className="text-slate-400">
+                              <span className="text-slate-400 dark:text-neutral-500">
                                 {" "}
                                 or drag &amp; drop
                               </span>
                             </p>
-                            <p className="text-[10px] text-slate-400/80 mt-0.5 font-normal tracking-tight">
+                            <p className="text-[10px] text-slate-400/80 dark:text-neutral-600 mt-0.5 font-normal tracking-tight">
                               SVG · PNG · JPG · PDF · MP3 — max 10 MB
                             </p>
                           </div>
@@ -1244,7 +1244,7 @@ export function CustomerTicketDrawer({
 
                       {/* ── Archivos pendientes ── */}
                       {pendingFiles.length > 0 && (
-                        <div className="rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                        <div className="rounded-xl border border-slate-100 dark:border-neutral-800 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-800">
                           {pendingFiles.map((file, i) => {
                             const ext =
                               file.name.split(".").pop()?.toUpperCase() || "?";
@@ -1270,12 +1270,12 @@ export function CustomerTicketDrawer({
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p
-                                    className="text-[11.5px] font-medium text-slate-700 truncate leading-tight"
+                                    className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-300 truncate leading-tight"
                                     title={file.name}
                                   >
                                     {file.name}
                                   </p>
-                                  <p className="text-[9.5px] text-slate-400 tabular-nums">
+                                  <p className="text-[9.5px] text-slate-400 dark:text-neutral-600 tabular-nums">
                                     {(file.size / 1024 / 1024).toFixed(2)} MB
                                   </p>
                                 </div>
@@ -1290,7 +1290,7 @@ export function CustomerTicketDrawer({
                                       a.click();
                                       URL.revokeObjectURL(url);
                                     }}
-                                    className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                     aria-label="Download file"
                                   >
                                     <Download className="w-3 h-3" />
@@ -1298,7 +1298,7 @@ export function CustomerTicketDrawer({
                                   <button
                                     type="button"
                                     onClick={() => removePendingFile(i)}
-                                    className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    className="p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                     aria-label="Remove file"
                                   >
                                     <X className="w-3 h-3" />
@@ -1313,7 +1313,7 @@ export function CustomerTicketDrawer({
                       {/* ── Archivos guardados ── */}
                       {selectedTicket.attachments &&
                         selectedTicket.attachments.length > 0 && (
-                          <div className="rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50/80">
+                          <div className="rounded-xl border border-slate-100 dark:border-neutral-800 overflow-hidden divide-y divide-slate-50/80 dark:divide-neutral-800">
                             {selectedTicket.attachments.map(
                               (url: string, i: number) => {
                                 const raw = url.split("/").pop() || "file";
@@ -1365,7 +1365,7 @@ export function CustomerTicketDrawer({
                                         type="button"
                                         onClick={() => handleDownloadAttachment(url, filename)}
                                         aria-label={`Download ${filename}`}
-                                        className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                        className="p-1 rounded-md text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                       >
                                         <Download className="w-3 h-3" />
                                       </button>
@@ -1406,8 +1406,8 @@ export function CustomerTicketDrawer({
                       className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-xl border transition-all active:scale-[0.98]",
                         showUpdatePeek
-                          ? "border-violet-300 bg-violet-50 text-violet-800 ring-2 ring-violet-100"
-                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50 hover:border-violet-300",
+                          ? "border-violet-300 bg-violet-50 dark:bg-violet-500/15 text-violet-800 dark:text-violet-300 ring-2 ring-violet-100 dark:ring-violet-500/20"
+                          : "border-violet-200 dark:border-violet-500/30 bg-white dark:bg-neutral-900 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:border-violet-300 dark:hover:border-violet-500/50",
                       )}
                     >
                       <Activity className="w-4 h-4" />

@@ -61,7 +61,7 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
         <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11 shrink-0">
-              <AvatarFallback className="bg-[#e2fae9] text-[#008f68] font-bold text-sm">
+              <AvatarFallback className="bg-[#e2fae9] text-[#008f68] font-bold text-sm dark:bg-[#008f68]/10 dark:text-emerald-400">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -74,7 +74,7 @@ export function LandlordDrawer({ open, onOpenChange, landlord, yards }: Landlord
               </p>
             </div>
             {linkedYards.length > 0 && (
-              <Badge className="bg-[#e2fae9] text-[#008f68] border border-[#bbf7d0] text-[11px] font-medium shrink-0">
+              <Badge className="bg-[#e2fae9] text-[#008f68] border border-[#bbf7d0] text-[11px] font-medium shrink-0 dark:bg-[#008f68]/10 dark:border-[#008f68]/30 dark:text-emerald-400">
                 {linkedYards.length} yards
               </Badge>
             )}

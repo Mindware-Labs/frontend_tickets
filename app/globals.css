@@ -520,3 +520,24 @@
   display: inline-block;
   animation: entity-loading-ellipsis 1.4s ease-in-out infinite;
 }
+
+/* ── Recharts dark mode ── */
+.dark .recharts-cartesian-grid line {
+  stroke: #1e293b;
+}
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #1e293b;
+}
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+.dark .recharts-tooltip-item {
+  color: #cbd5e1 !important;
+}
+.dark .recharts-legend-item-text {
+  color: #94a3b8 !important;
+}
+

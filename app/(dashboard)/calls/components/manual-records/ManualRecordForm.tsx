@@ -49,7 +49,7 @@ const formatLabel = (v: string) =>
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
       {children}
     </p>
   );
@@ -57,7 +57,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-500">
       {children}
     </p>
   );
@@ -307,7 +307,7 @@ export function ManualRecordForm({
       </section>
 
       <div>
-        <p className="mb-1 px-0.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        <p className="mb-1 px-0.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
           Notes
         </p>
         <textarea

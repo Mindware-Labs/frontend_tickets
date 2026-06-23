@@ -166,7 +166,7 @@ export function ReportHeader({
                 type="button"
                 onClick={onOpenBulkExport}
                 title="Export PDF/Excel reports for several yards at once"
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-300"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:bg-neutral-950 dark:text-neutral-300"
               >
                 <FolderDown className="size-3.5" aria-hidden />
                 <span>Bulk export</span>

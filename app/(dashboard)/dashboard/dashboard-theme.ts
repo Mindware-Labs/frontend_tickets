@@ -63,10 +63,10 @@ export const toneClasses: Record<
 
 export const tooltipStyle = {
   background: "hsl(var(--card))",
-  border: "1px solid #e2e8f0",
+  border: "1px solid hsl(var(--border))",
   borderRadius: 8,
-  color: "#334155",
-  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+  color: "hsl(var(--card-foreground))",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
   fontSize: 12,
   padding: "8px 10px",
 };

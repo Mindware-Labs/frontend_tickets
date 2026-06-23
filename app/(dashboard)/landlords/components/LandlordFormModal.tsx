@@ -191,7 +191,7 @@ export function LandlordFormModal({
           required
           error={validationErrors.yardIds}
         >
-          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 shadow-sm dark:border-neutral-800">
+          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-neutral-800">
               <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               <Input
@@ -222,8 +222,8 @@ export function LandlordFormModal({
                         className={cn(
                           "flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors",
                           checked
-                            ? "border-[#008f68]/20 bg-[#f0faf5]"
-                            : "border-transparent hover:bg-white dark:hover:bg-neutral-900",
+                            ? "border-[#008f68]/20 bg-[#f0faf5] dark:bg-[#008f68]/10 dark:border-[#008f68]/30"
+                            : "border-transparent hover:bg-white dark:hover:bg-neutral-800",
                         )}
                       >
                         <Checkbox
