@@ -1160,6 +1160,8 @@ export function CustomerTimelineDrawer({
 
         const result = await res.json();
         console.log("[CustomerTimelineDrawer] File uploaded:", result);
+        // Remove from pending list — it now lives in savedAttachments
+        setAttachmentFiles((prev) => prev.filter((f) => f !== file));
         // Sync savedAttachments so the new file appears in the list immediately
         // and is preserved if the user subsequently deletes another attachment.
         onAttachmentsChange?.(result.attachments ?? []);
@@ -1379,7 +1381,7 @@ export function CustomerTimelineDrawer({
       >
         <SheetContent
           side="right"
-          className="w-svw sm:w-[80vw] p-0 flex flex-col bg-[#f4f5f7] dark:bg-neutral-950 [&>button.absolute]:hidden overflow-hidden border-l border-slate-200/80 dark:border-neutral-700"
+          className="w-svw sm:w-[80vw] p-0 flex flex-col gap-0 overflow-hidden border-l border-slate-200/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 [&>button.absolute]:hidden"
           style={{ maxWidth: "1100px" }}
           onPointerDownOutside={(e) => {
             if (shouldIgnoreTicketSheetOutsideEvent(e)) {
@@ -2674,7 +2676,9 @@ export function CustomerTimelineDrawer({
                                     {ext.slice(0, 4)}
                                   </span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-[11.5px] font-medium text-slate-700 truncate leading-tight"></p>
+                                    <p className="text-[11.5px] font-medium text-slate-700 dark:text-neutral-300 truncate leading-tight" title={file.name}>
+                                      {file.name}
+                                    </p>
                                     <p className="text-[9.5px] text-slate-400 tabular-nums">
                                       {(file.size / 1024 / 1024).toFixed(2)} MB
                                     </p>
@@ -2821,7 +2825,7 @@ export function CustomerTimelineDrawer({
             </main>
 
             {/* ── ASIDE: Call History (~30%) ────────────────────────────────────── */}
-            <aside className="hidden sm:flex w-72 xl:w-80 shrink-0 flex-col border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden border-t border-slate-100 dark:border-neutral-800">
+            <aside className="order-last hidden sm:flex w-72 xl:w-80 shrink-0 flex-col overflow-hidden border-l border-slate-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-900">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-neutral-800">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#008f68] shrink-0" />
